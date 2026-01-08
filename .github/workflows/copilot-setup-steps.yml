@@ -18,9 +18,17 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 30
 
-    # Minimal nötige Rechte – Copilot bekommt später seinen eigenen Token
+    # Erweiterte Rechte für volle Copilot-Funktionalität (Issues, PRs, Actions, etc.)
     permissions:
       contents: write
+      issues: write
+      pull-requests: write
+      actions: read
+      checks: write
+      statuses: write
+      discussions: write
+      packages: read
+      repository-projects: write
 
     env:
       GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.parallel=true -Dorg.gradle.caching=true"
