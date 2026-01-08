@@ -171,7 +171,7 @@ Pipeline ──► core:metadata-normalizer ──► Data
 
 ## 📚 Reference Documents
 
-1. `/docs/v2/MEDIA_NORMALIZATION_CONTRACT.md` - Section 2.2, 2.3
-2. `/contracts/TMDB_ENRICHMENT_CONTRACT.md` - TMDB resolution rules
+1. `/docs/v2/MEDIA_NORMALIZATION_CONTRACT.md` - Section 2.2, 2.3 (AUTHORITATIVE)
+2. `/docs/v2/TMDB_ENRICHMENT_CONTRACT.md` - TMDB resolution rules (AUTHORITATIVE)
 3. `/AGENTS.md` - Section 4.1 (Canonical Media & Normalizer)
 4. `core/metadata-normalizer/README.md`
