@@ -169,7 +169,8 @@ On FIRETV_LOW_RAM:
 - no payload logging
 
 **Implementation:** All batch sizes are centralized in `core/persistence/config/ObxWriteConfig.kt`,
-which automatically adjusts based on device class detection via `XtreamTransportConfig.detectDeviceClass()`.
+which automatically adjusts based on device class provided by `DeviceClassProvider` (core:device-api),
+with `AndroidDeviceClassProvider` as the Android implementation (infra:device-android).
 
 ---
 

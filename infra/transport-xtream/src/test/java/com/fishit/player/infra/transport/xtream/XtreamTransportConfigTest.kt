@@ -67,25 +67,6 @@ class XtreamTransportConfigTest {
     }
 
     @Test
-    fun `getParallelism backward compatible method works`() {
-        // Arrange
-        val context = mockk<Context>(relaxed = true)
-
-        // Mock Android system services for AndroidDeviceClassProvider
-        every { context.getSystemService(Context.UI_MODE_SERVICE) } returns null
-        every { context.getSystemService(Context.ACTIVITY_SERVICE) } returns null
-
-        // Act - uses deprecated method that creates provider internally
-        @Suppress("DEPRECATION")
-        val result = XtreamTransportConfig.getParallelism(context)
-
-        // Assert - should not crash and return a valid value
-        assert(result == 12 || result == 3) {
-            "Expected parallelism to be 3 or 12, got $result"
-        }
-    }
-
-    @Test
     fun `constants match Premium Contract Section 5`() {
         assertEquals(12, XtreamTransportConfig.PARALLELISM_PHONE_TABLET)
         assertEquals(3, XtreamTransportConfig.PARALLELISM_FIRETV_LOW_RAM)

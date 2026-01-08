@@ -80,11 +80,12 @@ The following constants are now deprecated in favor of `ObxWriteConfig`:
 
 ### Device Detection
 
-`ObxWriteConfig` delegates device classification to `XtreamTransportConfig.detectDeviceClass()`,
-which is the SSOT for device detection across the application.
+`ObxWriteConfig` uses `DeviceClassProvider` from `core:device-api` as the SSOT for device detection.
+The Android implementation is provided by `AndroidDeviceClassProvider` in `infra:device-android`.
 
 Detection criteria:
-- **TV_LOW_RAM**: Android TV devices OR devices with < 2GB RAM OR `isLowRamDevice == true`
+- **TV_LOW_RAM**: Android TV devices with < 2GB RAM OR `isLowRamDevice == true`
+- **TV**: Android TV devices with >= 2GB RAM (not low RAM)
 - **PHONE_TABLET**: All other devices
 
 ### Contract Compliance

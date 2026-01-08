@@ -201,104 +201,7 @@ object ObxWriteConfig {
         return if (deviceClass.isLowResource) FIRETV_BACKFILL_CHUNK_SIZE else NORMAL_PAGE_SIZE
     }
 
-    // =========================================================================
-    // Backward Compatibility Overloads (Context-only, no injection)
-    // =========================================================================
 
-    /**
-     * Get batch size with context-only API (backward compatible).
-     *
-     * **Note:** This creates a new DeviceClassProvider instance. For performance,
-     * prefer the injected DeviceClassProvider version in production code.
-     *
-     * @param context Android context for device detection
-     * @return Batch size based on device class
-     * @deprecated Use version with DeviceClassProvider parameter for better performance
-     */
-    @Deprecated(
-        message = "Use getBatchSize(DeviceClassProvider, Context) for better performance",
-        replaceWith = ReplaceWith(
-            "getBatchSize(deviceClassProvider, context)",
-            "com.fishit.player.core.device.DeviceClassProvider",
-        ),
-    )
-    fun getBatchSize(context: Context): Int = getBatchSize(createProvider(), context)
-
-    /**
-     * Get Live batch size with context-only API (backward compatible).
-     *
-     * @param context Android context for device detection
-     * @return Batch size based on device class
-     * @deprecated Use version with DeviceClassProvider parameter
-     */
-    @Deprecated(
-        message = "Use getSyncLiveBatchSize(DeviceClassProvider, Context) for better performance",
-        replaceWith = ReplaceWith("getSyncLiveBatchSize(deviceClassProvider, context)"),
-    )
-    fun getSyncLiveBatchSize(context: Context): Int = getSyncLiveBatchSize(createProvider(), context)
-
-    /**
-     * Get Movies batch size with context-only API (backward compatible).
-     *
-     * @param context Android context for device detection
-     * @return Batch size based on device class
-     * @deprecated Use version with DeviceClassProvider parameter
-     */
-    @Deprecated(
-        message = "Use getSyncMoviesBatchSize(DeviceClassProvider, Context) for better performance",
-        replaceWith = ReplaceWith("getSyncMoviesBatchSize(deviceClassProvider, context)"),
-    )
-    fun getSyncMoviesBatchSize(context: Context): Int = getSyncMoviesBatchSize(createProvider(), context)
-
-    /**
-     * Get Series batch size with context-only API (backward compatible).
-     *
-     * @param context Android context for device detection
-     * @return Batch size based on device class
-     * @deprecated Use version with DeviceClassProvider parameter
-     */
-    @Deprecated(
-        message = "Use getSyncSeriesBatchSize(DeviceClassProvider, Context) for better performance",
-        replaceWith = ReplaceWith("getSyncSeriesBatchSize(deviceClassProvider, context)"),
-    )
-    fun getSyncSeriesBatchSize(context: Context): Int = getSyncSeriesBatchSize(createProvider(), context)
-
-    /**
-     * Get backfill chunk size with context-only API (backward compatible).
-     *
-     * @param context Android context for device detection
-     * @return Chunk size based on device class
-     * @deprecated Use version with DeviceClassProvider parameter
-     */
-    @Deprecated(
-        message = "Use getBackfillChunkSize(DeviceClassProvider, Context) for better performance",
-        replaceWith = ReplaceWith("getBackfillChunkSize(deviceClassProvider, context)"),
-    )
-    fun getBackfillChunkSize(context: Context): Int = getBackfillChunkSize(createProvider(), context)
-
-    /**
-     * Get page size with context-only API (backward compatible).
-     *
-     * @param context Android context for device detection
-     * @return Page size based on device class
-     * @deprecated Use version with DeviceClassProvider parameter
-     */
-    @Deprecated(
-        message = "Use getPageSize(DeviceClassProvider, Context) for better performance",
-        replaceWith = ReplaceWith("getPageSize(deviceClassProvider, context)"),
-    )
-    fun getPageSize(context: Context): Int = getPageSize(createProvider(), context)
-
-    /**
-     * Create a temporary DeviceClassProvider instance.
-     *
-     * This is used for backward compatibility. Production code should inject
-     * DeviceClassProvider via Hilt for better performance (caching).
-     */
-    private fun createProvider(): DeviceClassProvider {
-        // Import here to avoid forcing all consumers to depend on infra:device-android
-        return com.fishit.player.infra.device.AndroidDeviceClassProvider()
-    }
 
     // =========================================================================
     // Box Extension Functions
@@ -321,28 +224,6 @@ object ObxWriteConfig {
         context: Context,
     ) {
         val chunkSize = getBackfillChunkSize(deviceClassProvider, context)
-        putChunked(items, chunkSize)
-    }
-
-    /**
-     * Put items in chunks with device-aware chunk size (backward compatible).
-     *
-     * **Note:** Creates a new DeviceClassProvider instance. For better performance,
-     * use the version with DeviceClassProvider parameter.
-     *
-     * @param items List of items to persist
-     * @param context Android context for device detection
-     * @deprecated Use version with DeviceClassProvider parameter
-     */
-    @Deprecated(
-        message = "Use putChunked(items, deviceClassProvider, context) for better performance",
-        replaceWith = ReplaceWith("putChunked(items, deviceClassProvider, context)"),
-    )
-    fun <T> Box<T>.putChunked(
-        items: List<T>,
-        context: Context,
-    ) {
-        val chunkSize = getBackfillChunkSize(context)
         putChunked(items, chunkSize)
     }
 

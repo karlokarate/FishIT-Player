@@ -90,28 +90,7 @@ object XtreamTransportConfig {
         }
     }
 
-    /**
-     * Get the appropriate parallelism for the current device (backward compatible).
-     *
-     * **Note:** This creates a new DeviceClassProvider instance. For better performance,
-     * use the version with DeviceClassProvider parameter in production code.
-     *
-     * @param context Android context for device detection
-     * @return Parallelism level (number of concurrent requests)
-     * @deprecated Use getParallelism(DeviceClassProvider, Context) for better performance
-     */
-    @Deprecated(
-        message = "Use getParallelism(DeviceClassProvider, Context) for better performance",
-        replaceWith = ReplaceWith(
-            "getParallelism(deviceClassProvider, context)",
-            "com.fishit.player.core.device.DeviceClassProvider",
-        ),
-    )
-    fun getParallelism(context: Context): Int {
-        // Create temporary provider for backward compatibility
-        val provider = com.fishit.player.infra.device.AndroidDeviceClassProvider()
-        return getParallelism(provider, context)
-    }
+
 
     // =========================================================================
     // Rate Limiting (from existing implementation)
