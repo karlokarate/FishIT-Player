@@ -1,0 +1,446 @@
+{
+  "objectboxVersion": "5.0.1",
+  "buildDate": "2026-01-08",
+  "modules": [
+    {
+      "name": "core:persistence",
+      "path": "core/persistence",
+      "hasObjectBox": true,
+      "pluginConfig": "id(\"io.objectbox\") version \"5.0.1\"",
+      "kaptEnabled": true,
+      "sourceSets": [
+        "build/generated/source/kapt/debug",
+        "build/generated/source/kapt/release"
+      ]
+    },
+    {
+      "name": "legacy:v1-app:app",
+      "path": "legacy/v1-app/app",
+      "hasObjectBox": true,
+      "pluginConfig": "id(\"io.objectbox\") version \"5.0.1\"",
+      "kaptEnabled": true,
+      "note": "Legacy v1 architecture - separate ObjectBox store"
+    }
+  ],
+  "generatedFiles": [
+    {
+      "fileName": "MyObjectBox.java",
+      "expectedPath": "build/generated/source/kapt/debug/com/fishit/player/core/persistence/obx/MyObjectBox.java",
+      "module": "core:persistence",
+      "type": "EntryPoint",
+      "sourceEntity": null,
+      "description": "Main entry point for ObjectBox initialization. Contains builder() method and embedded schema definition."
+    },
+    {
+      "fileName": "ObxCanonicalMedia_.java",
+      "expectedPath": "build/generated/source/kapt/debug/com/fishit/player/core/persistence/obx/ObxCanonicalMedia_.java",
+      "module": "core:persistence",
+      "type": "EntityMeta",
+      "sourceEntity": "ObxCanonicalMedia",
+      "description": "Meta class for canonical media entities with property metadata and query builders"
+    },
+    {
+      "fileName": "ObxCanonicalMediaCursor.java",
+      "expectedPath": "build/generated/source/kapt/debug/com/fishit/player/core/persistence/obx/ObxCanonicalMediaCursor.java",
+      "module": "core:persistence",
+      "type": "Cursor",
+      "sourceEntity": "ObxCanonicalMedia",
+      "description": "Cursor for efficient data access of canonical media entities"
+    },
+    {
+      "fileName": "ObxMediaSourceRef_.java",
+      "expectedPath": "build/generated/source/kapt/debug/com/fishit/player/core/persistence/obx/ObxMediaSourceRef_.java",
+      "module": "core:persistence",
+      "type": "EntityMeta",
+      "sourceEntity": "ObxMediaSourceRef",
+      "description": "Meta class for media source reference entities"
+    },
+    {
+      "fileName": "ObxMediaSourceRefCursor.java",
+      "expectedPath": "build/generated/source/kapt/debug/com/fishit/player/core/persistence/obx/ObxMediaSourceRefCursor.java",
+      "module": "core:persistence",
+      "type": "Cursor",
+      "sourceEntity": "ObxMediaSourceRef",
+      "description": "Cursor for media source reference entities"
+    },
+    {
+      "fileName": "ObxCanonicalResumeMark_.java",
+      "expectedPath": "build/generated/source/kapt/debug/com/fishit/player/core/persistence/obx/ObxCanonicalResumeMark_.java",
+      "module": "core:persistence",
+      "type": "EntityMeta",
+      "sourceEntity": "ObxCanonicalResumeMark",
+      "description": "Meta class for resume position markers"
+    },
+    {
+      "fileName": "ObxCanonicalResumeMarkCursor.java",
+      "expectedPath": "build/generated/source/kapt/debug/com/fishit/player/core/persistence/obx/ObxCanonicalResumeMarkCursor.java",
+      "module": "core:persistence",
+      "type": "Cursor",
+      "sourceEntity": "ObxCanonicalResumeMark",
+      "description": "Cursor for resume position markers"
+    },
+    {
+      "fileName": "ObxCategory_.java",
+      "expectedPath": "build/generated/source/kapt/debug/com/fishit/player/core/persistence/obx/ObxCategory_.java",
+      "module": "core:persistence",
+      "type": "EntityMeta",
+      "sourceEntity": "ObxCategory",
+      "description": "Meta class for content categories"
+    },
+    {
+      "fileName": "ObxCategoryCursor.java",
+      "expectedPath": "build/generated/source/kapt/debug/com/fishit/player/core/persistence/obx/ObxCategoryCursor.java",
+      "module": "core:persistence",
+      "type": "Cursor",
+      "sourceEntity": "ObxCategory",
+      "description": "Cursor for content categories"
+    },
+    {
+      "fileName": "ObxLive_.java",
+      "expectedPath": "build/generated/source/kapt/debug/com/fishit/player/core/persistence/obx/ObxLive_.java",
+      "module": "core:persistence",
+      "type": "EntityMeta",
+      "sourceEntity": "ObxLive",
+      "description": "Meta class for live TV streams"
+    },
+    {
+      "fileName": "ObxLiveCursor.java",
+      "expectedPath": "build/generated/source/kapt/debug/com/fishit/player/core/persistence/obx/ObxLiveCursor.java",
+      "module": "core:persistence",
+      "type": "Cursor",
+      "sourceEntity": "ObxLive",
+      "description": "Cursor for live TV streams"
+    },
+    {
+      "fileName": "ObxVod_.java",
+      "expectedPath": "build/generated/source/kapt/debug/com/fishit/player/core/persistence/obx/ObxVod_.java",
+      "module": "core:persistence",
+      "type": "EntityMeta",
+      "sourceEntity": "ObxVod",
+      "description": "Meta class for video-on-demand content"
+    },
+    {
+      "fileName": "ObxVodCursor.java",
+      "expectedPath": "build/generated/source/kapt/debug/com/fishit/player/core/persistence/obx/ObxVodCursor.java",
+      "module": "core:persistence",
+      "type": "Cursor",
+      "sourceEntity": "ObxVod",
+      "description": "Cursor for video-on-demand content"
+    },
+    {
+      "fileName": "ObxSeries_.java",
+      "expectedPath": "build/generated/source/kapt/debug/com/fishit/player/core/persistence/obx/ObxSeries_.java",
+      "module": "core:persistence",
+      "type": "EntityMeta",
+      "sourceEntity": "ObxSeries",
+      "description": "Meta class for series metadata"
+    },
+    {
+      "fileName": "ObxSeriesCursor.java",
+      "expectedPath": "build/generated/source/kapt/debug/com/fishit/player/core/persistence/obx/ObxSeriesCursor.java",
+      "module": "core:persistence",
+      "type": "Cursor",
+      "sourceEntity": "ObxSeries",
+      "description": "Cursor for series metadata"
+    },
+    {
+      "fileName": "ObxEpisode_.java",
+      "expectedPath": "build/generated/source/kapt/debug/com/fishit/player/core/persistence/obx/ObxEpisode_.java",
+      "module": "core:persistence",
+      "type": "EntityMeta",
+      "sourceEntity": "ObxEpisode",
+      "description": "Meta class for episode entries"
+    },
+    {
+      "fileName": "ObxEpisodeCursor.java",
+      "expectedPath": "build/generated/source/kapt/debug/com/fishit/player/core/persistence/obx/ObxEpisodeCursor.java",
+      "module": "core:persistence",
+      "type": "Cursor",
+      "sourceEntity": "ObxEpisode",
+      "description": "Cursor for episode entries"
+    },
+    {
+      "fileName": "ObxEpgNowNext_.java",
+      "expectedPath": "build/generated/source/kapt/debug/com/fishit/player/core/persistence/obx/ObxEpgNowNext_.java",
+      "module": "core:persistence",
+      "type": "EntityMeta",
+      "sourceEntity": "ObxEpgNowNext",
+      "description": "Meta class for EPG current/next program data"
+    },
+    {
+      "fileName": "ObxEpgNowNextCursor.java",
+      "expectedPath": "build/generated/source/kapt/debug/com/fishit/player/core/persistence/obx/ObxEpgNowNextCursor.java",
+      "module": "core:persistence",
+      "type": "Cursor",
+      "sourceEntity": "ObxEpgNowNext",
+      "description": "Cursor for EPG current/next program data"
+    },
+    {
+      "fileName": "ObxProfile_.java",
+      "expectedPath": "build/generated/source/kapt/debug/com/fishit/player/core/persistence/obx/ObxProfile_.java",
+      "module": "core:persistence",
+      "type": "EntityMeta",
+      "sourceEntity": "ObxProfile",
+      "description": "Meta class for user profiles"
+    },
+    {
+      "fileName": "ObxProfileCursor.java",
+      "expectedPath": "build/generated/source/kapt/debug/com/fishit/player/core/persistence/obx/ObxProfileCursor.java",
+      "module": "core:persistence",
+      "type": "Cursor",
+      "sourceEntity": "ObxProfile",
+      "description": "Cursor for user profiles"
+    },
+    {
+      "fileName": "ObxProfilePermissions_.java",
+      "expectedPath": "build/generated/source/kapt/debug/com/fishit/player/core/persistence/obx/ObxProfilePermissions_.java",
+      "module": "core:persistence",
+      "type": "EntityMeta",
+      "sourceEntity": "ObxProfilePermissions",
+      "description": "Meta class for profile permissions"
+    },
+    {
+      "fileName": "ObxProfilePermissionsCursor.java",
+      "expectedPath": "build/generated/source/kapt/debug/com/fishit/player/core/persistence/obx/ObxProfilePermissionsCursor.java",
+      "module": "core:persistence",
+      "type": "Cursor",
+      "sourceEntity": "ObxProfilePermissions",
+      "description": "Cursor for profile permissions"
+    },
+    {
+      "fileName": "ObxKidContentAllow_.java",
+      "expectedPath": "build/generated/source/kapt/debug/com/fishit/player/core/persistence/obx/ObxKidContentAllow_.java",
+      "module": "core:persistence",
+      "type": "EntityMeta",
+      "sourceEntity": "ObxKidContentAllow",
+      "description": "Meta class for kid content whitelist"
+    },
+    {
+      "fileName": "ObxKidContentAllowCursor.java",
+      "expectedPath": "build/generated/source/kapt/debug/com/fishit/player/core/persistence/obx/ObxKidContentAllowCursor.java",
+      "module": "core:persistence",
+      "type": "Cursor",
+      "sourceEntity": "ObxKidContentAllow",
+      "description": "Cursor for kid content whitelist"
+    },
+    {
+      "fileName": "ObxKidCategoryAllow_.java",
+      "expectedPath": "build/generated/source/kapt/debug/com/fishit/player/core/persistence/obx/ObxKidCategoryAllow_.java",
+      "module": "core:persistence",
+      "type": "EntityMeta",
+      "sourceEntity": "ObxKidCategoryAllow",
+      "description": "Meta class for kid category whitelist"
+    },
+    {
+      "fileName": "ObxKidCategoryAllowCursor.java",
+      "expectedPath": "build/generated/source/kapt/debug/com/fishit/player/core/persistence/obx/ObxKidCategoryAllowCursor.java",
+      "module": "core:persistence",
+      "type": "Cursor",
+      "sourceEntity": "ObxKidCategoryAllow",
+      "description": "Cursor for kid category whitelist"
+    },
+    {
+      "fileName": "ObxKidContentBlock_.java",
+      "expectedPath": "build/generated/source/kapt/debug/com/fishit/player/core/persistence/obx/ObxKidContentBlock_.java",
+      "module": "core:persistence",
+      "type": "EntityMeta",
+      "sourceEntity": "ObxKidContentBlock",
+      "description": "Meta class for kid content blacklist"
+    },
+    {
+      "fileName": "ObxKidContentBlockCursor.java",
+      "expectedPath": "build/generated/source/kapt/debug/com/fishit/player/core/persistence/obx/ObxKidContentBlockCursor.java",
+      "module": "core:persistence",
+      "type": "Cursor",
+      "sourceEntity": "ObxKidContentBlock",
+      "description": "Cursor for kid content blacklist"
+    },
+    {
+      "fileName": "ObxScreenTimeEntry_.java",
+      "expectedPath": "build/generated/source/kapt/debug/com/fishit/player/core/persistence/obx/ObxScreenTimeEntry_.java",
+      "module": "core:persistence",
+      "type": "EntityMeta",
+      "sourceEntity": "ObxScreenTimeEntry",
+      "description": "Meta class for screen time tracking"
+    },
+    {
+      "fileName": "ObxScreenTimeEntryCursor.java",
+      "expectedPath": "build/generated/source/kapt/debug/com/fishit/player/core/persistence/obx/ObxScreenTimeEntryCursor.java",
+      "module": "core:persistence",
+      "type": "Cursor",
+      "sourceEntity": "ObxScreenTimeEntry",
+      "description": "Cursor for screen time tracking"
+    },
+    {
+      "fileName": "ObxTelegramMessage_.java",
+      "expectedPath": "build/generated/source/kapt/debug/com/fishit/player/core/persistence/obx/ObxTelegramMessage_.java",
+      "module": "core:persistence",
+      "type": "EntityMeta",
+      "sourceEntity": "ObxTelegramMessage",
+      "description": "Meta class for Telegram media messages"
+    },
+    {
+      "fileName": "ObxTelegramMessageCursor.java",
+      "expectedPath": "build/generated/source/kapt/debug/com/fishit/player/core/persistence/obx/ObxTelegramMessageCursor.java",
+      "module": "core:persistence",
+      "type": "Cursor",
+      "sourceEntity": "ObxTelegramMessage",
+      "description": "Cursor for Telegram media messages"
+    },
+    {
+      "fileName": "ObxIndexProvider_.java",
+      "expectedPath": "build/generated/source/kapt/debug/com/fishit/player/core/persistence/obx/ObxIndexProvider_.java",
+      "module": "core:persistence",
+      "type": "EntityMeta",
+      "sourceEntity": "ObxIndexProvider",
+      "description": "Meta class for aggregated provider counts"
+    },
+    {
+      "fileName": "ObxIndexProviderCursor.java",
+      "expectedPath": "build/generated/source/kapt/debug/com/fishit/player/core/persistence/obx/ObxIndexProviderCursor.java",
+      "module": "core:persistence",
+      "type": "Cursor",
+      "sourceEntity": "ObxIndexProvider",
+      "description": "Cursor for aggregated provider counts"
+    },
+    {
+      "fileName": "ObxIndexYear_.java",
+      "expectedPath": "build/generated/source/kapt/debug/com/fishit/player/core/persistence/obx/ObxIndexYear_.java",
+      "module": "core:persistence",
+      "type": "EntityMeta",
+      "sourceEntity": "ObxIndexYear",
+      "description": "Meta class for aggregated year counts"
+    },
+    {
+      "fileName": "ObxIndexYearCursor.java",
+      "expectedPath": "build/generated/source/kapt/debug/com/fishit/player/core/persistence/obx/ObxIndexYearCursor.java",
+      "module": "core:persistence",
+      "type": "Cursor",
+      "sourceEntity": "ObxIndexYear",
+      "description": "Cursor for aggregated year counts"
+    },
+    {
+      "fileName": "ObxIndexGenre_.java",
+      "expectedPath": "build/generated/source/kapt/debug/com/fishit/player/core/persistence/obx/ObxIndexGenre_.java",
+      "module": "core:persistence",
+      "type": "EntityMeta",
+      "sourceEntity": "ObxIndexGenre",
+      "description": "Meta class for aggregated genre counts"
+    },
+    {
+      "fileName": "ObxIndexGenreCursor.java",
+      "expectedPath": "build/generated/source/kapt/debug/com/fishit/player/core/persistence/obx/ObxIndexGenreCursor.java",
+      "module": "core:persistence",
+      "type": "Cursor",
+      "sourceEntity": "ObxIndexGenre",
+      "description": "Cursor for aggregated genre counts"
+    },
+    {
+      "fileName": "ObxIndexLang_.java",
+      "expectedPath": "build/generated/source/kapt/debug/com/fishit/player/core/persistence/obx/ObxIndexLang_.java",
+      "module": "core:persistence",
+      "type": "EntityMeta",
+      "sourceEntity": "ObxIndexLang",
+      "description": "Meta class for aggregated language counts"
+    },
+    {
+      "fileName": "ObxIndexLangCursor.java",
+      "expectedPath": "build/generated/source/kapt/debug/com/fishit/player/core/persistence/obx/ObxIndexLangCursor.java",
+      "module": "core:persistence",
+      "type": "Cursor",
+      "sourceEntity": "ObxIndexLang",
+      "description": "Cursor for aggregated language counts"
+    },
+    {
+      "fileName": "ObxIndexQuality_.java",
+      "expectedPath": "build/generated/source/kapt/debug/com/fishit/player/core/persistence/obx/ObxIndexQuality_.java",
+      "module": "core:persistence",
+      "type": "EntityMeta",
+      "sourceEntity": "ObxIndexQuality",
+      "description": "Meta class for aggregated quality counts"
+    },
+    {
+      "fileName": "ObxIndexQualityCursor.java",
+      "expectedPath": "build/generated/source/kapt/debug/com/fishit/player/core/persistence/obx/ObxIndexQualityCursor.java",
+      "module": "core:persistence",
+      "type": "Cursor",
+      "sourceEntity": "ObxIndexQuality",
+      "description": "Cursor for aggregated quality counts"
+    },
+    {
+      "fileName": "ObxSeasonIndex_.java",
+      "expectedPath": "build/generated/source/kapt/debug/com/fishit/player/core/persistence/obx/ObxSeasonIndex_.java",
+      "module": "core:persistence",
+      "type": "EntityMeta",
+      "sourceEntity": "ObxSeasonIndex",
+      "description": "Meta class for season metadata"
+    },
+    {
+      "fileName": "ObxSeasonIndexCursor.java",
+      "expectedPath": "build/generated/source/kapt/debug/com/fishit/player/core/persistence/obx/ObxSeasonIndexCursor.java",
+      "module": "core:persistence",
+      "type": "Cursor",
+      "sourceEntity": "ObxSeasonIndex",
+      "description": "Cursor for season metadata"
+    },
+    {
+      "fileName": "ObxEpisodeIndex_.java",
+      "expectedPath": "build/generated/source/kapt/debug/com/fishit/player/core/persistence/obx/ObxEpisodeIndex_.java",
+      "module": "core:persistence",
+      "type": "EntityMeta",
+      "sourceEntity": "ObxEpisodeIndex",
+      "description": "Meta class for episode index for paged loading"
+    },
+    {
+      "fileName": "ObxEpisodeIndexCursor.java",
+      "expectedPath": "build/generated/source/kapt/debug/com/fishit/player/core/persistence/obx/ObxEpisodeIndexCursor.java",
+      "module": "core:persistence",
+      "type": "Cursor",
+      "sourceEntity": "ObxEpisodeIndex",
+      "description": "Cursor for episode index for paged loading"
+    }
+  ],
+  "modelJson": {
+    "path": "core/persistence/objectbox-models/default.json",
+    "versionControlled": true,
+    "entities": [
+      "ObxCanonicalMedia",
+      "ObxMediaSourceRef",
+      "ObxCanonicalResumeMark",
+      "ObxCategory",
+      "ObxLive",
+      "ObxVod",
+      "ObxSeries",
+      "ObxEpisode",
+      "ObxEpgNowNext",
+      "ObxProfile",
+      "ObxProfilePermissions",
+      "ObxKidContentAllow",
+      "ObxKidCategoryAllow",
+      "ObxKidContentBlock",
+      "ObxScreenTimeEntry",
+      "ObxTelegramMessage",
+      "ObxIndexProvider",
+      "ObxIndexYear",
+      "ObxIndexGenre",
+      "ObxIndexLang",
+      "ObxIndexQuality",
+      "ObxSeasonIndex",
+      "ObxEpisodeIndex"
+    ],
+    "lastEntityId": "23:3164574390035043506",
+    "lastIndexId": "105:6637791208546991300",
+    "lastRelationId": "0:0",
+    "modelVersion": 5,
+    "schemaVersion": 1
+  },
+  "statistics": {
+    "totalGeneratedFiles": 47,
+    "entryPointFiles": 1,
+    "entityMetaClasses": 23,
+    "cursorClasses": 23,
+    "totalEntities": 23,
+    "totalIndexes": 105,
+    "totalRelations": 1
+  }
+}
