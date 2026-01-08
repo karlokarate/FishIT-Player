@@ -1,0 +1,38 @@
+{
+  "initPoints": [
+    {
+      "filePath": "core/persistence/src/main/java/com/fishit/player/core/persistence/obx/ObxStore.kt",
+      "module": "core/persistence",
+      "className": "ObxStore",
+      "methodName": "get",
+      "diFramework": "Manual",
+      "description": "Singleton ObjectBox store with lazy initialization using double-check locking. Thread-safe initialization via AtomicReference.",
+      "initPattern": "MyObjectBox.builder().androidContext(context.applicationContext).build()",
+      "isLazy": true,
+      "lineNumber": 30
+    },
+    {
+      "filePath": "core/persistence/src/main/java/com/fishit/player/core/persistence/di/ObxStoreModule.kt",
+      "module": "core/persistence",
+      "className": "ObxStoreModule",
+      "methodName": "provideBoxStore",
+      "diFramework": "Hilt",
+      "description": "Hilt DI module that provides singleton BoxStore by delegating to ObxStore.get()",
+      "initPattern": "ObxStore.get(context)",
+      "isLazy": false,
+      "lineNumber": 23,
+      "annotations": [
+        "@Module",
+        "@InstallIn(SingletonComponent::class)",
+        "@Provides",
+        "@Singleton"
+      ]
+    }
+  ],
+  "notes": [
+    "The main store initialization in v2 is in core/persistence/obx/ObxStore.kt",
+    "Hilt DI is used to provide the BoxStore as a singleton via ObxStoreModule",
+    "MyObjectBox is a generated class by ObjectBox annotation processor",
+    "The store is initialized lazily on first access"
+  ]
+}
