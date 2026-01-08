@@ -237,7 +237,7 @@ interface CatalogSyncService {
      *
      * **Performance Features:**
      * - Phase ordering: Live → Movies → Series (perceived speed)
-     * - Per-phase batch sizes (Live=400, Movies=250, Series=150)
+     * - Per-phase batch sizes (Live=600, Movies=400, Series=200)
      * - Time-based flush (1200ms) for progressive UI updates
      * - Performance metrics collection (debug builds)
      *
