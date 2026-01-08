@@ -49,12 +49,12 @@ object XtreamTransportConfig {
 
     // =========================================================================
     // Parallelism (Premium Contract Section 5)
-    // "Phone/Tablet: target parallelism = 10"
+    // "Phone/Tablet: target parallelism = 12"
     // "FireTV/low-RAM: target parallelism = 3"
     // =========================================================================
 
     /** Default parallelism for phone/tablet devices. */
-    const val PARALLELISM_PHONE_TABLET: Int = 10
+    const val PARALLELISM_PHONE_TABLET: Int = 12
 
     /** Reduced parallelism for FireTV/Android TV/low-RAM devices. */
     const val PARALLELISM_FIRETV_LOW_RAM: Int = 3

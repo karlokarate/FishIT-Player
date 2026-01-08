@@ -4,9 +4,9 @@ package com.fishit.player.core.catalogsync
  * Configuration for individual sync phases with optimized batch sizes.
  *
  * **Performance Optimization Rationale (PLATIN Guidelines):**
- * - LIVE: Larger batches (400) because items are smaller (id, name, logo, category)
- * - MOVIES: Medium batches (250) - more metadata per item (poster, year, etc.)
- * - SERIES: Smaller batches (150) - complex items with episodes
+ * - LIVE: Larger batches (600) because items are smaller (id, name, logo, category)
+ * - MOVIES: Medium batches (400) - more metadata per item (poster, year, etc.)
+ * - SERIES: Smaller batches (200) - complex items with episodes
  *
  * **Device-Specific Overrides:**
  * - FireTV Low-RAM: All phases capped at 35 items (global safety limit)
@@ -29,9 +29,9 @@ data class SyncPhaseConfig(
         const val DEFAULT_FLUSH_INTERVAL_MS = 1200L
 
         // Optimized batch sizes per content type (PLATIN guidelines - app-work.instructions.md)
-        const val LIVE_BATCH_SIZE = 400 // Rapid stream inserts
-        const val MOVIES_BATCH_SIZE = 250 // Balanced
-        const val SERIES_BATCH_SIZE = 150 // Larger items
+        const val LIVE_BATCH_SIZE = 600 // Rapid stream inserts (raised from 400 for speed optimization)
+        const val MOVIES_BATCH_SIZE = 400 // Balanced (raised from 250 for speed optimization)
+        const val SERIES_BATCH_SIZE = 200 // Larger items (raised from 150 for speed optimization)
         const val EPISODES_BATCH_SIZE = 200 // Lazy loaded, larger batches OK
 
         val LIVE = SyncPhaseConfig(SyncPhase.LIVE, LIVE_BATCH_SIZE)
@@ -80,9 +80,9 @@ data class EnhancedSyncConfig(
     companion object {
         /**
          * Default configuration optimized for perceived speed.
-         * - Live first (400 batch) per PLATIN guidelines
-         * - Movies next (250 batch) per PLATIN guidelines
-         * - Series last (150 batch) per PLATIN guidelines
+         * - Live first (600 batch) per PLATIN guidelines
+         * - Movies next (400 batch) per PLATIN guidelines
+         * - Series last (200 batch) per PLATIN guidelines
          * - Episodes NOT synced during initial sync
          * - Canonical linking ENABLED
          */
@@ -103,19 +103,22 @@ data class EnhancedSyncConfig(
          */
         val QUICK_SYNC =
             EnhancedSyncConfig(
-                liveConfig = SyncPhaseConfig.LIVE.copy(batchSize = 200),
-                moviesConfig = SyncPhaseConfig.MOVIES.copy(batchSize = 100),
-                seriesConfig = SyncPhaseConfig.SERIES.copy(batchSize = 50),
+                liveConfig = SyncPhaseConfig.LIVE.copy(batchSize = 300),
+                moviesConfig = SyncPhaseConfig.MOVIES.copy(batchSize = 200),
+                seriesConfig = SyncPhaseConfig.SERIES.copy(batchSize = 100),
             )
 
         /**
          * PROGRESSIVE_UI configuration: Maximum speed for first UI tiles.
          * - Canonical linking DISABLED for hot path relief
-         * - Large batches for throughput
+         * - Large batches for throughput (same as DEFAULT after speed optimization)
          * - Time-based flush for progressive appearance
          *
          * Use for initial sync where UI speed is critical.
          * Run canonical backlog worker later to link items.
+         *
+         * Note: After speed optimization (Jan 2026), these values match DEFAULT.
+         * Kept for backward compatibility and potential future divergence.
          */
         val PROGRESSIVE_UI =
             EnhancedSyncConfig(
