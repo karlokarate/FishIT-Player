@@ -1,0 +1,180 @@
+{
+  "components": [
+    {
+      "filePath": "core/persistence/src/main/java/com/fishit/player/core/persistence/inspector/ObxDatabaseInspector.kt",
+      "module": "core/persistence",
+      "componentType": "Interface",
+      "description": "Core interface for database introspection. Defines methods for listing entity types, paging through rows, fetching entity details, updating fields, and deleting entities.",
+      "navigationEntry": "N/A (interface only)",
+      "methods": [
+        "listEntityTypes()",
+        "listRows(entityTypeId, offset, limit)",
+        "getEntity(entityTypeId, id)",
+        "updateFields(entityTypeId, id, patch)",
+        "deleteEntity(entityTypeId, id)"
+      ]
+    },
+    {
+      "filePath": "core/persistence/src/main/java/com/fishit/player/core/persistence/inspector/DefaultObxDatabaseInspector.kt",
+      "module": "core/persistence",
+      "componentType": "Repository",
+      "description": "Default implementation of ObxDatabaseInspector backed by a live BoxStore. Uses reflection to read and update entity fields. Provides row counting, pagination, and field patching.",
+      "navigationEntry": "N/A (injected dependency)",
+      "annotations": [
+        "@Singleton",
+        "@Inject"
+      ]
+    },
+    {
+      "filePath": "core/persistence/src/main/java/com/fishit/player/core/persistence/inspector/ObxInspectorEntityRegistry.kt",
+      "module": "core/persistence",
+      "componentType": "Registry",
+      "description": "Explicit registry of all ObjectBox entity classes. Maps entity IDs to Class<T> for strongly-typed Box<T> access. Contains 21 entity specs (ObxSeasonIndex and ObxEpisodeIndex not yet registered) covering all v2 entities including canonical media, sources, and legacy entities.",
+      "navigationEntry": "N/A (internal registry)",
+      "registeredEntities": [
+        "ObxCategory",
+        "ObxLive",
+        "ObxVod",
+        "ObxSeries",
+        "ObxEpisode",
+        "ObxEpgNowNext",
+        "ObxProfile",
+        "ObxProfilePermissions",
+        "ObxKidContentAllow",
+        "ObxKidCategoryAllow",
+        "ObxKidContentBlock",
+        "ObxScreenTimeEntry",
+        "ObxTelegramMessage",
+        "ObxIndexProvider",
+        "ObxIndexYear",
+        "ObxIndexGenre",
+        "ObxIndexLang",
+        "ObxIndexQuality",
+        "ObxSeasonIndex",
+        "ObxEpisodeIndex",
+        "ObxCanonicalMedia",
+        "ObxMediaSourceRef",
+        "ObxCanonicalResumeMark"
+      ]
+    },
+    {
+      "filePath": "core/persistence/src/main/java/com/fishit/player/core/persistence/inspector/DbInspectorModels.kt",
+      "module": "core/persistence",
+      "componentType": "DataModels",
+      "description": "Data models for DB Inspector UI: DbEntityTypeInfo (entity list), DbPage<T> (pagination), DbRowPreview (row summary), DbEntityDump (full entity detail), DbFieldValue (field display), DbUpdateResult (update status).",
+      "navigationEntry": "N/A (data models)"
+    },
+    {
+      "filePath": "feature/settings/src/main/java/com/fishit/player/feature/settings/dbinspector/DbInspectorScreens.kt",
+      "module": "feature/settings",
+      "componentType": "Screen",
+      "description": "Compose UI screens for DB Inspector. Contains three ViewModels (DbInspectorEntityTypesViewModel, DbInspectorRowsViewModel, DbInspectorDetailViewModel) and three corresponding Composable screens.",
+      "navigationEntry": "Settings -> Debug Tools -> Database Inspector",
+      "screens": [
+        {
+          "name": "DbInspectorEntityTypesScreen",
+          "description": "Lists all entity types with row counts. Entry point for DB Inspector.",
+          "viewModel": "DbInspectorEntityTypesViewModel"
+        },
+        {
+          "name": "DbInspectorRowsScreen",
+          "description": "Shows paginated list of rows for a selected entity type. Displays title/subtitle extracted from entity fields.",
+          "viewModel": "DbInspectorRowsViewModel",
+          "pagination": true,
+          "pageSize": 50
+        },
+        {
+          "name": "DbInspectorDetailScreen",
+          "description": "Shows all fields of a single entity row. Allows editing field values and deleting the row.",
+          "viewModel": "DbInspectorDetailViewModel",
+          "features": [
+            "field editing",
+            "delete row",
+            "save changes"
+          ]
+        }
+      ],
+      "annotations": [
+        "@HiltViewModel",
+        "@Inject"
+      ]
+    },
+    {
+      "filePath": "feature/settings/src/main/java/com/fishit/player/feature/settings/dbinspector/DbInspectorNavArgs.kt",
+      "module": "feature/settings",
+      "componentType": "NavArgs",
+      "description": "Navigation argument constants for DB Inspector screens. Defines ARG_ENTITY_TYPE and ARG_ROW_ID.",
+      "navigationEntry": "N/A (constants)"
+    },
+    {
+      "filePath": "app-v2/src/main/java/com/fishit/player/v2/navigation/AppNavHost.kt",
+      "module": "app-v2",
+      "componentType": "Navigation",
+      "description": "Main app navigation host. Defines routes for DB Inspector screens and wires them into the navigation graph.",
+      "navigationEntry": "Debug menu entry point",
+      "routes": [
+        {
+          "route": "db_inspector",
+          "screen": "DbInspectorEntityTypesScreen",
+          "description": "Entity type list"
+        },
+        {
+          "route": "db_inspector/{entityType}",
+          "screen": "DbInspectorRowsScreen",
+          "description": "Row list for entity type"
+        },
+        {
+          "route": "db_inspector/{entityType}/{rowId}",
+          "screen": "DbInspectorDetailScreen",
+          "description": "Entity detail view"
+        }
+      ],
+      "lineNumbers": {
+        "imports": "37-40",
+        "routes": "189-218",
+        "constants": "313-316"
+      }
+    },
+    {
+      "filePath": "feature/settings/src/main/java/com/fishit/player/feature/settings/DebugScreen.kt",
+      "module": "feature/settings",
+      "componentType": "Screen",
+      "description": "Debug tools screen that provides navigation to DB Inspector and other debug features.",
+      "navigationEntry": "Settings -> Debug (hidden behind debug flag)",
+      "debugTools": [
+        "Database Inspector",
+        "Log Viewer",
+        "Performance Monitor",
+        "Source Activation Status"
+      ]
+    }
+  ],
+  "navigationFlow": {
+    "description": "User navigation flow to access DB Inspector",
+    "steps": [
+      "1. Open Settings screen",
+      "2. Navigate to Debug section (hidden behind BuildConfig.DEBUG or debug menu flag)",
+      "3. Tap 'Database Inspector' button",
+      "4. See list of all entity types with row counts",
+      "5. Tap an entity type to see paginated rows",
+      "6. Tap a row to see detailed field view",
+      "7. Edit fields and save, or delete the row"
+    ]
+  },
+  "architecture": {
+    "pattern": "MVVM with Hilt DI",
+    "layers": [
+      "UI Layer (Compose screens in feature/settings)",
+      "ViewModel Layer (StateFlow-based ViewModels)",
+      "Repository Layer (ObxDatabaseInspector interface)",
+      "Implementation Layer (DefaultObxDatabaseInspector with BoxStore)"
+    ],
+    "dataFlow": "UI -> ViewModel -> ObxDatabaseInspector -> BoxStore -> ObjectBox"
+  },
+  "securityNotes": [
+    "DB Inspector is a debug/power-user feature - should be hidden in production",
+    "Access is gated behind BuildConfig.DEBUG or explicit debug navigation flag",
+    "Allows direct entity editing and deletion - use with caution",
+    "No authentication or permission checks beyond debug flag"
+  ]
+}
