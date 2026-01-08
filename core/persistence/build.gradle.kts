@@ -50,8 +50,12 @@ tasks.matching { it.name == "compileReleaseJavaWithJavac" }.configureEach {
 
 dependencies {
     implementation(project(":core:model"))
+    implementation(project(":core:device-api")) // SSOT for device classification
     implementation(project(":infra:logging"))
-    implementation(project(":infra:transport-xtream")) // For XtreamTransportConfig device detection
+    
+    // Optional runtime implementation for backward compatibility
+    // Consumers should inject DeviceClassProvider via Hilt for production use
+    compileOnly(project(":infra:device-android"))
 
     // DataStore
     implementation("androidx.datastore:datastore-preferences:1.1.1")

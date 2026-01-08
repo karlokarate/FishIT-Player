@@ -1,7 +1,8 @@
 package com.fishit.player.core.persistence.config
 
 import android.content.Context
-import com.fishit.player.infra.transport.xtream.XtreamTransportConfig
+import com.fishit.player.core.device.DeviceClass
+import com.fishit.player.core.device.DeviceClassProvider
 import io.objectbox.Box
 import kotlin.math.min
 
@@ -15,13 +16,19 @@ import kotlin.math.min
  * - M3UExporter batchSize
  *
  * **Device-Class-Aware:**
- * - Nutzt XtreamTransportConfig.detectDeviceClass() als SSOT für Device-Erkennung
+ * - Uses DeviceClassProvider (core:device-api) as SSOT for device detection
  * - FireTV/Low-RAM: Konservative Werte (35-500)
  * - Phone/Tablet: Optimierte Werte (200-4000)
  *
+ * **PLATIN Architecture:**
+ * - Device detection abstracted via DeviceClassProvider interface
+ * - Implementation provided by infra:device-android
+ * - Injected via Hilt/Dagger
+ *
  * Contract: CATALOG_SYNC_WORKERS_CONTRACT_V2 W-17 (FireTV Safety)
  *
- * @see XtreamTransportConfig.detectDeviceClass
+ * @see DeviceClassProvider for device detection interface
+ * @see DeviceClass for device classification enum
  */
 object ObxWriteConfig {
     // =========================================================================
@@ -94,77 +101,206 @@ object ObxWriteConfig {
     /**
      * Get the appropriate batch size for the current device.
      *
+     * @param deviceClassProvider Provider for device classification
      * @param context Android context for device detection
-     * @return Batch size (35 for FireTV, 100 for normal devices)
+     * @return Batch size (35 for TV_LOW_RAM, 100 for others)
      */
-    fun getBatchSize(context: Context): Int = if (isFireTvLowRam(context)) FIRETV_BATCH_CAP else NORMAL_BATCH_SIZE
+    fun getBatchSize(
+        deviceClassProvider: DeviceClassProvider,
+        context: Context,
+    ): Int {
+        val deviceClass = deviceClassProvider.getDeviceClass(context)
+        return if (deviceClass.isLowResource) FIRETV_BATCH_CAP else NORMAL_BATCH_SIZE
+    }
 
     /**
      * Get the appropriate batch size for Live channel sync.
      *
+     * @param deviceClassProvider Provider for device classification
      * @param context Android context for device detection
-     * @return Batch size (35 for FireTV, 600 for normal devices)
+     * @return Batch size (35 for TV_LOW_RAM, 600 for others)
      */
-    fun getSyncLiveBatchSize(context: Context): Int = if (isFireTvLowRam(context)) FIRETV_BATCH_CAP else SYNC_LIVE_BATCH_PHONE
+    fun getSyncLiveBatchSize(
+        deviceClassProvider: DeviceClassProvider,
+        context: Context,
+    ): Int {
+        val deviceClass = deviceClassProvider.getDeviceClass(context)
+        return if (deviceClass.isLowResource) FIRETV_BATCH_CAP else SYNC_LIVE_BATCH_PHONE
+    }
 
     /**
      * Get the appropriate batch size for Movies/VOD sync.
      *
+     * @param deviceClassProvider Provider for device classification
      * @param context Android context for device detection
-     * @return Batch size (35 for FireTV, 400 for normal devices)
+     * @return Batch size (35 for TV_LOW_RAM, 400 for others)
      */
-    fun getSyncMoviesBatchSize(context: Context): Int = if (isFireTvLowRam(context)) FIRETV_BATCH_CAP else SYNC_MOVIES_BATCH_PHONE
+    fun getSyncMoviesBatchSize(
+        deviceClassProvider: DeviceClassProvider,
+        context: Context,
+    ): Int {
+        val deviceClass = deviceClassProvider.getDeviceClass(context)
+        return if (deviceClass.isLowResource) FIRETV_BATCH_CAP else SYNC_MOVIES_BATCH_PHONE
+    }
 
     /**
      * Get the appropriate batch size for Series sync.
      *
+     * @param deviceClassProvider Provider for device classification
      * @param context Android context for device detection
-     * @return Batch size (35 for FireTV, 200 for normal devices)
+     * @return Batch size (35 for TV_LOW_RAM, 200 for others)
      */
-    fun getSyncSeriesBatchSize(context: Context): Int = if (isFireTvLowRam(context)) FIRETV_BATCH_CAP else SYNC_SERIES_BATCH_PHONE
+    fun getSyncSeriesBatchSize(
+        deviceClassProvider: DeviceClassProvider,
+        context: Context,
+    ): Int {
+        val deviceClass = deviceClassProvider.getDeviceClass(context)
+        return if (deviceClass.isLowResource) FIRETV_BATCH_CAP else SYNC_SERIES_BATCH_PHONE
+    }
 
     /**
      * Get the appropriate batch size for Episodes sync.
      *
+     * @param deviceClassProvider Provider for device classification
      * @param context Android context for device detection
-     * @return Batch size (35 for FireTV, 200 for normal devices)
+     * @return Batch size (35 for TV_LOW_RAM, 200 for others)
      */
-    fun getSyncEpisodesBatchSize(context: Context): Int = if (isFireTvLowRam(context)) FIRETV_BATCH_CAP else SYNC_EPISODES_BATCH_PHONE
+    fun getSyncEpisodesBatchSize(
+        deviceClassProvider: DeviceClassProvider,
+        context: Context,
+    ): Int {
+        val deviceClass = deviceClassProvider.getDeviceClass(context)
+        return if (deviceClass.isLowResource) FIRETV_BATCH_CAP else SYNC_EPISODES_BATCH_PHONE
+    }
 
     /**
      * Get the appropriate chunk size for backfill operations.
      *
+     * @param deviceClassProvider Provider for device classification
      * @param context Android context for device detection
-     * @return Chunk size (500 for FireTV, 2000 for normal devices)
+     * @return Chunk size (500 for TV_LOW_RAM, 2000 for others)
      */
-    fun getBackfillChunkSize(context: Context): Int =
-        if (isFireTvLowRam(context)) FIRETV_BACKFILL_CHUNK_SIZE else NORMAL_BACKFILL_CHUNK_SIZE
+    fun getBackfillChunkSize(
+        deviceClassProvider: DeviceClassProvider,
+        context: Context,
+    ): Int {
+        val deviceClass = deviceClassProvider.getDeviceClass(context)
+        return if (deviceClass.isLowResource) FIRETV_BACKFILL_CHUNK_SIZE else NORMAL_BACKFILL_CHUNK_SIZE
+    }
 
     /**
      * Get the appropriate page size for query paging.
      *
+     * @param deviceClassProvider Provider for device classification
      * @param context Android context for device detection
-     * @return Page size (500 for FireTV, 4000 for normal devices)
+     * @return Page size (500 for TV_LOW_RAM, 4000 for others)
      */
-    fun getPageSize(context: Context): Int = if (isFireTvLowRam(context)) FIRETV_BACKFILL_CHUNK_SIZE else NORMAL_PAGE_SIZE
+    fun getPageSize(
+        deviceClassProvider: DeviceClassProvider,
+        context: Context,
+    ): Int {
+        val deviceClass = deviceClassProvider.getDeviceClass(context)
+        return if (deviceClass.isLowResource) FIRETV_BACKFILL_CHUNK_SIZE else NORMAL_PAGE_SIZE
+    }
 
     // =========================================================================
-    // Device Detection (delegates to XtreamTransportConfig SSOT)
+    // Backward Compatibility Overloads (Context-only, no injection)
     // =========================================================================
 
     /**
-     * Check if the current device is FireTV/Low-RAM.
+     * Get batch size with context-only API (backward compatible).
      *
-     * Delegates to XtreamTransportConfig.detectDeviceClass() as the SSOT
-     * for device classification.
+     * **Note:** This creates a new DeviceClassProvider instance. For performance,
+     * prefer the injected DeviceClassProvider version in production code.
      *
      * @param context Android context for device detection
-     * @return true if device is FireTV or low-RAM, false otherwise
-     * @see XtreamTransportConfig.detectDeviceClass
+     * @return Batch size based on device class
+     * @deprecated Use version with DeviceClassProvider parameter for better performance
      */
-    private fun isFireTvLowRam(context: Context): Boolean =
-        XtreamTransportConfig.detectDeviceClass(context) ==
-            XtreamTransportConfig.DeviceClass.TV_LOW_RAM
+    @Deprecated(
+        message = "Use getBatchSize(DeviceClassProvider, Context) for better performance",
+        replaceWith = ReplaceWith(
+            "getBatchSize(deviceClassProvider, context)",
+            "com.fishit.player.core.device.DeviceClassProvider",
+        ),
+    )
+    fun getBatchSize(context: Context): Int = getBatchSize(createProvider(), context)
+
+    /**
+     * Get Live batch size with context-only API (backward compatible).
+     *
+     * @param context Android context for device detection
+     * @return Batch size based on device class
+     * @deprecated Use version with DeviceClassProvider parameter
+     */
+    @Deprecated(
+        message = "Use getSyncLiveBatchSize(DeviceClassProvider, Context) for better performance",
+        replaceWith = ReplaceWith("getSyncLiveBatchSize(deviceClassProvider, context)"),
+    )
+    fun getSyncLiveBatchSize(context: Context): Int = getSyncLiveBatchSize(createProvider(), context)
+
+    /**
+     * Get Movies batch size with context-only API (backward compatible).
+     *
+     * @param context Android context for device detection
+     * @return Batch size based on device class
+     * @deprecated Use version with DeviceClassProvider parameter
+     */
+    @Deprecated(
+        message = "Use getSyncMoviesBatchSize(DeviceClassProvider, Context) for better performance",
+        replaceWith = ReplaceWith("getSyncMoviesBatchSize(deviceClassProvider, context)"),
+    )
+    fun getSyncMoviesBatchSize(context: Context): Int = getSyncMoviesBatchSize(createProvider(), context)
+
+    /**
+     * Get Series batch size with context-only API (backward compatible).
+     *
+     * @param context Android context for device detection
+     * @return Batch size based on device class
+     * @deprecated Use version with DeviceClassProvider parameter
+     */
+    @Deprecated(
+        message = "Use getSyncSeriesBatchSize(DeviceClassProvider, Context) for better performance",
+        replaceWith = ReplaceWith("getSyncSeriesBatchSize(deviceClassProvider, context)"),
+    )
+    fun getSyncSeriesBatchSize(context: Context): Int = getSyncSeriesBatchSize(createProvider(), context)
+
+    /**
+     * Get backfill chunk size with context-only API (backward compatible).
+     *
+     * @param context Android context for device detection
+     * @return Chunk size based on device class
+     * @deprecated Use version with DeviceClassProvider parameter
+     */
+    @Deprecated(
+        message = "Use getBackfillChunkSize(DeviceClassProvider, Context) for better performance",
+        replaceWith = ReplaceWith("getBackfillChunkSize(deviceClassProvider, context)"),
+    )
+    fun getBackfillChunkSize(context: Context): Int = getBackfillChunkSize(createProvider(), context)
+
+    /**
+     * Get page size with context-only API (backward compatible).
+     *
+     * @param context Android context for device detection
+     * @return Page size based on device class
+     * @deprecated Use version with DeviceClassProvider parameter
+     */
+    @Deprecated(
+        message = "Use getPageSize(DeviceClassProvider, Context) for better performance",
+        replaceWith = ReplaceWith("getPageSize(deviceClassProvider, context)"),
+    )
+    fun getPageSize(context: Context): Int = getPageSize(createProvider(), context)
+
+    /**
+     * Create a temporary DeviceClassProvider instance.
+     *
+     * This is used for backward compatibility. Production code should inject
+     * DeviceClassProvider via Hilt for better performance (caching).
+     */
+    private fun createProvider(): DeviceClassProvider {
+        // Import here to avoid forcing all consumers to depend on infra:device-android
+        return com.fishit.player.infra.device.AndroidDeviceClassProvider()
+    }
 
     // =========================================================================
     // Box Extension Functions
@@ -174,12 +310,36 @@ object ObxWriteConfig {
      * Put items in chunks with device-aware chunk size.
      *
      * Automatically selects chunk size based on device class:
-     * - FireTV/Low-RAM: 500 items per chunk
-     * - Phone/Tablet: 2000 items per chunk
+     * - TV_LOW_RAM: 500 items per chunk
+     * - Phone/Tablet/TV: 2000 items per chunk
+     *
+     * @param items List of items to persist
+     * @param deviceClassProvider Provider for device classification
+     * @param context Android context for device detection
+     */
+    fun <T> Box<T>.putChunked(
+        items: List<T>,
+        deviceClassProvider: DeviceClassProvider,
+        context: Context,
+    ) {
+        val chunkSize = getBackfillChunkSize(deviceClassProvider, context)
+        putChunked(items, chunkSize)
+    }
+
+    /**
+     * Put items in chunks with device-aware chunk size (backward compatible).
+     *
+     * **Note:** Creates a new DeviceClassProvider instance. For better performance,
+     * use the version with DeviceClassProvider parameter.
      *
      * @param items List of items to persist
      * @param context Android context for device detection
+     * @deprecated Use version with DeviceClassProvider parameter
      */
+    @Deprecated(
+        message = "Use putChunked(items, deviceClassProvider, context) for better performance",
+        replaceWith = ReplaceWith("putChunked(items, deviceClassProvider, context)"),
+    )
     fun <T> Box<T>.putChunked(
         items: List<T>,
         context: Context,
