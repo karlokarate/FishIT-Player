@@ -333,6 +333,7 @@ object WorkerOutputData {
 - [ ] Extends `CoroutineWorker` (not `Worker`)
 - [ ] Uses `UnifiedLog` exclusively (no `android.util.Log`)
 - [ ] TAG = class name (e.g., `"CatalogSyncOrchestratorWorker"`)
+  - ⚠️ **Note:** Android logcat TAG limit is 23 characters. Worker names like `CatalogSyncOrchestratorWorker` (29 chars) will be truncated in logcat but work fine in code. Consider shorter aliases if logcat filtering is critical.
 - [ ] Logs START, SUCCESS/FAILURE with structured fields
 
 ### Orchestrator Worker

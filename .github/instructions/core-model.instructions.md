@@ -184,7 +184,7 @@ enum class TmdbResolveState {
 // ✅ CORRECT: Default empty string
 return RawMediaMetadata(
     originalTitle = title,
-    sourceType = SourceType. TELEGRAM,
+    sourceType = SourceType.TELEGRAM,
     // globalId uses default ""
 )
 
@@ -244,7 +244,7 @@ poster = "https://example.com/poster.jpg"  // Raw string!
 
 ```bash
 # 1. No forbidden imports
-grep -rn "import okhttp3\|import androidx.room\|import io. objectbox\|import org.drinkless\|import androidx.compose\|import androidx.media3" core/model/
+grep -rn "import okhttp3\|import androidx.room\|import io.objectbox\|import org.drinkless\|import androidx.compose\|import androidx.media3" core/model/
 
 # 2. No source-specific fields in data classes
 grep -rn "telegramChatId\|xtreamStreamId\|tdlibFileId" core/model/
@@ -275,9 +275,9 @@ grep -rn "suspend fun\|fun .*{" core/model/src/main/java/ | grep -v "fun copy\|f
 
 ## 📚 Reference Documents (Priority Order)
 
-1. `/docs/v2/MEDIA_NORMALIZATION_CONTRACT.md` - Section 1. 1, 2.1
+1. `/docs/v2/MEDIA_NORMALIZATION_CONTRACT.md` - Section 1.1, 2.1 (AUTHORITATIVE)
 2. `/contracts/GLOSSARY_v2_naming_and_modules.md` - Section 1.2, 1.3
-3. `/contracts/TELEGRAM_ID_ARCHITECTURE_CONTRACT.md` - ImageRef. TelegramThumb
-4. `/contracts/TMDB_ENRICHMENT_CONTRACT.md` - TmdbRef, TmdbResolveState
-5. `/AGENTS. md` - Section 4.1 (Canonical Media & Normalizer)
-6. `core/model/README. md` - Module-specific rules
+3. `/contracts/TELEGRAM_ID_ARCHITECTURE_CONTRACT.md` - ImageRef.TelegramThumb
+4. `/docs/v2/TMDB_ENRICHMENT_CONTRACT.md` - TmdbRef, TmdbResolveState (AUTHORITATIVE)
+5. `/AGENTS.md` - Section 4.1 (Canonical Media & Normalizer)
+6. `core/model/README.md` - Module-specific rules

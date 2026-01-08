@@ -330,7 +330,7 @@ grep -rn "import.*objectbox\|BoxStore\|@Entity" core/*-domain/
 
 1. **`/contracts/GLOSSARY_v2_naming_and_modules.md`** - AUTHORITATIVE naming contract (v2.0)
 2. **`/AGENTS.md`** - Section 4.5 (Layer Boundary Enforcement)
-3. **`/docs/v2/MEDIA_NORMALIZATION_CONTRACT.md`** - RawMediaMetadata contract
+3. **`/docs/v2/MEDIA_NORMALIZATION_CONTRACT.md`** - RawMediaMetadata contract (AUTHORITATIVE)
 4. **`/contracts/LOGGING_CONTRACT_V2.md`** - Logging rules
 5. Clean Architecture principles (Robert C. Martin)
 

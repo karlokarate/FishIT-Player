@@ -34,13 +34,13 @@ class InternalPlayerSession @Inject constructor(
 ) {
     suspend fun play(playbackContext: PlaybackContext) {
         // Resolve source via factory pattern
-        val source = sourceResolver. resolve(playbackContext)
+        val source = sourceResolver.resolve(playbackContext)
         
         // Build MediaItem
         val mediaItem = buildMediaItem(source)
         
         // Play
-        player?. setMediaItem(mediaItem)
+        player?.setMediaItem(mediaItem)
         player?.prepare()
         player?.play()
     }
@@ -58,7 +58,7 @@ class InternalPlayerSession @Inject constructor(
                 // WRONG - source-specific logic in player!
                 val file = telegramClient.downloadFile(...)
             }
-            SourceType. XTREAM -> {
+            SourceType.XTREAM -> {
                 // WRONG - source-specific logic in player!
                 val url = xtreamUrlBuilder.buildUrl(...)
             }
@@ -86,11 +86,11 @@ import com.fishit.player.infra.logging.*                     // UnifiedLog
 
 // ❌ FORBIDDEN imports in player/*
 import com.fishit.player.pipeline.*                          // Pipeline
-import com.fishit.player. infra.transport.*                   // Transport
+import com.fishit.player.infra.transport.*                   // Transport
 import com.fishit.player.infra.data.*                        // Data layer
-import org.drinkless.td. TdApi.*                              // TDLib
+import org.drinkless.td.TdApi.*                              // TDLib
 import okhttp3.*                                              // HTTP client
-import com.fishit.player.core.persistence. obx.*              // ObjectBox entities
+import com.fishit.player.core.persistence.obx.*              // ObjectBox entities
 ```
 
 ---
@@ -102,8 +102,8 @@ import com.fishit.player.core.persistence. obx.*              // ObjectBox entit
 ```kotlin
 // ❌ FORBIDDEN in player/ui
 import dagger.hilt.EntryPoint                                // Anti-pattern!
-import dagger. hilt.EntryPointAccessors                       // Anti-pattern!
-import com.fishit.player.internal.session. InternalPlayerSession  // Engine internals! 
+import dagger.hilt.EntryPointAccessors                       // Anti-pattern!
+import com.fishit.player.internal.session.InternalPlayerSession  // Engine internals! 
 import com.fishit.player.internal.source.PlaybackSourceResolver  // Engine wiring! 
 
 // ✅ CORRECT in player/ui
@@ -398,7 +398,7 @@ class InternalPlayerSession @Inject constructor(
                 ProgressiveMediaSource.Factory(factory)
             }
             DataSourceType.XTREAM_HTTP -> {
-                val factory = dataSourceFactories[DataSourceType. XTREAM_HTTP]
+                val factory = dataSourceFactories[DataSourceType.XTREAM_HTTP]
                     ?: DefaultHttpDataSource.Factory()
                 HlsMediaSource.Factory(factory)
             }
@@ -423,7 +423,7 @@ object PlayerDataSourceModule {
     fun provideDataSourceFactories(
         telegramFactory: TelegramFileDataSourceFactory,
     ): Map<DataSourceType, DataSource.Factory> = mapOf(
-        DataSourceType. TELEGRAM_FILE to telegramFactory,
+        DataSourceType.TELEGRAM_FILE to telegramFactory,
     )
 }
 ```
@@ -554,7 +554,7 @@ ExoPlayer/Media3
 
 ```bash
 # 1. No forbidden imports in player layer
-grep -rn "import.*pipeline\|import.*infra\. transport\|import.*infra\.data" player/
+grep -rn "import.*pipeline\|import.*infra\.transport\|import.*infra\.data" player/
 
 # 2. No source-specific code in player
 grep -rn "TelegramMediaItem\|XtreamVodItem\|TgMessage" player/
@@ -566,7 +566,7 @@ grep -rn "dagger\.hilt\.EntryPoint\|@EntryPoint\|EntryPointAccessors" player/ui/
 grep -rn "\bPlaybackSourceResolver\b\|\bResumeManager\b\|\bKidsPlaybackGate\b" player/ui/
 
 # 5. No com.fishit.player.internal. * imports from other player modules
-grep -rn "import com\.fishit\.player\.internal\." player/ | grep -v "player/internal/src" | grep -v "import com\. fishit\.player\.internal\. ui\."
+grep -rn "import com\.fishit\.player\.internal\." player/ | grep -v "player/internal/src" | grep -v "import com\.fishit\.player\.internal\.ui\."
 
 # All should return empty! 
 ```
@@ -618,7 +618,7 @@ grep -rn "import com\.fishit\.player\.internal\." player/ | grep -v "player/inte
 
 ## 📚 Reference Documents (Priority Order)
 
-1. **`/AGENTS. md`** - Section 13 "Player Layer Isolation" (CRITICAL)
+1. **`/AGENTS.md`** - Section 13 "Player Layer Isolation" (CRITICAL)
 2. **`/docs/v2/internal-player/PLAYER_ARCHITECTURE_V2.md`** - Complete architecture
 3. **`/docs/v2/internal-player/PLAYER_MIGRATION_STATUS.md`** - Phase status
 4. **`/docs/dev/ARCH_GUARDRAILS.md`** - Layer boundary enforcement
@@ -688,10 +688,10 @@ fun PlayerScreen(viewModel: PlayerViewModel = hiltViewModel()) {
 
 ```kotlin
 // ❌ WRONG
-import com. fishit.player.pipeline.telegram.TelegramMediaItem
+import com.fishit.player.pipeline.telegram.TelegramMediaItem
 
 // ✅ CORRECT
-import com.fishit.player. core.playermodel.PlaybackContext
+import com.fishit.player.core.playermodel.PlaybackContext
 ```
 
 ---

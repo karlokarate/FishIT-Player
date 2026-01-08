@@ -116,11 +116,19 @@ All instruction files MUST comply with these authoritative contracts:
 | **AGENTS.md** | `/AGENTS.md` | PRIMARY AUTHORITY - All architecture rules |
 | **GLOSSARY** | `/contracts/GLOSSARY_v2_naming_and_modules.md` | Naming conventions, module taxonomy |
 | **LOGGING** | `/contracts/LOGGING_CONTRACT_V2.md` | UnifiedLog usage (v1.1) |
-| **NORMALIZATION** | `/contracts/MEDIA_NORMALIZATION_CONTRACT.md` | RawMediaMetadata, pipeline rules |
+| **NORMALIZATION** | `/docs/v2/MEDIA_NORMALIZATION_CONTRACT.md` | RawMediaMetadata, pipeline rules (⚠️ Forwarded from `/contracts/`) |
+| **TMDB_ENRICHMENT** | `/docs/v2/TMDB_ENRICHMENT_CONTRACT.md` | TMDB enrichment, canonical identity |
+| **STARTUP_TRIGGER** | `/docs/v2/STARTUP_TRIGGER_CONTRACT.md` | Smart empty states |
 | **PLAYER** | `/contracts/INTERNAL_PLAYER_*` | Player behavior, playback contracts |
 | **TELEGRAM** | `/contracts/TELEGRAM_*` | Telegram-specific contracts |
 | **XTREAM** | `/contracts/XTREAM_SCAN_PREMIUM_CONTRACT_V1.md` | Xtream Premium Contract |
 | **WORKERS** | `/docs/CATALOG_SYNC_WORKERS_CONTRACT_V2.md` | Worker architecture (W-1 to W-22) |
+
+**Note on Contract Locations:**
+- **Binding contracts in `/contracts/`**: GLOSSARY, LOGGING, INTERNAL_PLAYER_*, TELEGRAM_*, XTREAM_*
+- **Binding contracts in `/docs/v2/`**: MEDIA_NORMALIZATION, TMDB_ENRICHMENT, STARTUP_TRIGGER
+- Some contracts in `/contracts/` are forwarding files (see `/contracts/MEDIA_NORMALIZATION_CONTRACT.md`)
+- When referencing contracts in instruction files, use the AUTHORITATIVE path (where the actual content lives)
 
 ---
 
@@ -128,6 +136,7 @@ All instruction files MUST comply with these authoritative contracts:
 
 | Version | Date | Changes |
 |---------|------|---------|
+| 1.1 | 2026-01-07 | PLATIN Audit fixes: Dot-space typos, broken refs, extractSeasonEpisode ownership, contract path clarification, imaging exception, TAG length guidance |
 | 1.0 | 2026-01-07 | Initial index creation |
 
 ---

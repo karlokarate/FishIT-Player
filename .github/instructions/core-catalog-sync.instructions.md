@@ -77,25 +77,45 @@ box.put(entity)                                        // WRONG
 
 ---
 
-### 4. Normalization is OPTIONAL (Per SyncConfig)
+### 4. Normalization Invariant (MANDATORY - HS-03)
+
+**Critical Invariant:** Raw metadata is ALWAYS stored in pipeline-specific repositories, regardless of normalization status.
 
 ```kotlin
-// ✅ CORRECT: Conditional normalization
+// ✅ CORRECT: Raw is ALWAYS persisted first
+// Step 1: Store raw immediately (mandatory)
+telegramRepository.upsertAll(batch)  // ALWAYS happens
+
+// Step 2: Normalize and store canonical (conditional based on config or worker)
 if (config.normalizeBeforePersist) {
     val normalized = normalizer.normalize(rawItem)
     canonicalMediaRepository.upsert(normalized)
-} else {
-    // Store raw only in pipeline-specific repo
-    telegramRepository.upsertAll(batch)
+}
+
+// ❌ FORBIDDEN: Skipping raw storage
+if (config.normalizeBeforePersist) {
+    val normalized = normalizer.normalize(rawItem)
+    canonicalMediaRepository.upsert(normalized)
+    // WRONG - raw is not stored!
 }
 ```
 
 **Normalization Flow (Per MEDIA_NORMALIZATION_CONTRACT):**
 1. Pipeline produces `RawMediaMetadata`
-2. CatalogSync stores raw in pipeline-specific repo (fast local queries)
-3. CatalogSync normalizes via `MediaMetadataNormalizer`
+2. **CatalogSync ALWAYS stores raw in pipeline-specific repo** (mandatory - enables source-specific queries)
+3. CatalogSync normalizes via `MediaMetadataNormalizer` (conditional: immediate or deferred via worker)
 4. CatalogSync upserts to `CanonicalMediaRepository` (cross-pipeline identity)
 5. CatalogSync links source via `addOrUpdateSourceRef`
+
+**Normalization Timing Options:**
+- **Option A (Immediate):** `normalizeBeforePersist=true` - Normalize during sync (slower, but canonical data available immediately)
+- **Option B (Deferred):** `normalizeBeforePersist=false` - Background worker normalizes later (faster sync, canonical data delayed)
+- **Guarantee:** If deferred, a background worker MUST eventually normalize all raw items
+
+**Why Raw is Always Stored:**
+- Source-specific features (e.g., Telegram chat filtering) require raw data
+- Canonical normalization can fail (no TMDB match) - raw provides fallback
+- Raw enables re-normalization when normalizer logic improves
 
 ---
 

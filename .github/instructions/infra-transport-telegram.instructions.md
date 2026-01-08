@@ -600,7 +600,57 @@ grep -rn "import.*pipeline" infra/transport-telegram/
 
 ---
 
-## 🚨 Error Handling & Edge Cases
+## 🚨 Error Handling & Edge Cases (HS-04)
+
+### Error Handling Semantics
+
+**Unified Error Model:** All transport interfaces SHOULD use nullable return types or sealed result types for recoverable errors. Exceptions are reserved for unrecoverable failures.
+
+**Preferred Patterns:**
+
+```kotlin
+// ✅ PATTERN 1: Nullable return (simple cases)
+interface TelegramHistoryClient {
+    suspend fun getMessage(chatId: Long, messageId: Long): TgMessage?  // null = not found/error
+}
+
+// ✅ PATTERN 2: Sealed Result type (when error details needed)
+sealed class TelegramResult<out T> {
+    data class Success<T>(val value: T) : TelegramResult<T>()
+    data class Error(val reason: TelegramError) : TelegramResult<Nothing>()
+}
+
+enum class TelegramError {
+    NOT_AUTHORIZED,
+    NETWORK_TIMEOUT,
+    NOT_FOUND,
+    RATE_LIMITED,
+    DATABASE_CORRUPTED,
+    UNKNOWN
+}
+
+interface TelegramAuthClient {
+    suspend fun startPhoneAuth(phoneNumber: String): TelegramResult<Unit>
+}
+
+// ✅ PATTERN 3: Exceptions for unrecoverable failures
+class TelegramAuthRequiredException(message: String) : Exception(message)
+class TelegramDatabaseCorruptedException(message: String, cause: Throwable?) : Exception(message, cause)
+
+// ❌ WRONG: Throwing exceptions for recoverable errors
+suspend fun getMessage(...): TgMessage {
+    throw TelegramNotFoundException()  // WRONG - use nullable return
+}
+
+// ❌ WRONG: Returning null when error details are needed
+suspend fun authenticate(...): Boolean?  // WRONG - use Result type to indicate reason
+```
+
+**Guidelines:**
+- **Nullable returns:** When only success/failure matters (file fetching, message retrieval)
+- **Result types:** When error reason affects caller behavior (auth flow, rate limiting)
+- **Exceptions:** Only for programmer errors or unrecoverable failures (database corruption, auth required for critical operation)
+- **Logging:** Always log errors internally before returning null/Error
 
 ### Common Error Scenarios
 
@@ -621,18 +671,51 @@ val file = remoteResolver.resolveRemoteId(remoteId)
     ?: remoteResolver.resolveFromMessage(chatId, messageId)
 ```
 
-**2. TDLib database corruption:**
+**2. TDLib database corruption (HS-05 - Destructive Actions):**
+
+⚠️ **CRITICAL:** Database clearing is a DESTRUCTIVE operation and must ONLY be triggered by explicit user action in Settings, NEVER automatically.
+
 ```kotlin
-// Catch TDLib errors during init, clear database if needed
+// ❌ WRONG: Automatic database clearing (data loss risk!)
 try {
     tdlClient.execute(TdApi.SetDatabaseEncryptionKey())
 } catch (e: TdlException) {
     if (e.message?.contains("database") == true) {
-        clearTdlibDatabase()
+        clearTdlibDatabase()  // WRONG - automatic data loss!
         reinitialize()
     }
 }
+
+// ✅ CORRECT: Error reporting for user decision
+try {
+    tdlClient.execute(TdApi.SetDatabaseEncryptionKey())
+} catch (e: TdlException) {
+    if (e.message?.contains("database") == true) {
+        // Report error, let user decide via Settings
+        return TelegramResult.Error(TelegramError.DATABASE_CORRUPTED)
+    }
+}
+
+// ✅ CORRECT: Manual clear via Settings only
+class SettingsViewModel {
+    fun clearTelegramData() {
+        // Require explicit confirmation dialog
+        showConfirmDialog(
+            title = "Clear Telegram Data?",
+            message = "This will delete all local Telegram data. You will need to login again.",
+            onConfirm = {
+                telegramDatabaseManager.clearDatabase()
+            }
+        )
+    }
+}
 ```
+
+**Destructive Action Guidelines:**
+- **NEVER** automatically clear user data (database, cache, credentials)
+- **ALWAYS** require explicit user confirmation via Settings UI
+- **ALWAYS** show clear warning about data loss consequences
+- **PREFER** error reporting over automatic recovery for corruption
 
 **3. Auth state transitions:**
 ```kotlin
