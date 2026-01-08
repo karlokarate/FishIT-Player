@@ -187,14 +187,14 @@ class ObxWriteConfigTest {
         assertTrue(
             "FireTV cap (${ObxWriteConfig.FIRETV_BATCH_CAP}) should be < 50% of normal " +
                 "batch (${ObxWriteConfig.NORMAL_BATCH_SIZE})",
-            ObxWriteConfig.FIRETV_BATCH_CAP < ObxWriteConfig.NORMAL_BATCH_SIZE / 2
+            ObxWriteConfig.FIRETV_BATCH_CAP < ObxWriteConfig.NORMAL_BATCH_SIZE / 2,
         )
     }
 
     @Test
     fun `FireTV backfill is smaller than normal backfill`() {
         assertTrue(
-            ObxWriteConfig.FIRETV_BACKFILL_CHUNK_SIZE < ObxWriteConfig.NORMAL_BACKFILL_CHUNK_SIZE
+            ObxWriteConfig.FIRETV_BACKFILL_CHUNK_SIZE < ObxWriteConfig.NORMAL_BACKFILL_CHUNK_SIZE,
         )
     }
 
@@ -214,11 +214,11 @@ class ObxWriteConfigTest {
     fun `Batch size ordering is correct - Live largest, Series smallest`() {
         assertTrue(
             "Live (${ObxWriteConfig.SYNC_LIVE_BATCH_PHONE}) > Movies (${ObxWriteConfig.SYNC_MOVIES_BATCH_PHONE})",
-            ObxWriteConfig.SYNC_LIVE_BATCH_PHONE > ObxWriteConfig.SYNC_MOVIES_BATCH_PHONE
+            ObxWriteConfig.SYNC_LIVE_BATCH_PHONE > ObxWriteConfig.SYNC_MOVIES_BATCH_PHONE,
         )
         assertTrue(
             "Movies (${ObxWriteConfig.SYNC_MOVIES_BATCH_PHONE}) > Series (${ObxWriteConfig.SYNC_SERIES_BATCH_PHONE})",
-            ObxWriteConfig.SYNC_MOVIES_BATCH_PHONE > ObxWriteConfig.SYNC_SERIES_BATCH_PHONE
+            ObxWriteConfig.SYNC_MOVIES_BATCH_PHONE > ObxWriteConfig.SYNC_SERIES_BATCH_PHONE,
         )
     }
 
@@ -229,7 +229,7 @@ class ObxWriteConfigTest {
         assertEquals(
             "Live batch size should be 600 per PR #604 speed optimization",
             600,
-            ObxWriteConfig.SYNC_LIVE_BATCH_PHONE
+            ObxWriteConfig.SYNC_LIVE_BATCH_PHONE,
         )
     }
 
@@ -238,7 +238,7 @@ class ObxWriteConfigTest {
         assertEquals(
             "Movies batch size should be 400 per PR #604 speed optimization",
             400,
-            ObxWriteConfig.SYNC_MOVIES_BATCH_PHONE
+            ObxWriteConfig.SYNC_MOVIES_BATCH_PHONE,
         )
     }
 
@@ -247,7 +247,7 @@ class ObxWriteConfigTest {
         assertEquals(
             "Series batch size should be 200 per PR #604 speed optimization",
             200,
-            ObxWriteConfig.SYNC_SERIES_BATCH_PHONE
+            ObxWriteConfig.SYNC_SERIES_BATCH_PHONE,
         )
     }
 }

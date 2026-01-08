@@ -97,8 +97,7 @@ object ObxWriteConfig {
      * @param context Android context for device detection
      * @return Batch size (35 for FireTV, 100 for normal devices)
      */
-    fun getBatchSize(context: Context): Int =
-        if (isFireTvLowRam(context)) FIRETV_BATCH_CAP else NORMAL_BATCH_SIZE
+    fun getBatchSize(context: Context): Int = if (isFireTvLowRam(context)) FIRETV_BATCH_CAP else NORMAL_BATCH_SIZE
 
     /**
      * Get the appropriate batch size for Live channel sync.
@@ -106,8 +105,7 @@ object ObxWriteConfig {
      * @param context Android context for device detection
      * @return Batch size (35 for FireTV, 600 for normal devices)
      */
-    fun getSyncLiveBatchSize(context: Context): Int =
-        if (isFireTvLowRam(context)) FIRETV_BATCH_CAP else SYNC_LIVE_BATCH_PHONE
+    fun getSyncLiveBatchSize(context: Context): Int = if (isFireTvLowRam(context)) FIRETV_BATCH_CAP else SYNC_LIVE_BATCH_PHONE
 
     /**
      * Get the appropriate batch size for Movies/VOD sync.
@@ -115,8 +113,7 @@ object ObxWriteConfig {
      * @param context Android context for device detection
      * @return Batch size (35 for FireTV, 400 for normal devices)
      */
-    fun getSyncMoviesBatchSize(context: Context): Int =
-        if (isFireTvLowRam(context)) FIRETV_BATCH_CAP else SYNC_MOVIES_BATCH_PHONE
+    fun getSyncMoviesBatchSize(context: Context): Int = if (isFireTvLowRam(context)) FIRETV_BATCH_CAP else SYNC_MOVIES_BATCH_PHONE
 
     /**
      * Get the appropriate batch size for Series sync.
@@ -124,8 +121,7 @@ object ObxWriteConfig {
      * @param context Android context for device detection
      * @return Batch size (35 for FireTV, 200 for normal devices)
      */
-    fun getSyncSeriesBatchSize(context: Context): Int =
-        if (isFireTvLowRam(context)) FIRETV_BATCH_CAP else SYNC_SERIES_BATCH_PHONE
+    fun getSyncSeriesBatchSize(context: Context): Int = if (isFireTvLowRam(context)) FIRETV_BATCH_CAP else SYNC_SERIES_BATCH_PHONE
 
     /**
      * Get the appropriate batch size for Episodes sync.
@@ -133,8 +129,7 @@ object ObxWriteConfig {
      * @param context Android context for device detection
      * @return Batch size (35 for FireTV, 200 for normal devices)
      */
-    fun getSyncEpisodesBatchSize(context: Context): Int =
-        if (isFireTvLowRam(context)) FIRETV_BATCH_CAP else SYNC_EPISODES_BATCH_PHONE
+    fun getSyncEpisodesBatchSize(context: Context): Int = if (isFireTvLowRam(context)) FIRETV_BATCH_CAP else SYNC_EPISODES_BATCH_PHONE
 
     /**
      * Get the appropriate chunk size for backfill operations.
@@ -151,8 +146,7 @@ object ObxWriteConfig {
      * @param context Android context for device detection
      * @return Page size (500 for FireTV, 4000 for normal devices)
      */
-    fun getPageSize(context: Context): Int =
-        if (isFireTvLowRam(context)) FIRETV_BACKFILL_CHUNK_SIZE else NORMAL_PAGE_SIZE
+    fun getPageSize(context: Context): Int = if (isFireTvLowRam(context)) FIRETV_BACKFILL_CHUNK_SIZE else NORMAL_PAGE_SIZE
 
     // =========================================================================
     // Device Detection (delegates to XtreamTransportConfig SSOT)
@@ -186,7 +180,10 @@ object ObxWriteConfig {
      * @param items List of items to persist
      * @param context Android context for device detection
      */
-    fun <T> Box<T>.putChunked(items: List<T>, context: Context) {
+    fun <T> Box<T>.putChunked(
+        items: List<T>,
+        context: Context,
+    ) {
         val chunkSize = getBackfillChunkSize(context)
         putChunked(items, chunkSize)
     }
@@ -202,7 +199,10 @@ object ObxWriteConfig {
      * @param items List of items to persist
      * @param chunkSize Number of items per chunk (default: 2000)
      */
-    fun <T> Box<T>.putChunked(items: List<T>, chunkSize: Int = NORMAL_BACKFILL_CHUNK_SIZE) {
+    fun <T> Box<T>.putChunked(
+        items: List<T>,
+        chunkSize: Int = NORMAL_BACKFILL_CHUNK_SIZE,
+    ) {
         var i = 0
         val n = items.size
         while (i < n) {
