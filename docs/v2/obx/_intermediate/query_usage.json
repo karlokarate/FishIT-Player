@@ -1,0 +1,2043 @@
+{
+  "queries": [
+    {
+      "entity": "ObxCanonicalMedia",
+      "filePath": "core/persistence/src/main/java/com/fishit/player/core/persistence/repository/ObxCanonicalMediaRepository.kt",
+      "lineNumber": 156,
+      "className": "ObxCanonicalMediaRepository",
+      "methodName": "upsertCanonicalMediaInternal",
+      "queryType": "findFirst",
+      "conditions": [
+        {
+          "field": "canonicalKey",
+          "operator": "oneOf"
+        }
+      ],
+      "ordering": null,
+      "purpose": "Query in upsertCanonicalMediaInternal of unknown class"
+    },
+    {
+      "entity": "ObxCanonicalMedia",
+      "filePath": "core/persistence/src/main/java/com/fishit/player/core/persistence/repository/ObxCanonicalMediaRepository.kt",
+      "lineNumber": 252,
+      "className": "ObxCanonicalMediaRepository",
+      "methodName": "findCanonicalByAnyKey",
+      "queryType": "findFirst",
+      "conditions": [
+        {
+          "field": "canonicalKey",
+          "operator": "oneOf"
+        }
+      ],
+      "ordering": null,
+      "purpose": "Query in findCanonicalByAnyKey of unknown class"
+    },
+    {
+      "entity": "ObxCanonicalMedia",
+      "filePath": "core/persistence/src/main/java/com/fishit/player/core/persistence/repository/ObxCanonicalMediaRepository.kt",
+      "lineNumber": 317,
+      "className": "ObxCanonicalMediaRepository",
+      "methodName": "addOrUpdateSourceRef",
+      "queryType": "findFirst",
+      "conditions": [
+        {
+          "field": "canonicalKey",
+          "operator": "equal"
+        }
+      ],
+      "ordering": null,
+      "purpose": "Query in addOrUpdateSourceRef of unknown class"
+    },
+    {
+      "entity": "ObxMediaSourceRef",
+      "filePath": "core/persistence/src/main/java/com/fishit/player/core/persistence/repository/ObxCanonicalMediaRepository.kt",
+      "lineNumber": 328,
+      "className": "ObxCanonicalMediaRepository",
+      "methodName": "addOrUpdateSourceRef",
+      "queryType": "findFirst",
+      "conditions": [
+        {
+          "field": "sourceId",
+          "operator": "equal"
+        }
+      ],
+      "ordering": null,
+      "purpose": "Query in addOrUpdateSourceRef of unknown class"
+    },
+    {
+      "entity": "ObxMediaSourceRef",
+      "filePath": "core/persistence/src/main/java/com/fishit/player/core/persistence/repository/ObxCanonicalMediaRepository.kt",
+      "lineNumber": 390,
+      "className": "ObxCanonicalMediaRepository",
+      "methodName": "removeSourceRef",
+      "queryType": "findFirst",
+      "conditions": [
+        {
+          "field": "sourceId",
+          "operator": "equal"
+        }
+      ],
+      "ordering": null,
+      "purpose": "Query in removeSourceRef of unknown class"
+    },
+    {
+      "entity": "ObxCanonicalMedia",
+      "filePath": "core/persistence/src/main/java/com/fishit/player/core/persistence/repository/ObxCanonicalMediaRepository.kt",
+      "lineNumber": 419,
+      "className": "ObxCanonicalMediaRepository",
+      "methodName": "findByExternalId",
+      "queryType": "findFirst",
+      "conditions": [
+        {
+          "field": "tmdbId",
+          "operator": "equal"
+        },
+        {
+          "field": "imdbId",
+          "operator": "equal"
+        }
+      ],
+      "ordering": null,
+      "purpose": "Query in findByExternalId of unknown class"
+    },
+    {
+      "entity": "ObxCanonicalMedia",
+      "filePath": "core/persistence/src/main/java/com/fishit/player/core/persistence/repository/ObxCanonicalMediaRepository.kt",
+      "lineNumber": 427,
+      "className": "ObxCanonicalMediaRepository",
+      "methodName": "findByExternalId",
+      "queryType": "findFirst",
+      "conditions": [
+        {
+          "field": "imdbId",
+          "operator": "equal"
+        },
+        {
+          "field": "tvdbId",
+          "operator": "equal"
+        }
+      ],
+      "ordering": null,
+      "purpose": "Query in findByExternalId of unknown class"
+    },
+    {
+      "entity": "ObxCanonicalMedia",
+      "filePath": "core/persistence/src/main/java/com/fishit/player/core/persistence/repository/ObxCanonicalMediaRepository.kt",
+      "lineNumber": 435,
+      "className": "ObxCanonicalMediaRepository",
+      "methodName": "findByExternalId",
+      "queryType": "findFirst",
+      "conditions": [
+        {
+          "field": "tvdbId",
+          "operator": "equal"
+        }
+      ],
+      "ordering": null,
+      "purpose": "Query in findByExternalId of unknown class"
+    },
+    {
+      "entity": "ObxCanonicalMedia",
+      "filePath": "core/persistence/src/main/java/com/fishit/player/core/persistence/repository/ObxCanonicalMediaRepository.kt",
+      "lineNumber": 458,
+      "className": "ObxCanonicalMediaRepository",
+      "methodName": "findByTitleAndYear",
+      "queryType": "find",
+      "conditions": [],
+      "ordering": null,
+      "purpose": "Query in findByTitleAndYear of unknown class"
+    },
+    {
+      "entity": "ObxCanonicalMedia",
+      "filePath": "core/persistence/src/main/java/com/fishit/player/core/persistence/repository/ObxCanonicalMediaRepository.kt",
+      "lineNumber": 488,
+      "className": "ObxCanonicalMediaRepository",
+      "methodName": "findBySourceId",
+      "queryType": "findFirst",
+      "conditions": [
+        {
+          "field": "canonicalKey",
+          "operator": "equal"
+        }
+      ],
+      "ordering": null,
+      "purpose": "Query in findBySourceId of unknown class"
+    },
+    {
+      "entity": "ObxCanonicalMedia",
+      "filePath": "core/persistence/src/main/java/com/fishit/player/core/persistence/repository/ObxCanonicalMediaRepository.kt",
+      "lineNumber": 501,
+      "className": "ObxCanonicalMediaRepository",
+      "methodName": "getSourcesForMedia",
+      "queryType": "findFirst",
+      "conditions": [
+        {
+          "field": "canonicalKey",
+          "operator": "equal"
+        }
+      ],
+      "ordering": null,
+      "purpose": "Query in getSourcesForMedia of unknown class"
+    },
+    {
+      "entity": "ObxCanonicalMedia",
+      "filePath": "core/persistence/src/main/java/com/fishit/player/core/persistence/repository/ObxCanonicalMediaRepository.kt",
+      "lineNumber": 524,
+      "className": "ObxCanonicalMediaRepository",
+      "methodName": "search",
+      "queryType": "find",
+      "conditions": [],
+      "ordering": null,
+      "purpose": "Query in search of unknown class"
+    },
+    {
+      "entity": "ObxCanonicalResumeMark",
+      "filePath": "core/persistence/src/main/java/com/fishit/player/core/persistence/repository/ObxCanonicalMediaRepository.kt",
+      "lineNumber": 557,
+      "className": "ObxCanonicalMediaRepository",
+      "methodName": "getCanonicalResume",
+      "queryType": "findFirst",
+      "conditions": [
+        {
+          "field": "profileId",
+          "operator": "equal"
+        }
+      ],
+      "ordering": "updatedAt DESC",
+      "purpose": "Query in getCanonicalResume of unknown class"
+    },
+    {
+      "entity": "ObxCanonicalResumeMark",
+      "filePath": "core/persistence/src/main/java/com/fishit/player/core/persistence/repository/ObxCanonicalMediaRepository.kt",
+      "lineNumber": 597,
+      "className": "ObxCanonicalMediaRepository",
+      "methodName": "setCanonicalResume",
+      "queryType": "findFirst",
+      "conditions": [],
+      "ordering": null,
+      "purpose": "Query in setCanonicalResume of unknown class"
+    },
+    {
+      "entity": "ObxCanonicalResumeMark",
+      "filePath": "core/persistence/src/main/java/com/fishit/player/core/persistence/repository/ObxCanonicalMediaRepository.kt",
+      "lineNumber": 646,
+      "className": "ObxCanonicalMediaRepository",
+      "methodName": "markCompleted",
+      "queryType": "findFirst",
+      "conditions": [],
+      "ordering": null,
+      "purpose": "Query in markCompleted of unknown class"
+    },
+    {
+      "entity": "ObxCanonicalResumeMark",
+      "filePath": "core/persistence/src/main/java/com/fishit/player/core/persistence/repository/ObxCanonicalMediaRepository.kt",
+      "lineNumber": 675,
+      "className": "ObxCanonicalMediaRepository",
+      "methodName": "clearCanonicalResume",
+      "queryType": "findFirst",
+      "conditions": [
+        {
+          "field": "profileId",
+          "operator": "equal"
+        }
+      ],
+      "ordering": "updatedAt DESC",
+      "purpose": "Query in clearCanonicalResume of unknown class"
+    },
+    {
+      "entity": "ObxCanonicalResumeMark",
+      "filePath": "core/persistence/src/main/java/com/fishit/player/core/persistence/repository/ObxCanonicalMediaRepository.kt",
+      "lineNumber": 697,
+      "className": "ObxCanonicalMediaRepository",
+      "methodName": "getResumeList",
+      "queryType": "find",
+      "conditions": [],
+      "ordering": "updatedAt DESC",
+      "purpose": "Query in getResumeList of unknown class"
+    },
+    {
+      "entity": "ObxCanonicalMedia",
+      "filePath": "core/persistence/src/main/java/com/fishit/player/core/persistence/repository/ObxCanonicalMediaRepository.kt",
+      "lineNumber": 714,
+      "className": "ObxCanonicalMediaRepository",
+      "methodName": "getResumeList",
+      "queryType": "findFirst",
+      "conditions": [
+        {
+          "field": "canonicalKey",
+          "operator": "oneOf"
+        }
+      ],
+      "ordering": null,
+      "purpose": "Query in getResumeList of unknown class"
+    },
+    {
+      "entity": "ObxCanonicalMedia",
+      "filePath": "core/persistence/src/main/java/com/fishit/player/core/persistence/repository/ObxCanonicalMediaRepository.kt",
+      "lineNumber": 769,
+      "className": "ObxCanonicalMediaRepository",
+      "methodName": "getStats",
+      "queryType": "count",
+      "conditions": [
+        {
+          "field": "kind",
+          "operator": "equal"
+        },
+        {
+          "field": "kind",
+          "operator": "equal"
+        }
+      ],
+      "ordering": null,
+      "purpose": "Query in getStats of unknown class"
+    },
+    {
+      "entity": "ObxCanonicalMedia",
+      "filePath": "core/persistence/src/main/java/com/fishit/player/core/persistence/repository/ObxCanonicalMediaRepository.kt",
+      "lineNumber": 775,
+      "className": "ObxCanonicalMediaRepository",
+      "methodName": "getStats",
+      "queryType": "count",
+      "conditions": [
+        {
+          "field": "kind",
+          "operator": "equal"
+        }
+      ],
+      "ordering": null,
+      "purpose": "Query in getStats of unknown class"
+    },
+    {
+      "entity": "ObxCanonicalMedia",
+      "filePath": "core/persistence/src/main/java/com/fishit/player/core/persistence/repository/ObxCanonicalMediaRepository.kt",
+      "lineNumber": 781,
+      "className": "ObxCanonicalMediaRepository",
+      "methodName": "getStats",
+      "queryType": "count",
+      "conditions": [],
+      "ordering": null,
+      "purpose": "Query in getStats of unknown class"
+    },
+    {
+      "entity": "ObxMediaSourceRef",
+      "filePath": "core/persistence/src/main/java/com/fishit/player/core/persistence/repository/ObxCanonicalMediaRepository.kt",
+      "lineNumber": 790,
+      "className": "ObxCanonicalMediaRepository",
+      "methodName": "getStats",
+      "queryType": "count",
+      "conditions": [
+        {
+          "field": "sourceType",
+          "operator": "equal"
+        }
+      ],
+      "ordering": null,
+      "purpose": "Query in getStats of unknown class"
+    },
+    {
+      "entity": "ObxCanonicalMedia",
+      "filePath": "core/persistence/src/main/java/com/fishit/player/core/persistence/repository/ObxCanonicalMediaRepository.kt",
+      "lineNumber": 832,
+      "className": "ObxCanonicalMediaRepository",
+      "methodName": "findCandidatesDetailsByIdMissingSsot",
+      "queryType": "find",
+      "conditions": [],
+      "ordering": "updatedAt DESC",
+      "purpose": "Query in findCandidatesDetailsByIdMissingSsot of unknown class"
+    },
+    {
+      "entity": "ObxCanonicalMedia",
+      "filePath": "core/persistence/src/main/java/com/fishit/player/core/persistence/repository/ObxCanonicalMediaRepository.kt",
+      "lineNumber": 872,
+      "className": "ObxCanonicalMediaRepository",
+      "methodName": "mapToIds",
+      "queryType": "find",
+      "conditions": [],
+      "ordering": "updatedAt DESC",
+      "purpose": "Query in mapToIds of unknown class"
+    },
+    {
+      "entity": "ObxCanonicalMedia",
+      "filePath": "core/persistence/src/main/java/com/fishit/player/core/persistence/repository/ObxCanonicalMediaRepository.kt",
+      "lineNumber": 892,
+      "className": "ObxCanonicalMediaRepository",
+      "methodName": "mapToIds",
+      "queryType": "find",
+      "conditions": [],
+      "ordering": "updatedAt DESC",
+      "purpose": "Query in mapToIds of unknown class"
+    },
+    {
+      "entity": "ObxCanonicalMedia",
+      "filePath": "core/persistence/src/main/java/com/fishit/player/core/persistence/repository/ObxCanonicalMediaRepository.kt",
+      "lineNumber": 931,
+      "className": "ObxCanonicalMediaRepository",
+      "methodName": "markTmdbDetailsApplied",
+      "queryType": "findFirst",
+      "conditions": [
+        {
+          "field": "canonicalKey",
+          "operator": "equal"
+        }
+      ],
+      "ordering": null,
+      "purpose": "Query in markTmdbDetailsApplied of unknown class"
+    },
+    {
+      "entity": "ObxCanonicalMedia",
+      "filePath": "core/persistence/src/main/java/com/fishit/player/core/persistence/repository/ObxCanonicalMediaRepository.kt",
+      "lineNumber": 961,
+      "className": "ObxCanonicalMediaRepository",
+      "methodName": "markTmdbResolveAttemptFailed",
+      "queryType": "findFirst",
+      "conditions": [
+        {
+          "field": "canonicalKey",
+          "operator": "equal"
+        }
+      ],
+      "ordering": null,
+      "purpose": "Query in markTmdbResolveAttemptFailed of unknown class"
+    },
+    {
+      "entity": "ObxCanonicalMedia",
+      "filePath": "core/persistence/src/main/java/com/fishit/player/core/persistence/repository/ObxCanonicalMediaRepository.kt",
+      "lineNumber": 1008,
+      "className": "ObxCanonicalMediaRepository",
+      "methodName": "markTmdbResolved",
+      "queryType": "findFirst",
+      "conditions": [
+        {
+          "field": "canonicalKey",
+          "operator": "equal"
+        }
+      ],
+      "ordering": null,
+      "purpose": "Query in markTmdbResolved of unknown class"
+    },
+    {
+      "entity": "ObxCanonicalMedia",
+      "filePath": "core/persistence/src/main/java/com/fishit/player/core/persistence/repository/ObxCanonicalMediaRepository.kt",
+      "lineNumber": 1039,
+      "className": "ObxCanonicalMediaRepository",
+      "methodName": "updateTmdbEnriched",
+      "queryType": "findFirst",
+      "conditions": [
+        {
+          "field": "canonicalKey",
+          "operator": "equal"
+        }
+      ],
+      "ordering": null,
+      "purpose": "Query in updateTmdbEnriched of unknown class"
+    },
+    {
+      "entity": "ObxProfile",
+      "filePath": "core/persistence/src/main/java/com/fishit/player/core/persistence/repository/ObxProfileRepository.kt",
+      "lineNumber": 41,
+      "className": "ObxProfileRepository",
+      "methodName": "getActiveProfile",
+      "queryType": "findFirst",
+      "conditions": [
+        {
+          "field": "type",
+          "operator": "equal"
+        }
+      ],
+      "ordering": null,
+      "purpose": "Query in getActiveProfile of unknown class"
+    },
+    {
+      "entity": "ObxProfile",
+      "filePath": "core/persistence/src/main/java/com/fishit/player/core/persistence/repository/ObxProfileRepository.kt",
+      "lineNumber": 94,
+      "className": "ObxProfileRepository",
+      "methodName": "deleteProfile",
+      "queryType": "count",
+      "conditions": [
+        {
+          "field": "type",
+          "operator": "equal"
+        }
+      ],
+      "ordering": null,
+      "purpose": "Query in deleteProfile of unknown class"
+    },
+    {
+      "entity": "ObxScreenTimeEntry",
+      "filePath": "core/persistence/src/main/java/com/fishit/player/core/persistence/repository/ObxScreenTimeRepository.kt",
+      "lineNumber": 37,
+      "className": "ObxScreenTimeRepository",
+      "methodName": "getScreenTimeEntry",
+      "queryType": "findFirst",
+      "conditions": [
+        {
+          "field": "dayYyyymmdd",
+          "operator": "equal"
+        }
+      ],
+      "ordering": null,
+      "purpose": "Query in getScreenTimeEntry of unknown class"
+    },
+    {
+      "entity": "ObxScreenTimeEntry",
+      "filePath": "core/persistence/src/main/java/com/fishit/player/core/persistence/repository/ObxScreenTimeRepository.kt",
+      "lineNumber": 79,
+      "className": "ObxScreenTimeRepository",
+      "methodName": "addUsedMinutes",
+      "queryType": "findFirst",
+      "conditions": [
+        {
+          "field": "dayYyyymmdd",
+          "operator": "equal"
+        }
+      ],
+      "ordering": null,
+      "purpose": "Query in addUsedMinutes of unknown class"
+    },
+    {
+      "entity": "ObxScreenTimeEntry",
+      "filePath": "core/persistence/src/main/java/com/fishit/player/core/persistence/repository/ObxScreenTimeRepository.kt",
+      "lineNumber": 109,
+      "className": "ObxScreenTimeRepository",
+      "methodName": "setDailyLimit",
+      "queryType": "findFirst",
+      "conditions": [
+        {
+          "field": "dayYyyymmdd",
+          "operator": "equal"
+        }
+      ],
+      "ordering": null,
+      "purpose": "Query in setDailyLimit of unknown class"
+    },
+    {
+      "entity": "ObxScreenTimeEntry",
+      "filePath": "core/persistence/src/main/java/com/fishit/player/core/persistence/repository/ObxScreenTimeRepository.kt",
+      "lineNumber": 153,
+      "className": "ObxScreenTimeRepository",
+      "methodName": "clearOldEntries",
+      "queryType": "find",
+      "conditions": [
+        {
+          "field": "dayYyyymmdd",
+          "operator": "less"
+        }
+      ],
+      "ordering": null,
+      "purpose": "Query in clearOldEntries of unknown class"
+    },
+    {
+      "entity": "ObxSeasonIndex",
+      "filePath": "infra/data-xtream/src/main/java/com/fishit/player/infra/data/xtream/ObxXtreamSeriesIndexRepository.kt",
+      "lineNumber": 60,
+      "className": "ObxXtreamSeriesIndexRepository",
+      "methodName": "observeSeasons",
+      "queryType": "find",
+      "conditions": [
+        {
+          "field": "seriesId",
+          "operator": "equal"
+        },
+        {
+          "field": "seriesId",
+          "operator": "equal"
+        }
+      ],
+      "ordering": "seasonNumber ASC",
+      "purpose": "Query in observeSeasons of unknown class"
+    },
+    {
+      "entity": "ObxSeasonIndex",
+      "filePath": "infra/data-xtream/src/main/java/com/fishit/player/infra/data/xtream/ObxXtreamSeriesIndexRepository.kt",
+      "lineNumber": 70,
+      "className": "ObxXtreamSeriesIndexRepository",
+      "methodName": "getSeasons",
+      "queryType": "find",
+      "conditions": [
+        {
+          "field": "seriesId",
+          "operator": "equal"
+        },
+        {
+          "field": "seriesId",
+          "operator": "equal"
+        }
+      ],
+      "ordering": "seasonNumber ASC",
+      "purpose": "Query in getSeasons of unknown class"
+    },
+    {
+      "entity": "ObxSeasonIndex",
+      "filePath": "infra/data-xtream/src/main/java/com/fishit/player/infra/data/xtream/ObxXtreamSeriesIndexRepository.kt",
+      "lineNumber": 81,
+      "className": "ObxXtreamSeriesIndexRepository",
+      "methodName": "hasFreshSeasons",
+      "queryType": "find",
+      "conditions": [
+        {
+          "field": "seriesId",
+          "operator": "equal"
+        }
+      ],
+      "ordering": null,
+      "purpose": "Query in hasFreshSeasons of unknown class"
+    },
+    {
+      "entity": "ObxSeasonIndex",
+      "filePath": "infra/data-xtream/src/main/java/com/fishit/player/infra/data/xtream/ObxXtreamSeriesIndexRepository.kt",
+      "lineNumber": 101,
+      "className": "ObxXtreamSeriesIndexRepository",
+      "methodName": "upsertSeasons",
+      "queryType": "findFirst",
+      "conditions": [
+        {
+          "field": "seasonNumber",
+          "operator": "equal"
+        }
+      ],
+      "ordering": null,
+      "purpose": "Query in upsertSeasons of unknown class"
+    },
+    {
+      "entity": "ObxSeasonIndex",
+      "filePath": "infra/data-xtream/src/main/java/com/fishit/player/infra/data/xtream/ObxXtreamSeriesIndexRepository.kt",
+      "lineNumber": 140,
+      "className": "ObxXtreamSeriesIndexRepository",
+      "methodName": "deleteSeasons",
+      "queryType": "find",
+      "conditions": [
+        {
+          "field": "seriesId",
+          "operator": "equal"
+        }
+      ],
+      "ordering": null,
+      "purpose": "Query in deleteSeasons of unknown class"
+    },
+    {
+      "entity": "ObxEpisodeIndex",
+      "filePath": "infra/data-xtream/src/main/java/com/fishit/player/infra/data/xtream/ObxXtreamSeriesIndexRepository.kt",
+      "lineNumber": 159,
+      "className": "ObxXtreamSeriesIndexRepository",
+      "methodName": "observeEpisodes",
+      "queryType": "find",
+      "conditions": [
+        {
+          "field": "seasonNumber",
+          "operator": "equal"
+        }
+      ],
+      "ordering": "episodeNumber ASC",
+      "purpose": "Query in observeEpisodes of unknown class"
+    },
+    {
+      "entity": "ObxEpisodeIndex",
+      "filePath": "infra/data-xtream/src/main/java/com/fishit/player/infra/data/xtream/ObxXtreamSeriesIndexRepository.kt",
+      "lineNumber": 180,
+      "className": "ObxXtreamSeriesIndexRepository",
+      "methodName": "getEpisodeCount",
+      "queryType": "findFirst",
+      "conditions": [
+        {
+          "field": "seasonNumber",
+          "operator": "equal"
+        },
+        {
+          "field": "sourceKey",
+          "operator": "equal"
+        }
+      ],
+      "ordering": null,
+      "purpose": "Query in getEpisodeCount of unknown class"
+    },
+    {
+      "entity": "ObxEpisodeIndex",
+      "filePath": "infra/data-xtream/src/main/java/com/fishit/player/infra/data/xtream/ObxXtreamSeriesIndexRepository.kt",
+      "lineNumber": 192,
+      "className": "ObxXtreamSeriesIndexRepository",
+      "methodName": "getEpisodeBySourceKey",
+      "queryType": "findFirst",
+      "conditions": [
+        {
+          "field": "sourceKey",
+          "operator": "equal"
+        }
+      ],
+      "ordering": null,
+      "purpose": "Query in getEpisodeBySourceKey of unknown class"
+    },
+    {
+      "entity": "ObxEpisodeIndex",
+      "filePath": "infra/data-xtream/src/main/java/com/fishit/player/infra/data/xtream/ObxXtreamSeriesIndexRepository.kt",
+      "lineNumber": 205,
+      "className": "ObxXtreamSeriesIndexRepository",
+      "methodName": "hasFreshEpisodes",
+      "queryType": "find",
+      "conditions": [
+        {
+          "field": "seasonNumber",
+          "operator": "equal"
+        }
+      ],
+      "ordering": null,
+      "purpose": "Query in hasFreshEpisodes of unknown class"
+    },
+    {
+      "entity": "ObxEpisodeIndex",
+      "filePath": "infra/data-xtream/src/main/java/com/fishit/player/infra/data/xtream/ObxXtreamSeriesIndexRepository.kt",
+      "lineNumber": 225,
+      "className": "ObxXtreamSeriesIndexRepository",
+      "methodName": "upsertEpisodes",
+      "queryType": "findFirst",
+      "conditions": [
+        {
+          "field": "sourceKey",
+          "operator": "equal"
+        }
+      ],
+      "ordering": null,
+      "purpose": "Query in upsertEpisodes of unknown class"
+    },
+    {
+      "entity": "ObxEpisodeIndex",
+      "filePath": "infra/data-xtream/src/main/java/com/fishit/player/infra/data/xtream/ObxXtreamSeriesIndexRepository.kt",
+      "lineNumber": 285,
+      "className": "ObxXtreamSeriesIndexRepository",
+      "methodName": "updatePlaybackHints",
+      "queryType": "findFirst",
+      "conditions": [
+        {
+          "field": "sourceKey",
+          "operator": "equal"
+        }
+      ],
+      "ordering": null,
+      "purpose": "Query in updatePlaybackHints of unknown class"
+    },
+    {
+      "entity": "ObxEpisodeIndex",
+      "filePath": "infra/data-xtream/src/main/java/com/fishit/player/infra/data/xtream/ObxXtreamSeriesIndexRepository.kt",
+      "lineNumber": 306,
+      "className": "ObxXtreamSeriesIndexRepository",
+      "methodName": "getPlaybackHints",
+      "queryType": "findFirst",
+      "conditions": [
+        {
+          "field": "sourceKey",
+          "operator": "equal"
+        }
+      ],
+      "ordering": null,
+      "purpose": "Query in getPlaybackHints of unknown class"
+    },
+    {
+      "entity": "ObxEpisodeIndex",
+      "filePath": "infra/data-xtream/src/main/java/com/fishit/player/infra/data/xtream/ObxXtreamSeriesIndexRepository.kt",
+      "lineNumber": 347,
+      "className": "ObxXtreamSeriesIndexRepository",
+      "methodName": "isPlaybackReady",
+      "queryType": "findFirst",
+      "conditions": [
+        {
+          "field": "sourceKey",
+          "operator": "equal"
+        }
+      ],
+      "ordering": null,
+      "purpose": "Query in isPlaybackReady of unknown class"
+    },
+    {
+      "entity": "ObxEpisodeIndex",
+      "filePath": "infra/data-xtream/src/main/java/com/fishit/player/infra/data/xtream/ObxXtreamSeriesIndexRepository.kt",
+      "lineNumber": 360,
+      "className": "ObxXtreamSeriesIndexRepository",
+      "methodName": "deleteEpisodes",
+      "queryType": "find",
+      "conditions": [
+        {
+          "field": "seasonNumber",
+          "operator": "equal"
+        },
+        {
+          "field": "seriesId",
+          "operator": "equal"
+        }
+      ],
+      "ordering": null,
+      "purpose": "Query in deleteEpisodes of unknown class"
+    },
+    {
+      "entity": "ObxEpisodeIndex",
+      "filePath": "infra/data-xtream/src/main/java/com/fishit/player/infra/data/xtream/ObxXtreamSeriesIndexRepository.kt",
+      "lineNumber": 374,
+      "className": "ObxXtreamSeriesIndexRepository",
+      "methodName": "deleteAllEpisodesForSeries",
+      "queryType": "find",
+      "conditions": [
+        {
+          "field": "seriesId",
+          "operator": "equal"
+        }
+      ],
+      "ordering": null,
+      "purpose": "Query in deleteAllEpisodesForSeries of unknown class"
+    },
+    {
+      "entity": "ObxSeasonIndex",
+      "filePath": "infra/data-xtream/src/main/java/com/fishit/player/infra/data/xtream/ObxXtreamSeriesIndexRepository.kt",
+      "lineNumber": 393,
+      "className": "ObxXtreamSeriesIndexRepository",
+      "methodName": "invalidateStaleEntries",
+      "queryType": "find",
+      "conditions": [
+        {
+          "field": "lastUpdatedMs",
+          "operator": "less"
+        }
+      ],
+      "ordering": null,
+      "purpose": "Query in invalidateStaleEntries of unknown class"
+    },
+    {
+      "entity": "ObxEpisodeIndex",
+      "filePath": "infra/data-xtream/src/main/java/com/fishit/player/infra/data/xtream/ObxXtreamSeriesIndexRepository.kt",
+      "lineNumber": 399,
+      "className": "ObxXtreamSeriesIndexRepository",
+      "methodName": "invalidateStaleEntries",
+      "queryType": "count",
+      "conditions": [
+        {
+          "field": "lastUpdatedMs",
+          "operator": "less"
+        }
+      ],
+      "ordering": null,
+      "purpose": "Query in invalidateStaleEntries of unknown class"
+    },
+    {
+      "entity": "ObxVod",
+      "filePath": "infra/data-xtream/src/main/java/com/fishit/player/infra/data/xtream/ObxXtreamCatalogRepository.kt",
+      "lineNumber": 64,
+      "className": "ObxXtreamCatalogRepository",
+      "methodName": "observeVod",
+      "queryType": "find",
+      "conditions": [
+        {
+          "field": "categoryId",
+          "operator": "equal"
+        }
+      ],
+      "ordering": "nameLower ASC",
+      "purpose": "Query in observeVod of unknown class"
+    },
+    {
+      "entity": "ObxVod",
+      "filePath": "infra/data-xtream/src/main/java/com/fishit/player/infra/data/xtream/ObxXtreamCatalogRepository.kt",
+      "lineNumber": 66,
+      "className": "ObxXtreamCatalogRepository",
+      "methodName": "observeVod",
+      "queryType": "find",
+      "conditions": [
+        {
+          "field": "categoryId",
+          "operator": "equal"
+        }
+      ],
+      "ordering": "nameLower ASC",
+      "purpose": "Query in observeVod of unknown class"
+    },
+    {
+      "entity": "ObxSeries",
+      "filePath": "infra/data-xtream/src/main/java/com/fishit/player/infra/data/xtream/ObxXtreamCatalogRepository.kt",
+      "lineNumber": 74,
+      "className": "ObxXtreamCatalogRepository",
+      "methodName": "observeSeries",
+      "queryType": "find",
+      "conditions": [
+        {
+          "field": "categoryId",
+          "operator": "equal"
+        }
+      ],
+      "ordering": "nameLower ASC",
+      "purpose": "Query in observeSeries of unknown class"
+    },
+    {
+      "entity": "ObxSeries",
+      "filePath": "infra/data-xtream/src/main/java/com/fishit/player/infra/data/xtream/ObxXtreamCatalogRepository.kt",
+      "lineNumber": 76,
+      "className": "ObxXtreamCatalogRepository",
+      "methodName": "observeSeries",
+      "queryType": "find",
+      "conditions": [
+        {
+          "field": "categoryId",
+          "operator": "equal"
+        }
+      ],
+      "ordering": "nameLower ASC",
+      "purpose": "Query in observeSeries of unknown class"
+    },
+    {
+      "entity": "ObxEpisode",
+      "filePath": "infra/data-xtream/src/main/java/com/fishit/player/infra/data/xtream/ObxXtreamCatalogRepository.kt",
+      "lineNumber": 91,
+      "className": "ObxXtreamCatalogRepository",
+      "methodName": "observeEpisodes",
+      "queryType": "find",
+      "conditions": [
+        {
+          "field": "season",
+          "operator": "equal"
+        },
+        {
+          "field": "seriesId",
+          "operator": "equal"
+        }
+      ],
+      "ordering": "episodeNum ASC",
+      "purpose": "Query in observeEpisodes of unknown class"
+    },
+    {
+      "entity": "ObxEpisode",
+      "filePath": "infra/data-xtream/src/main/java/com/fishit/player/infra/data/xtream/ObxXtreamCatalogRepository.kt",
+      "lineNumber": 99,
+      "className": "ObxXtreamCatalogRepository",
+      "methodName": "observeEpisodes",
+      "queryType": "find",
+      "conditions": [
+        {
+          "field": "season",
+          "operator": "equal"
+        },
+        {
+          "field": "seriesId",
+          "operator": "equal"
+        }
+      ],
+      "ordering": "episodeNum ASC",
+      "purpose": "Query in observeEpisodes of unknown class"
+    },
+    {
+      "entity": "ObxVod",
+      "filePath": "infra/data-xtream/src/main/java/com/fishit/player/infra/data/xtream/ObxXtreamCatalogRepository.kt",
+      "lineNumber": 116,
+      "className": "ObxXtreamCatalogRepository",
+      "methodName": "getAll",
+      "queryType": "find",
+      "conditions": [],
+      "ordering": "nameLower ASC",
+      "purpose": "Query in getAll of unknown class"
+    },
+    {
+      "entity": "ObxSeries",
+      "filePath": "infra/data-xtream/src/main/java/com/fishit/player/infra/data/xtream/ObxXtreamCatalogRepository.kt",
+      "lineNumber": 123,
+      "className": "ObxXtreamCatalogRepository",
+      "methodName": "getAll",
+      "queryType": "find",
+      "conditions": [],
+      "ordering": "nameLower ASC",
+      "purpose": "Query in getAll of unknown class"
+    },
+    {
+      "entity": "ObxEpisode",
+      "filePath": "infra/data-xtream/src/main/java/com/fishit/player/infra/data/xtream/ObxXtreamCatalogRepository.kt",
+      "lineNumber": 130,
+      "className": "ObxXtreamCatalogRepository",
+      "methodName": "getAll",
+      "queryType": "find",
+      "conditions": [],
+      "ordering": "seriesId ASC",
+      "purpose": "Query in getAll of unknown class"
+    },
+    {
+      "entity": "ObxVod",
+      "filePath": "infra/data-xtream/src/main/java/com/fishit/player/infra/data/xtream/ObxXtreamCatalogRepository.kt",
+      "lineNumber": 152,
+      "className": "ObxXtreamCatalogRepository",
+      "methodName": "getBySourceId",
+      "queryType": "findFirst",
+      "conditions": [
+        {
+          "field": "vodId",
+          "operator": "equal"
+        }
+      ],
+      "ordering": null,
+      "purpose": "Query in getBySourceId of unknown class"
+    },
+    {
+      "entity": "ObxSeries",
+      "filePath": "infra/data-xtream/src/main/java/com/fishit/player/infra/data/xtream/ObxXtreamCatalogRepository.kt",
+      "lineNumber": 160,
+      "className": "ObxXtreamCatalogRepository",
+      "methodName": "getBySourceId",
+      "queryType": "findFirst",
+      "conditions": [
+        {
+          "field": "seriesId",
+          "operator": "equal"
+        }
+      ],
+      "ordering": null,
+      "purpose": "Query in getBySourceId of unknown class"
+    },
+    {
+      "entity": "ObxEpisode",
+      "filePath": "infra/data-xtream/src/main/java/com/fishit/player/infra/data/xtream/ObxXtreamCatalogRepository.kt",
+      "lineNumber": 171,
+      "className": "ObxXtreamCatalogRepository",
+      "methodName": "getBySourceId",
+      "queryType": "findFirst",
+      "conditions": [
+        {
+          "field": "season",
+          "operator": "equal"
+        },
+        {
+          "field": "episodeNum",
+          "operator": "equal"
+        }
+      ],
+      "ordering": null,
+      "purpose": "Query in getBySourceId of unknown class"
+    },
+    {
+      "entity": "ObxVod",
+      "filePath": "infra/data-xtream/src/main/java/com/fishit/player/infra/data/xtream/ObxXtreamCatalogRepository.kt",
+      "lineNumber": 196,
+      "className": "ObxXtreamCatalogRepository",
+      "methodName": "search",
+      "queryType": "find",
+      "conditions": [
+        {
+          "field": "nameLower",
+          "operator": "contains"
+        }
+      ],
+      "ordering": null,
+      "purpose": "Query in search of unknown class"
+    },
+    {
+      "entity": "ObxVod",
+      "filePath": "infra/data-xtream/src/main/java/com/fishit/player/infra/data/xtream/ObxXtreamCatalogRepository.kt",
+      "lineNumber": 203,
+      "className": "ObxXtreamCatalogRepository",
+      "methodName": "search",
+      "queryType": "find",
+      "conditions": [],
+      "ordering": null,
+      "purpose": "Query in search of unknown class"
+    },
+    {
+      "entity": "ObxVod",
+      "filePath": "infra/data-xtream/src/main/java/com/fishit/player/infra/data/xtream/ObxXtreamCatalogRepository.kt",
+      "lineNumber": 273,
+      "className": "ObxXtreamCatalogRepository",
+      "methodName": "getVodIdsNeedingInfoBackfill",
+      "queryType": "find",
+      "conditions": [],
+      "ordering": "vodId ASC",
+      "purpose": "Query in getVodIdsNeedingInfoBackfill of unknown class"
+    },
+    {
+      "entity": "ObxSeries",
+      "filePath": "infra/data-xtream/src/main/java/com/fishit/player/infra/data/xtream/ObxXtreamCatalogRepository.kt",
+      "lineNumber": 316,
+      "className": "ObxXtreamCatalogRepository",
+      "methodName": "getSeriesIdsNeedingInfoBackfill",
+      "queryType": "find",
+      "conditions": [],
+      "ordering": "seriesId ASC",
+      "purpose": "Query in getSeriesIdsNeedingInfoBackfill of unknown class"
+    },
+    {
+      "entity": "ObxVod",
+      "filePath": "infra/data-xtream/src/main/java/com/fishit/player/infra/data/xtream/ObxXtreamCatalogRepository.kt",
+      "lineNumber": 364,
+      "className": "ObxXtreamCatalogRepository",
+      "methodName": "updateVodInfo",
+      "queryType": "findFirst",
+      "conditions": [
+        {
+          "field": "vodId",
+          "operator": "equal"
+        }
+      ],
+      "ordering": null,
+      "purpose": "Query in updateVodInfo of unknown class"
+    },
+    {
+      "entity": "ObxSeries",
+      "filePath": "infra/data-xtream/src/main/java/com/fishit/player/infra/data/xtream/ObxXtreamCatalogRepository.kt",
+      "lineNumber": 396,
+      "className": "ObxXtreamCatalogRepository",
+      "methodName": "updateSeriesInfo",
+      "queryType": "findFirst",
+      "conditions": [
+        {
+          "field": "seriesId",
+          "operator": "equal"
+        }
+      ],
+      "ordering": null,
+      "purpose": "Query in updateSeriesInfo of unknown class"
+    },
+    {
+      "entity": "ObxVod",
+      "filePath": "infra/data-xtream/src/main/java/com/fishit/player/infra/data/xtream/ObxXtreamCatalogRepository.kt",
+      "lineNumber": 418,
+      "className": "ObxXtreamCatalogRepository",
+      "methodName": "countVodNeedingInfoBackfill",
+      "queryType": "count",
+      "conditions": [],
+      "ordering": null,
+      "purpose": "Query in countVodNeedingInfoBackfill of unknown class"
+    },
+    {
+      "entity": "ObxSeries",
+      "filePath": "infra/data-xtream/src/main/java/com/fishit/player/infra/data/xtream/ObxXtreamCatalogRepository.kt",
+      "lineNumber": 427,
+      "className": "ObxXtreamCatalogRepository",
+      "methodName": "countSeriesNeedingInfoBackfill",
+      "queryType": "count",
+      "conditions": [],
+      "ordering": null,
+      "purpose": "Query in countSeriesNeedingInfoBackfill of unknown class"
+    },
+    {
+      "entity": "ObxVod",
+      "filePath": "infra/data-xtream/src/main/java/com/fishit/player/infra/data/xtream/ObxXtreamCatalogRepository.kt",
+      "lineNumber": 459,
+      "className": "ObxXtreamCatalogRepository",
+      "methodName": "upsertVods",
+      "queryType": "find",
+      "conditions": [
+        {
+          "field": "vodId",
+          "operator": "oneOf"
+        }
+      ],
+      "ordering": null,
+      "purpose": "Query in upsertVods of unknown class"
+    },
+    {
+      "entity": "ObxSeries",
+      "filePath": "infra/data-xtream/src/main/java/com/fishit/player/infra/data/xtream/ObxXtreamCatalogRepository.kt",
+      "lineNumber": 494,
+      "className": "ObxXtreamCatalogRepository",
+      "methodName": "upsertSeriesEntities",
+      "queryType": "find",
+      "conditions": [
+        {
+          "field": "seriesId",
+          "operator": "oneOf"
+        }
+      ],
+      "ordering": null,
+      "purpose": "Query in upsertSeriesEntities of unknown class"
+    },
+    {
+      "entity": "ObxEpisode",
+      "filePath": "infra/data-xtream/src/main/java/com/fishit/player/infra/data/xtream/ObxXtreamCatalogRepository.kt",
+      "lineNumber": 532,
+      "className": "ObxXtreamCatalogRepository",
+      "methodName": "upsertEpisodes",
+      "queryType": "find",
+      "conditions": [
+        {
+          "field": "seriesId",
+          "operator": "oneOf"
+        }
+      ],
+      "ordering": null,
+      "purpose": "Query in upsertEpisodes of unknown class"
+    },
+    {
+      "entity": "ObxMediaSourceRef",
+      "filePath": "infra/data-xtream/src/main/java/com/fishit/player/infra/data/xtream/ObxXtreamCatalogRepository.kt",
+      "lineNumber": 764,
+      "className": "ObxXtreamCatalogRepository",
+      "methodName": "getUnlinkedForCanonicalLinking",
+      "queryType": "find",
+      "conditions": [
+        {
+          "field": "sourceType",
+          "operator": "equal"
+        }
+      ],
+      "ordering": null,
+      "purpose": "Query in getUnlinkedForCanonicalLinking of unknown class"
+    },
+    {
+      "entity": "ObxVod",
+      "filePath": "infra/data-xtream/src/main/java/com/fishit/player/infra/data/xtream/ObxXtreamCatalogRepository.kt",
+      "lineNumber": 777,
+      "className": "ObxXtreamCatalogRepository",
+      "methodName": "getUnlinkedForCanonicalLinking",
+      "queryType": "find",
+      "conditions": [],
+      "ordering": "nameLower ASC",
+      "purpose": "Query in getUnlinkedForCanonicalLinking of unknown class"
+    },
+    {
+      "entity": "ObxVod",
+      "filePath": "infra/data-xtream/src/main/java/com/fishit/player/infra/data/xtream/ObxXtreamCatalogRepository.kt",
+      "lineNumber": 781,
+      "className": "ObxXtreamCatalogRepository",
+      "methodName": "getUnlinkedForCanonicalLinking",
+      "queryType": "find",
+      "conditions": [],
+      "ordering": "nameLower ASC",
+      "purpose": "Query in getUnlinkedForCanonicalLinking of unknown class"
+    },
+    {
+      "entity": "ObxVod",
+      "filePath": "infra/data-xtream/src/main/java/com/fishit/player/infra/data/xtream/ObxXtreamCatalogRepository.kt",
+      "lineNumber": 785,
+      "className": "ObxXtreamCatalogRepository",
+      "methodName": "getUnlinkedForCanonicalLinking",
+      "queryType": "find",
+      "conditions": [],
+      "ordering": "nameLower ASC",
+      "purpose": "Query in getUnlinkedForCanonicalLinking of unknown class"
+    },
+    {
+      "entity": "ObxVod",
+      "filePath": "infra/data-xtream/src/main/java/com/fishit/player/infra/data/xtream/ObxXtreamCatalogRepository.kt",
+      "lineNumber": 790,
+      "className": "ObxXtreamCatalogRepository",
+      "methodName": "getUnlinkedForCanonicalLinking",
+      "queryType": "find",
+      "conditions": [],
+      "ordering": "nameLower ASC",
+      "purpose": "Query in getUnlinkedForCanonicalLinking of unknown class"
+    },
+    {
+      "entity": "ObxVod",
+      "filePath": "infra/data-xtream/src/main/java/com/fishit/player/infra/data/xtream/ObxXtreamCatalogRepository.kt",
+      "lineNumber": 792,
+      "className": "ObxXtreamCatalogRepository",
+      "methodName": "getUnlinkedForCanonicalLinking",
+      "queryType": "find",
+      "conditions": [],
+      "ordering": "nameLower ASC",
+      "purpose": "Query in getUnlinkedForCanonicalLinking of unknown class"
+    },
+    {
+      "entity": "ObxVod",
+      "filePath": "infra/data-xtream/src/main/java/com/fishit/player/infra/data/xtream/ObxXtreamCatalogRepository.kt",
+      "lineNumber": 794,
+      "className": "ObxXtreamCatalogRepository",
+      "methodName": "getUnlinkedForCanonicalLinking",
+      "queryType": "find",
+      "conditions": [],
+      "ordering": "nameLower ASC",
+      "purpose": "Query in getUnlinkedForCanonicalLinking of unknown class"
+    },
+    {
+      "entity": "ObxMediaSourceRef",
+      "filePath": "infra/data-xtream/src/main/java/com/fishit/player/infra/data/xtream/ObxXtreamCatalogRepository.kt",
+      "lineNumber": 818,
+      "className": "ObxXtreamCatalogRepository",
+      "methodName": "countUnlinkedForCanonicalLinking",
+      "queryType": "count",
+      "conditions": [
+        {
+          "field": "sourceType",
+          "operator": "equal"
+        }
+      ],
+      "ordering": null,
+      "purpose": "Query in countUnlinkedForCanonicalLinking of unknown class"
+    },
+    {
+      "entity": "ObxCategory",
+      "filePath": "infra/data-xtream/src/main/java/com/fishit/player/infra/data/xtream/LiveContentRepositoryAdapter.kt",
+      "lineNumber": 76,
+      "className": "LiveContentRepositoryAdapter",
+      "methodName": "observeChannels",
+      "queryType": "find",
+      "conditions": [
+        {
+          "field": "kind",
+          "operator": "equal"
+        }
+      ],
+      "ordering": null,
+      "purpose": "Query in observeChannels of unknown class"
+    },
+    {
+      "entity": "ObxCategory",
+      "filePath": "infra/data-xtream/src/main/java/com/fishit/player/infra/data/xtream/LiveContentRepositoryAdapter.kt",
+      "lineNumber": 78,
+      "className": "LiveContentRepositoryAdapter",
+      "methodName": "observeChannels",
+      "queryType": "find",
+      "conditions": [
+        {
+          "field": "kind",
+          "operator": "equal"
+        }
+      ],
+      "ordering": null,
+      "purpose": "Query in observeChannels of unknown class"
+    },
+    {
+      "entity": "ObxCategory",
+      "filePath": "infra/data-xtream/src/main/java/com/fishit/player/infra/data/xtream/LiveContentRepositoryAdapter.kt",
+      "lineNumber": 88,
+      "className": "LiveContentRepositoryAdapter",
+      "methodName": "observeCategories",
+      "queryType": "count",
+      "conditions": [
+        {
+          "field": "kind",
+          "operator": "equal"
+        }
+      ],
+      "ordering": null,
+      "purpose": "Query in observeCategories of unknown class"
+    },
+    {
+      "entity": "ObxLive",
+      "filePath": "infra/data-xtream/src/main/java/com/fishit/player/infra/data/xtream/LiveContentRepositoryAdapter.kt",
+      "lineNumber": 99,
+      "className": "LiveContentRepositoryAdapter",
+      "methodName": "observeCategories",
+      "queryType": "count",
+      "conditions": [
+        {
+          "field": "categoryId",
+          "operator": "equal"
+        }
+      ],
+      "ordering": null,
+      "purpose": "Query in observeCategories of unknown class"
+    },
+    {
+      "entity": "ObxLive",
+      "filePath": "infra/data-xtream/src/main/java/com/fishit/player/infra/data/xtream/LiveContentRepositoryAdapter.kt",
+      "lineNumber": 115,
+      "className": "LiveContentRepositoryAdapter",
+      "methodName": "search",
+      "queryType": "find",
+      "conditions": [
+        {
+          "field": "nameLower",
+          "operator": "contains"
+        }
+      ],
+      "ordering": null,
+      "purpose": "Query in search of unknown class"
+    },
+    {
+      "entity": "ObxLive",
+      "filePath": "infra/data-xtream/src/main/java/com/fishit/player/infra/data/xtream/LiveContentRepositoryAdapter.kt",
+      "lineNumber": 130,
+      "className": "LiveContentRepositoryAdapter",
+      "methodName": "observeFavorites",
+      "queryType": "find",
+      "conditions": [],
+      "ordering": "nameLower ASC",
+      "purpose": "Query in observeFavorites of unknown class"
+    },
+    {
+      "entity": "ObxLive",
+      "filePath": "infra/data-xtream/src/main/java/com/fishit/player/infra/data/xtream/LiveContentRepositoryAdapter.kt",
+      "lineNumber": 169,
+      "className": "LiveContentRepositoryAdapter",
+      "methodName": "recordWatched",
+      "queryType": "findFirst",
+      "conditions": [
+        {
+          "field": "streamId",
+          "operator": "equal"
+        }
+      ],
+      "ordering": null,
+      "purpose": "Query in recordWatched of unknown class"
+    },
+    {
+      "entity": "ObxEpgNowNext",
+      "filePath": "infra/data-xtream/src/main/java/com/fishit/player/infra/data/xtream/LiveContentRepositoryAdapter.kt",
+      "lineNumber": 231,
+      "className": "LiveContentRepositoryAdapter",
+      "methodName": "lookupEpg",
+      "queryType": "findFirst",
+      "conditions": [
+        {
+          "field": "streamId",
+          "operator": "equal"
+        },
+        {
+          "field": "channelId",
+          "operator": "equal"
+        }
+      ],
+      "ordering": null,
+      "purpose": "Query in lookupEpg of unknown class"
+    },
+    {
+      "entity": "ObxCategory",
+      "filePath": "infra/data-xtream/src/main/java/com/fishit/player/infra/data/xtream/LiveContentRepositoryAdapter.kt",
+      "lineNumber": 235,
+      "className": "LiveContentRepositoryAdapter",
+      "methodName": "lookupEpg",
+      "queryType": "findFirst",
+      "conditions": [
+        {
+          "field": "categoryId",
+          "operator": "equal"
+        }
+      ],
+      "ordering": null,
+      "purpose": "Query in lookupEpg of unknown class"
+    },
+    {
+      "entity": "ObxCategory",
+      "filePath": "infra/data-xtream/src/main/java/com/fishit/player/infra/data/xtream/LiveContentRepositoryAdapter.kt",
+      "lineNumber": 246,
+      "className": "LiveContentRepositoryAdapter",
+      "methodName": "lookupCategoryName",
+      "queryType": "findFirst",
+      "conditions": [
+        {
+          "field": "categoryId",
+          "operator": "equal"
+        }
+      ],
+      "ordering": null,
+      "purpose": "Query in lookupCategoryName of unknown class"
+    },
+    {
+      "entity": "ObxLive",
+      "filePath": "infra/data-xtream/src/main/java/com/fishit/player/infra/data/xtream/ObxXtreamLiveRepository.kt",
+      "lineNumber": 52,
+      "className": "ObxXtreamLiveRepository",
+      "methodName": "observeChannels",
+      "queryType": "find",
+      "conditions": [
+        {
+          "field": "categoryId",
+          "operator": "equal"
+        }
+      ],
+      "ordering": "nameLower ASC",
+      "purpose": "Query in observeChannels of unknown class"
+    },
+    {
+      "entity": "ObxLive",
+      "filePath": "infra/data-xtream/src/main/java/com/fishit/player/infra/data/xtream/ObxXtreamLiveRepository.kt",
+      "lineNumber": 54,
+      "className": "ObxXtreamLiveRepository",
+      "methodName": "observeChannels",
+      "queryType": "find",
+      "conditions": [
+        {
+          "field": "categoryId",
+          "operator": "equal"
+        }
+      ],
+      "ordering": "nameLower ASC",
+      "purpose": "Query in observeChannels of unknown class"
+    },
+    {
+      "entity": "ObxLive",
+      "filePath": "infra/data-xtream/src/main/java/com/fishit/player/infra/data/xtream/ObxXtreamLiveRepository.kt",
+      "lineNumber": 65,
+      "className": "ObxXtreamLiveRepository",
+      "methodName": "getAll",
+      "queryType": "find",
+      "conditions": [
+        {
+          "field": "streamId",
+          "operator": "equal"
+        }
+      ],
+      "ordering": "nameLower ASC",
+      "purpose": "Query in getAll of unknown class"
+    },
+    {
+      "entity": "ObxLive",
+      "filePath": "infra/data-xtream/src/main/java/com/fishit/player/infra/data/xtream/ObxXtreamLiveRepository.kt",
+      "lineNumber": 78,
+      "className": "ObxXtreamLiveRepository",
+      "methodName": "getBySourceId",
+      "queryType": "findFirst",
+      "conditions": [
+        {
+          "field": "streamId",
+          "operator": "equal"
+        },
+        {
+          "field": "nameLower",
+          "operator": "contains"
+        }
+      ],
+      "ordering": null,
+      "purpose": "Query in getBySourceId of unknown class"
+    },
+    {
+      "entity": "ObxLive",
+      "filePath": "infra/data-xtream/src/main/java/com/fishit/player/infra/data/xtream/ObxXtreamLiveRepository.kt",
+      "lineNumber": 91,
+      "className": "ObxXtreamLiveRepository",
+      "methodName": "search",
+      "queryType": "find",
+      "conditions": [
+        {
+          "field": "nameLower",
+          "operator": "contains"
+        }
+      ],
+      "ordering": null,
+      "purpose": "Query in search of unknown class"
+    },
+    {
+      "entity": "ObxLive",
+      "filePath": "infra/data-xtream/src/main/java/com/fishit/player/infra/data/xtream/ObxXtreamLiveRepository.kt",
+      "lineNumber": 108,
+      "className": "ObxXtreamLiveRepository",
+      "methodName": "upsertAll",
+      "queryType": "find",
+      "conditions": [
+        {
+          "field": "streamId",
+          "operator": "oneOf"
+        }
+      ],
+      "ordering": null,
+      "purpose": "Query in upsertAll of unknown class"
+    },
+    {
+      "entity": "ObxVod",
+      "filePath": "infra/data-xtream/src/main/java/com/fishit/player/infra/data/xtream/LibraryContentRepositoryAdapter.kt",
+      "lineNumber": 68,
+      "className": "LibraryContentRepositoryAdapter",
+      "methodName": "observeVod",
+      "queryType": "find",
+      "conditions": [
+        {
+          "field": "categoryId",
+          "operator": "equal"
+        }
+      ],
+      "ordering": "nameLower ASC",
+      "purpose": "Query in observeVod of unknown class"
+    },
+    {
+      "entity": "ObxVod",
+      "filePath": "infra/data-xtream/src/main/java/com/fishit/player/infra/data/xtream/LibraryContentRepositoryAdapter.kt",
+      "lineNumber": 70,
+      "className": "LibraryContentRepositoryAdapter",
+      "methodName": "observeVod",
+      "queryType": "find",
+      "conditions": [
+        {
+          "field": "categoryId",
+          "operator": "equal"
+        }
+      ],
+      "ordering": "nameLower ASC",
+      "purpose": "Query in observeVod of unknown class"
+    },
+    {
+      "entity": "ObxCategory",
+      "filePath": "infra/data-xtream/src/main/java/com/fishit/player/infra/data/xtream/LibraryContentRepositoryAdapter.kt",
+      "lineNumber": 81,
+      "className": "LibraryContentRepositoryAdapter",
+      "methodName": "observeSeries",
+      "queryType": "find",
+      "conditions": [
+        {
+          "field": "kind",
+          "operator": "equal"
+        }
+      ],
+      "ordering": null,
+      "purpose": "Query in observeSeries of unknown class"
+    },
+    {
+      "entity": "ObxCategory",
+      "filePath": "infra/data-xtream/src/main/java/com/fishit/player/infra/data/xtream/LibraryContentRepositoryAdapter.kt",
+      "lineNumber": 83,
+      "className": "LibraryContentRepositoryAdapter",
+      "methodName": "observeSeries",
+      "queryType": "find",
+      "conditions": [
+        {
+          "field": "kind",
+          "operator": "equal"
+        }
+      ],
+      "ordering": null,
+      "purpose": "Query in observeSeries of unknown class"
+    },
+    {
+      "entity": "ObxCategory",
+      "filePath": "infra/data-xtream/src/main/java/com/fishit/player/infra/data/xtream/LibraryContentRepositoryAdapter.kt",
+      "lineNumber": 93,
+      "className": "LibraryContentRepositoryAdapter",
+      "methodName": "observeVodCategories",
+      "queryType": "find",
+      "conditions": [
+        {
+          "field": "kind",
+          "operator": "equal"
+        }
+      ],
+      "ordering": null,
+      "purpose": "Query in observeVodCategories of unknown class"
+    },
+    {
+      "entity": "ObxCategory",
+      "filePath": "infra/data-xtream/src/main/java/com/fishit/player/infra/data/xtream/LibraryContentRepositoryAdapter.kt",
+      "lineNumber": 109,
+      "className": "LibraryContentRepositoryAdapter",
+      "methodName": "observeSeriesCategories",
+      "queryType": "find",
+      "conditions": [
+        {
+          "field": "kind",
+          "operator": "equal"
+        }
+      ],
+      "ordering": null,
+      "purpose": "Query in observeSeriesCategories of unknown class"
+    },
+    {
+      "entity": "ObxVod",
+      "filePath": "infra/data-xtream/src/main/java/com/fishit/player/infra/data/xtream/LibraryContentRepositoryAdapter.kt",
+      "lineNumber": 130,
+      "className": "LibraryContentRepositoryAdapter",
+      "methodName": "countItemsInCategory",
+      "queryType": "count",
+      "conditions": [
+        {
+          "field": "categoryId",
+          "operator": "equal"
+        }
+      ],
+      "ordering": null,
+      "purpose": "Query in countItemsInCategory of unknown class"
+    },
+    {
+      "entity": "ObxSeries",
+      "filePath": "infra/data-xtream/src/main/java/com/fishit/player/infra/data/xtream/LibraryContentRepositoryAdapter.kt",
+      "lineNumber": 136,
+      "className": "LibraryContentRepositoryAdapter",
+      "methodName": "countItemsInCategory",
+      "queryType": "count",
+      "conditions": [
+        {
+          "field": "categoryId",
+          "operator": "equal"
+        }
+      ],
+      "ordering": null,
+      "purpose": "Query in countItemsInCategory of unknown class"
+    },
+    {
+      "entity": "ObxVod",
+      "filePath": "infra/data-xtream/src/main/java/com/fishit/player/infra/data/xtream/LibraryContentRepositoryAdapter.kt",
+      "lineNumber": 152,
+      "className": "LibraryContentRepositoryAdapter",
+      "methodName": "search",
+      "queryType": "find",
+      "conditions": [
+        {
+          "field": "nameLower",
+          "operator": "contains"
+        }
+      ],
+      "ordering": null,
+      "purpose": "Query in search of unknown class"
+    },
+    {
+      "entity": "ObxSeries",
+      "filePath": "infra/data-xtream/src/main/java/com/fishit/player/infra/data/xtream/LibraryContentRepositoryAdapter.kt",
+      "lineNumber": 159,
+      "className": "LibraryContentRepositoryAdapter",
+      "methodName": "search",
+      "queryType": "find",
+      "conditions": [
+        {
+          "field": "nameLower",
+          "operator": "contains"
+        }
+      ],
+      "ordering": null,
+      "purpose": "Query in search of unknown class"
+    },
+    {
+      "entity": "ObxCategory",
+      "filePath": "infra/data-xtream/src/main/java/com/fishit/player/infra/data/xtream/LibraryContentRepositoryAdapter.kt",
+      "lineNumber": 229,
+      "className": "LibraryContentRepositoryAdapter",
+      "methodName": "lookupCategoryName",
+      "queryType": "findFirst",
+      "conditions": [
+        {
+          "field": "categoryId",
+          "operator": "equal"
+        }
+      ],
+      "ordering": null,
+      "purpose": "Query in lookupCategoryName of unknown class"
+    },
+    {
+      "entity": "ObxTelegramMessage",
+      "filePath": "infra/data-telegram/src/main/java/com/fishit/player/infra/data/telegram/ObxTelegramContentRepository.kt",
+      "lineNumber": 59,
+      "className": "ObxTelegramContentRepository",
+      "methodName": "observeAll",
+      "queryType": "find",
+      "conditions": [
+        {
+          "field": "chatId",
+          "operator": "equal"
+        }
+      ],
+      "ordering": null,
+      "purpose": "Query in observeAll of unknown class"
+    },
+    {
+      "entity": "ObxTelegramMessage",
+      "filePath": "infra/data-telegram/src/main/java/com/fishit/player/infra/data/telegram/ObxTelegramContentRepository.kt",
+      "lineNumber": 68,
+      "className": "ObxTelegramContentRepository",
+      "methodName": "observeByChat",
+      "queryType": "find",
+      "conditions": [
+        {
+          "field": "chatId",
+          "operator": "equal"
+        }
+      ],
+      "ordering": null,
+      "purpose": "Query in observeByChat of unknown class"
+    },
+    {
+      "entity": "ObxTelegramMessage",
+      "filePath": "infra/data-telegram/src/main/java/com/fishit/player/infra/data/telegram/ObxTelegramContentRepository.kt",
+      "lineNumber": 81,
+      "className": "ObxTelegramContentRepository",
+      "methodName": "getAll",
+      "queryType": "find",
+      "conditions": [
+        {
+          "field": "messageId",
+          "operator": "equal"
+        }
+      ],
+      "ordering": null,
+      "purpose": "Query in getAll of unknown class"
+    },
+    {
+      "entity": "ObxTelegramMessage",
+      "filePath": "infra/data-telegram/src/main/java/com/fishit/player/infra/data/telegram/ObxTelegramContentRepository.kt",
+      "lineNumber": 92,
+      "className": "ObxTelegramContentRepository",
+      "methodName": "getBySourceId",
+      "queryType": "findFirst",
+      "conditions": [
+        {
+          "field": "messageId",
+          "operator": "equal"
+        }
+      ],
+      "ordering": null,
+      "purpose": "Query in getBySourceId of unknown class"
+    },
+    {
+      "entity": "ObxTelegramMessage",
+      "filePath": "infra/data-telegram/src/main/java/com/fishit/player/infra/data/telegram/ObxTelegramContentRepository.kt",
+      "lineNumber": 108,
+      "className": "ObxTelegramContentRepository",
+      "methodName": "search",
+      "queryType": "find",
+      "conditions": [
+        {
+          "field": "title",
+          "operator": "contains"
+        },
+        {
+          "field": "fileName",
+          "operator": "contains"
+        }
+      ],
+      "ordering": null,
+      "purpose": "Query in search of unknown class"
+    },
+    {
+      "entity": "ObxTelegramMessage",
+      "filePath": "infra/data-telegram/src/main/java/com/fishit/player/infra/data/telegram/ObxTelegramContentRepository.kt",
+      "lineNumber": 130,
+      "className": "ObxTelegramContentRepository",
+      "methodName": "upsertAll",
+      "queryType": "find",
+      "conditions": [
+        {
+          "field": "chatId",
+          "operator": "oneOf"
+        }
+      ],
+      "ordering": null,
+      "purpose": "Query in upsertAll of unknown class"
+    },
+    {
+      "entity": "ObxTelegramMessage",
+      "filePath": "infra/data-telegram/src/main/java/com/fishit/player/infra/data/telegram/ObxTelegramContentRepository.kt",
+      "lineNumber": 162,
+      "className": "ObxTelegramContentRepository",
+      "methodName": "upsert",
+      "queryType": "findFirst",
+      "conditions": [
+        {
+          "field": "messageId",
+          "operator": "equal"
+        }
+      ],
+      "ordering": null,
+      "purpose": "Query in upsert of unknown class"
+    },
+    {
+      "entity": "ObxTelegramMessage",
+      "filePath": "infra/data-telegram/src/main/java/com/fishit/player/infra/data/telegram/ObxTelegramContentRepository.kt",
+      "lineNumber": 179,
+      "className": "ObxTelegramContentRepository",
+      "methodName": "getAllChatIds",
+      "queryType": "count",
+      "conditions": [],
+      "ordering": null,
+      "purpose": "Query in getAllChatIds of unknown class"
+    },
+    {
+      "entity": "ObxMediaSourceRef",
+      "filePath": "infra/data-telegram/src/main/java/com/fishit/player/infra/data/telegram/ObxTelegramContentRepository.kt",
+      "lineNumber": 357,
+      "className": "ObxTelegramContentRepository",
+      "methodName": "getUnlinkedForCanonicalLinking",
+      "queryType": "find",
+      "conditions": [
+        {
+          "field": "sourceType",
+          "operator": "equal"
+        }
+      ],
+      "ordering": null,
+      "purpose": "Query in getUnlinkedForCanonicalLinking of unknown class"
+    },
+    {
+      "entity": "ObxTelegramMessage",
+      "filePath": "infra/data-telegram/src/main/java/com/fishit/player/infra/data/telegram/ObxTelegramContentRepository.kt",
+      "lineNumber": 369,
+      "className": "ObxTelegramContentRepository",
+      "methodName": "getUnlinkedForCanonicalLinking",
+      "queryType": "find",
+      "conditions": [],
+      "ordering": null,
+      "purpose": "Query in getUnlinkedForCanonicalLinking of unknown class"
+    },
+    {
+      "entity": "ObxMediaSourceRef",
+      "filePath": "infra/data-telegram/src/main/java/com/fishit/player/infra/data/telegram/ObxTelegramContentRepository.kt",
+      "lineNumber": 392,
+      "className": "ObxTelegramContentRepository",
+      "methodName": "countUnlinkedForCanonicalLinking",
+      "queryType": "count",
+      "conditions": [
+        {
+          "field": "sourceType",
+          "operator": "equal"
+        }
+      ],
+      "ordering": null,
+      "purpose": "Query in countUnlinkedForCanonicalLinking of unknown class"
+    },
+    {
+      "entity": "ObxCanonicalMedia",
+      "filePath": "infra/data-home/src/main/java/com/fishit/player/infra/data/home/HomeContentRepositoryAdapter.kt",
+      "lineNumber": 88,
+      "className": "HomeContentRepositoryAdapter",
+      "methodName": "batchFetchSources",
+      "queryType": "find",
+      "conditions": [],
+      "ordering": null,
+      "purpose": "Query in batchFetchSources of unknown class"
+    },
+    {
+      "entity": "ObxCanonicalResumeMark",
+      "filePath": "infra/data-home/src/main/java/com/fishit/player/infra/data/home/HomeContentRepositoryAdapter.kt",
+      "lineNumber": 165,
+      "className": "HomeContentRepositoryAdapter",
+      "methodName": "observeContinueWatching",
+      "queryType": "find",
+      "conditions": [],
+      "ordering": "updatedAt DESC",
+      "purpose": "Query in observeContinueWatching of unknown class"
+    },
+    {
+      "entity": "ObxCanonicalMedia",
+      "filePath": "infra/data-home/src/main/java/com/fishit/player/infra/data/home/HomeContentRepositoryAdapter.kt",
+      "lineNumber": 196,
+      "className": "HomeContentRepositoryAdapter",
+      "methodName": "observeContinueWatching",
+      "queryType": "find",
+      "conditions": [
+        {
+          "field": "canonicalKey",
+          "operator": "oneOf"
+        }
+      ],
+      "ordering": null,
+      "purpose": "Query in observeContinueWatching of unknown class"
+    },
+    {
+      "entity": "ObxCanonicalMedia",
+      "filePath": "infra/data-home/src/main/java/com/fishit/player/infra/data/home/HomeContentRepositoryAdapter.kt",
+      "lineNumber": 247,
+      "className": "HomeContentRepositoryAdapter",
+      "methodName": "observeRecentlyAdded",
+      "queryType": "find",
+      "conditions": [],
+      "ordering": "createdAt DESC",
+      "purpose": "Query in observeRecentlyAdded of unknown class"
+    },
+    {
+      "entity": "ObxCanonicalMedia",
+      "filePath": "infra/data-home/src/main/java/com/fishit/player/infra/data/home/HomeContentRepositoryAdapter.kt",
+      "lineNumber": 367,
+      "className": "HomeContentRepositoryAdapter",
+      "methodName": "observeMovies",
+      "queryType": "find",
+      "conditions": [
+        {
+          "field": "mediaType",
+          "operator": "equal"
+        }
+      ],
+      "ordering": "createdAt DESC",
+      "purpose": "Query in observeMovies of unknown class"
+    },
+    {
+      "entity": "ObxCanonicalMedia",
+      "filePath": "infra/data-home/src/main/java/com/fishit/player/infra/data/home/HomeContentRepositoryAdapter.kt",
+      "lineNumber": 454,
+      "className": "HomeContentRepositoryAdapter",
+      "methodName": "observeSeries",
+      "queryType": "find",
+      "conditions": [
+        {
+          "field": "mediaType",
+          "operator": "equal"
+        }
+      ],
+      "ordering": "createdAt DESC",
+      "purpose": "Query in observeSeries of unknown class"
+    },
+    {
+      "entity": "ObxCanonicalMedia",
+      "filePath": "infra/data-home/src/main/java/com/fishit/player/infra/data/home/HomeContentRepositoryAdapter.kt",
+      "lineNumber": 540,
+      "className": "HomeContentRepositoryAdapter",
+      "methodName": "observeClips",
+      "queryType": "find",
+      "conditions": [
+        {
+          "field": "mediaType",
+          "operator": "equal"
+        }
+      ],
+      "ordering": "createdAt DESC",
+      "purpose": "Query in observeClips of unknown class"
+    }
+  ],
+  "queryStatistics": {
+    "totalQueries": 128,
+    "byEntity": {
+      "ObxCanonicalMedia": 27,
+      "ObxMediaSourceRef": 7,
+      "ObxCanonicalResumeMark": 6,
+      "ObxProfile": 2,
+      "ObxScreenTimeEntry": 4,
+      "ObxSeasonIndex": 6,
+      "ObxEpisodeIndex": 11,
+      "ObxVod": 20,
+      "ObxSeries": 10,
+      "ObxEpisode": 5,
+      "ObxCategory": 10,
+      "ObxLive": 10,
+      "ObxEpgNowNext": 1,
+      "ObxTelegramMessage": 9
+    },
+    "byType": {
+      "findFirst": 43,
+      "find": 70,
+      "count": 15
+    },
+    "indexedQueries": 55,
+    "nonIndexedQueries": 73
+  },
+  "entityPatterns": {
+    "ObxCanonicalMedia": {
+      "pattern": "findFirst:canonicalKey",
+      "count": 10
+    },
+    "ObxMediaSourceRef": {
+      "pattern": "count:sourceType",
+      "count": 3
+    },
+    "ObxCanonicalResumeMark": {
+      "pattern": "findFirst:profileId",
+      "count": 2
+    },
+    "ObxProfile": {
+      "pattern": "findFirst:type",
+      "count": 1
+    },
+    "ObxScreenTimeEntry": {
+      "pattern": "findFirst:dayYyyymmdd",
+      "count": 3
+    },
+    "ObxSeasonIndex": {
+      "pattern": "find:seriesId,seriesId",
+      "count": 2
+    },
+    "ObxEpisodeIndex": {
+      "pattern": "findFirst:sourceKey",
+      "count": 5
+    },
+    "ObxVod": {
+      "pattern": "find:",
+      "count": 9
+    },
+    "ObxSeries": {
+      "pattern": "find:categoryId",
+      "count": 2
+    },
+    "ObxEpisode": {
+      "pattern": "find:season,seriesId",
+      "count": 2
+    },
+    "ObxCategory": {
+      "pattern": "find:kind",
+      "count": 6
+    },
+    "ObxLive": {
+      "pattern": "find:nameLower",
+      "count": 2
+    },
+    "ObxEpgNowNext": {
+      "pattern": "findFirst:streamId,channelId",
+      "count": 1
+    },
+    "ObxTelegramMessage": {
+      "pattern": "find:chatId",
+      "count": 3
+    }
+  }
+}

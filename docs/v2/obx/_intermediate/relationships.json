@@ -1,0 +1,191 @@
+{
+  "relations": [
+    {
+      "sourceEntity": "ObxCanonicalMedia",
+      "sourceField": "sources",
+      "targetEntity": "ObxMediaSourceRef",
+      "relationType": "ToMany",
+      "usedIn": [
+        {
+          "filePath": "core/persistence/src/main/java/com/fishit/player/core/persistence/obx/ObxCanonicalEntities.kt",
+          "usage": "declaration",
+          "context": "Entity relation declaration"
+        },
+        {
+          "filePath": "feature/detail/src/main/java/com/fishit/player/feature/detail/UnifiedDetailViewModel.kt",
+          "usage": "read",
+          "context": "Access all sources for media item in detail view"
+        },
+        {
+          "filePath": "feature/detail/src/main/java/com/fishit/player/feature/detail/SourceSelection.kt",
+          "usage": "read",
+          "context": "Source selection logic for playback"
+        },
+        {
+          "filePath": "infra/data-home/src/main/java/com/fishit/player/infra/data/home/HomeContentRepositoryAdapter.kt",
+          "usage": "read",
+          "context": "Group sources by canonical media for home content"
+        }
+      ]
+    },
+    {
+      "sourceEntity": "ObxMediaSourceRef",
+      "sourceField": "canonicalMedia",
+      "targetEntity": "ObxCanonicalMedia",
+      "relationType": "ToOne",
+      "usedIn": [
+        {
+          "filePath": "core/persistence/src/main/java/com/fishit/player/core/persistence/obx/ObxCanonicalEntities.kt",
+          "usage": "declaration",
+          "context": "Entity relation declaration"
+        },
+        {
+          "filePath": "core/persistence/src/main/java/com/fishit/player/core/persistence/repository/ObxCanonicalMediaRepository.kt",
+          "usage": "write",
+          "context": "Link source reference to canonical media when adding source"
+        },
+        {
+          "filePath": "core/persistence/src/main/java/com/fishit/player/core/persistence/repository/ObxCanonicalMediaRepository.kt",
+          "usage": "read",
+          "context": "Navigate from source to canonical media"
+        }
+      ]
+    }
+  ],
+  "backlinks": [
+    {
+      "entity": "ObxCanonicalMedia",
+      "field": "sources",
+      "linksTo": "canonicalMedia",
+      "filePath": "core/persistence/src/main/java/com/fishit/player/core/persistence/obx/ObxCanonicalEntities.kt"
+    }
+  ],
+  "manualJoins": [
+    {
+      "description": "Series to Episodes join via seriesId",
+      "fromEntity": "ObxSeries",
+      "toEntity": "ObxEpisode",
+      "joinField": "seriesId",
+      "filePath": "infra/data-xtream/src/main/java/com/fishit/player/infra/data/xtream/ObxXtreamCatalogRepository.kt",
+      "pattern": "episodeBox.query(ObxEpisode_.seriesId.equal(seriesId))",
+      "usage": "Load all episodes for a series"
+    },
+    {
+      "description": "Season Index to Series join via seriesId",
+      "fromEntity": "ObxSeasonIndex",
+      "toEntity": "ObxSeries",
+      "joinField": "seriesId",
+      "filePath": "infra/data-xtream/src/main/java/com/fishit/player/infra/data/xtream/ObxXtreamSeriesIndexRepository.kt",
+      "pattern": "seasonIndexBox.query(ObxSeasonIndex_.seriesId.equal(seriesId))",
+      "usage": "Load season index for a series"
+    },
+    {
+      "description": "Episode Index to Series join via seriesId",
+      "fromEntity": "ObxEpisodeIndex",
+      "toEntity": "ObxSeries",
+      "joinField": "seriesId",
+      "filePath": "infra/data-xtream/src/main/java/com/fishit/player/infra/data/xtream/ObxXtreamSeriesIndexRepository.kt",
+      "pattern": "episodeIndexBox.query(ObxEpisodeIndex_.seriesId.equal(seriesId))",
+      "usage": "Load episode index entries for a series"
+    },
+    {
+      "description": "Episode Index to Season join via seriesId+seasonNumber",
+      "fromEntity": "ObxEpisodeIndex",
+      "toEntity": "ObxSeasonIndex",
+      "joinField": "seriesId, seasonNumber",
+      "filePath": "infra/data-xtream/src/main/java/com/fishit/player/infra/data/xtream/ObxXtreamSeriesIndexRepository.kt",
+      "pattern": "episodeIndexBox.query(ObxEpisodeIndex_.seriesId.equal(seriesId).and(ObxEpisodeIndex_.seasonNumber.equal(seasonNumber)))",
+      "usage": "Load episodes for a specific season"
+    },
+    {
+      "description": "Telegram Message lookup via chatId+messageId",
+      "fromEntity": "ObxTelegramMessage",
+      "toEntity": "ObxTelegramMessage",
+      "joinField": "chatId, messageId",
+      "filePath": "infra/data-telegram/src/main/java/com/fishit/player/infra/data/telegram/ObxTelegramContentRepository.kt",
+      "pattern": "messageBox.query(ObxTelegramMessage_.chatId.equal(chatId).and(ObxTelegramMessage_.messageId.equal(messageId)))",
+      "usage": "Find specific message in a chat"
+    },
+    {
+      "description": "Live stream to Category join via categoryId",
+      "fromEntity": "ObxLive",
+      "toEntity": "ObxCategory",
+      "joinField": "categoryId",
+      "filePath": "infra/data-xtream/src/main/java/com/fishit/player/infra/data/xtream/LiveContentRepositoryAdapter.kt",
+      "pattern": "liveBox.query(ObxLive_.categoryId.equal(categoryId))",
+      "usage": "Load live streams for a category"
+    },
+    {
+      "description": "VOD to Category join via categoryId",
+      "fromEntity": "ObxVod",
+      "toEntity": "ObxCategory",
+      "joinField": "categoryId",
+      "filePath": "infra/data-xtream/src/main/java/com/fishit/player/infra/data/xtream/ObxXtreamCatalogRepository.kt",
+      "pattern": "vodBox.query(ObxVod_.categoryId.equal(categoryId))",
+      "usage": "Load VOD items for a category"
+    },
+    {
+      "description": "Series to Category join via categoryId",
+      "fromEntity": "ObxSeries",
+      "toEntity": "ObxCategory",
+      "joinField": "categoryId",
+      "filePath": "infra/data-xtream/src/main/java/com/fishit/player/infra/data/xtream/ObxXtreamCatalogRepository.kt",
+      "pattern": "seriesBox.query(ObxSeries_.categoryId.equal(categoryId))",
+      "usage": "Load series for a category"
+    },
+    {
+      "description": "EPG to Live Stream join via streamId",
+      "fromEntity": "ObxEpgNowNext",
+      "toEntity": "ObxLive",
+      "joinField": "streamId",
+      "filePath": "infra/data-xtream/src/main/java/com/fishit/player/infra/data/xtream/LiveContentRepositoryAdapter.kt",
+      "pattern": "epgBox.query(ObxEpgNowNext_.streamId.equal(streamId))",
+      "usage": "Load EPG data for a live stream"
+    },
+    {
+      "description": "MediaSourceRef to CanonicalMedia via canonicalMedia ToOne",
+      "fromEntity": "ObxMediaSourceRef",
+      "toEntity": "ObxCanonicalMedia",
+      "joinField": "canonicalMedia.target",
+      "filePath": "core/persistence/src/main/java/com/fishit/player/core/persistence/repository/ObxCanonicalMediaRepository.kt",
+      "pattern": "sourceRef.canonicalMedia.target",
+      "usage": "Access canonical media from a source reference (uses ToOne relation)"
+    },
+    {
+      "description": "CanonicalMedia to MediaSourceRef via sources ToMany backlink",
+      "fromEntity": "ObxCanonicalMedia",
+      "toEntity": "ObxMediaSourceRef",
+      "joinField": "sources (backlink)",
+      "filePath": "core/persistence/src/main/java/com/fishit/player/core/persistence/repository/ObxCanonicalMediaRepository.kt",
+      "pattern": "canonicalMedia.sources",
+      "usage": "Access all source references for a canonical media (uses ToMany backlink)"
+    },
+    {
+      "description": "Resume marks to CanonicalMedia join via canonicalKey",
+      "fromEntity": "ObxCanonicalResumeMark",
+      "toEntity": "ObxCanonicalMedia",
+      "joinField": "canonicalKey",
+      "filePath": "core/persistence/src/main/java/com/fishit/player/core/persistence/repository/ObxCanonicalMediaRepository.kt",
+      "pattern": "resumeBox.query(ObxCanonicalResumeMark_.canonicalKey.equal(canonicalKey))",
+      "usage": "Load resume position for canonical media"
+    },
+    {
+      "description": "Profile permissions join via profileId",
+      "fromEntity": "ObxProfilePermissions",
+      "toEntity": "ObxProfile",
+      "joinField": "profileId",
+      "filePath": "core/persistence/src/main/java/com/fishit/player/core/persistence/repository/ObxProfileRepository.kt",
+      "pattern": "permissionsBox.query(ObxProfilePermissions_.profileId.equal(profileId))",
+      "usage": "Load permissions for a profile"
+    },
+    {
+      "description": "Screen time entries join via kidProfileId+dayYyyymmdd",
+      "fromEntity": "ObxScreenTimeEntry",
+      "toEntity": "ObxProfile",
+      "joinField": "kidProfileId, dayYyyymmdd",
+      "filePath": "core/persistence/src/main/java/com/fishit/player/core/persistence/repository/ObxScreenTimeRepository.kt",
+      "pattern": "screenTimeBox.query(ObxScreenTimeEntry_.kidProfileId.equal(kidProfileId).and(ObxScreenTimeEntry_.dayYyyymmdd.equal(day)))",
+      "usage": "Load screen time data for a kid profile on a specific day"
+    }
+  ]
+}
