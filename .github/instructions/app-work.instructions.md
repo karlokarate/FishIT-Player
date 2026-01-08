@@ -214,9 +214,9 @@ const val NORMAL_BATCH_SIZE = 100     // Generic fallback (phase-specific prefer
 Workers use a **two-tier batch sizing system**:
 
 1. **Phase-specific sizes** (default for normal devices):
-   - Live: 400 items (rapid inserts)
-   - Movies: 250 items (balanced)
-   - Series: 150 items (larger payloads)
+   - Live: 600 items (rapid inserts)
+   - Movies: 400 items (balanced)
+   - Series: 200 items (larger payloads)
 
 2. **Device class override** (FireTV safety):
    - FireTV: **35 items max** (caps ALL phases to prevent OOM)

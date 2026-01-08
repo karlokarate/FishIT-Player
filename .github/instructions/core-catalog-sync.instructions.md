@@ -140,9 +140,9 @@ syncActiveState.flatMapLatest { state ->
 
 ```kotlin
 // ✅ CORRECT: Phase-specific batch sizes (DEFAULT values)
-const val BATCH_SIZE_LIVE = 400     // Rapid stream inserts
-const val BATCH_SIZE_MOVIES = 250   // Balanced
-const val BATCH_SIZE_SERIES = 150   // Larger items
+const val BATCH_SIZE_LIVE = 600     // Rapid stream inserts
+const val BATCH_SIZE_MOVIES = 400   // Balanced
+const val BATCH_SIZE_SERIES = 200   // Larger items
 
 // Time-based flush for progressive UI updates
 const val TIME_FLUSH_INTERVAL_MS = 1200L
@@ -156,13 +156,13 @@ const val TIME_FLUSH_INTERVAL_MS = 1200L
 These are **default** batch sizes for normal devices (phone/tablet). On **FireTV low-RAM devices**, workers apply a global reduction factor:
 
 - FireTV: All batches capped at **35 items** (overrides phase-specific sizes)
-- Normal: Uses phase-specific sizes above (400/250/150)
+- Normal: Uses phase-specific sizes above (600/400/200)
 
 **How They Work Together:**
 
 1. Worker reads `device_class` from InputData
 2. If `FIRETV_LOW_RAM`: `effectiveBatchSize = min(phaseBatchSize, 35)`
-3. If `ANDROID_PHONE_TABLET`: `effectiveBatchSize = phaseBatchSize` (400/250/150)
+3. If `ANDROID_PHONE_TABLET`: `effectiveBatchSize = phaseBatchSize` (600/400/200)
 
 This ensures FireTV never overwhelms limited RAM while normal devices maximize throughput.
 
@@ -354,7 +354,7 @@ class WrongWorker @AssistedInject constructor(
 - [ ] NEVER updates UI directly
 
 ### Performance
-- [ ] Phase-specific batch sizes (Live=400, Movies=250, Series=150)
+- [ ] Phase-specific batch sizes (Live=600, Movies=400, Series=200)
 - [ ] Time-based flush (1200ms)
 - [ ] Metrics collection in debug builds
 

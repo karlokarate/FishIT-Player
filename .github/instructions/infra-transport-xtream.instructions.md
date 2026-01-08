@@ -83,7 +83,7 @@ object XtreamHttpHeaders {
 
 ```kotlin
 // Per Premium Contract Section 5: Concurrency
-// Phone/Tablet: parallelism = 10
+// Phone/Tablet: parallelism = 12
 // FireTV/low-RAM: parallelism = 3
 // SSOT in transport via OkHttp Dispatcher + Coroutine Semaphore
 // NOT in UI, NOT in pipeline!
