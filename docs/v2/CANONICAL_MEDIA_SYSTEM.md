@@ -1,6 +1,36 @@
-# Canonical Media System – Cross-Pipeline Unification
+# ⚠️ DEPRECATED DOCUMENT ⚠️
 
-> **Single Source of Truth** für Pipeline-übergreifendes Keying, Resume und Detail-Screens.
+> **Deprecation Date:** 2026-01-09  
+> **Status:** SUPERSEDED  
+> **Reason:** This document describes the old Obx* canonical media system. The system is being replaced by NX_* entities with improved design.
+> 
+> **✅ Use This Instead:**  
+> - **contracts/NX_SSOT_CONTRACT.md** - Authoritative NX_* entity system contract (Phase 0 complete)  
+> - **docs/v2/NX_SSOT_CONTRACT.md** - Detailed NX_* system documentation  
+> - **docs/v2/OBX_PLATIN_REFACTOR_ROADMAP.md** - 6-phase migration roadmap  
+> - **docs/v2/ISSUE_621_STATUS_UPDATE_2026-01-09.md** - Implementation status
+> 
+> **Key Improvements in NX_* System:**
+> - **Multi-account ready:** accountKey mandatory in all sourceKeys
+> - **Percentage-based resume:** Cross-source resume via `NX_WorkUserState.resumePercent`
+> - **Audit trail:** `NX_IngestLedger` tracks every ingest decision (no silent drops)
+> - **Deterministic keys:** `workKey`, `sourceKey`, `variantKey`, `authorityKey`
+> - **Kill-switch:** Safe rollback via `CatalogModePreferences`
+> 
+> **Entity Mapping:**
+> - `ObxCanonicalMedia` → `NX_Work` (canonical works)
+> - `ObxMediaSourceRef` → `NX_WorkSourceRef` (pipeline links) + `NX_WorkVariant` (playback variants)
+> - `ObxCanonicalResumeMark` → `NX_WorkUserState` (percentage-based resume)
+> - *(new)* `NX_IngestLedger` (audit trail for every ingest candidate)
+> - *(new)* `NX_Profile` (user/guest/kid profiles with content filters)
+> - *(new)* `NX_SourceAccount` (multi-account support)
+
+---
+
+# ~~Canonical Media System – Cross-Pipeline Unification~~
+
+> ~~**Single Source of Truth** für Pipeline-übergreifendes Keying, Resume und Detail-Screens.~~  
+> ⚠️ **OUTDATED** - See NX_* system documentation above
 
 ## 1. Übersicht
 
@@ -563,6 +593,32 @@ fun `resume syncs across sources`() = runTest {
 
 ---
 
-**Version:** 1.0.0  
-**Stand:** 2025-12-07  
+**Version:** ~~1.0.0~~ DEPRECATED  
+**Stand:** ~~2025-12-07~~ Superseded 2026-01-09  
 **Autor:** FishIT Player Team
+
+---
+
+# ⚠️ END OF DEPRECATED DOCUMENT ⚠️
+
+> **This document is outdated.** The Obx* canonical media system described above is being replaced.
+> 
+> **Use These Documents Instead:**
+> 
+> 1. **contracts/NX_SSOT_CONTRACT.md** - Binding contract for new NX_* entity system
+> 2. **docs/v2/OBX_PLATIN_REFACTOR_ROADMAP.md** - 6-phase migration roadmap (Phase 0 complete)
+> 3. **docs/v2/ISSUE_621_STATUS_UPDATE_2026-01-09.md** - Current implementation status
+> 
+> **Why NX_* is Better:**
+> 
+> | Feature | Old (Obx*) | New (NX_*) |
+> |---------|-----------|-----------|
+> | **Multi-account** | Not supported | accountKey mandatory (INV-13) |
+> | **Resume format** | Milliseconds only | Percentage + milliseconds |
+> | **Cross-source resume** | Manual calculation | Built-in via `resumePercent` |
+> | **Audit trail** | None (silent drops) | `NX_IngestLedger` (INV-01) |
+> | **Key format** | Implicit | Deterministic (workKey, sourceKey, variantKey) |
+> | **Rollback** | Manual DB wipe | Kill-switch (`CatalogModePreferences`) |
+> | **Data quality** | Untracked | 7 SSOT invariants enforced |
+> 
+> **Migration Status:** Phase 0 complete (2026-01-09), Phase 1 ready to start.

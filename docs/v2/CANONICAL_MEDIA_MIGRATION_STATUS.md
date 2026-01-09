@@ -1,11 +1,32 @@
-# v2 Migration Tracker – Canonical Media System
+# ⚠️ DEPRECATED DOCUMENT ⚠️
+
+> **Deprecation Date:** 2026-01-09  
+> **Status:** SUPERSEDED  
+> **Reason:** This document describes the old Obx* canonical media system, which is being replaced by the NX_* entity system.
+> 
+> **✅ Use This Instead:**  
+> - **contracts/NX_SSOT_CONTRACT.md** - Authoritative NX_* entity system contract  
+> - **docs/v2/NX_SSOT_CONTRACT.md** - Detailed NX_* system documentation  
+> - **docs/v2/OBX_PLATIN_REFACTOR_ROADMAP.md** - Migration roadmap (Phase 0 complete)  
+> - **docs/v2/ISSUE_621_STATUS_UPDATE_2026-01-09.md** - Current implementation status
+> 
+> **⚠️ Warning:** The Obx* entities described below are being replaced by NX_* entities:
+> - `ObxCanonicalMedia` → `NX_Work`
+> - `ObxMediaSourceRef` → `NX_WorkSourceRef` + `NX_WorkVariant`
+> - `ObxCanonicalResumeMark` → `NX_WorkUserState` (with percentage-based resume)
+
+---
+
+# ~~v2 Migration Tracker – Canonical Media System~~
 
 > **Letzte Prüfung:** 2025-12-11
-> **Status:** ✅ Alle v2-Dateien korrekt platziert – Migration abgeschlossen
+> **Status:** ~~✅ Alle v2-Dateien korrekt platziert – Migration abgeschlossen~~ ⚠️ OUTDATED - See NX_* system above
 
-## Übersicht
+## ~~Übersicht~~
 
-Diese Datei dokumentiert den Status der Migration des Canonical Media Systems in die v2-Architektur.
+~~Diese Datei dokumentiert den Status der Migration des Canonical Media Systems in die v2-Architektur.~~
+
+**Note:** This migration is superseded by the OBX PLATIN Refactor (Issue #621), which introduces 16 NX_* entities with improved multi-account support, percentage-based resume, and audit trails.
 
 ## Korrekte v2-Module (✅ Verifiziert)
 
@@ -101,3 +122,22 @@ Per `AGENTS_V2.md` – **NIEMALS ignorieren:**
 | 2025-12-11 | Dokumenten-Audit | Legacy-Datei war bereits gelöscht, Status aktualisiert |
 | (original) | Vollständiger v2-Pfad-Audit | 1 Legacy-Verletzung gefunden: `SourceBadge.kt` |
 | (original) | v2-Module geprüft | Alle 6 Module korrekt mit `com.fishit.player.*` |
+| 2026-01-09 | Document Deprecated | Superseded by NX_* entity system (Issue #621) |
+
+---
+
+# ⚠️ END OF DEPRECATED DOCUMENT ⚠️
+
+> **This document is outdated.** Use the following instead:
+> 
+> **Current Documentation:**  
+> - **contracts/NX_SSOT_CONTRACT.md** - Binding contract for NX_* entities  
+> - **docs/v2/OBX_PLATIN_REFACTOR_ROADMAP.md** - Implementation roadmap  
+> - **docs/v2/ISSUE_621_STATUS_UPDATE_2026-01-09.md** - Current status
+> 
+> **Key Improvements in NX_* System:**  
+> - Multi-account ready from day one (accountKey mandatory)  
+> - Percentage-based resume (cross-source playback)  
+> - Audit trail (NX_IngestLedger - no silent drops)  
+> - Kill-switch infrastructure (safe migration)  
+> - Deterministic key generation (collision-free)

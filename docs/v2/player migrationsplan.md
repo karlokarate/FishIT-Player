@@ -1,4 +1,24 @@
-Hier kommt ein ausführlicher Migrationsplan, der:
+# ⚠️ DEPRECATED DOCUMENT ⚠️
+
+> **Deprecation Date:** 2026-01-09  
+> **Status:** SUPERSEDED  
+> **Reason:** This document is superseded by comprehensive player architecture documentation.
+> 
+> **✅ Use These Instead:**  
+> - **docs/v2/internal-player/PLAYER_ARCHITECTURE_V2.md** - Complete v2 player architecture
+> - **docs/v2/internal-player/PLAYER_MIGRATION_STATUS.md** - Migration status and phases
+> - **contracts/INTERNAL_PLAYER_*.md** - Binding player contracts
+> - **player/** module READMEs - Current implementation details
+> 
+> **Note:** This is historical planning documentation. The actual migration followed a different, more detailed roadmap.
+
+---
+
+# ~~Player Migrationsplan~~
+
+⚠️ **This is outdated planning documentation. Use official player architecture docs above.**
+
+~~Hier kommt ein ausführlicher Migrationsplan, der:~~
 
 deine v2-Struktur konsequent respektiert,
 

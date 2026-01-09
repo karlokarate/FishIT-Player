@@ -1,8 +1,25 @@
-# Änderungen: Xtream Performance & Episode Strategy + Source Selection Refactoring
+# ⚠️ DEPRECATED DOCUMENT ⚠️
+
+> **Deprecation Date:** 2026-01-09  
+> **Status:** COMPLETED WORK  
+> **Reason:** This document describes completed implementation work from December 2025.
+> 
+> **Note:** This is historical documentation. The changes described below were successfully implemented.
+> 
+> **For Current Information:**  
+> - See current codebase for implementation details
+> - For performance optimization guidelines, see **docs/v2/HOME_PLATINUM_PERFORMANCE_PLAN.md**
+> - For source selection patterns, see **feature/detail/** implementation
+
+---
+
+# ~~Änderungen: Xtream Performance & Episode Strategy + Source Selection Refactoring~~
 
 > **Datum:** 30. Dezember 2025  
 > **Branch:** architecture/v2-bootstrap  
-> **Scope:** Xtream-Katalog-Sync-Performance, Episode Lazy Loading, Source Selection SSOT
+> **Scope:** ~~Xtream-Katalog-Sync-Performance, Episode Lazy Loading, Source Selection SSOT~~
+
+⚠️ **This is historical documentation of completed work.**
 
 ---
 
