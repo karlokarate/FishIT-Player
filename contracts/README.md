@@ -1,7 +1,7 @@
 # v2 Contracts – Binding Specifications
 
 **Status:** Authoritative  
-**Last Updated:** 2025-12-11
+**Last Updated:** 2026-01-09
 
 > ⚠️ **AGENTS MUST READ ALL CONTRACTS** before making any code changes.
 > 
@@ -19,6 +19,7 @@
 | [GLOSSARY_v2_naming_and_modules.md](GLOSSARY_v2_naming_and_modules.md) | 2.0 | **Global** | Authoritative vocabulary and naming conventions for all v2 code |
 | [MEDIA_NORMALIZATION_CONTRACT.md](../docs/v2/MEDIA_NORMALIZATION_CONTRACT.md) | 1.0 | Pipelines, Normalizer | Rules for `RawMediaMetadata` → `NormalizedMediaMetadata` (canonical location: docs/v2) |
 | [LOGGING_CONTRACT_V2.md](LOGGING_CONTRACT_V2.md) | 1.1 | All Modules | Unified logging rules, lambda-based lazy logging, allowed/forbidden APIs |
+| [NX_SSOT_CONTRACT.md](NX_SSOT_CONTRACT.md) | 1.0 | **Persistence Layer** | OBX PLATIN NX_* entities SSOT - deterministic keys, ingest ledger, invariants |
 
 ### Player Contracts
 
@@ -38,6 +39,14 @@
 |----------|--------|-------|-------------|
 | [TELEGRAM_PARSER_CONTRACT.md](TELEGRAM_PARSER_CONTRACT.md) | Draft | Telegram Pipeline | Telegram message parsing and domain mapping |
 | [TELEGRAM_ID_ARCHITECTURE_CONTRACT.md](TELEGRAM_ID_ARCHITECTURE_CONTRACT.md) | **Binding** | Telegram IDs | remoteId-first design for TDLib file references |
+| [TELEGRAM_STRUCTURED_BUNDLES_CONTRACT.md](TELEGRAM_STRUCTURED_BUNDLES_CONTRACT.md) | **Binding** | Telegram Pipeline | Structured bundle detection and lossless emission rules |
+| [TELEGRAM_LEGACY_MODULE_MIGRATION_CONTRACT.md](TELEGRAM_LEGACY_MODULE_MIGRATION_CONTRACT.md) | Completed | Telegram Migration | Legacy v1 → v2 migration rules (historical reference) |
+
+### Xtream Contracts
+
+| Contract | Status | Scope | Description |
+|----------|--------|-------|-------------|
+| [XTREAM_SCAN_PREMIUM_CONTRACT_V1.md](XTREAM_SCAN_PREMIUM_CONTRACT_V1.md) | **Binding** | Xtream Transport | Premium Contract - timeouts, headers, parallelism, rate limiting |
 
 ---
 
@@ -60,8 +69,10 @@ Before modifying code in any of these areas, agents **MUST** read the relevant c
 | Pipelines | `docs/v2/MEDIA_NORMALIZATION_CONTRACT.md`, `GLOSSARY` |
 | Logging | `LOGGING_CONTRACT_V2.md` |
 | Player | All `INTERNAL_PLAYER_*` contracts |
-| Telegram | `TELEGRAM_PARSER_CONTRACT.md`, `TELEGRAM_ID_ARCHITECTURE_CONTRACT.md`, `docs/v2/MEDIA_NORMALIZATION_CONTRACT.md` |
+| Telegram | `TELEGRAM_PARSER_CONTRACT.md`, `TELEGRAM_ID_ARCHITECTURE_CONTRACT.md`, `TELEGRAM_STRUCTURED_BUNDLES_CONTRACT.md`, `docs/v2/MEDIA_NORMALIZATION_CONTRACT.md` |
 | Telegram IDs / Imaging | `TELEGRAM_ID_ARCHITECTURE_CONTRACT.md` |
+| Xtream | `XTREAM_SCAN_PREMIUM_CONTRACT_V1.md` |
+| Persistence / OBX | `NX_SSOT_CONTRACT.md`, `docs/v2/OBX_PLATIN_REFACTOR_ROADMAP.md` |
 
 ### 2. Violation Handling
 
