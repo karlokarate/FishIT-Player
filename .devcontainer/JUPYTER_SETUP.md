@@ -21,35 +21,59 @@ The FishIT-Player devcontainer now includes a complete Jupyter setup for:
 
 ## Installation
 
-Jupyter is **automatically installed** when the Codespace is created via:
+Jupyter is **automatically installed AND started** when the Codespace is created:
 
 1. **DevContainer Feature:** Python 3 (latest) with JupyterLab
 2. **Post-Create Script:** Upgrades Jupyter to latest version
+3. **Post-Start Script:** Automatically starts JupyterLab server on port 8888
 
-No manual installation required!
+**No manual installation or startup required!** JupyterLab is ready to use immediately.
 
 ---
 
 ## Quick Start
 
-### Option 1: JupyterLab (Recommended)
+### ✨ Automatic Startup (Recommended)
+
+JupyterLab starts automatically when the Codespace opens:
+
+1. Wait for Codespace to fully initialize
+2. Look for the **port forwarding notification** (usually appears automatically)
+3. Click **"Open in Browser"** when the notification shows port 8888
+4. JupyterLab will open in a new browser tab - no token required!
+
+**Note:** If you don't see the notification, click the **PORTS** tab in VS Code and find port 8888, then click the globe icon.
+
+### Option 1: JupyterLab Web Interface
+
+Since JupyterLab is already running, you can access it via:
+- Click the **PORTS** tab in VS Code
+- Find port **8888** (labeled "JupyterLab")
+- Click the **🌐 globe icon** to open in browser
+
+### Option 2: Manual Start (if needed)
+
+If JupyterLab is not running, you can start it manually:
 
 ```bash
 # Start JupyterLab (modern interface)
-jupyter lab --ip=0.0.0.0 --port=8888 --no-browser
+jupyter lab --ip=0.0.0.0 --port=8888 --no-browser --allow-root
 
 # Codespaces will automatically forward the port
 # Click the "Open in Browser" button when prompted
 ```
 
-### Option 2: Classic Jupyter Notebook
+### Option 3: Classic Jupyter Notebook
 
 ```bash
+# Stop automatic JupyterLab first
+pkill -f "jupyter lab"
+
 # Start classic notebook interface
-jupyter notebook --ip=0.0.0.0 --port=8888 --no-browser
+jupyter notebook --ip=0.0.0.0 --port=8888 --no-browser --allow-root
 ```
 
-### Option 3: VS Code Native Jupyter
+### Option 4: VS Code Native Jupyter
 
 1. Create a new file with `.ipynb` extension
 2. VS Code will automatically open it as a Jupyter notebook
@@ -221,6 +245,38 @@ The devcontainer includes VS Code Jupyter extensions:
 
 ## Troubleshooting
 
+### Cannot Connect to JupyterLab
+
+**Symptom:** Error message "We were unable to connect to your codespace in JupyterLab!"
+
+**Solutions:**
+
+1. **Check if JupyterLab is running:**
+   ```bash
+   ps aux | grep jupyter
+   ```
+
+2. **Manually start JupyterLab if not running:**
+   ```bash
+   jupyter lab --ip=0.0.0.0 --port=8888 --no-browser --allow-root
+   ```
+
+3. **Check port forwarding:**
+   - Open the **PORTS** tab in VS Code
+   - Verify port 8888 is listed and forwarded
+   - If not, add it manually: Click "+" and enter "8888"
+
+4. **View JupyterLab logs:**
+   ```bash
+   cat /tmp/jupyter.log
+   ```
+
+5. **Restart JupyterLab:**
+   ```bash
+   pkill -f "jupyter lab"
+   nohup jupyter lab --ip=0.0.0.0 --port=8888 --no-browser --allow-root > /tmp/jupyter.log 2>&1 &
+   ```
+
 ### Jupyter Command Not Found
 
 ```bash
@@ -237,8 +293,11 @@ pip3 install --user --upgrade jupyter jupyterlab
 ### Port Already in Use
 
 ```bash
-# Use a different port
-jupyter lab --ip=0.0.0.0 --port=8889 --no-browser
+# Kill existing JupyterLab process
+pkill -f "jupyter lab"
+
+# Or use a different port
+jupyter lab --ip=0.0.0.0 --port=8889 --no-browser --allow-root
 ```
 
 ### Python Kernel Not Found
@@ -256,6 +315,15 @@ python3 -m ipykernel install --user --name=python3
 1. Reload VS Code: `Ctrl+Shift+P` → "Developer: Reload Window"
 2. Check extensions are installed
 3. Select Python interpreter: `Ctrl+Shift+P` → "Python: Select Interpreter"
+
+### Authentication Token Issues
+
+**Note:** GitHub Codespaces handles authentication automatically. You should NOT see token prompts.
+
+If you see a token prompt:
+- This usually means JupyterLab wasn't started with the correct flags
+- Make sure you use `--no-browser` and `--allow-root` flags
+- The `--ip=0.0.0.0` flag is REQUIRED for Codespaces proxy access
 
 ---
 
