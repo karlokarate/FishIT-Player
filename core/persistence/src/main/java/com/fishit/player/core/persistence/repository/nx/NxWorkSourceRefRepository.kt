@@ -26,6 +26,7 @@ import kotlinx.coroutines.flow.Flow
  * @see NxKeyGenerator
  * @see NxWorkRepository
  */
+@Suppress("TooManyFunctions") // Repository interfaces legitimately need comprehensive data access methods
 interface NxWorkSourceRefRepository {
 
     // ═══════════════════════════════════════════════════════════════════════
