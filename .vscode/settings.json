@@ -1,13 +1,22 @@
 {
   // ===== Kotlin & Android =====
-  // DISABLED: Kotlin extension removed to save resources
+  // DISABLED: Kotlin extension causes memory pressure and FS provider crashes
   "kotlin.languageServer.enabled": false,
   "kotlin.debugAdapter.enabled": false,
+  "kotlin.compiler.jvm.target": "21",
   // ===== Java =====
   // DISABLED: Java extensions not needed - using Gradle CLI only
   // Android debugging is done via ADB, not Java Debug Protocol
   "java.autobuild.enabled": false,
   "java.debug.settings.enableRunDebugCodeLens": false,
+  "java.import.gradle.enabled": false,
+  "java.compile.nullAnalysis.mode": "disabled",
+  // ===== Gradle Extension =====
+  // DISABLED: Gradle extension spawns daemons that compete with CLI builds
+  // Use terminal ./gradlew commands instead
+  "gradle.autoDetect": "off",
+  "gradle.java.home": "/usr/lib/jvm/msopenjdk-current",
+  "gradle.nestedProjects": false,
   // ===== Android =====
   // Paths aligned with devcontainer.json for Codespaces
   "android.sdk": "/home/codespace/.android-sdk",
@@ -61,7 +70,11 @@
     "**/.gradle/**": true,
     "**/.idea/**": true,
     "**/build/**": true,
-    "**/.wsl-*/**": true
+    "**/.wsl-*/**": true,
+    "**/.kotlin/**": true,
+    "**/node_modules/**": true,
+    "**/.git/objects/**": true,
+    "**/.git/subtree-cache/**": true
   },
   "search.exclude": {
     "**/.gradle": true,

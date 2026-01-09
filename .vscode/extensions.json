@@ -3,10 +3,6 @@
     // GitHub Copilot (Required for this project)
     "GitHub.copilot",
     "GitHub.copilot-chat",
-    // Kotlin (lightweight syntax highlighting)
-    "fwcd.kotlin",
-    // Gradle (task runner)
-    "richardwillis.vscode-gradle",
     // Git
     "eamodio.gitlens",
     "mhutchie.git-graph",
