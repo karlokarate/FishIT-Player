@@ -286,44 +286,59 @@ style:
       # core/persistence is SCHEMA-ONLY (entities + DI wiring) - NO repositories!
       # Repository implementations belong in infra/data-* modules.
       # See: docs/v2/OBX_PLATIN_DETEKT_GUARDRAILS_CONTRACT.md
+      #
+      # ALLOWED PATHS (enforced via excludes below):
+      #   - infra/data-*/**         → Repository implementations
+      #   - core/persistence/**     → Schema, DI, ObxStore, Inspector
+      #   - infra/tooling/**        → Debug tools only
+      #   - tools/**                → CLI/debugging
+      #
+      # FORBIDDEN PATHS (NOT in excludes = will trigger error):
+      #   - pipeline/**             → NEVER (pure catalog, no DB)
+      #   - playback/**             → NEVER (uses interfaces only)
+      #   - player/**               → NEVER (source-agnostic)
+      #   - feature/**              → NEVER (uses repositories)
+      #   - app-v2/**               → NEVER (DI wiring only, no direct BoxStore)
+      #
       - value: 'io.objectbox.BoxStore'
         reason: '[OBX-01] BoxStore only allowed in infra/data-*/*Repository*.kt and core/persistence/{di,obx/ObxStore,inspector}. See OBX_PLATIN_DETEKT_GUARDRAILS_CONTRACT.md'
+      
+      # ======================================================================
+      # OBX-02: Box<T> Access Pattern (OBX PLATIN Phase 0.3)
+      # ======================================================================
+      # Direct Box<Entity> access must be in repositories only.
+      - value: 'io.objectbox.Box'
+        reason: '[OBX-02] Box<T> only allowed in infra/data-*/*Repository*.kt. Use repository interfaces elsewhere.'
     
     excludes:
-      # Rule-level excludes: these paths are exempt from ALL ForbiddenImport checks above
-      #
-      # Logging module can use android.util.Log and Timber
+      # =========================================================================
+      # LAYER-SPECIFIC EXCLUDES
+      # =========================================================================
+      # These paths are exempt from ForbiddenImport checks.
+      # 
+      # IMPORTANT: excludes apply to ALL rules above, not just BoxStore!
+      # Modules NOT listed here will be checked against ALL forbidden imports.
+      # =========================================================================
+      
+      # --- LOGGING MODULE (can use android.util.Log and Timber) ---
       - '**/infra/logging/**'
       
-      # Legacy v1 code is exempt from v2 rules
+      # --- LEGACY CODE (exempt from v2 rules) ---
       - '**/legacy/**'
       
-      # Infrastructure modules can import from each other (data can import transport, etc.)
+      # --- PERSISTENCE LAYER (BoxStore + Box<T> allowed) ---
       - '**/infra/data-*/**'
+      - '**/core/persistence/**'
+      
+      # --- TRANSPORT LAYER (can import from each other) ---
       - '**/infra/transport-*/**'
       - '**/infra/network/**'
-      - '**/infra/persistence/**'
+      
+      # --- TOOLING (debug tools need full access) ---
       - '**/infra/tooling/**'
-      
-      # Core modules are foundational and may import as needed
-      - '**/core/**'
-      
-      # Pipeline modules need to import transport interfaces
-      - '**/pipeline/**'
-      
-      # Playback modules need to import transport for DataSource implementations
-      - '**/playback/**'
-      
-      # Player internal can import what it needs
-      - '**/player/**'
-      
-      # App wiring module needs to wire everything together
-      - '**/app-v2/**'
-      
-      # Tools/CLI can access everything for debugging
       - '**/tools/**'
       
-      # Test code is exempt from production layer rules
+      # --- TEST CODE (exempt from production layer rules) ---
       - '**/src/test/**'
       - '**/src/androidTest/**'
       - '**/src/testFixtures/**'

@@ -7,13 +7,6 @@
       "name": "🐛 Debug Android App",
       "projectRoot": "${workspaceFolder}",
       "mainClass": ""
-    },
-    {
-      "type": "java",
-      "name": "🐛 Attach Debugger",
-      "request": "attach",
-      "hostName": "localhost",
-      "port": 5005
     }
   ]
 }

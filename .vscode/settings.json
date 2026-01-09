@@ -3,15 +3,15 @@
   // DISABLED: Kotlin extension removed to save resources
   "kotlin.languageServer.enabled": false,
   "kotlin.debugAdapter.enabled": false,
-
   // ===== Java =====
-  // DISABLED: Java extension removed - using Gradle CLI only
+  // DISABLED: Java extensions not needed - using Gradle CLI only
+  // Android debugging is done via ADB, not Java Debug Protocol
   "java.autobuild.enabled": false,
-
+  "java.debug.settings.enableRunDebugCodeLens": false,
   // ===== Android =====
-  "android.sdk": "${workspaceFolder}/.wsl-android-sdk",
+  // Paths aligned with devcontainer.json for Codespaces
+  "android.sdk": "/home/codespace/.android-sdk",
   "android.gradle.path": "${workspaceFolder}/gradlew",
-  "android.emulator.path": "${workspaceFolder}/.wsl-android-sdk/emulator/emulator",
   // ===== Code Formatting =====
   "editor.formatOnSave": true,
   "editor.codeActionsOnSave": {
@@ -71,14 +71,14 @@
   },
   // ===== Terminal =====
   "terminal.integrated.defaultProfile.linux": "bash",
+  // Terminal environment - aligned with devcontainer.json remoteEnv
   "terminal.integrated.env.linux": {
-    "ANDROID_SDK_ROOT": "${workspaceFolder}/.wsl-android-sdk",
-    "ANDROID_NDK_HOME": "${workspaceFolder}/.wsl-android-sdk/ndk/26.1.10909125",
-    "JAVA_HOME": "/usr/local/sdkman/candidates/java/21.0.9-ms",
-    "GRADLE_USER_HOME": "${workspaceFolder}/.wsl-gradle",
-    "GRADLE_OPTS": "-Xmx1536m -Xms256m -XX:+UseG1GC -XX:MaxMetaspaceSize=384m -Dorg.gradle.daemon.idletimeout=300000 -Dorg.gradle.jvmargs=-Xmx1536m",
-    "_JAVA_OPTIONS": "-Xmx1536m -Xms256m",
-    "PATH": "${workspaceFolder}/.wsl-cmake/bin:${workspaceFolder}/.wsl-gperf:/usr/local/sdkman/candidates/java/21.0.9-ms/bin:${workspaceFolder}/.wsl-android-sdk/cmdline-tools/latest/bin:${workspaceFolder}/.wsl-android-sdk/platform-tools:${workspaceFolder}/.wsl-android-sdk/emulator:${env:PATH}"
+    "ANDROID_SDK_ROOT": "/home/codespace/.android-sdk",
+    "ANDROID_HOME": "/home/codespace/.android-sdk",
+    "JAVA_HOME": "/usr/lib/jvm/msopenjdk-current",
+    "GRADLE_USER_HOME": "${env:HOME}/.gradle",
+    "GRADLE_OPTS": "-Xmx1536m -Xms256m -XX:+UseG1GC -XX:MaxMetaspaceSize=384m -Dorg.gradle.daemon.idletimeout=300000",
+    "_JAVA_OPTIONS": "-Xmx1536m -Xms256m"
   },
   // ===== Editor =====
   "editor.minimap.enabled": false,
@@ -121,59 +121,69 @@
   // ===== Extensions =====
   "extensions.ignoreRecommendations": false,
   "java.configuration.updateBuildConfiguration": "interactive",
-
   // ===== GitHub Copilot (PLATIN Configuration) =====
-  
   // MCP (Model Context Protocol) Integration
   "github.copilot.chat.mcp.enabled": true,
   "mcp": {
     "servers": {
       "github": {
         "command": "docker",
-        "args": ["run", "-i", "--rm", "-e", "GITHUB_PERSONAL_ACCESS_TOKEN", "ghcr.io/github/github-mcp-server"],
+        "args": [
+          "run",
+          "-i",
+          "--rm",
+          "-e",
+          "GITHUB_PERSONAL_ACCESS_TOKEN",
+          "ghcr.io/github/github-mcp-server"
+        ],
         "env": {
           "GITHUB_PERSONAL_ACCESS_TOKEN": "${localEnv:GITHUB_TOKEN}"
         }
       },
       "sequential-thinking": {
         "command": "npx",
-        "args": ["-y", "@modelcontextprotocol/server-sequential-thinking@0.1.0"]
+        "args": [
+          "-y",
+          "@modelcontextprotocol/server-sequential-thinking@0.1.0"
+        ]
       }
     }
   },
-  
   // Core Instructions
   "github.copilot.chat.codeGeneration.useInstructionFiles": true,
   "github.copilot.chat.codeGeneration.instructions": [
-    { "file": ".github/copilot-instructions.md" },
-    { "file": "AGENTS.md" },
-    { "file": "COPILOT_TASK_HINTS.md" }
+    {
+      "file": ".github/copilot-instructions.md"
+    },
+    {
+      "file": "AGENTS.md"
+    },
+    {
+      "file": "COPILOT_TASK_HINTS.md"
+    }
   ],
-  
   // Code Review Instructions
   "github.copilot.chat.reviewSelection.instructions": [
-    { "file": ".github/copilot-instructions.md" }
+    {
+      "file": ".github/copilot-instructions.md"
+    }
   ],
-  
   // Test Generation Instructions  
   "github.copilot.chat.testGeneration.instructions": [
-    { 
+    {
       "text": "Generate tests using JUnit5 + MockK. Use @Test annotation. Mock dependencies with mockk<T>(). Use coEvery/coVerify for suspend functions. Follow AAA pattern (Arrange-Act-Assert). Test file naming: <ClassName>Test.kt. Place in src/test/java matching main package structure."
     }
   ],
-  
   // Commit Message Instructions
   "github.copilot.chat.commitMessageGeneration.instructions": [
     {
       "text": "Use Conventional Commits format: <type>(<scope>): <description>. Types: feat, fix, refactor, docs, test, chore, perf. Scope = module name (e.g., pipeline, player, transport). Max 72 chars for subject. Add body for breaking changes. Reference issues with #number."
     }
   ],
-  
   // Performance: Faster completions
   "github.copilot.advanced": {
     "listCount": 10
   },
-  
   // Editor Integration
   "github.copilot.editor.enableAutoCompletions": true,
   "github.copilot.enable": {
@@ -182,7 +192,6 @@
     "markdown": true,
     "scminput": true
   },
-  
   // Chat Behavior
   "github.copilot.chat.localeOverride": "en",
   "github.copilot.chat.welcomeMessage": "disabled"

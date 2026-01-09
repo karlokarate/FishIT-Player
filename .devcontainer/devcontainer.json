@@ -21,7 +21,7 @@
         "java.configuration.runtimes": [
           {
             "name": "JavaSE-21",
-            "path": "/home/codespace/java/current",
+            "path": "/usr/lib/jvm/msopenjdk-current",
             "default": true
           }
         ],
