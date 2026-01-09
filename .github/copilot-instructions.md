@@ -386,7 +386,8 @@ MCP servers are configured in:
 
 **Cloud Agents (GitHub Actions):**
 - **COPILOT_MCP_TOKEN** repository secret - Required for cloud agent authentication
-- **COPILOT_MCP_TELEGRAM_API_ID** / **COPILOT_MCP_TELEGRAM_API_HASH** - Telegram API credentials (optional)
+- **COPILOT_MCP_TELEGRAM_API_ID** / **COPILOT_MCP_TELEGRAM_API_HASH** - Telegram API credentials (required for Telegram tools)
+- **COPILOT_MCP_XTREAM_URL** / **COPILOT_MCP_XTREAM_USER** / **COPILOT_MCP_XTREAM_PASS** - Xtream API credentials (required for Xtream tools)
 - Automatic caching of Docker images, NPM packages, and custom MCP server JARs
 - Pre-configured in `copilot-setup-steps.yml` workflow
 

@@ -21,7 +21,7 @@ The repository provides three MCP servers for enhanced Copilot capabilities:
 
 ### 1. Set Up GitHub Environment with Secrets
 
-The FishIT Pipeline MCP server requires Telegram API credentials to function fully. These should be configured as GitHub Environment secrets.
+The FishIT Pipeline MCP server requires API credentials to function. These should be configured as GitHub Environment secrets.
 
 **Steps:**
 
@@ -38,10 +38,13 @@ The FishIT Pipeline MCP server requires Telegram API credentials to function ful
    |-------------|-------------|--------------|
    | `COPILOT_MCP_TELEGRAM_API_ID` | Telegram API ID (numeric) | https://my.telegram.org/apps |
    | `COPILOT_MCP_TELEGRAM_API_HASH` | Telegram API Hash (hexadecimal) | https://my.telegram.org/apps |
+   | `COPILOT_MCP_XTREAM_URL` | Xtream server URL | Your Xtream provider |
+   | `COPILOT_MCP_XTREAM_USER` | Xtream username | Your Xtream account |
+   | `COPILOT_MCP_XTREAM_PASS` | Xtream password | Your Xtream account |
 
-4. Optionally add `COPILOT_MCP_TOKEN` for GitHub MCP server authentication
+4. For GitHub MCP server authentication, the `COPILOT_MCP_TOKEN` repository secret is automatically used if configured
 
-**Note:** Xtream credentials are hardcoded in the configuration files (non-sensitive test account).
+**Note:** All credentials are now managed through environment variables for security.
 
 ### 2. Build the FishIT Pipeline MCP Server
 
@@ -143,20 +146,49 @@ Or check `tools/mcp-server/README.md` for the complete tool list.
 3. Network connectivity issues
 
 **Solution:**
-- Test manually: `curl http://konigtv.com:8080/player_api.php?username=Christoph10&password=JQ2rKsQ744`
-- Update credentials in `.github/copilot-mcp-settings.json` if needed
+- Test manually: `curl http://your-server.com:8080/player_api.php?username=YOUR_USER&password=YOUR_PASS`
+- Verify environment secrets are configured correctly
+- Check if server credentials have expired
+
+### Using Repository Secrets vs Environment Secrets
+
+**Question:** How to use `COPILOT_MCP_TOKEN` (repository secret) as an environment token?
+
+**Answer:** Repository secrets and environment secrets work differently:
+
+1. **Repository Secrets** (like `COPILOT_MCP_TOKEN`):
+   - Configured at: https://github.com/karlokarate/FishIT-Player/settings/secrets/actions
+   - Available in **all** workflows automatically
+   - Used in `.github/workflows/copilot-setup-steps.yml` as `${{ secrets.COPILOT_MCP_TOKEN }}`
+
+2. **Environment Secrets** (like `COPILOT_MCP_TELEGRAM_API_ID`):
+   - Configured at: https://github.com/karlokarate/FishIT-Player/settings/environments
+   - Only available when workflow specifies `environment: copilot`
+   - More restrictive - requires approval rules
+
+**To use COPILOT_MCP_TOKEN as an environment variable:**
+
+Add it to the `copilot` environment secrets (in addition to or instead of repository secrets):
+```
+1. Go to: https://github.com/karlokarate/FishIT-Player/settings/environments
+2. Select the "copilot" environment
+3. Add secret: COPILOT_MCP_TOKEN
+4. The value will automatically be available as ${env:COPILOT_MCP_TOKEN} in MCP configs
+```
+
+This allows the same token to be used both in workflows and MCP configurations.
 
 ## Security Notes
 
 ### Sensitive Data Handling
 
-- **Telegram credentials** use environment variable references (`${env:COPILOT_MCP_*}`)
-- **Xtream credentials** are embedded in config files (test account, non-sensitive)
+- **All credentials** now use environment variable references (`${env:COPILOT_MCP_*}`)
+- **No hardcoded credentials** in configuration files
 - **GitHub tokens** are automatically injected in Codespaces
 
 ### Best Practices
 
-1. **Never commit** Telegram API credentials directly to files
+1. **Never commit** API credentials directly to files
 2. **Use environment variables** for all sensitive data
 3. **Rotate credentials** if accidentally exposed
 4. **Limit scope** of GitHub tokens to minimum required permissions
@@ -166,7 +198,7 @@ Or check `tools/mcp-server/README.md` for the complete tool list.
 ```
 GitHub Copilot Coding Agent
       │
-      │ reads ~/.github/copilot-mcp-settings.json
+      │ reads .github/copilot-mcp-settings.json
       ▼
 ┌─────────────────────────────────┐
 │ MCP Servers (3 instances)       │
