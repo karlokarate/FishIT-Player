@@ -269,6 +269,20 @@ jobs:
         if: ${{ steps.plan.outputs.detekt == 'true' }}
         run: ./run-if-task-exists.sh detekt
 
+      - name: OBX PLATIN Guardrails
+        if: ${{ steps.plan.outputs.detekt == 'true' }}
+        shell: bash
+        run: |
+          echo "::group::OBX PLATIN Guardrails Verification"
+          if [[ -f tools/detekt-rules/verify-guardrails.sh ]]; then
+            chmod +x tools/detekt-rules/verify-guardrails.sh
+            bash tools/detekt-rules/verify-guardrails.sh
+            echo "::endgroup::"
+          else
+            echo "::notice::tools/detekt-rules/verify-guardrails.sh not found – skipping OBX guardrails check"
+            echo "::endgroup::"
+          fi
+
       - name: Ktlint/Spotless
         if: ${{ steps.plan.outputs.ktlint == 'true' }}
         run: ./run-if-task-exists.sh ktlintCheck || ./run-if-task-exists.sh spotlessCheck
