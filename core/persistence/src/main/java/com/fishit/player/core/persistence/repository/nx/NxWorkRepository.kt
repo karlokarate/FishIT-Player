@@ -18,6 +18,21 @@ import kotlinx.coroutines.flow.Flow
  * ## Key Format
  * workKey: `<workType>:<canonicalSlug>:<year|LIVE>`
  *
+ * ## Architectural Note
+ * This repository interface is intentionally placed in `core/persistence/repository/nx/`
+ * rather than `core/model/repository/` because:
+ * 1. NX entities ARE the domain model (SSOT) - not an implementation detail
+ * 2. The interface works directly with `NX_Work` ObjectBox entities
+ * 3. Placing it in `core/model` would create a circular dependency
+ *    (core/model cannot depend on core/persistence)
+ *
+ * This differs from legacy repositories (CanonicalMediaRepository, etc.) which:
+ * - Define interfaces in core/model using domain types
+ * - Implement in core/persistence using Obx* entities for persistence
+ *
+ * The NX pattern eliminates the domain/persistence split - NX entities
+ * are both the domain model AND the persistence model.
+ *
  * @see NX_Work
  * @see com.fishit.player.core.persistence.obx.NxKeyGenerator
  */
