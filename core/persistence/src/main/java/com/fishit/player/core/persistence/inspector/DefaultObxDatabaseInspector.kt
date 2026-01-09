@@ -383,10 +383,13 @@ class DefaultObxDatabaseInspector
             return if (s.length <= 400) s else s.take(400) + "…"
         }
 
-        override suspend fun exportSchema(context: android.content.Context, toLogcat: Boolean): String =
+        override suspend fun exportSchema(
+            context: android.content.Context,
+            toLogcat: Boolean,
+        ): String =
             withContext(Dispatchers.IO) {
                 val dump = ObjectBoxIntrospectionDump.generateDump(boxStore)
-            
+
                 if (toLogcat) {
                     ObjectBoxIntrospectionDump.dumpToLogcat(dump)
                     "Logcat"
@@ -395,4 +398,4 @@ class DefaultObxDatabaseInspector
                     file.absolutePath
                 }
             }
-}
+    }

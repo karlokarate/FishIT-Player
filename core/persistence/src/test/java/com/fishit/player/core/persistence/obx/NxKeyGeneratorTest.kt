@@ -11,7 +11,6 @@ import org.junit.Test
  * Verifies key format specifications from NX_SSOT_CONTRACT.md.
  */
 class NxKeyGeneratorTest {
-
     // =========================================================================
     // Work Key Tests
     // =========================================================================
@@ -30,13 +29,14 @@ class NxKeyGeneratorTest {
 
     @Test
     fun `workKey - episode includes season and episode`() {
-        val key = NxKeyGenerator.workKey(
-            workType = WorkType.EPISODE,
-            title = "Breaking Bad",
-            year = 2008,
-            season = 1,
-            episode = 5,
-        )
+        val key =
+            NxKeyGenerator.workKey(
+                workType = WorkType.EPISODE,
+                title = "Breaking Bad",
+                year = 2008,
+                season = 1,
+                episode = 5,
+            )
         assertEquals("EPISODE:breaking-bad:2008:S01E05", key)
     }
 

@@ -308,12 +308,13 @@ object ObxWriteConfig {
         context: Context,
         phaseHint: String? = null,
     ): Int {
-        val chunkSize = when (phaseHint?.lowercase()) {
-            "live" -> getSyncLiveBatchSize(deviceClassProvider, context)
-            "movies", "vod" -> getSyncMoviesBatchSize(deviceClassProvider, context)
-            "series" -> getSyncSeriesBatchSize(deviceClassProvider, context)
-            else -> getBackfillChunkSize(deviceClassProvider, context)
-        }
+        val chunkSize =
+            when (phaseHint?.lowercase()) {
+                "live" -> getSyncLiveBatchSize(deviceClassProvider, context)
+                "movies", "vod" -> getSyncMoviesBatchSize(deviceClassProvider, context)
+                "series" -> getSyncSeriesBatchSize(deviceClassProvider, context)
+                else -> getBackfillChunkSize(deviceClassProvider, context)
+            }
         return putChunked(items, chunkSize)
     }
 

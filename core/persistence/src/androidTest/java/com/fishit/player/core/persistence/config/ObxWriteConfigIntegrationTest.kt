@@ -29,7 +29,6 @@ import org.junit.runner.RunWith
  */
 @RunWith(AndroidJUnit4::class)
 class ObxWriteConfigIntegrationTest {
-
     private lateinit var context: Context
     private lateinit var deviceClassProvider: DeviceClassProvider
 
@@ -45,7 +44,7 @@ class ObxWriteConfigIntegrationTest {
         val deviceClass = deviceClassProvider.getDeviceClass(context)
         assertTrue(
             "Device class should be valid",
-            deviceClass in listOf(DeviceClass.TV_LOW_RAM, DeviceClass.TV, DeviceClass.PHONE_TABLET)
+            deviceClass in listOf(DeviceClass.TV_LOW_RAM, DeviceClass.TV, DeviceClass.PHONE_TABLET),
         )
     }
 

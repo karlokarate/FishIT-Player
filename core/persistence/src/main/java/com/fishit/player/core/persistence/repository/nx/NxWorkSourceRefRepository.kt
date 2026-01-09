@@ -28,7 +28,6 @@ import kotlinx.coroutines.flow.Flow
  */
 @Suppress("TooManyFunctions") // Repository interfaces legitimately need comprehensive data access methods
 interface NxWorkSourceRefRepository {
-
     // ═══════════════════════════════════════════════════════════════════════
     // CRUD Operations
     // ═══════════════════════════════════════════════════════════════════════
@@ -103,7 +102,10 @@ interface NxWorkSourceRefRepository {
      * @param workKey Work key to link to
      * @return true if linked successfully
      */
-    suspend fun linkToWork(sourceKey: String, workKey: String): Boolean
+    suspend fun linkToWork(
+        sourceKey: String,
+        workKey: String,
+    ): Boolean
 
     /**
      * Unlink a source ref from its work.
@@ -130,7 +132,7 @@ interface NxWorkSourceRefRepository {
     suspend fun findBySourceType(
         sourceType: SourceType,
         limit: Int = 100,
-        offset: Int = 0
+        offset: Int = 0,
     ): List<NX_WorkSourceRef>
 
     /**
@@ -140,7 +142,10 @@ interface NxWorkSourceRefRepository {
      * @param limit Maximum results (default 100)
      * @return List of source refs for the account
      */
-    suspend fun findByAccountKey(accountKey: String, limit: Int = 100): List<NX_WorkSourceRef>
+    suspend fun findByAccountKey(
+        accountKey: String,
+        limit: Int = 100,
+    ): List<NX_WorkSourceRef>
 
     /**
      * Find source refs by source type AND account.
@@ -153,7 +158,7 @@ interface NxWorkSourceRefRepository {
     suspend fun findBySourceTypeAndAccount(
         sourceType: SourceType,
         accountKey: String,
-        limit: Int = 100
+        limit: Int = 100,
     ): List<NX_WorkSourceRef>
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -167,7 +172,10 @@ interface NxWorkSourceRefRepository {
      * @param messageId Telegram message ID
      * @return SourceRef if found, null otherwise
      */
-    suspend fun findByTelegramIds(chatId: Long, messageId: Long): NX_WorkSourceRef?
+    suspend fun findByTelegramIds(
+        chatId: Long,
+        messageId: Long,
+    ): NX_WorkSourceRef?
 
     /**
      * Find all source refs for a Telegram chat.
@@ -176,7 +184,10 @@ interface NxWorkSourceRefRepository {
      * @param limit Maximum results (default 100)
      * @return List of source refs from the chat
      */
-    suspend fun findByTelegramChatId(chatId: Long, limit: Int = 100): List<NX_WorkSourceRef>
+    suspend fun findByTelegramChatId(
+        chatId: Long,
+        limit: Int = 100,
+    ): List<NX_WorkSourceRef>
 
     // ═══════════════════════════════════════════════════════════════════════
     // Xtream-Specific Queries
@@ -189,7 +200,10 @@ interface NxWorkSourceRefRepository {
      * @param streamId Xtream stream ID
      * @return SourceRef if found, null otherwise
      */
-    suspend fun findByXtreamStreamId(accountKey: String, streamId: Int): NX_WorkSourceRef?
+    suspend fun findByXtreamStreamId(
+        accountKey: String,
+        streamId: Int,
+    ): NX_WorkSourceRef?
 
     /**
      * Find all source refs for an Xtream category.
@@ -202,7 +216,7 @@ interface NxWorkSourceRefRepository {
     suspend fun findByXtreamCategoryId(
         accountKey: String,
         categoryId: Int,
-        limit: Int = 100
+        limit: Int = 100,
     ): List<NX_WorkSourceRef>
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -361,7 +375,7 @@ interface NxWorkSourceRefRepository {
      */
     suspend fun updateLastSeen(
         sourceKey: String,
-        timestamp: Long = System.currentTimeMillis()
+        timestamp: Long = System.currentTimeMillis(),
     ): Boolean
 
     /**
@@ -371,5 +385,8 @@ interface NxWorkSourceRefRepository {
      * @param limit Maximum results
      * @return List of source refs not seen since threshold
      */
-    suspend fun findStale(olderThan: Long, limit: Int = 100): List<NX_WorkSourceRef>
+    suspend fun findStale(
+        olderThan: Long,
+        limit: Int = 100,
+    ): List<NX_WorkSourceRef>
 }

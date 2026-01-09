@@ -35,10 +35,11 @@ object ObjectBoxIntrospectionDump {
     private const val TAG = "ObjectBoxIntrospectionDump"
     private const val MAX_LOGCAT_CHUNK = 3000 // Logcat line size limit
 
-    private val json = Json {
-        prettyPrint = true
-        encodeDefaults = true
-    }
+    private val json =
+        Json {
+            prettyPrint = true
+            encodeDefaults = true
+        }
 
     /**
      * Generate a complete schema dump from the BoxStore.
@@ -49,40 +50,44 @@ object ObjectBoxIntrospectionDump {
      * @param boxStore The active ObjectBox store
      * @return Structured schema dump ready for export
      */
-    suspend fun generateDump(boxStore: BoxStore): ObjectBoxSchemaDump = withContext(Dispatchers.IO) {
-        UnifiedLog.i(TAG) { "Starting schema introspection..." }
+    suspend fun generateDump(boxStore: BoxStore): ObjectBoxSchemaDump =
+        withContext(Dispatchers.IO) {
+            UnifiedLog.i(TAG) { "Starting schema introspection..." }
 
-        val entities = ObxInspectorEntityRegistry.all.map { spec ->
-            try {
-                extractEntityDump(boxStore, spec)
-            } catch (e: Exception) {
-                UnifiedLog.e(TAG, e) { "Failed to extract entity: ${spec.id}" }
-                EntityDump(
-                    name = spec.id,
-                    displayName = spec.displayName,
-                    entityId = 0L,
-                    rowCount = 0L,
-                    properties = emptyList(),
-                    relations = emptyList(),
-                    error = e.message ?: "Unknown error"
+            val entities =
+                ObxInspectorEntityRegistry.all.map { spec ->
+                    try {
+                        extractEntityDump(boxStore, spec)
+                    } catch (e: Exception) {
+                        UnifiedLog.e(TAG, e) { "Failed to extract entity: ${spec.id}" }
+                        EntityDump(
+                            name = spec.id,
+                            displayName = spec.displayName,
+                            entityId = 0L,
+                            rowCount = 0L,
+                            properties = emptyList(),
+                            relations = emptyList(),
+                            error = e.message ?: "Unknown error",
+                        )
+                    }
+                }
+
+            val dateFormat =
+                SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX", Locale.US).apply {
+                    timeZone = TimeZone.getTimeZone("UTC")
+                }
+            val dump =
+                ObjectBoxSchemaDump(
+                    timestamp = dateFormat.format(Date()),
+                    objectBoxVersion = getObjectBoxVersion(),
+                    storeSize = 0L, // Store size not easily accessible via public API
+                    entityCount = entities.size,
+                    entities = entities,
                 )
-            }
-        }
 
-        val dateFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX", Locale.US).apply {
-            timeZone = TimeZone.getTimeZone("UTC")
+            UnifiedLog.i(TAG) { "Schema introspection complete: ${dump.entityCount} entities" }
+            dump
         }
-        val dump = ObjectBoxSchemaDump(
-            timestamp = dateFormat.format(Date()),
-            objectBoxVersion = getObjectBoxVersion(),
-            storeSize = 0L, // Store size not easily accessible via public API
-            entityCount = entities.size,
-            entities = entities
-        )
-
-        UnifiedLog.i(TAG) { "Schema introspection complete: ${dump.entityCount} entities" }
-        dump
-    }
 
     /**
      * Write schema dump to app-specific files directory.
@@ -94,17 +99,21 @@ object ObjectBoxIntrospectionDump {
      * @param dump Schema dump to write
      * @return File object for the written dump
      */
-    suspend fun dumpToFile(context: Context, dump: ObjectBoxSchemaDump): File = withContext(Dispatchers.IO) {
-        val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())
-        val fileName = "obx_dump_$timestamp.json"
-        val file = File(context.filesDir, fileName)
+    suspend fun dumpToFile(
+        context: Context,
+        dump: ObjectBoxSchemaDump,
+    ): File =
+        withContext(Dispatchers.IO) {
+            val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())
+            val fileName = "obx_dump_$timestamp.json"
+            val file = File(context.filesDir, fileName)
 
-        val jsonString = json.encodeToString(dump)
-        file.writeText(jsonString)
+            val jsonString = json.encodeToString(dump)
+            file.writeText(jsonString)
 
-        UnifiedLog.i(TAG) { "Schema dump written to: ${file.absolutePath} (${file.length()} bytes)" }
-        file
-    }
+            UnifiedLog.i(TAG) { "Schema dump written to: ${file.absolutePath} (${file.length()} bytes)" }
+            file
+        }
 
     /**
      * Dump schema to logcat in chunks (for quick inspection).
@@ -114,39 +123,46 @@ object ObjectBoxIntrospectionDump {
      *
      * @param dump Schema dump to log
      */
-    suspend fun dumpToLogcat(dump: ObjectBoxSchemaDump) = withContext(Dispatchers.IO) {
-        val jsonString = json.encodeToString(dump)
-        UnifiedLog.i(TAG) { "=== ObjectBox Schema Dump START ===" }
-        UnifiedLog.i(TAG) { "Timestamp: ${dump.timestamp}" }
-        UnifiedLog.i(TAG) { "ObjectBox Version: ${dump.objectBoxVersion}" }
-        UnifiedLog.i(TAG) { "Store Size: ${dump.storeSize} bytes" }
-        UnifiedLog.i(TAG) { "Entity Count: ${dump.entityCount}" }
+    suspend fun dumpToLogcat(dump: ObjectBoxSchemaDump) =
+        withContext(Dispatchers.IO) {
+            val jsonString = json.encodeToString(dump)
+            UnifiedLog.i(TAG) { "=== ObjectBox Schema Dump START ===" }
+            UnifiedLog.i(TAG) { "Timestamp: ${dump.timestamp}" }
+            UnifiedLog.i(TAG) { "ObjectBox Version: ${dump.objectBoxVersion}" }
+            UnifiedLog.i(TAG) { "Store Size: ${dump.storeSize} bytes" }
+            UnifiedLog.i(TAG) { "Entity Count: ${dump.entityCount}" }
 
-        // Chunk large JSON for logcat
-        val chunks = jsonString.chunked(MAX_LOGCAT_CHUNK)
-        chunks.forEachIndexed { index, chunk ->
-            UnifiedLog.i(TAG) { "Schema JSON (chunk ${index + 1}/${chunks.size}):\n$chunk" }
+            // Chunk large JSON for logcat
+            val chunks = jsonString.chunked(MAX_LOGCAT_CHUNK)
+            chunks.forEachIndexed { index, chunk ->
+                UnifiedLog.i(TAG) { "Schema JSON (chunk ${index + 1}/${chunks.size}):\n$chunk" }
+            }
+
+            UnifiedLog.i(TAG) { "=== ObjectBox Schema Dump END ===" }
         }
-
-        UnifiedLog.i(TAG) { "=== ObjectBox Schema Dump END ===" }
-    }
 
     // =========================================================================
     // Private Helpers
     // =========================================================================
 
-    private fun extractEntityDump(boxStore: BoxStore, spec: ObxInspectorEntityRegistry.EntitySpec<out Any>): EntityDump {
+    private fun extractEntityDump(
+        boxStore: BoxStore,
+        spec: ObxInspectorEntityRegistry.EntitySpec<out Any>,
+    ): EntityDump {
         val box = boxStore.boxFor(spec.clazz)
         val rowCount = box.count()
 
         // Get entity ID from ObjectBox internal model if available
-        val entityId = try {
-            // ObjectBox stores entity info in the model, but it's not easily accessible
-            // For now, use a hash of the class name as a stable identifier
-            spec.clazz.name.hashCode().toLong()
-        } catch (e: Exception) {
-            0L
-        }
+        val entityId =
+            try {
+                // ObjectBox stores entity info in the model, but it's not easily accessible
+                // For now, use a hash of the class name as a stable identifier
+                spec.clazz.name
+                    .hashCode()
+                    .toLong()
+            } catch (e: Exception) {
+                0L
+            }
 
         val properties = mutableListOf<PropertyDump>()
         val relations = mutableListOf<RelationDump>()
@@ -177,7 +193,7 @@ object ObjectBoxIntrospectionDump {
             entityId = entityId,
             rowCount = rowCount,
             properties = properties.sortedBy { it.name },
-            relations = relations.sortedBy { it.name }
+            relations = relations.sortedBy { it.name },
         )
     }
 
@@ -191,50 +207,51 @@ object ObjectBoxIntrospectionDump {
             isIndexed = annotations.contains("Index"),
             isUnique = annotations.contains("Unique"),
             isId = annotations.contains("Id"),
-            annotations = annotations
+            annotations = annotations,
         )
     }
 
     private fun extractToOneRelation(field: Field): RelationDump {
-        val targetEntity = try {
-            val paramType = field.genericType as? ParameterizedType
-            val targetClass = paramType?.actualTypeArguments?.firstOrNull() as? Class<*>
-            targetClass?.simpleName ?: "Unknown"
-        } catch (e: Exception) {
-            "Unknown"
-        }
+        val targetEntity =
+            try {
+                val paramType = field.genericType as? ParameterizedType
+                val targetClass = paramType?.actualTypeArguments?.firstOrNull() as? Class<*>
+                targetClass?.simpleName ?: "Unknown"
+            } catch (e: Exception) {
+                "Unknown"
+            }
 
         return RelationDump(
             name = field.name,
             type = "ToOne",
-            targetEntity = targetEntity
+            targetEntity = targetEntity,
         )
     }
 
     private fun extractToManyRelation(field: Field): RelationDump {
-        val targetEntity = try {
-            val paramType = field.genericType as? ParameterizedType
-            val targetClass = paramType?.actualTypeArguments?.firstOrNull() as? Class<*>
-            targetClass?.simpleName ?: "Unknown"
-        } catch (e: Exception) {
-            "Unknown"
-        }
+        val targetEntity =
+            try {
+                val paramType = field.genericType as? ParameterizedType
+                val targetClass = paramType?.actualTypeArguments?.firstOrNull() as? Class<*>
+                targetClass?.simpleName ?: "Unknown"
+            } catch (e: Exception) {
+                "Unknown"
+            }
 
         return RelationDump(
             name = field.name,
             type = "ToMany",
-            targetEntity = targetEntity
+            targetEntity = targetEntity,
         )
     }
 
-    private fun getObjectBoxVersion(): String {
-        return try {
+    private fun getObjectBoxVersion(): String =
+        try {
             // Try to get ObjectBox version from package info
             BoxStore::class.java.`package`?.implementationVersion ?: "5.0.1"
         } catch (e: Exception) {
             "Unknown"
         }
-    }
 }
 
 // =============================================================================
@@ -255,7 +272,7 @@ data class ObjectBoxSchemaDump(
     /** Total number of entities in schema */
     val entityCount: Int,
     /** List of all entity definitions */
-    val entities: List<EntityDump>
+    val entities: List<EntityDump>,
 )
 
 /**
@@ -276,7 +293,7 @@ data class EntityDump(
     /** List of relations (ToOne/ToMany) */
     val relations: List<RelationDump>,
     /** Error message if extraction failed */
-    val error: String? = null
+    val error: String? = null,
 )
 
 /**
@@ -297,7 +314,7 @@ data class PropertyDump(
     /** Whether property is the @Id field */
     val isId: Boolean,
     /** List of all annotations on this property */
-    val annotations: List<String>
+    val annotations: List<String>,
 )
 
 /**
@@ -310,5 +327,5 @@ data class RelationDump(
     /** Relation type: "ToOne" or "ToMany" */
     val type: String,
     /** Target entity class name */
-    val targetEntity: String
+    val targetEntity: String,
 )

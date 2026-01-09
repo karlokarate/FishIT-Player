@@ -40,11 +40,12 @@ enum class WorkType {
     AUDIOBOOK,
 
     /** Classification unknown - requires review */
-    UNKNOWN;
+    UNKNOWN,
+
+    ;
 
     companion object {
-        fun fromString(value: String): WorkType =
-            entries.find { it.name.equals(value, ignoreCase = true) } ?: UNKNOWN
+        fun fromString(value: String): WorkType = entries.find { it.name.equals(value, ignoreCase = true) } ?: UNKNOWN
     }
 }
 
@@ -65,11 +66,12 @@ enum class IngestDecision {
     REJECTED,
 
     /** Item skipped (not rejected, but not processed) */
-    SKIPPED;
+    SKIPPED,
+
+    ;
 
     companion object {
-        fun fromString(value: String): IngestDecision =
-            entries.find { it.name.equals(value, ignoreCase = true) } ?: SKIPPED
+        fun fromString(value: String): IngestDecision = entries.find { it.name.equals(value, ignoreCase = true) } ?: SKIPPED
     }
 }
 
@@ -138,11 +140,12 @@ enum class IngestReasonCode {
     NOT_MEDIA,
 
     /** Rate limited, will retry later */
-    RATE_LIMITED;
+    RATE_LIMITED,
+
+    ;
 
     companion object {
-        fun fromString(value: String): IngestReasonCode =
-            entries.find { it.name.equals(value, ignoreCase = true) } ?: UNKNOWN_ERROR
+        fun fromString(value: String): IngestReasonCode = entries.find { it.name.equals(value, ignoreCase = true) } ?: UNKNOWN_ERROR
     }
 }
 
@@ -169,11 +172,12 @@ enum class SourceType {
     PLEX,
 
     /** Manual entry */
-    MANUAL;
+    MANUAL,
+
+    ;
 
     companion object {
-        fun fromString(value: String): SourceType =
-            entries.find { it.name.equals(value, ignoreCase = true) } ?: MANUAL
+        fun fromString(value: String): SourceType = entries.find { it.name.equals(value, ignoreCase = true) } ?: MANUAL
     }
 }
 
@@ -192,11 +196,12 @@ enum class ProfileType {
     KIDS,
 
     /** Guest profile with limited features */
-    GUEST;
+    GUEST,
+
+    ;
 
     companion object {
-        fun fromString(value: String): ProfileType =
-            entries.find { it.name.equals(value, ignoreCase = true) } ?: MAIN
+        fun fromString(value: String): ProfileType = entries.find { it.name.equals(value, ignoreCase = true) } ?: MAIN
     }
 }
 
@@ -230,11 +235,12 @@ enum class ProfileRuleType {
     BLOCK_WORK,
 
     /** Screen time limit per day (minutes) */
-    SCREEN_TIME_LIMIT;
+    SCREEN_TIME_LIMIT,
+
+    ;
 
     companion object {
-        fun fromString(value: String): ProfileRuleType =
-            entries.find { it.name.equals(value, ignoreCase = true) } ?: MAX_RATING
+        fun fromString(value: String): ProfileRuleType = entries.find { it.name.equals(value, ignoreCase = true) } ?: MAX_RATING
     }
 }
 
@@ -262,11 +268,12 @@ enum class RelationType {
     SPINOFF,
 
     /** Alternative version (director's cut, etc.) */
-    ALTERNATIVE;
+    ALTERNATIVE,
+
+    ;
 
     companion object {
-        fun fromString(value: String): RelationType =
-            entries.find { it.name.equals(value, ignoreCase = true) } ?: SERIES_EPISODE
+        fun fromString(value: String): RelationType = entries.find { it.name.equals(value, ignoreCase = true) } ?: SERIES_EPISODE
     }
 }
 
@@ -285,11 +292,12 @@ enum class PlaybackMethod {
     STREAMING,
 
     /** Must download first */
-    DOWNLOAD_FIRST;
+    DOWNLOAD_FIRST,
+
+    ;
 
     companion object {
-        fun fromString(value: String): PlaybackMethod =
-            entries.find { it.name.equals(value, ignoreCase = true) } ?: DIRECT
+        fun fromString(value: String): PlaybackMethod = entries.find { it.name.equals(value, ignoreCase = true) } ?: DIRECT
     }
 }
 
@@ -314,11 +322,12 @@ enum class RuntimeStateType {
     PREPARING,
 
     /** Ready to play */
-    READY;
+    READY,
+
+    ;
 
     companion object {
-        fun fromString(value: String): RuntimeStateType =
-            entries.find { it.name.equals(value, ignoreCase = true) } ?: READY
+        fun fromString(value: String): RuntimeStateType = entries.find { it.name.equals(value, ignoreCase = true) } ?: READY
     }
 }
 
@@ -340,11 +349,12 @@ enum class SyncStatus {
     SYNCED,
 
     /** Sync failed */
-    FAILED;
+    FAILED,
+
+    ;
 
     companion object {
-        fun fromString(value: String): SyncStatus =
-            entries.find { it.name.equals(value, ignoreCase = true) } ?: PENDING
+        fun fromString(value: String): SyncStatus = entries.find { it.name.equals(value, ignoreCase = true) } ?: PENDING
     }
 }
 
@@ -366,10 +376,11 @@ enum class CategoryType {
     LIVE,
 
     /** Audiobooks */
-    AUDIOBOOK;
+    AUDIOBOOK,
+
+    ;
 
     companion object {
-        fun fromString(value: String): CategoryType =
-            entries.find { it.name.equals(value, ignoreCase = true) } ?: VOD
+        fun fromString(value: String): CategoryType = entries.find { it.name.equals(value, ignoreCase = true) } ?: VOD
     }
 }
