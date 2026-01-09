@@ -27,6 +27,8 @@ The v2 rebuild follows a phased approach:
 | 2.6 | SSOT Ingest Worker Bodies | ✅ COMPLETED | Dec 2025 |
 | 3 | SIP / Internal Player (Phase 0-7) | ✅ COMPLETED | Dec 2025 |
 | 3.1 | SIP / Internal Player (Phase 8-14) | 🚧 IN PROGRESS | Jan 2026 |
+| 3.2 | OBX PLATIN Refactor (Phase 0) | ✅ COMPLETED | Jan 2026 |
+| 3.3 | OBX PLATIN Refactor (Phase 1-6) | 🔲 PLANNED | Jan-Feb 2026 |
 | 4 | UI Feature Screens | 🚧 IN PROGRESS | Jan 2026 |
 | 5 | Quality & Performance | 🔲 PLANNED | Feb 2026 |
 
@@ -446,6 +448,142 @@ The next step for real Telegram content is implementing `DefaultTelegramClient` 
 - [docs/v2/internal-player/](docs/v2/internal-player/) – SIP contracts and checklists
 - [docs/v2/internal-player/PLAYER_MIGRATION_STATUS.md](docs/v2/internal-player/PLAYER_MIGRATION_STATUS.md) – Detailed migration status
 - [docs/v2/ARCHITECTURE_OVERVIEW_V2.md](docs/v2/ARCHITECTURE_OVERVIEW_V2.md) – V2 architecture
+
+---
+
+## Phase 3.2 – OBX PLATIN Refactor (Issue #621)
+
+Status: 🚧 **IN PROGRESS** (Phase 0 of 7 Complete)
+
+### Goals
+
+Transform the ObjectBox persistence layer from 23 scattered legacy entities into 16 unified NX_* entities implementing a proper SSOT Work Graph.
+
+**Key Improvements:**
+
+- **Unified Work Graph:** NX_Work as central UI SSOT
+- **Multi-Account Ready:** accountKey mandatory in all sourceKeys
+- **Playback Variants:** Separate quality/encoding/language variants
+- **Ingest Ledger:** Explicit ACCEPT/REJECT/SKIP tracking (no silent drops)
+- **Profile System:** Simplified unified rules
+- **Cloud-Ready:** Firebase sync preparation (outbox pattern)
+
+### Roadmap
+
+**Total Duration:** 28-39 development days (7 phases)
+
+| Phase | Status | Duration | Description |
+|-------|--------|----------|-------------|
+| **Phase 0** | ✅ **COMPLETE** | 2-3 days | Contracts, Keys, Modes, Guardrails |
+| Phase 1 | 🔲 PENDING | 5-7 days | NX_ Schema + Repositories |
+| Phase 2 | 🔲 PENDING | 4-5 days | NX Ingest Path |
+| Phase 3 | 🔲 PENDING | 5-7 days | Migration Worker |
+| Phase 4 | 🔲 PENDING | 7-10 days | Dual-Read UI |
+| Phase 5 | 🔲 PENDING | 2-3 days | Stop-Write Legacy |
+| Phase 6 | 🔲 PENDING | 3-4 days | Stop-Read Legacy + Cleanup |
+
+### Phase 0 Completion (2026-01-09) ✅
+
+**Commit:** 068a525dc906f86b5bec699218b68a98e1838486  
+**Duration:** 3 days  
+**Status:** ALL TASKS COMPLETE
+
+**Deliverables:**
+
+- ✅ **16 NX_* entities defined** (NxEntities.kt, 827 lines)
+  - NX_Work, NX_WorkSourceRef, NX_WorkVariant, NX_WorkRelation
+  - NX_WorkUserState, NX_WorkRuntimeState, NX_IngestLedger
+  - NX_Profile, NX_ProfileRule, NX_ProfileUsage, NX_SourceAccount
+  - NX_CloudOutboxEvent, NX_WorkEmbedding, NX_WorkRedirect
+  - NX_Category, NX_WorkCategoryRef
+
+- ✅ **SSOT Contracts created**
+  - contracts/NX_SSOT_CONTRACT.md (v1.0, binding)
+  - 7 binding invariants (INV-01 through INV-13)
+  - Deterministic key formats (workKey, sourceKey, variantKey, authorityKey)
+
+- ✅ **Kill-switch infrastructure**
+  - CatalogModePreferences (LEGACY/DUAL/NX_ONLY modes)
+  - Safe defaults configured (LEGACY mode only)
+  - Emergency rollback procedures documented
+
+- ✅ **Comprehensive documentation**
+  - OBX_PLATIN_REFACTOR_ROADMAP.md (6-phase execution plan)
+  - OBX_KILL_SWITCH_GUIDE.md (emergency procedures)
+  - OBX_PLATIN_DETEKT_GUARDRAILS_CONTRACT.md (CI enforcement)
+  - OBX_PLATIN_REFACTOR_GITHUB_ISSUE.md (Issue #621 template)
+
+- ✅ **Key infrastructure**
+  - NxEnums.kt (WorkType, IngestDecision, IngestReasonCode, SourceType)
+  - NxKeyGenerator.kt (deterministic key generation)
+  - DataStore-backed mode toggles (runtime safe)
+
+**Acceptance Criteria Met:**
+
+- ✅ All 16 NX_* entities compile without errors
+- ✅ SSOT contract comprehensive and referenced by Issue #621
+- ✅ Kill-switch rollback tested and documented
+- ✅ Safe defaults configured (zero production impact)
+- ✅ Uniqueness constraints validated
+- ✅ Multi-account ready (accountKey mandatory)
+
+**Key Insights:**
+
+The Phase 0 work is **FOUNDATIONAL** and NOT supplementary:
+
+1. **Deterministic keys prevent collisions** (INV-04: accountKey mandatory)
+2. **Ingest ledger prevents silent drops** (INV-01: every ingest logged)
+3. **Kill-switch enables safe rollback** (production risk mitigation)
+4. **Comprehensive docs prevent drift** (team alignment)
+
+See `docs/v2/TODAY_2026-01-09_DEEP_DIVE_ANALYSIS.md` for full analysis.
+
+### SSOT Invariants (Binding)
+
+- **INV-01:** Every ingest creates exactly one NX_IngestLedger entry
+- **INV-02:** Every ACCEPTED ingest triggers one NX_Work resolution
+- **INV-03:** Every NX_Work visible in UI has ≥1 SourceRef and ≥1 Variant
+- **INV-04:** sourceKey is globally unique across all accounts
+- **INV-10:** Every NX_Work has ≥1 NX_WorkSourceRef
+- **INV-11:** Every NX_Work has ≥1 NX_WorkVariant with valid playbackHints
+- **INV-12:** workKey is globally unique
+- **INV-13:** accountKey is mandatory in all NX_WorkSourceRef
+
+### Key Formats
+
+```
+workKey:      <workType>:<canonicalSlug>:<year|LIVE>
+sourceKey:    <sourceType>:<accountKey>:<sourceId>
+variantKey:   <sourceKey>#<qualityTag>:<languageTag>
+authorityKey: <authority>:<type>:<id>
+```
+
+### Next Steps (Phase 1)
+
+- [ ] Implement 16 NX_* repository interfaces
+- [ ] Create repository implementations with proper indexing
+- [ ] Write unit tests for all CRUD operations
+- [ ] Validate ObjectBox store initialization
+- [ ] Ensure no UI code accesses BoxStore directly (Detekt validated)
+
+**Blockers:** None (Phase 0 complete, all dependencies ready)
+
+### Modules Affected
+
+- `core/persistence` (NX_* entities, repositories)
+- `core/debug-settings` (migration mode controls)
+- `app-v2/work` (migration workers - future phases)
+- `feature/*` (UI updates - Phase 4+)
+
+### Docs
+
+- [docs/v2/OBX_PLATIN_REFACTOR_ROADMAP.md](docs/v2/OBX_PLATIN_REFACTOR_ROADMAP.md) – Execution roadmap
+- [contracts/NX_SSOT_CONTRACT.md](contracts/NX_SSOT_CONTRACT.md) – Binding SSOT contract
+- [docs/v2/NX_SSOT_CONTRACT.md](docs/v2/NX_SSOT_CONTRACT.md) – Detailed version
+- [docs/v2/OBX_KILL_SWITCH_GUIDE.md](docs/v2/OBX_KILL_SWITCH_GUIDE.md) – Emergency procedures
+- [docs/v2/OBX_PLATIN_DETEKT_GUARDRAILS_CONTRACT.md](docs/v2/OBX_PLATIN_DETEKT_GUARDRAILS_CONTRACT.md) – CI enforcement
+- [docs/v2/COMMIT_068a525_CORRECTED_MESSAGE.md](docs/v2/COMMIT_068a525_CORRECTED_MESSAGE.md) – Comprehensive commit documentation
+- [docs/v2/TODAY_2026-01-09_DEEP_DIVE_ANALYSIS.md](docs/v2/TODAY_2026-01-09_DEEP_DIVE_ANALYSIS.md) – Deep dive analysis
 
 ---
 
