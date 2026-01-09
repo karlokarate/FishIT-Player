@@ -1,3 +1,18 @@
+# ⚠️ DEPRECATED DOCUMENTS - COMPLETED WORK ⚠️
+
+> **Deprecation Date:** 2026-01-09  
+> **Status:** COMPLETED HISTORICAL DOCUMENTATION  
+> **Folder Purpose:** This folder contains documentation for completed tasks (historical reference only).
+> 
+> **⚠️ All documents in this folder are deprecated as they describe completed work.**
+> 
+> **For Current Information:**  
+> - See **ROADMAP.md** - Current project roadmap and status
+> - See **docs/v2/** (active docs) - Current architecture and contracts
+> - See current codebase for implementation details
+
+---
+
 # Abgeschlossene Tasks / Completed Tasks
 
 Dieser Ordner enthält Dokumentation für **abgeschlossene** Aufgaben im v2-Projekt.

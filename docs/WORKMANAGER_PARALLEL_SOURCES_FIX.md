@@ -1,8 +1,25 @@
-# WorkManager Parallel Sources Fix
+# ⚠️ DEPRECATED DOCUMENT ⚠️
+
+> **Deprecation Date:** 2026-01-09  
+> **Status:** FIXED ISSUE (Historical)  
+> **Reason:** This document describes a parallel sources blocking issue that was fixed in January 2026.
+> 
+> **Note:** This is historical documentation. The issue has been resolved.
+> 
+> **For Current Information:**  
+> - See **docs/v2/CATALOG_SYNC_WORKERS_CONTRACT_V2.md** - Current worker architecture (W-6: Parallel chains)
+> - See **app-v2/work/** - Current worker implementations
+> - See **core/catalog-sync/** - Current sync orchestration
+
+---
+
+# ~~WorkManager Parallel Sources Fix~~
 
 **Date:** 2026-01-01  
 **Branch:** `copilot/fix-telegram-sync-blocking`  
-**Issue:** Telegram workers stay BLOCKED when activated after Xtream
+**Issue:** ~~Telegram workers stay BLOCKED when activated after Xtream~~
+
+⚠️ **This issue was fixed. This is historical documentation only.**
 
 ---
 

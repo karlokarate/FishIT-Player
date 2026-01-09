@@ -1,8 +1,25 @@
-# Xtream Login and Navigation Issue Analysis & Fix
+# ⚠️ DEPRECATED DOCUMENT ⚠️
+
+> **Deprecation Date:** 2026-01-09  
+> **Status:** FIXED ISSUE (Historical)  
+> **Reason:** This document describes an Xtream login issue that was fixed in December 2025.
+> 
+> **Note:** This is historical documentation. The issue has been resolved.
+> 
+> **For Current Information:**  
+> - See **infra/transport-xtream/** - Current Xtream transport implementation
+> - See **feature/onboarding/** - Current onboarding screens
+> - See **contracts/XTREAM_SCAN_PREMIUM_CONTRACT_V1.md** - Xtream integration contract
+
+---
+
+# ~~Xtream Login and Navigation Issue Analysis & Fix~~
 
 **Date**: 2025-12-19  
 **Branch**: `copilot/check-backend-response`  
-**Issue**: Bei der Anmeldung bei Xtream kommt "(empty response)" und App crasht beim Continue-Button
+**Issue**: ~~Bei der Anmeldung bei Xtream kommt "(empty response)" und App crasht beim Continue-Button~~
+
+⚠️ **This issue was fixed. This is historical documentation only.**
 
 ---
 
