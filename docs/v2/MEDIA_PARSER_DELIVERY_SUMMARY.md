@@ -1,6 +1,23 @@
-# Production-Grade Kotlin Media Filename/Metadata Parser - Delivery Summary
+# ⚠️ DEPRECATED DOCUMENT ⚠️
 
-## Objective
+> **Deprecation Date:** 2026-01-09  
+> **Status:** COMPLETED WORK  
+> **Reason:** This document describes completed delivery of the media parser implementation.
+> 
+> **Note:** This is historical delivery documentation. The parser has been implemented.
+> 
+> **For Current Information:**  
+> - See **core/metadata-normalizer/** - Current parser implementation
+> - See **docs/v2/MEDIA_NORMALIZER_DESIGN.md** - Design documentation
+> - See **contracts/MEDIA_NORMALIZATION_CONTRACT.md** - Binding contract
+
+---
+
+# ~~Production-Grade Kotlin Media Filename/Metadata Parser - Delivery Summary~~
+
+⚠️ **This is historical delivery documentation. The parser has been implemented.**
+
+## ~~Objective~~
 Design and deliver a production-grade Kotlin media filename/metadata parser tailored to FishIT-Player's real data, informed by industry-standard parsers, and fully aligned with the v2 architecture contracts.
 
 ## Deliverables

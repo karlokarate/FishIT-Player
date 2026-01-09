@@ -1,8 +1,24 @@
-# Issue #564: Compile-Time Gating für LeakCanary & Chucker – IMPLEMENTIERT
+# ⚠️ DEPRECATED DOCUMENT ⚠️
+
+> **Deprecation Date:** 2026-01-09  
+> **Status:** COMPLETED WORK  
+> **Reason:** This document describes completed implementation of Issue #564 (compile-time gating).
+> 
+> **Note:** This is historical implementation documentation. The work has been completed.
+> 
+> **For Current Information:**  
+> - See **playback/xtream/** - Current implementation with compile-time gating
+> - See **.github/workflows/** - CI verification workflows
+> - Issue #564 is closed and implemented
+
+---
+
+# ~~Issue #564: Compile-Time Gating für LeakCanary & Chucker – IMPLEMENTIERT~~
 
 > **Status: ✅ VOLLSTÄNDIG IMPLEMENTIERT (Platin-Niveau)**  
-> **Datum:** $(date +%Y-%m-%d)  
 > **Issue:** [#564](https://github.com/user/FishIT-Player/issues/564)
+
+⚠️ **This is historical documentation of completed work.**
 
 ---
 

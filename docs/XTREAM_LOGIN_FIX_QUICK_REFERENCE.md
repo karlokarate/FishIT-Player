@@ -1,6 +1,22 @@
-# Xtream Login Fix - Quick Reference (Deutsch)
+# ⚠️ DEPRECATED DOCUMENT ⚠️
 
-## Was wurde gefixt?
+> **Deprecation Date:** 2026-01-09  
+> **Status:** FIXED ISSUE (Historical)  
+> **Reason:** This quick reference describes an Xtream login fix that was implemented in December 2025.
+> 
+> **Note:** This is historical quick reference documentation. The issue has been resolved.
+> 
+> **For Current Information:**  
+> - See **infra/transport-xtream/** - Current Xtream transport implementation
+> - See **contracts/XTREAM_SCAN_PREMIUM_CONTRACT_V1.md** - Xtream integration contract
+
+---
+
+# ~~Xtream Login Fix - Quick Reference (Deutsch)~~
+
+⚠️ **This issue was fixed. This is historical documentation only.**
+
+## ~~Was wurde gefixt?~~
 
 ### Problem 1: "(empty response)" Fehler ✅
 **Status**: BEHOBEN

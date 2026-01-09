@@ -1,8 +1,33 @@
+# ⚠️ PARTIALLY OUTDATED - NEEDS NX_* UPDATE ⚠️
+
+> **Last Updated:** 2025-12-09 (Pre-NX_* entities)  
+> **Status:** PARTIALLY OUTDATED  
+> **Missing:** NX_IngestLedger requirements, NX_* entity integration
+> 
+> **⚠️ This document is mostly correct but needs updates for:**
+> - **NX_IngestLedger** - INV-01 requirement (every ingest → ledger entry)
+> - **NX_* entity system** - Phase 0 complete (see contracts/NX_SSOT_CONTRACT.md)
+> - **Audit trail requirements** - No silent drops allowed
+> 
+> **For Complete Current Information:**
+> - **contracts/NX_SSOT_CONTRACT.md** - NX_* entity system (Phase 0 complete)
+> - **docs/v2/OBX_PLATIN_REFACTOR_ROADMAP.md** - Migration roadmap
+> - **docs/v2/ISSUE_621_STATUS_UPDATE_2026-01-09.md** - Current status
+> - **contracts/MEDIA_NORMALIZATION_CONTRACT.md** - Pipeline normalization (still valid)
+> 
+> **What's Still Valid:**
+> - Layer boundary rules (Transport → Pipeline → Data)
+> - RawMediaMetadata as pipeline output
+> - No pipeline DTO exports
+> - Pipeline internal DTO usage patterns
+
+---
+
 # Pipeline Architecture Audit Report
 
 **Date:** 2025-12-09  
 **Branch:** `architecture/v2-bootstrap`  
-**Status:** ✅ All violations fixed
+**Status:** ✅ All violations fixed ⚠️ **(but needs NX_* updates)**
 
 ---
 
@@ -261,6 +286,7 @@ Domain / UI
 - [x] Works with `RawMediaMetadata` only
 - [x] Provides Flow-based observation APIs
 - [x] Provides `upsertAll()` for catalog sync
+- [ ] **TODO:** Add NX_IngestLedger persistence (INV-01 - every ingest → ledger entry)
 
 ### Playback Layer ✅
 
@@ -279,10 +305,29 @@ Domain / UI
 ## 6. References
 
 - `AGENTS.md` — Agent rules and architectural constraints
-- `docs/v2/MEDIA_NORMALIZATION_CONTRACT.md` — RawMediaMetadata contract
-- `docs/v2/CANONICAL_MEDIA_SYSTEM.md` — Canonical media architecture
+- `docs/v2/MEDIA_NORMALIZATION_CONTRACT.md` — RawMediaMetadata contract (still valid)
+- ~~`docs/v2/CANONICAL_MEDIA_SYSTEM.md`~~ → **DEPRECATED** - Use `contracts/NX_SSOT_CONTRACT.md`
 - `docs/v2/IMAGING_SYSTEM.md` — ImageRef handling
+- **`contracts/NX_SSOT_CONTRACT.md`** — **NEW**: NX_* entity system (Phase 0 complete)
+- **`docs/v2/OBX_PLATIN_REFACTOR_ROADMAP.md`** — **NEW**: Migration roadmap
 
 ---
+
+# ⚠️ END OF DOCUMENT - UPDATE NEEDED ⚠️
+
+> **This document needs updates for:**
+> 
+> **Missing Requirements (Phase 0 - Issue #621):**
+> 1. **NX_IngestLedger** - Every pipeline ingest MUST create ledger entry (INV-01)
+> 2. **Audit trail** - No silent drops allowed (every item must be tracked)
+> 3. **Deterministic keys** - workKey, sourceKey, variantKey generation
+> 4. **Multi-account support** - accountKey mandatory in all sourceKeys
+> 
+> **Current Status:**
+> - Layer boundaries described here are still valid
+> - RawMediaMetadata patterns are still valid
+> - NX_* entities add audit and multi-account on top of this foundation
+> 
+> **For Complete Requirements:** See `contracts/NX_SSOT_CONTRACT.md`
 
 *This audit ensures the v2 pipeline architecture is correctly structured for long-term maintainability and clean separation of concerns.*

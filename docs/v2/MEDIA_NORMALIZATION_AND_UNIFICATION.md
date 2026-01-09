@@ -1,11 +1,28 @@
+# ⚠️ DEPRECATED DOCUMENT ⚠️
 
-# Media Normalization & Cross-Pipeline Unification (v2 Architecture)
+> **Deprecation Date:** 2026-01-09  
+> **Status:** SUPERSEDED  
+> **Reason:** This document is superseded by the official binding contract.
+> 
+> **✅ Use This Instead:**  
+> - **contracts/MEDIA_NORMALIZATION_CONTRACT.md** - Official binding contract (authoritative)  
+> - **docs/v2/MEDIA_NORMALIZATION_CONTRACT.md** - Detailed implementation guide  
+> - **contracts/NX_SSOT_CONTRACT.md** - NX_* entity system (Phase 0 complete)  
+> - **docs/v2/OBX_PLATIN_REFACTOR_ROADMAP.md** - Migration roadmap
+> 
+> **Note:** The concepts described below are correct but this document duplicates the official contract. Always refer to the binding contracts in `/contracts/` for authoritative rules.
+
+---
+
+# ~~Media Normalization & Cross-Pipeline Unification (v2 Architecture)~~
 
 **Purpose of this Document:**  
-Define a single, deterministic, pipeline-agnostic metadata model and unification process so that the FishIT-Player can reliably treat media from **all pipelines** (Telegram, Xtream, IO, Audiobook, Local, Plex, etc.) as one unified library.  
-This includes: canonical identity, centralized normalization, TMDB-first resolution, and agent responsibilities.
+~~Define a single, deterministic, pipeline-agnostic metadata model and unification process so that the FishIT-Player can reliably treat media from **all pipelines** (Telegram, Xtream, IO, Audiobook, Local, Plex, etc.) as one unified library.  
+This includes: canonical identity, centralized normalization, TMDB-first resolution, and agent responsibilities.~~
 
-This document replaces all implicit assumptions about title matching, identity heuristics, normalization strategies, and pipeline metadata formats.
+⚠️ **OUTDATED** - Use official contracts listed above instead.
+
+~~This document replaces all implicit assumptions about title matching, identity heuristics, normalization strategies, and pipeline metadata formats.~~
 
 ---
 
@@ -312,11 +329,32 @@ Pipelines remain fully self-contained and reusable — the intelligence lives in
 
 ---
 
-# 🟢 7. Status After Introducing This Document
+# ~~🟢 7. Status After Introducing This Document~~
 
-After this document is committed:
+~~After this document is committed:~~
 
-- All future pipeline tasks MUST implement `toRawMediaMetadata()`.
-- Normalization logic is strictly centralized.
-- TMDB-first identity becomes standard.
-- Cross-pipeline canonical identity is enabled for later phases.
+~~- All future pipeline tasks MUST implement `toRawMediaMetadata()`.~~
+~~- Normalization logic is strictly centralized.~~
+~~- TMDB-first identity becomes standard.~~
+~~- Cross-pipeline canonical identity is enabled for later phases.~~
+
+---
+
+# ⚠️ END OF DEPRECATED DOCUMENT ⚠️
+
+> **This document is outdated and superseded by official binding contracts.**
+> 
+> **Use These Documents Instead:**
+> 
+> 1. **contracts/MEDIA_NORMALIZATION_CONTRACT.md** - **AUTHORITATIVE** binding contract
+> 2. **docs/v2/MEDIA_NORMALIZATION_CONTRACT.md** - Detailed implementation guide
+> 3. **contracts/NX_SSOT_CONTRACT.md** - NX_* entity system (Phase 0 complete)
+> 4. **contracts/GLOSSARY_v2_naming_and_modules.md** - Naming conventions
+> 
+> **Why Use Contracts Instead:**
+> - Binding rules (not suggestions)
+> - Maintained and version-controlled
+> - Referenced by CI/CD guardrails
+> - Single source of truth for team
+> 
+> **Migration Status:** The normalization system described here is implemented. The new NX_* entity system (Issue #621) adds audit trails, multi-account support, and percentage-based resume on top of this foundation.

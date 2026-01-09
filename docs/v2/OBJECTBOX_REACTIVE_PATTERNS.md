@@ -1,6 +1,30 @@
+# ⚠️ PARTIALLY OUTDATED - NEEDS NX_* EXAMPLES ⚠️
+
+> **Last Updated:** 2025 (Pre-NX_* entities)  
+> **Status:** PATTERNS STILL VALID, NEEDS NX_* EXAMPLES  
+> **Missing:** Query examples for NX_Work, NX_WorkVariant, NX_IngestLedger
+> 
+> **⚠️ This document is correct but needs:**
+> - Examples using NX_* entities (NX_Work, NX_WorkVariant, NX_IngestLedger)
+> - Multi-account query patterns (filtering by accountKey)
+> - Percentage-based resume queries (NX_WorkUserState)
+> 
+> **For Current Entity Information:**
+> - **contracts/NX_SSOT_CONTRACT.md** - NX_* entity definitions (Phase 0 complete)
+> - **core/persistence/obx/NxEntities.kt** - Entity implementations
+> - **docs/v2/OBX_PLATIN_REFACTOR_ROADMAP.md** - Migration roadmap
+> 
+> **What's Still Valid:**
+> - Re-query pattern (ObjectBox `DataObserver` is change trigger only)
+> - Cancellation requirements (`awaitClose`)
+> - All technical patterns shown below
+
+---
+
 # ObjectBox Reactive Patterns (v2 SSOT)
 
-> **SSOT Location:** `/docs/v2/OBJECTBOX_REACTIVE_PATTERNS.md`
+> **SSOT Location:** `/docs/v2/OBJECTBOX_REACTIVE_PATTERNS.md`  
+> ⚠️ **Note:** Examples below use Obx* entities. For NX_* entity patterns, see contracts/NX_SSOT_CONTRACT.md
 
 ## Overview
 
@@ -158,3 +182,34 @@ fun `asFlow emits on insert`() = runTest {
 
 - `/docs/v2/WORKMANAGER_PATTERNS.md` - Background worker patterns
 - `core/persistence/README.md` - Persistence module overview
+- **`contracts/NX_SSOT_CONTRACT.md`** — **NEW**: NX_* entity system with query examples
+
+---
+
+# ⚠️ END OF DOCUMENT - NX_* EXAMPLES NEEDED ⚠️
+
+> **This document's patterns are still valid, but needs NX_* entity examples:**
+> 
+> **Missing Examples (Phase 0 - Issue #621):**
+> 1. **NX_Work queries** - Canonical work lookup by workKey
+> 2. **Multi-account queries** - Filter by accountKey in sourceKey
+> 3. **NX_WorkVariant queries** - Find playback variants for a work
+> 4. **NX_IngestLedger queries** - Audit trail queries (acceptance/rejection)
+> 5. **NX_WorkUserState queries** - Resume position by workKey + profileId
+> 
+> **Example (TODO - Add to document):**
+> ```kotlin
+> // Query NX_Work by workKey
+> fun observeWorkByKey(workKey: String): Flow<NX_Work?> {
+>     val query = nxWorkBox.query(NX_Work_.workKey.equal(workKey)).build()
+>     return query.asFlowSingle()  // Single result
+> }
+> 
+> // Query NX_WorkVariant for a work
+> fun observeVariantsForWork(workKey: String): Flow<List<NX_WorkVariant>> {
+>     val query = nxWorkVariantBox.query(NX_WorkVariant_.workKey.equal(workKey)).build()
+>     return query.asFlow()  // List of variants
+> }
+> ```
+> 
+> **For Complete NX_* Information:** See `contracts/NX_SSOT_CONTRACT.md`

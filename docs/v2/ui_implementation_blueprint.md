@@ -1,6 +1,23 @@
-# FishIT Player v2 — UI Implementation Blueprint (Tools & Modules)
+# ⚠️ DEPRECATED DOCUMENT ⚠️
 
-> This document is the **binding implementation plan** for the v2 UI stack.  
+> **Deprecation Date:** 2026-01-09  
+> **Status:** IMPLEMENTED  
+> **Reason:** The UI implementation described in this blueprint has been completed.
+> 
+> **For Current UI Information:**  
+> - See **core/ui-layout/** - FishUI component library (FishTile, FishRow, etc.)
+> - See **core/ui-theme/** - Theme system (FishTheme, FishColors, FishDimens)
+> - See **feature/** modules - Current screen implementations
+> - See **docs/v2/UI_DESIGN_SYSTEM.md** - UI design system documentation
+> 
+> **Note:** This is historical planning documentation. The UI has been implemented following these principles but with evolved details.
+
+---
+
+# ~~FishIT Player v2 — UI Implementation Blueprint (Tools & Modules)~~
+
+> ~~This document is the **binding implementation plan** for the v2 UI stack.~~  
+> ⚠️ **OUTDATED** - UI has been implemented. See current codebase for details.  
 > It is tailored to the current v2 architecture (modules, contracts, roadmap) and the UI vision.   
 >  
 > It describes **exactly which tools are used where** – with no alternatives – to implement the UI in **best possible quality**, on TV and mobile, for both **Classic** and **Experience** skins.
