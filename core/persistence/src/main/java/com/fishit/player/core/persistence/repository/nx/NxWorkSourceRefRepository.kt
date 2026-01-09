@@ -18,6 +18,15 @@ import kotlinx.coroutines.flow.Flow
  * ## Key Format
  * sourceKey: `<sourceType>:<accountKey>:<sourceId>`
  *
+ * ## Return Type Patterns
+ * This interface uses standard Kotlin patterns for operation results:
+ * - **Entity returns**: `upsert()` returns the entity with populated ID
+ * - **Boolean returns**: `delete()`, `linkToWork()` etc. return success/failure
+ * - **Nullable returns**: `find*()` methods return null when not found
+ *
+ * For error details beyond boolean success/failure, implementations may throw
+ * typed exceptions (e.g., IllegalArgumentException for INV-13 violations).
+ *
  * ## Architectural Note
  * This repository interface is in `core/persistence/repository/nx/` because
  * NX entities ARE the domain model (SSOT). See NxWorkRepository for full explanation.
@@ -74,6 +83,17 @@ interface NxWorkSourceRefRepository {
      * @return true if deleted, false if not found
      */
     suspend fun deleteById(id: Long): Boolean
+
+    /**
+     * Find all source refs (for debug/export).
+     *
+     * ⚠️ WARNING: Use with caution on large datasets.
+     * Consider pagination via findBySourceType with limit/offset for production use.
+     *
+     * @param limit Maximum results (default 1000, set to Int.MAX_VALUE for all)
+     * @return List of all source refs
+     */
+    suspend fun findAll(limit: Int = 1000): List<NX_WorkSourceRef>
 
     // ═══════════════════════════════════════════════════════════════════════
     // Work Relationship Queries
@@ -306,9 +326,17 @@ interface NxWorkSourceRefRepository {
      *
      * **INV-13:** All source refs must have non-blank accountKey.
      *
+     * **Batch Size Limits (per ObxWriteConfig):**
+     * - FireTV/Low-RAM: Max 35 items (FIRETV_BATCH_CAP)
+     * - Phone/Tablet: Recommended 100-600 items depending on item complexity
+     *
+     * Large batches should be split according to device class using
+     * `ObxWriteConfig.getBatchSize()` to prevent OOM on resource-constrained devices.
+     *
      * @param sourceRefs List of source refs to upsert
      * @return List of upserted source refs with IDs populated
      * @throws IllegalArgumentException if any accountKey is blank
+     * @see ObxWriteConfig for device-aware batch size recommendations
      */
     suspend fun upsertBatch(sourceRefs: List<NX_WorkSourceRef>): List<NX_WorkSourceRef>
 
