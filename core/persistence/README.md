@@ -4,10 +4,66 @@ This module provides ObjectBox persistence infrastructure for the FishIT-Player 
 
 ## Overview
 
-- **ObjectBox Entities**: Persistent data models (ObxCanonicalMedia, ObxVod, ObxSeries, etc.)
+- **NX_* Entities (v2)**: New SSOT Work Graph entities for OBX PLATIN Refactor
+- **Obx* Entities (Legacy)**: Existing entities (migrating to NX_*)
 - **Reactive Flows**: `ObjectBoxFlow.kt` - Lifecycle-safe Flow extensions for ObjectBox queries
 - **Write Configuration**: `ObxWriteConfig` - SSOT for all batch sizes and write operations
 - **Property Converters**: Custom converters for complex types (ImageRef, MediaType, etc.)
+
+## NX_* Entity System (OBX PLATIN Refactor)
+
+> **Contract:** `docs/v2/NX_SSOT_CONTRACT.md`
+> **Roadmap:** `docs/v2/OBX_PLATIN_REFACTOR_ROADMAP.md`
+
+### Entity Overview (16 entities)
+
+| Entity | Purpose |
+|--------|---------|
+| `NX_Work` | Central UI SSOT for canonical media works |
+| `NX_WorkSourceRef` | Links works to pipeline sources (multi-account) |
+| `NX_WorkVariant` | Playback variants (quality/encoding/language) |
+| `NX_WorkRelation` | Series ↔ Episode relationships |
+| `NX_WorkUserState` | Per-work user state (resume, watched, etc.) |
+| `NX_WorkRuntimeState` | Transient runtime state (buffering, errors) |
+| `NX_IngestLedger` | Audit trail for all ingest decisions |
+| `NX_Profile` | User profiles (main, kids, guest) |
+| `NX_ProfileRule` | Content filtering rules per profile |
+| `NX_ProfileUsage` | Profile usage tracking (screen time) |
+| `NX_SourceAccount` | Multi-account credentials per source |
+| `NX_CloudOutboxEvent` | Pending cloud sync events |
+| `NX_WorkEmbedding` | Vector embeddings for semantic search |
+| `NX_WorkRedirect` | Canonical merge redirects |
+| `NX_Category` | Content categories |
+| `NX_WorkCategoryRef` | Work ↔ Category links |
+
+### Key Formats
+
+```
+workKey:     <workType>:<canonicalSlug>:<year|LIVE>
+sourceKey:   <sourceType>:<accountKey>:<sourceId>
+variantKey:  <sourceKey>#<qualityTag>:<languageTag>
+authorityKey: <authority>:<type>:<id>
+```
+
+### Key Generation
+
+```kotlin
+// Use NxKeyGenerator for all key creation
+val workKey = NxKeyGenerator.workKey(WorkType.MOVIE, "The Matrix", 1999)
+val sourceKey = NxKeyGenerator.telegramSourceKey(accountKey, chatId, messageId)
+val variantKey = NxKeyGenerator.variantKey(sourceKey, "1080p", "en")
+```
+
+### Enums
+
+All string-typed fields use enum constants from `NxEnums.kt`:
+- `WorkType`: MOVIE, EPISODE, SERIES, CLIP, LIVE, AUDIOBOOK, UNKNOWN
+- `SourceType`: TELEGRAM, XTREAM, LOCAL, PLEX, MANUAL
+- `IngestDecision`: ACCEPTED, REJECTED, SKIPPED
+- `IngestReasonCode`: Detailed reason codes per decision
+- `ProfileType`: MAIN, KIDS, GUEST
+
+## Obx* Entities (Legacy)
 
 ## ObxWriteConfig - Batch Size SSOT
 

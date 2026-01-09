@@ -1,12 +1,8 @@
 {
   "version": "0.2.0",
   "configurations": [
-    {
-      "type": "kotlin",
-      "request": "launch",
-      "name": "🐛 Debug Android App",
-      "projectRoot": "${workspaceFolder}",
-      "mainClass": ""
-    }
+    // Android debugging requires ADB + physical/emulator device
+    // Use: adb logcat | grep FishIT
+    // Kotlin debugger extension is disabled for memory reasons
   ]
 }

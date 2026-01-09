@@ -56,8 +56,8 @@
   },
   "remoteEnv": {
     "JAVA_HOME": "/usr/lib/jvm/msopenjdk-current",
-    "ANDROID_HOME": "/home/codespace/.android-sdk",
-    "ANDROID_SDK_ROOT": "/home/codespace/.android-sdk",
-    "PATH": "${containerEnv:PATH}:/home/codespace/.android-sdk/cmdline-tools/latest/bin:/home/codespace/.android-sdk/platform-tools"
+    "ANDROID_HOME": "/home/vscode/.android-sdk",
+    "ANDROID_SDK_ROOT": "/home/vscode/.android-sdk",
+    "PATH": "${containerEnv:PATH}:/home/vscode/.android-sdk/cmdline-tools/latest/bin:/home/vscode/.android-sdk/platform-tools"
   }
 }

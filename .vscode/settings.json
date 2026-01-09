@@ -19,7 +19,7 @@
   "gradle.nestedProjects": false,
   // ===== Android =====
   // Paths aligned with devcontainer.json for Codespaces
-  "android.sdk": "/home/codespace/.android-sdk",
+  "android.sdk": "/home/vscode/.android-sdk",
   "android.gradle.path": "${workspaceFolder}/gradlew",
   // ===== Code Formatting =====
   "editor.formatOnSave": true,
@@ -86,8 +86,8 @@
   "terminal.integrated.defaultProfile.linux": "bash",
   // Terminal environment - aligned with devcontainer.json remoteEnv
   "terminal.integrated.env.linux": {
-    "ANDROID_SDK_ROOT": "/home/codespace/.android-sdk",
-    "ANDROID_HOME": "/home/codespace/.android-sdk",
+    "ANDROID_SDK_ROOT": "/home/vscode/.android-sdk",
+    "ANDROID_HOME": "/home/vscode/.android-sdk",
     "JAVA_HOME": "/usr/lib/jvm/msopenjdk-current",
     "GRADLE_USER_HOME": "${env:HOME}/.gradle",
     "GRADLE_OPTS": "-Xmx1536m -Xms256m -XX:+UseG1GC -XX:MaxMetaspaceSize=384m -Dorg.gradle.daemon.idletimeout=300000",

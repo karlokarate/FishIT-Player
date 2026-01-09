@@ -6,7 +6,8 @@ set -e
 echo "=== Setting up Android development environment ==="
 
 # SDK location in home directory (persists across rebuilds, not in workspace)
-SDK_DIR="/home/codespace/.android-sdk"
+# Use $HOME to support both 'codespace' and 'vscode' users
+SDK_DIR="$HOME/.android-sdk"
 
 # Find correct Java installation
 JAVA_DIR="/usr/lib/jvm/msopenjdk-current"
@@ -31,9 +32,9 @@ fi
 export JAVA_HOME="$JAVA_DIR"
 export PATH="$JAVA_HOME/bin:$PATH"
 
-# Set SDK location in local.properties
+# Set SDK location in local.properties (uses $HOME which resolves correctly)
 echo "sdk.dir=$SDK_DIR" > /workspaces/FishIT-Player/local.properties
-echo "✓ local.properties configured"
+echo "✓ local.properties configured (SDK_DIR=$SDK_DIR)"
 
 # Export environment variables for current session
 export ANDROID_HOME="$SDK_DIR"

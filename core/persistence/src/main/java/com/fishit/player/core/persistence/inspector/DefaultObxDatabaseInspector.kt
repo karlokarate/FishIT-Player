@@ -382,18 +382,17 @@ class DefaultObxDatabaseInspector
             val s = value.toString()
             return if (s.length <= 400) s else s.take(400) + "…"
         }
-    }
 
-    override suspend fun exportSchema(context: android.content.Context, toLogcat: Boolean): String =
-        withContext(Dispatchers.IO) {
-            val dump = ObjectBoxIntrospectionDump.generateDump(boxStore)
+        override suspend fun exportSchema(context: android.content.Context, toLogcat: Boolean): String =
+            withContext(Dispatchers.IO) {
+                val dump = ObjectBoxIntrospectionDump.generateDump(boxStore)
             
-            if (toLogcat) {
-                ObjectBoxIntrospectionDump.dumpToLogcat(dump)
-                "Logcat"
-            } else {
-                val file = ObjectBoxIntrospectionDump.dumpToFile(context, dump)
-                file.absolutePath
+                if (toLogcat) {
+                    ObjectBoxIntrospectionDump.dumpToLogcat(dump)
+                    "Logcat"
+                } else {
+                    val file = ObjectBoxIntrospectionDump.dumpToFile(context, dump)
+                    file.absolutePath
+                }
             }
-        }
 }
