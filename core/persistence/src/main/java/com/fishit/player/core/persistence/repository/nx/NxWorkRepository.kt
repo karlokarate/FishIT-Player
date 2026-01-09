@@ -37,7 +37,6 @@ import kotlinx.coroutines.flow.Flow
  * @see com.fishit.player.core.persistence.obx.NxKeyGenerator
  */
 interface NxWorkRepository {
-
     // ═══════════════════════════════════════════════════════════════════════
     // CRUD Operations
     // ═══════════════════════════════════════════════════════════════════════
@@ -134,7 +133,10 @@ interface NxWorkRepository {
      * @param limit Maximum results (default 50)
      * @return List of matching works
      */
-    suspend fun searchByTitle(query: String, limit: Int = 50): List<NX_Work>
+    suspend fun searchByTitle(
+        query: String,
+        limit: Int = 50,
+    ): List<NX_Work>
 
     /**
      * Find works by type.
@@ -147,7 +149,7 @@ interface NxWorkRepository {
     suspend fun findByWorkType(
         workType: WorkType,
         limit: Int = 100,
-        offset: Int = 0
+        offset: Int = 0,
     ): List<NX_Work>
 
     /**
@@ -157,7 +159,10 @@ interface NxWorkRepository {
      * @param limit Maximum results (default 100)
      * @return List of works from given year
      */
-    suspend fun findByYear(year: Int, limit: Int = 100): List<NX_Work>
+    suspend fun findByYear(
+        year: Int,
+        limit: Int = 100,
+    ): List<NX_Work>
 
     /**
      * Find works needing manual review (classification UNKNOWN).

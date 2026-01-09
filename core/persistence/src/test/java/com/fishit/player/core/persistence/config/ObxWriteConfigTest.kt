@@ -16,7 +16,6 @@ import org.junit.Test
  * Uses DeviceClassProvider architecture from core:device-api.
  */
 class ObxWriteConfigTest {
-
     // ========== Constants ==========
 
     @Test
