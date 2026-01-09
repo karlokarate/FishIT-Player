@@ -327,18 +327,53 @@ This repository is configured with MCP (Model Context Protocol) servers that ext
 
 - **GitHub MCP**: Full GitHub API access (issues, PRs, code search, CI/CD)
 - **Sequential Thinking**: Long-term context for multi-step task chains
+- **FishIT Pipeline**: Domain-specific tools for Xtream API, Telegram integration, and pipeline testing
+
+### FishIT Pipeline MCP Server
+
+The `fishit-pipeline` MCP server provides domain-specific functionality:
+
+**Xtream API Tools:**
+- Browse VOD/Live/Series categories
+- Get stream information and metadata
+- Generate playback URLs
+- Search across content types
+- Test EPG (TV guide) integration
+
+**Telegram Tools:**
+- Check TDLib configuration and status
+- Test authentication flow (phone, code, 2FA)
+- Browse chats and messages (after auth)
+- View message and content schemas
+- Generate mock data for testing
+
+**Pipeline Tools:**
+- Test RawMediaMetadata normalization
+- Convert Xtream/Telegram data to canonical format
+- Parse media titles for metadata extraction
+- Test MediaType detection logic
+
+**Usage Examples:**
+```
+"Use xtream_vod_categories to list all movie categories"
+"Generate a mock Telegram video message and normalize it"
+"Parse this title: Movie.Title.2024.1080p.WEB-DL.x264"
+```
 
 Agents can use these capabilities automatically when:
 - Creating PRs from issues
 - Analyzing CI/CD failures  
 - Maintaining context across task chains
 - Searching and understanding the codebase
+- Testing pipeline integrations with real data
+- Validating metadata normalization logic
 
 ### Configuration
 
 MCP servers are configured in:
 - `.devcontainer/devcontainer.json` - For Codespaces and devcontainer environments
-- `.vscode/settings.json` - For local VS Code development
+- `.vscode/mcp.json` - For local VS Code development
+- `.github/copilot-mcp-settings.json` - For GitHub Copilot Coding Agent
 - `.github/workflows/copilot-setup-steps.yml` - For cloud agents (GitHub Actions, Copilot Workspace)
 
 ### Requirements
@@ -347,10 +382,18 @@ MCP servers are configured in:
 - **GITHUB_TOKEN** environment variable (automatically available in Codespaces)
 - **Docker** for GitHub MCP Server (pre-installed in devcontainer)
 - **Node.js/npx** for Sequential Thinking Server (pre-installed in devcontainer)
+- **Java 21** for FishIT Pipeline Server (pre-installed in devcontainer)
 
 **Cloud Agents (GitHub Actions):**
 - **COPILOT_MCP_TOKEN** repository secret - Required for cloud agent authentication
+- **COPILOT_MCP_TELEGRAM_API_ID** / **COPILOT_MCP_TELEGRAM_API_HASH** - Telegram API credentials (optional)
 - Automatic caching of Docker images, NPM packages, and custom MCP server JARs
 - Pre-configured in `copilot-setup-steps.yml` workflow
 
-See `AGENTS.md` Section 16 for complete MCP server documentation.
+**Building the FishIT Pipeline MCP Server:**
+```bash
+./gradlew :tools:mcp-server:fatJar
+# Creates: tools/mcp-server/build/libs/mcp-server-1.0.0-all.jar
+```
+
+See `AGENTS.md` Section 16 for complete MCP server documentation and `tools/mcp-server/README.md` for FishIT Pipeline server details.
