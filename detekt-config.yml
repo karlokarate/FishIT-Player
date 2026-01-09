@@ -278,6 +278,20 @@ style:
       # ======================================================================
       - value: 'com.chris.m3usuite.*'
         reason: '[NAMESPACE] v1 namespace forbidden in v2 modules (AGENTS.md §3.2)'
+      
+      # ======================================================================
+      # OBX PLATIN PHASE 0.3 GUARDRAILS - BoxStore Isolation
+      # ======================================================================
+      # Rule 1: NoBoxStoreOutsideRepository
+      # BoxStore must only be used in repository implementations, not in:
+      # - Feature layer (ViewModels, UI)
+      # - Domain layer (Use cases)
+      # - Pipeline layer
+      # - Playback layer
+      # See: docs/v2/OBX_PLATIN_REFACTOR_ROADMAP.md Phase 0
+      
+      - value: 'io.objectbox.BoxStore'
+        reason: '[OBX_PLATIN] BoxStore must only be used in repositories (*Repository*.kt files). Use repository interfaces instead. See docs/v2/OBX_PLATIN_REFACTOR_ROADMAP.md'
     
     excludes:
       # Rule-level excludes: these paths are exempt from ALL ForbiddenImport checks above
@@ -317,6 +331,20 @@ style:
       - '**/src/test/**'
       - '**/src/androidTest/**'
       - '**/src/testFixtures/**'
+      
+      # ======================================================================
+      # OBX PLATIN PHASE 0.3: BoxStore exclusions
+      # ======================================================================
+      # These files are ALLOWED to use BoxStore directly:
+      # - Repository implementations (*Repository*.kt in infra/data-* and core/persistence)
+      # - DI setup in core/persistence/di/
+      # - ObxStore.kt singleton
+      # - Database inspector (debug utility)
+      #
+      # All other code must use repository interfaces.
+      # Note: Due to Detekt's rule-level excludes (not per-import), 
+      # we keep broad excludes and rely on code review for finer control.
+      # For strict enforcement, implement custom Detekt rule in tools/detekt-rules/
 
 # =========================================================================
 # v2 NAMING CONTRACT ENFORCEMENT
@@ -474,3 +502,44 @@ style:
     active: false
   WildcardImport:
     active: false
+
+# =========================================================================
+# OBX PLATIN PHASE 0.3 CUSTOM RULES (NOT YET IMPLEMENTED)
+# =========================================================================
+# The following rules require custom Detekt rule implementations in tools/detekt-rules/
+# See: docs/v2/OBX_PLATIN_REFACTOR_ROADMAP.md Phase 0 - Contracts & Guardrails
+#
+# Rule 2: NoSecretsInObx
+# ----------------------
+# Detects sensitive field patterns in @Entity classes:
+# - password, secret, token, apiKey (case-insensitive)
+# - Flag as ERROR if found in @Entity annotated classes
+# - Purpose: Prevent secrets in ObjectBox persistence layer
+# - Manual Review Required: grep -r "password\|secret\|token\|apiKey" core/persistence/src/main/java --include="*.kt" -B 5 | grep -B 5 "@Entity"
+#
+# Rule 3: IngestLedgerRequired
+# -----------------------------
+# Detects ingest/catalog processing code without IngestLedger tracking:
+# - Functions in pipeline/** that process RawMediaMetadata
+# - Must create IngestLedger entry (ACCEPTED | REJECTED | SKIPPED)
+# - Purpose: No silent drops - every ingest candidate must be tracked
+# - Pattern to detect:
+#   * Functions that accept RawMediaMetadata or collections of it
+#   * Must call IngestLedger.record() or similar tracking method
+#   * See: docs/v2/OBX_PLATIN_REFACTOR_ROADMAP.md - "Every ingest candidate must create exactly one IngestLedger entry"
+#
+# Implementation Guide:
+# ---------------------
+# To implement these as actual Detekt rules:
+# 1. Create tools/detekt-rules/build.gradle.kts module
+# 2. Add dependency: io.gitlab.arturbosch.detekt:detekt-api:1.23.8
+# 3. Implement Rule classes extending io.gitlab.arturbosch.detekt.api.Rule
+# 4. Register rules in META-INF/services/io.gitlab.arturbosch.detekt.api.RuleSetProvider
+# 5. Add tools/detekt-rules JAR to detektPlugins configuration in root build.gradle.kts
+# 6. Enable rules in this config file
+#
+# For now, these rules are enforced via:
+# - Code review
+# - Manual grep/search during PR review
+# - Agent instructions in AGENTS.md and .github/instructions/
+# =========================================================================
