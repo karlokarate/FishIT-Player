@@ -278,6 +278,16 @@ style:
       # ======================================================================
       - value: 'com.chris.m3usuite.*'
         reason: '[NAMESPACE] v1 namespace forbidden in v2 modules (AGENTS.md §3.2)'
+      
+      # ======================================================================
+      # OBX-01: BoxStore Repository Pattern Enforcement (OBX PLATIN Phase 0.3)
+      # ======================================================================
+      # BoxStore must only be injected in repository implementations.
+      # core/persistence is SCHEMA-ONLY (entities + DI wiring) - NO repositories!
+      # Repository implementations belong in infra/data-* modules.
+      # See: docs/v2/OBX_PLATIN_DETEKT_GUARDRAILS_CONTRACT.md
+      - value: 'io.objectbox.BoxStore'
+        reason: '[OBX-01] BoxStore only allowed in infra/data-*/*Repository*.kt and core/persistence/{di,obx/ObxStore,inspector}. See OBX_PLATIN_DETEKT_GUARDRAILS_CONTRACT.md'
     
     excludes:
       # Rule-level excludes: these paths are exempt from ALL ForbiddenImport checks above
