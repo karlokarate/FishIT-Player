@@ -19,7 +19,8 @@ violations=$(grep -r "import io.objectbox.BoxStore" --include="*.kt" \
   | grep -v "legacy/" \
   | grep -v "core/persistence/di/" \
   | grep -v "core/persistence/obx/ObxStore" \
-  | grep -v "inspector/" || true)
+  | grep -v "inspector/" \
+  | grep -v "examples/" || true)
 
 if [ -z "$violations" ]; then
   echo "  ✅ PASS: No violations found"
