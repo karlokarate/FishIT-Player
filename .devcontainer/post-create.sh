@@ -78,6 +78,27 @@ else
     echo "⚠️ SDK cmdline-tools installation failed"
 fi
 
+# Install latest Jupyter for data analysis and debugging
+echo "=== Installing Jupyter ==="
+if ! command -v jupyter &> /dev/null; then
+    echo "Installing Jupyter and JupyterLab..."
+    pip3 install --user --upgrade pip setuptools wheel
+    pip3 install --user --upgrade jupyter jupyterlab notebook ipywidgets
+    
+    # Add to PATH
+    export PATH="$HOME/.local/bin:$PATH"
+    if ! grep -q ".local/bin" ~/.bashrc 2>/dev/null; then
+        echo "export PATH=\"\$HOME/.local/bin:\$PATH\"" >> ~/.bashrc
+    fi
+    
+    echo "✓ Jupyter installed (version: $(jupyter --version | head -1))"
+else
+    echo "✓ Jupyter already installed (version: $(jupyter --version | head -1))"
+    # Upgrade to latest version
+    pip3 install --user --upgrade jupyter jupyterlab notebook ipywidgets
+    echo "✓ Jupyter upgraded to latest version"
+fi
+
 # Start memory monitor in background
 echo "=== Starting memory monitor ==="
 if [ ! -f /tmp/memory-monitor.pid ] || ! ps -p $(cat /tmp/memory-monitor.pid 2>/dev/null) > /dev/null 2>&1; then
@@ -89,3 +110,4 @@ else
 fi
 
 echo "=== Android environment ready ==="
+echo "=== Jupyter ready - use 'jupyter notebook' or 'jupyter lab' to start ==="

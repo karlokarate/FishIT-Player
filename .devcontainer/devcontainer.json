@@ -7,6 +7,10 @@
     },
     "ghcr.io/devcontainers/features/node:1": {
       "version": "20"
+    },
+    "ghcr.io/devcontainers/features/python:1": {
+      "version": "latest",
+      "installJupyterlab": true
     }
   },
   "postCreateCommand": "bash .devcontainer/post-create.sh",
@@ -15,7 +19,11 @@
     "vscode": {
       "extensions": [
         "GitHub.copilot",
-        "GitHub.copilot-chat"
+        "GitHub.copilot-chat",
+        "ms-python.python",
+        "ms-toolsai.jupyter",
+        "ms-toolsai.jupyter-keymap",
+        "ms-toolsai.jupyter-renderers"
       ],
       "settings": {
         "java.configuration.runtimes": [
