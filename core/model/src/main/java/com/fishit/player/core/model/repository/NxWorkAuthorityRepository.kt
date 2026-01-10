@@ -11,7 +11,6 @@ package com.fishit.player.core.model.repository
 import kotlinx.coroutines.flow.Flow
 
 interface NxWorkAuthorityRepository {
-
     enum class AuthorityType { TMDB, IMDB, TVDB, MUSICBRAINZ, UNKNOWN }
 
     enum class Namespace { MOVIE, TV, EPISODE, UNKNOWN }
@@ -39,4 +38,3 @@ interface NxWorkAuthorityRepository {
 
     suspend fun delete(authorityKey: String): Boolean
 }
-

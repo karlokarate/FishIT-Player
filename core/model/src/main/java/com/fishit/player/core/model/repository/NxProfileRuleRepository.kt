@@ -11,7 +11,6 @@ package com.fishit.player.core.model.repository
 import kotlinx.coroutines.flow.Flow
 
 interface NxProfileRuleRepository {
-
     enum class RuleType { ALLOW, BLOCK }
 
     enum class TargetType {
@@ -39,5 +38,3 @@ interface NxProfileRuleRepository {
 
     suspend fun delete(rule: ProfileRule): Boolean
 }
-
-

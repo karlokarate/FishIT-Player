@@ -8,8 +8,10 @@ package com.fishit.player.core.model.repository
 
 interface NxIngestLedgerDiagnostics {
     suspend fun countAll(): Long
+
     suspend fun countByState(state: NxIngestLedgerRepository.LedgerState): Long
+
     suspend fun countByReason(reason: NxIngestLedgerRepository.ReasonCode): Long
+
     suspend fun deleteExpired(nowMs: Long): Long
 }
-

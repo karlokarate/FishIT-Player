@@ -39,4 +39,3 @@ data class WorkUserState(
     val lastUpdatedByDeviceId: String? = null,
     val cloudSyncState: String = "LOCAL_ONLY", // LOCAL_ONLY, DIRTY, SYNCED
 )
-

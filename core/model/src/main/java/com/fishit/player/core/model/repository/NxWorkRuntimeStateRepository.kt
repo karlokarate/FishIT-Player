@@ -11,18 +11,15 @@ package com.fishit.player.core.model.repository
 import kotlinx.coroutines.flow.Flow
 
 interface NxWorkRuntimeStateRepository {
-
     data class RuntimeState(
         val workKey: String,
         val isAvailable: Boolean = true,
         val lastProbeAtMs: Long? = null,
         val lastErrorCode: String? = null,
         val ttlUntilMs: Long? = null,
-
         val nowTitle: String? = null,
         val nowStartMs: Long? = null,
         val nowEndMs: Long? = null,
-
         val nextTitle: String? = null,
         val nextStartMs: Long? = null,
         val nextEndMs: Long? = null,
@@ -40,4 +37,3 @@ interface NxWorkRuntimeStateRepository {
 
     suspend fun delete(workKey: String): Boolean
 }
-

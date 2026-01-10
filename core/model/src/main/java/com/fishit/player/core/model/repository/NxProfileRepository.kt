@@ -10,7 +10,6 @@ package com.fishit.player.core.model.repository
 import kotlinx.coroutines.flow.Flow
 
 interface NxProfileRepository {
-
     data class Profile(
         val profileKey: String,
         val displayName: String,
@@ -29,4 +28,3 @@ interface NxProfileRepository {
 
     suspend fun softDelete(profileKey: String): Boolean
 }
-

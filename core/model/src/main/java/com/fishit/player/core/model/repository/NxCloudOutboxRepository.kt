@@ -11,7 +11,6 @@ package com.fishit.player.core.model.repository
 import kotlinx.coroutines.flow.Flow
 
 interface NxCloudOutboxRepository {
-
     enum class EventType {
         UPSERT_USER_STATE,
         UPSERT_PROFILE,
@@ -33,12 +32,18 @@ interface NxCloudOutboxRepository {
 
     suspend fun enqueue(event: OutboxEvent): OutboxEvent
 
-    suspend fun dequeueBatch(nowMs: Long, limit: Int = 100): List<OutboxEvent>
+    suspend fun dequeueBatch(
+        nowMs: Long,
+        limit: Int = 100,
+    ): List<OutboxEvent>
 
     suspend fun markSuccess(eventId: String): Boolean
 
-    suspend fun markFailure(eventId: String, nowMs: Long, error: String): Boolean
+    suspend fun markFailure(
+        eventId: String,
+        nowMs: Long,
+        error: String,
+    ): Boolean
 
     fun observePendingCount(): Flow<Long>
 }
-

@@ -12,10 +12,14 @@ import com.fishit.player.core.model.userstate.WorkUserState
 
 interface NxWorkUserStateDiagnostics {
     suspend fun countAll(): Long
+
     suspend fun countByProfile(profileKey: String): Long
+
     suspend fun findOrphanedStates(limit: Int = 200): List<WorkUserState>
+
     suspend fun findInvalidRatings(limit: Int = 200): List<WorkUserState>
+
     suspend fun findDuplicateStates(limit: Int = 200): List<WorkUserState>
+
     fun validateState(state: WorkUserState): List<String>
 }
-

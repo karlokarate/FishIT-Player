@@ -19,6 +19,7 @@ interface NxWorkSourceRefDiagnostics {
      * Source refs that look malformed (SSOT violations).
      */
     suspend fun findMissingAccountKey(limit: Int = 200): List<NxWorkSourceRefRepository.SourceRef>
+
     suspend fun findInvalidSourceKeyFormat(limit: Int = 200): List<NxWorkSourceRefRepository.SourceRef>
 
     /**

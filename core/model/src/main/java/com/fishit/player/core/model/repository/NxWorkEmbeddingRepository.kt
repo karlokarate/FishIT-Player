@@ -9,7 +9,6 @@
 package com.fishit.player.core.model.repository
 
 interface NxWorkEmbeddingRepository {
-
     data class WorkEmbedding(
         val workKey: String,
         val embeddingModel: String,
@@ -18,10 +17,17 @@ interface NxWorkEmbeddingRepository {
         val updatedAtMs: Long = 0L,
     )
 
-    suspend fun get(workKey: String, embeddingModel: String, embeddingVersion: Int): WorkEmbedding?
+    suspend fun get(
+        workKey: String,
+        embeddingModel: String,
+        embeddingVersion: Int,
+    ): WorkEmbedding?
 
     suspend fun upsert(embedding: WorkEmbedding): WorkEmbedding
 
-    suspend fun delete(workKey: String, embeddingModel: String, embeddingVersion: Int): Boolean
+    suspend fun delete(
+        workKey: String,
+        embeddingModel: String,
+        embeddingVersion: Int,
+    ): Boolean
 }
-

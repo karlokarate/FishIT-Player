@@ -11,7 +11,6 @@ package com.fishit.player.core.model.repository
 import kotlinx.coroutines.flow.Flow
 
 interface NxIngestLedgerRepository {
-
     enum class LedgerState { ACCEPTED, REJECTED, SKIPPED }
 
     enum class ReasonCode {
@@ -44,8 +43,10 @@ interface NxIngestLedgerRepository {
     /**
      * Fast-path skip check (especially useful for Telegram candidates).
      */
-    suspend fun shouldSkip(ledgerKey: String, nowMs: Long): Boolean
+    suspend fun shouldSkip(
+        ledgerKey: String,
+        nowMs: Long,
+    ): Boolean
 
     fun observeRecentRejected(limit: Int = 200): Flow<List<LedgerEntry>>
 }
-

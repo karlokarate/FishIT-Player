@@ -14,7 +14,6 @@ import kotlinx.coroutines.flow.Flow
  * MVP repository for work relationships (series ↔ episode etc.).
  */
 interface NxWorkRelationRepository {
-
     enum class RelationType {
         SERIES_EPISODE,
         RELATED,

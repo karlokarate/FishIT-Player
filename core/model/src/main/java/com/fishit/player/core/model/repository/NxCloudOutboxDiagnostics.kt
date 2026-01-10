@@ -7,7 +7,12 @@ package com.fishit.player.core.model.repository
 
 interface NxCloudOutboxDiagnostics {
     suspend fun countAll(): Long
-    suspend fun countPending(nowMs: Long): Long
-    suspend fun findStuck(nowMs: Long, olderThanMs: Long, limit: Int = 200): List<NxCloudOutboxRepository.OutboxEvent>
-}
 
+    suspend fun countPending(nowMs: Long): Long
+
+    suspend fun findStuck(
+        nowMs: Long,
+        olderThanMs: Long,
+        limit: Int = 200,
+    ): List<NxCloudOutboxRepository.OutboxEvent>
+}

@@ -19,7 +19,6 @@ import kotlinx.coroutines.flow.Flow
  * Domain model only (no persistence annotations).
  */
 interface NxWorkRepository {
-
     enum class WorkType {
         MOVIE,
         SERIES,
@@ -78,13 +77,9 @@ interface NxWorkRepository {
         limit: Int = 200,
     ): Flow<List<Work>>
 
-    fun observeRecentlyUpdated(
-        limit: Int = 50,
-    ): Flow<List<Work>>
+    fun observeRecentlyUpdated(limit: Int = 50): Flow<List<Work>>
 
-    fun observeNeedsReview(
-        limit: Int = 200,
-    ): Flow<List<Work>>
+    fun observeNeedsReview(limit: Int = 200): Flow<List<Work>>
 
     suspend fun searchByTitle(
         queryNormalized: String,

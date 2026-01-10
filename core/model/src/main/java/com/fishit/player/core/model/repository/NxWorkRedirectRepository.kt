@@ -10,7 +10,6 @@ package com.fishit.player.core.model.repository
 import kotlinx.coroutines.flow.Flow
 
 interface NxWorkRedirectRepository {
-
     data class Redirect(
         val obsoleteWorkKey: String,
         val targetWorkKey: String,
@@ -25,4 +24,3 @@ interface NxWorkRedirectRepository {
 
     fun observeAll(): Flow<List<Redirect>>
 }
-

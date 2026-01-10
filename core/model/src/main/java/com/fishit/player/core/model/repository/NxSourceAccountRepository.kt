@@ -10,7 +10,6 @@ package com.fishit.player.core.model.repository
 import kotlinx.coroutines.flow.Flow
 
 interface NxSourceAccountRepository {
-
     enum class AccountStatus { ACTIVE, ERROR, DISABLED }
 
     data class SourceAccount(
@@ -32,4 +31,3 @@ interface NxSourceAccountRepository {
 
     suspend fun delete(accountKey: String): Boolean
 }
-

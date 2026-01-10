@@ -17,16 +17,13 @@ import kotlinx.coroutines.flow.Flow
  * MVP repository for playable variants per source ref.
  */
 interface NxWorkVariantRepository {
-
     data class Variant(
         val variantKey: String,
         val workKey: String,
         val sourceKey: String,
-
         // selection / UX
         val label: String? = null,
         val isDefault: Boolean = false,
-
         // optional technical metadata
         val qualityHeight: Int? = null,
         val bitrateKbps: Int? = null,
@@ -35,13 +32,11 @@ interface NxWorkVariantRepository {
         val audioCodec: String? = null,
         val audioLang: String? = null,
         val durationMs: Long? = null,
-
         /**
          * PlaybackHints are source-specific key/value pairs consumed by playback layer.
          * Must be non-empty for a playable variant.
          */
         val playbackHints: Map<String, String> = emptyMap(),
-
         val createdAtMs: Long = 0L,
         val updatedAtMs: Long = 0L,
         val lastVerifiedAtMs: Long? = null,
