@@ -31,7 +31,6 @@ import kotlinx.coroutines.flow.Flow
  */
 @Suppress("TooManyFunctions") // Repository interfaces legitimately need comprehensive data access methods
 interface NxWorkVariantRepository {
-
     // ═══════════════════════════════════════════════════════════════════════
     // CRUD Operations
     // ═══════════════════════════════════════════════════════════════════════
