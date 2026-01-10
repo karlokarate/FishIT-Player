@@ -1,7 +1,7 @@
 /**
  * TEMP IMPLEMENTATION NOTES (REMOVE AFTER IMPLEMENTATION)
  * -------------------------------------------------------
- * - Diagnostics are NOT allowed in UI hot paths (feature/*).
+ * - Diagnostics are NOT allowed in UI hot paths (feature layer).
  * - Intended for debug screens and verifier workers.
  * - Implementation may join against other repos internally (e.g., source refs / variants).
  * - Remove this block after diagnostics implementation + debug screen wiring exists.
