@@ -1,5 +1,6 @@
 package com.fishit.player.core.model.repository
 
+import com.fishit.player.core.model.userstate.WorkUserState
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -17,20 +18,20 @@ import kotlinx.coroutines.flow.Flow
  * - Hidden from recommendations
  *
  * ## Composite Key
- * User state is uniquely identified by: profileId + workKey
+ * User state is uniquely identified by: profileKey + workKey
  *
  * ## Resume Position
  * Resume is stored as:
  * - `positionMs`: Current position in milliseconds
- * - `durationMs`: Total duration for percentage calculation
- * - Percentage = `positionMs / durationMs`
+ * - `durationMsAtLastPlay`: Total duration for percentage calculation
+ * - Percentage = `positionMs / durationMsAtLastPlay`
  * - Works are considered "watched" when percentage > 90% or explicitly marked
  *
  * ## Continue Watching Logic
  * Continue Watching shows works where:
  * - `positionMs > 0`
  * - Resume percentage < 90%
- * - Ordered by `lastWatchedAt` DESC
+ * - Ordered by `lastPlayedAtMs` DESC
  *
  * ## Return Type Patterns
  * This interface uses standard Kotlin patterns for operation results:
@@ -58,99 +59,44 @@ import kotlinx.coroutines.flow.Flow
  */
 @Suppress("TooManyFunctions") // Repository interfaces legitimately need comprehensive data access methods
 interface WorkUserStateRepository {
-    /**
-     * Domain model representing per-profile, per-work user state.
-     *
-     * This is a pure domain model without persistence annotations.
-     * The implementation layer maps this to/from persistence entities.
-     */
-    data class WorkUserState(
-        val id: Long = 0,
-        // Keys
-        val profileId: Long,
-        val workKey: String,
-        // Watch State
-        val positionMs: Long = 0,
-        val durationMs: Long = 0,
-        val isWatched: Boolean = false,
-        val watchCount: Int = 0,
-        // User Actions
-        val isFavorite: Boolean = false,
-        val userRating: Int? = null,
-        val inWatchlist: Boolean = false,
-        val isHidden: Boolean = false,
-        // Timestamps
-        val lastWatchedAt: Long? = null,
-        val createdAt: Long = System.currentTimeMillis(),
-        val updatedAt: Long = System.currentTimeMillis(),
-    ) {
-        /**
-         * Calculate resume percentage (0.0 to 1.0).
-         */
-        val resumePercentage: Float
-            get() = if (durationMs > 0) positionMs.toFloat() / durationMs else 0f
-
-        /**
-         * Check if this qualifies for "Continue Watching" (resume > 0 and < 90%).
-         */
-        val isContinueWatching: Boolean
-            get() = positionMs > 0 && resumePercentage < 0.9f
-    }
-
     // ═══════════════════════════════════════════════════════════════════════
     // CRUD Operations
     // ═══════════════════════════════════════════════════════════════════════
 
     /**
-     * Find user state by ID.
-     *
-     * @param id Entity ID
-     * @return User state if found, null otherwise
-     */
-    suspend fun findById(id: Long): WorkUserState?
-
-    /**
      * Find user state by profile and work key (composite key lookup).
      *
-     * @param profileId Profile ID
+     * @param profileKey Profile key (stable across devices)
      * @param workKey Work key
      * @return User state if found, null otherwise
      */
     suspend fun findByProfileAndWork(
-        profileId: Long,
+        profileKey: String,
         workKey: String,
     ): WorkUserState?
 
     /**
      * Insert or update user state.
      *
-     * If state with same (profileId + workKey) exists, updates it.
+     * If state with same (profileKey + workKey) exists, updates it.
      * Otherwise creates new state.
      *
-     * Updates `updatedAt` timestamp automatically.
+     * Updates `lastUpdatedAtMs` timestamp automatically.
      *
      * @param state User state to upsert
-     * @return Updated state with ID populated
+     * @return Updated state
      */
     suspend fun upsert(state: WorkUserState): WorkUserState
 
     /**
-     * Delete user state by ID.
-     *
-     * @param id Entity ID
-     * @return true if deleted, false if not found
-     */
-    suspend fun delete(id: Long): Boolean
-
-    /**
      * Delete user state by profile and work key.
      *
-     * @param profileId Profile ID
+     * @param profileKey Profile key
      * @param workKey Work key
      * @return true if deleted, false if not found
      */
     suspend fun deleteByProfileAndWork(
-        profileId: Long,
+        profileKey: String,
         workKey: String,
     ): Boolean
 
@@ -161,34 +107,34 @@ interface WorkUserStateRepository {
     /**
      * Find user states for a profile (paginated).
      *
-     * @param profileId Profile ID
+     * @param profileKey Profile key
      * @param limit Maximum results (default 100)
      * @return List of user states for the profile
      */
-    suspend fun findByProfileId(
-        profileId: Long,
+    suspend fun findByProfileKey(
+        profileKey: String,
         limit: Int = 100,
     ): List<WorkUserState>
 
     /**
      * Find all user states for a profile.
      *
-     * ⚠️ WARNING: Use with caution on large datasets. Consider pagination with [findByProfileId].
+     * ⚠️ WARNING: Use with caution on large datasets. Consider pagination with [findByProfileKey].
      *
-     * @param profileId Profile ID
+     * @param profileKey Profile key
      * @return List of all user states for the profile
      */
-    suspend fun findAllForProfile(profileId: Long): List<WorkUserState>
+    suspend fun findAllForProfile(profileKey: String): List<WorkUserState>
 
     /**
      * Delete all user states for a profile.
      *
      * Useful for profile cleanup or reset.
      *
-     * @param profileId Profile ID to clean
+     * @param profileKey Profile key to clean
      * @return Number of states deleted
      */
-    suspend fun deleteAllForProfile(profileId: Long): Int
+    suspend fun deleteAllForProfile(profileKey: String): Int
 
     // ═══════════════════════════════════════════════════════════════════════
     // Work Queries
@@ -208,12 +154,12 @@ interface WorkUserStateRepository {
      * Used for batch loading state for a list of works (e.g., home screen rows).
      *
      * @param workKeys List of work keys
-     * @param profileId Profile ID
+     * @param profileKey Profile key
      * @return List of user states (may be fewer than workKeys if some have no state)
      */
     suspend fun findByWorkKeys(
         workKeys: List<String>,
-        profileId: Long,
+        profileKey: String,
     ): List<WorkUserState>
 
     /**
@@ -233,17 +179,17 @@ interface WorkUserStateRepository {
     /**
      * Update resume position for a work.
      *
-     * Creates state if it doesn't exist. Updates `lastWatchedAt` timestamp.
+     * Creates state if it doesn't exist. Updates `lastPlayedAtMs` timestamp.
      * Automatically marks as watched if percentage > 90%.
      *
-     * @param profileId Profile ID
+     * @param profileKey Profile key
      * @param workKey Work key
      * @param positionMs Resume position in milliseconds
      * @param durationMs Total duration in milliseconds
      * @return Updated user state
      */
     suspend fun updateResumePosition(
-        profileId: Long,
+        profileKey: String,
         workKey: String,
         positionMs: Long,
         durationMs: Long,
@@ -252,24 +198,24 @@ interface WorkUserStateRepository {
     /**
      * Get resume position in milliseconds.
      *
-     * @param profileId Profile ID
+     * @param profileKey Profile key
      * @param workKey Work key
      * @return Resume position in milliseconds, null if no state or position is 0
      */
     suspend fun getResumePosition(
-        profileId: Long,
+        profileKey: String,
         workKey: String,
     ): Long?
 
     /**
      * Get resume percentage (0.0 to 1.0).
      *
-     * @param profileId Profile ID
+     * @param profileKey Profile key
      * @param workKey Work key
      * @return Resume percentage (0.0 to 1.0), null if no state or duration is 0
      */
     suspend fun getResumePercentage(
-        profileId: Long,
+        profileKey: String,
         workKey: String,
     ): Float?
 
@@ -278,26 +224,26 @@ interface WorkUserStateRepository {
      *
      * Does NOT delete the state - preserves other fields like favorites, ratings, etc.
      *
-     * @param profileId Profile ID
+     * @param profileKey Profile key
      * @param workKey Work key
      * @return true if cleared, false if no state found
      */
     suspend fun clearResumePosition(
-        profileId: Long,
+        profileKey: String,
         workKey: String,
     ): Boolean
 
     /**
      * Find all states with resume position > 0 for a profile.
      *
-     * Ordered by `lastWatchedAt` DESC.
+     * Ordered by `lastPlayedAtMs` DESC.
      *
-     * @param profileId Profile ID
+     * @param profileKey Profile key
      * @param limit Maximum results (default 50)
      * @return List of user states with resume position
      */
     suspend fun findWithResumePosition(
-        profileId: Long,
+        profileKey: String,
         limit: Int = 50,
     ): List<WorkUserState>
 
@@ -311,26 +257,26 @@ interface WorkUserStateRepository {
      * Returns states where:
      * - `positionMs > 0`
      * - Resume percentage < 90%
-     * - Ordered by `lastWatchedAt` DESC
+     * - Ordered by `lastPlayedAtMs` DESC
      *
-     * @param profileId Profile ID
+     * @param profileKey Profile key
      * @param limit Maximum results (default 20)
      * @return List of user states for continue watching
      */
     suspend fun findContinueWatching(
-        profileId: Long,
+        profileKey: String,
         limit: Int = 20,
     ): List<WorkUserState>
 
     /**
      * Observe works in progress for "Continue Watching" row (reactive).
      *
-     * @param profileId Profile ID
+     * @param profileKey Profile key
      * @param limit Maximum results (default 20)
      * @return Flow of user states for continue watching
      */
     fun observeContinueWatching(
-        profileId: Long,
+        profileKey: String,
         limit: Int = 20,
     ): Flow<List<WorkUserState>>
 
@@ -341,15 +287,15 @@ interface WorkUserStateRepository {
     /**
      * Mark work as watched.
      *
-     * Sets `isWatched = true`, increments `watchCount`, updates `lastWatchedAt`.
+     * Sets `isWatched = true`, increments `watchCount`, updates `lastPlayedAtMs`.
      * Creates state if it doesn't exist.
      *
-     * @param profileId Profile ID
+     * @param profileKey Profile key
      * @param workKey Work key
      * @return Updated user state
      */
     suspend fun markAsWatched(
-        profileId: Long,
+        profileKey: String,
         workKey: String,
     ): WorkUserState
 
@@ -358,76 +304,76 @@ interface WorkUserStateRepository {
      *
      * Sets `isWatched = false`, does NOT clear resume position.
      *
-     * @param profileId Profile ID
+     * @param profileKey Profile key
      * @param workKey Work key
      * @return Updated user state (or creates if doesn't exist)
      */
     suspend fun markAsUnwatched(
-        profileId: Long,
+        profileKey: String,
         workKey: String,
     ): WorkUserState
 
     /**
      * Check if work is marked as watched.
      *
-     * @param profileId Profile ID
+     * @param profileKey Profile key
      * @param workKey Work key
      * @return true if watched, false otherwise
      */
     suspend fun isWatched(
-        profileId: Long,
+        profileKey: String,
         workKey: String,
     ): Boolean
 
     /**
      * Find all watched works for a profile.
      *
-     * Ordered by `lastWatchedAt` DESC.
+     * Ordered by `lastPlayedAtMs` DESC.
      *
-     * @param profileId Profile ID
+     * @param profileKey Profile key
      * @param limit Maximum results (default 100)
      * @return List of watched user states
      */
     suspend fun findWatched(
-        profileId: Long,
+        profileKey: String,
         limit: Int = 100,
     ): List<WorkUserState>
 
     /**
      * Find all unwatched works for a profile.
      *
-     * @param profileId Profile ID
+     * @param profileKey Profile key
      * @param limit Maximum results (default 100)
      * @return List of unwatched user states
      */
     suspend fun findUnwatched(
-        profileId: Long,
+        profileKey: String,
         limit: Int = 100,
     ): List<WorkUserState>
 
     /**
      * Get watch count for a work.
      *
-     * @param profileId Profile ID
+     * @param profileKey Profile key
      * @param workKey Work key
      * @return Watch count (0 if no state)
      */
     suspend fun getWatchCount(
-        profileId: Long,
+        profileKey: String,
         workKey: String,
     ): Int
 
     /**
      * Increment watch count for a work.
      *
-     * Creates state if it doesn't exist. Updates `lastWatchedAt`.
+     * Creates state if it doesn't exist. Updates `lastPlayedAtMs`.
      *
-     * @param profileId Profile ID
+     * @param profileKey Profile key
      * @param workKey Work key
      * @return Updated user state
      */
     suspend fun incrementWatchCount(
-        profileId: Long,
+        profileKey: String,
         workKey: String,
     ): WorkUserState
 
@@ -440,12 +386,12 @@ interface WorkUserStateRepository {
      *
      * Sets `isFavorite = true`. Creates state if it doesn't exist.
      *
-     * @param profileId Profile ID
+     * @param profileKey Profile key
      * @param workKey Work key
      * @return Updated user state
      */
     suspend fun addToFavorites(
-        profileId: Long,
+        profileKey: String,
         workKey: String,
     ): WorkUserState
 
@@ -454,48 +400,48 @@ interface WorkUserStateRepository {
      *
      * Sets `isFavorite = false`.
      *
-     * @param profileId Profile ID
+     * @param profileKey Profile key
      * @param workKey Work key
      * @return Updated user state (or creates if doesn't exist)
      */
     suspend fun removeFromFavorites(
-        profileId: Long,
+        profileKey: String,
         workKey: String,
     ): WorkUserState
 
     /**
      * Check if work is in favorites.
      *
-     * @param profileId Profile ID
+     * @param profileKey Profile key
      * @param workKey Work key
      * @return true if favorite, false otherwise
      */
     suspend fun isFavorite(
-        profileId: Long,
+        profileKey: String,
         workKey: String,
     ): Boolean
 
     /**
      * Find all favorite works for a profile.
      *
-     * Ordered by `updatedAt` DESC (most recently favorited first).
+     * Ordered by `lastUpdatedAtMs` DESC (most recently favorited first).
      *
-     * @param profileId Profile ID
+     * @param profileKey Profile key
      * @param limit Maximum results (default 100)
      * @return List of favorite user states
      */
     suspend fun findFavorites(
-        profileId: Long,
+        profileKey: String,
         limit: Int = 100,
     ): List<WorkUserState>
 
     /**
      * Observe favorite works for a profile (reactive).
      *
-     * @param profileId Profile ID
+     * @param profileKey Profile key
      * @return Flow of favorite user states
      */
-    fun observeFavorites(profileId: Long): Flow<List<WorkUserState>>
+    fun observeFavorites(profileKey: String): Flow<List<WorkUserState>>
 
     // ═══════════════════════════════════════════════════════════════════════
     // Watchlist Operations
@@ -506,12 +452,12 @@ interface WorkUserStateRepository {
      *
      * Sets `inWatchlist = true`. Creates state if it doesn't exist.
      *
-     * @param profileId Profile ID
+     * @param profileKey Profile key
      * @param workKey Work key
      * @return Updated user state
      */
     suspend fun addToWatchlist(
-        profileId: Long,
+        profileKey: String,
         workKey: String,
     ): WorkUserState
 
@@ -520,48 +466,48 @@ interface WorkUserStateRepository {
      *
      * Sets `inWatchlist = false`.
      *
-     * @param profileId Profile ID
+     * @param profileKey Profile key
      * @param workKey Work key
      * @return Updated user state (or creates if doesn't exist)
      */
     suspend fun removeFromWatchlist(
-        profileId: Long,
+        profileKey: String,
         workKey: String,
     ): WorkUserState
 
     /**
      * Check if work is in watchlist.
      *
-     * @param profileId Profile ID
+     * @param profileKey Profile key
      * @param workKey Work key
      * @return true if in watchlist, false otherwise
      */
     suspend fun isInWatchlist(
-        profileId: Long,
+        profileKey: String,
         workKey: String,
     ): Boolean
 
     /**
      * Find all watchlist works for a profile.
      *
-     * Ordered by `updatedAt` DESC (most recently added first).
+     * Ordered by `lastUpdatedAtMs` DESC (most recently added first).
      *
-     * @param profileId Profile ID
+     * @param profileKey Profile key
      * @param limit Maximum results (default 100)
      * @return List of watchlist user states
      */
     suspend fun findWatchlist(
-        profileId: Long,
+        profileKey: String,
         limit: Int = 100,
     ): List<WorkUserState>
 
     /**
      * Observe watchlist works for a profile (reactive).
      *
-     * @param profileId Profile ID
+     * @param profileKey Profile key
      * @return Flow of watchlist user states
      */
-    fun observeWatchlist(profileId: Long): Flow<List<WorkUserState>>
+    fun observeWatchlist(profileKey: String): Flow<List<WorkUserState>>
 
     // ═══════════════════════════════════════════════════════════════════════
     // User Rating Operations
@@ -572,14 +518,14 @@ interface WorkUserStateRepository {
      *
      * Creates state if it doesn't exist.
      *
-     * @param profileId Profile ID
+     * @param profileKey Profile key
      * @param workKey Work key
      * @param rating User rating (1-5 stars)
      * @return Updated user state
      * @throws IllegalArgumentException if rating is not in 1..5 range
      */
     suspend fun setRating(
-        profileId: Long,
+        profileKey: String,
         workKey: String,
         rating: Int,
     ): WorkUserState
@@ -589,53 +535,53 @@ interface WorkUserStateRepository {
      *
      * Sets `userRating = null`.
      *
-     * @param profileId Profile ID
+     * @param profileKey Profile key
      * @param workKey Work key
      * @return Updated user state (or creates if doesn't exist)
      */
     suspend fun clearRating(
-        profileId: Long,
+        profileKey: String,
         workKey: String,
     ): WorkUserState
 
     /**
      * Get user rating for a work.
      *
-     * @param profileId Profile ID
+     * @param profileKey Profile key
      * @param workKey Work key
      * @return User rating (1-5), null if not rated or no state
      */
     suspend fun getRating(
-        profileId: Long,
+        profileKey: String,
         workKey: String,
     ): Int?
 
     /**
      * Find all rated works for a profile.
      *
-     * Ordered by `updatedAt` DESC (most recently rated first).
+     * Ordered by `lastUpdatedAtMs` DESC (most recently rated first).
      *
-     * @param profileId Profile ID
+     * @param profileKey Profile key
      * @param limit Maximum results (default 100)
      * @return List of rated user states
      */
     suspend fun findRated(
-        profileId: Long,
+        profileKey: String,
         limit: Int = 100,
     ): List<WorkUserState>
 
     /**
      * Find works with rating >= minimum rating.
      *
-     * Ordered by `userRating` DESC, then `updatedAt` DESC.
+     * Ordered by `userRating` DESC, then `lastUpdatedAtMs` DESC.
      *
-     * @param profileId Profile ID
+     * @param profileKey Profile key
      * @param minRating Minimum rating (1-5)
      * @param limit Maximum results (default 100)
      * @return List of user states with rating >= minRating
      */
     suspend fun findByMinRating(
-        profileId: Long,
+        profileKey: String,
         minRating: Int,
         limit: Int = 100,
     ): List<WorkUserState>
@@ -649,12 +595,12 @@ interface WorkUserStateRepository {
      *
      * Sets `isHidden = true`. Creates state if it doesn't exist.
      *
-     * @param profileId Profile ID
+     * @param profileKey Profile key
      * @param workKey Work key
      * @return Updated user state
      */
     suspend fun hideFromRecommendations(
-        profileId: Long,
+        profileKey: String,
         workKey: String,
     ): WorkUserState
 
@@ -663,36 +609,36 @@ interface WorkUserStateRepository {
      *
      * Sets `isHidden = false`.
      *
-     * @param profileId Profile ID
+     * @param profileKey Profile key
      * @param workKey Work key
      * @return Updated user state (or creates if doesn't exist)
      */
     suspend fun unhideFromRecommendations(
-        profileId: Long,
+        profileKey: String,
         workKey: String,
     ): WorkUserState
 
     /**
      * Check if work is hidden from recommendations.
      *
-     * @param profileId Profile ID
+     * @param profileKey Profile key
      * @param workKey Work key
      * @return true if hidden, false otherwise
      */
     suspend fun isHidden(
-        profileId: Long,
+        profileKey: String,
         workKey: String,
     ): Boolean
 
     /**
      * Find all hidden works for a profile.
      *
-     * @param profileId Profile ID
+     * @param profileKey Profile key
      * @param limit Maximum results (default 100)
      * @return List of hidden user states
      */
     suspend fun findHidden(
-        profileId: Long,
+        profileKey: String,
         limit: Int = 100,
     ): List<WorkUserState>
 
@@ -703,38 +649,38 @@ interface WorkUserStateRepository {
     /**
      * Find recently watched works.
      *
-     * Returns all states with `lastWatchedAt != null`, ordered by `lastWatchedAt` DESC.
+     * Returns all states with `lastPlayedAtMs != null`, ordered by `lastPlayedAtMs` DESC.
      *
-     * @param profileId Profile ID
+     * @param profileKey Profile key
      * @param limit Maximum results (default 20)
      * @return List of recently watched user states
      */
     suspend fun findRecentlyWatched(
-        profileId: Long,
+        profileKey: String,
         limit: Int = 20,
     ): List<WorkUserState>
 
     /**
      * Observe recently watched works (reactive).
      *
-     * @param profileId Profile ID
+     * @param profileKey Profile key
      * @param limit Maximum results (default 20)
      * @return Flow of recently watched user states
      */
     fun observeRecentlyWatched(
-        profileId: Long,
+        profileKey: String,
         limit: Int = 20,
     ): Flow<List<WorkUserState>>
 
     /**
      * Find works watched since a timestamp.
      *
-     * @param profileId Profile ID
+     * @param profileKey Profile key
      * @param sinceTimestamp Unix timestamp in milliseconds
      * @return List of user states watched since timestamp
      */
     suspend fun findWatchedSince(
-        profileId: Long,
+        profileKey: String,
         sinceTimestamp: Long,
     ): List<WorkUserState>
 
@@ -745,22 +691,22 @@ interface WorkUserStateRepository {
     /**
      * Observe user state for a specific profile and work (reactive).
      *
-     * @param profileId Profile ID
+     * @param profileKey Profile key
      * @param workKey Work key
      * @return Flow of user state (null if doesn't exist)
      */
     fun observeByProfileAndWork(
-        profileId: Long,
+        profileKey: String,
         workKey: String,
     ): Flow<WorkUserState?>
 
     /**
      * Observe all user states for a profile (reactive).
      *
-     * @param profileId Profile ID
+     * @param profileKey Profile key
      * @return Flow of user states for the profile
      */
-    fun observeByProfileId(profileId: Long): Flow<List<WorkUserState>>
+    fun observeByProfileKey(profileKey: String): Flow<List<WorkUserState>>
 
     /**
      * Observe all user states (reactive).
@@ -785,60 +731,60 @@ interface WorkUserStateRepository {
     /**
      * Count user states for a profile.
      *
-     * @param profileId Profile ID
+     * @param profileKey Profile key
      * @return Count of user states for the profile
      */
-    suspend fun countByProfileId(profileId: Long): Int
+    suspend fun countByProfileKey(profileKey: String): Int
 
     /**
      * Count watched works for a profile.
      *
-     * @param profileId Profile ID
+     * @param profileKey Profile key
      * @return Count of watched works
      */
-    suspend fun countWatched(profileId: Long): Int
+    suspend fun countWatched(profileKey: String): Int
 
     /**
      * Count favorite works for a profile.
      *
-     * @param profileId Profile ID
+     * @param profileKey Profile key
      * @return Count of favorite works
      */
-    suspend fun countFavorites(profileId: Long): Int
+    suspend fun countFavorites(profileKey: String): Int
 
     /**
      * Count watchlist works for a profile.
      *
-     * @param profileId Profile ID
+     * @param profileKey Profile key
      * @return Count of watchlist works
      */
-    suspend fun countWatchlist(profileId: Long): Int
+    suspend fun countWatchlist(profileKey: String): Int
 
     /**
      * Count rated works for a profile.
      *
-     * @param profileId Profile ID
+     * @param profileKey Profile key
      * @return Count of rated works
      */
-    suspend fun countRated(profileId: Long): Int
+    suspend fun countRated(profileKey: String): Int
 
     /**
      * Get total watch time in milliseconds for a profile.
      *
      * Sums all `positionMs` values for the profile.
      *
-     * @param profileId Profile ID
+     * @param profileKey Profile key
      * @return Total watch time in milliseconds
      */
-    suspend fun getTotalWatchTimeMs(profileId: Long): Long
+    suspend fun getTotalWatchTimeMs(profileKey: String): Long
 
     /**
      * Get average rating for a profile.
      *
-     * @param profileId Profile ID
+     * @param profileKey Profile key
      * @return Average rating (1.0 to 5.0), null if no ratings
      */
-    suspend fun getAverageRating(profileId: Long): Float?
+    suspend fun getAverageRating(profileKey: String): Float?
 
     // ═══════════════════════════════════════════════════════════════════════
     // Batch Operations
@@ -850,39 +796,31 @@ interface WorkUserStateRepository {
      * ⚠️ Should respect batch size limits from ObxWriteConfig.
      *
      * @param states List of user states to upsert
-     * @return List of updated states with IDs populated
+     * @return List of updated states
      */
     suspend fun upsertBatch(states: List<WorkUserState>): List<WorkUserState>
 
     /**
-     * Delete multiple user states by ID.
-     *
-     * @param ids List of entity IDs
-     * @return Number of states deleted
-     */
-    suspend fun deleteBatch(ids: List<Long>): Int
-
-    /**
      * Mark multiple works as watched.
      *
-     * @param profileId Profile ID
+     * @param profileKey Profile key
      * @param workKeys List of work keys
      * @return Number of states updated
      */
     suspend fun markBatchAsWatched(
-        profileId: Long,
+        profileKey: String,
         workKeys: List<String>,
     ): Int
 
     /**
      * Add multiple works to favorites.
      *
-     * @param profileId Profile ID
+     * @param profileKey Profile key
      * @param workKeys List of work keys
      * @return Number of states updated
      */
     suspend fun addBatchToFavorites(
-        profileId: Long,
+        profileKey: String,
         workKeys: List<String>,
     ): Int
 
@@ -893,12 +831,12 @@ interface WorkUserStateRepository {
     /**
      * Check if user state exists for profile and work.
      *
-     * @param profileId Profile ID
+     * @param profileKey Profile key
      * @param workKey Work key
      * @return true if state exists, false otherwise
      */
     suspend fun exists(
-        profileId: Long,
+        profileKey: String,
         workKey: String,
     ): Boolean
 
@@ -923,7 +861,7 @@ interface WorkUserStateRepository {
     suspend fun findInvalidRatings(limit: Int = 100): List<WorkUserState>
 
     /**
-     * Find duplicate user states (same profileId + workKey).
+     * Find duplicate user states (same profileKey + workKey).
      *
      * Should not exist due to composite key uniqueness, but useful for validation.
      *
@@ -936,12 +874,12 @@ interface WorkUserStateRepository {
      * Validate user state entity.
      *
      * Checks:
-     * - profileId > 0
+     * - profileKey is not blank
      * - workKey is not blank
      * - userRating is null or in 1..5 range
      * - positionMs >= 0
-     * - durationMs >= 0
-     * - positionMs <= durationMs
+     * - durationMsAtLastPlay >= 0
+     * - positionMs <= durationMsAtLastPlay
      *
      * @param state User state to validate
      * @return List of validation error messages (empty if valid)
