@@ -10,12 +10,29 @@ import kotlinx.coroutines.flow.Flow
  * **SSOT Contract:** docs/v2/NX_SSOT_CONTRACT.md
  * **Roadmap:** docs/v2/OBX_PLATIN_REFACTOR_ROADMAP.md
  *
+ * ## Invariants (BINDING)
+ * - Series ↔ Episode relationships must be consistent
+ * - Parent-child relationships are uni-directional (parent → child)
+ * - Season/episode numbers REQUIRED for SERIES_EPISODE relations
+ * - No circular references allowed (work cannot be both parent and child in same chain)
+ * - Sort order determines episode/sequel order within parent
+ *
  * ## Relation Types
  * - SERIES_EPISODE: Series contains episodes (season/episode metadata)
  * - SEQUEL: Follow-up work
  * - PREQUEL: Predecessor work
  * - REMAKE: New version of existing work
  * - SPINOFF: Derivative work
+ * - ALTERNATIVE: Alternative version (director's cut, extended edition, etc.)
+ *
+ * ## Return Type Patterns
+ * This interface uses standard Kotlin patterns for operation results:
+ * - **Entity returns**: `upsert()` returns the entity with populated ID
+ * - **Boolean returns**: `delete()`, `linkSeriesEpisode()` etc. return success/failure
+ * - **Nullable returns**: `find*()` methods return null when not found
+ *
+ * For error details beyond boolean success/failure, implementations may throw
+ * typed exceptions (e.g., IllegalArgumentException for validation violations).
  *
  * ## Architectural Note
  * This repository interface is in `core/persistence/repository/nx/` because
@@ -25,7 +42,7 @@ import kotlinx.coroutines.flow.Flow
  * @see NX_Work
  * @see NxWorkRepository
  */
-@Suppress("TooManyFunctions")
+@Suppress("TooManyFunctions") // Repository interfaces legitimately need comprehensive data access methods
 interface NxWorkRelationRepository {
     // ═══════════════════════════════════════════════════════════════════════
     // CRUD Operations
@@ -57,6 +74,16 @@ interface NxWorkRelationRepository {
      * @return true if deleted, false if not found
      */
     suspend fun delete(id: Long): Boolean
+
+    /**
+     * Find all relations (for debug/export).
+     *
+     * ⚠️ WARNING: Use with caution on large datasets. Consider pagination.
+     *
+     * @param limit Maximum results (default 1000, set to Int.MAX_VALUE for all)
+     * @return List of all relations
+     */
+    suspend fun findAll(limit: Int = 1000): List<NX_WorkRelation>
 
     // ═══════════════════════════════════════════════════════════════════════
     // Parent-Child Queries
@@ -547,6 +574,10 @@ interface NxWorkRelationRepository {
 
     /**
      * Insert or update multiple relations.
+     *
+     * **Batch Size Limits:** Respect device constraints from ObxWriteConfig.
+     * - FireTV/Low-RAM: Max 35 items (FIRETV_BATCH_CAP)
+     * - Phone/Tablet: 100-600 items
      *
      * @param relations List of relations to upsert
      * @return List of updated relations with IDs populated
