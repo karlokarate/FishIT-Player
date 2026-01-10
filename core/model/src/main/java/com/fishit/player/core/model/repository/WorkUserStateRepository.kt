@@ -1,10 +1,9 @@
-package com.fishit.player.core.persistence.repository.nx
+package com.fishit.player.core.model.repository
 
-import com.fishit.player.core.persistence.obx.NX_WorkUserState
 import kotlinx.coroutines.flow.Flow
 
 /**
- * Repository for NX_WorkUserState entities - per-profile, per-work user state.
+ * Repository for managing per-profile, per-work user state.
  *
  * **SSOT Contract:** docs/v2/NX_SSOT_CONTRACT.md
  * **Roadmap:** docs/v2/OBX_PLATIN_REFACTOR_ROADMAP.md
@@ -22,20 +21,20 @@ import kotlinx.coroutines.flow.Flow
  *
  * ## Resume Position
  * Resume is stored as:
- * - `resumePositionMs`: Current position in milliseconds
- * - `totalDurationMs`: Total duration for percentage calculation
- * - Percentage = `resumePositionMs / totalDurationMs`
+ * - `positionMs`: Current position in milliseconds
+ * - `durationMs`: Total duration for percentage calculation
+ * - Percentage = `positionMs / durationMs`
  * - Works are considered "watched" when percentage > 90% or explicitly marked
  *
  * ## Continue Watching Logic
  * Continue Watching shows works where:
- * - `resumePositionMs > 0`
+ * - `positionMs > 0`
  * - Resume percentage < 90%
  * - Ordered by `lastWatchedAt` DESC
  *
  * ## Return Type Patterns
  * This interface uses standard Kotlin patterns for operation results:
- * - **Entity returns**: `upsert()`, `updateResumePosition()` etc. return the entity with populated ID
+ * - **Entity returns**: `upsert()`, `updateResumePosition()` etc. return the domain model
  * - **Boolean returns**: `delete()`, `markAsWatched()` etc. return success/failure
  * - **Nullable returns**: `find*()` methods return null when not found
  * - **Int returns**: Count operations return number of affected records
@@ -50,27 +49,65 @@ import kotlinx.coroutines.flow.Flow
  * - Default batch size: 100 items (normal devices)
  * - FireTV batch cap: 35 items
  *
- * ## Architectural Note
- * This repository interface is in `core/persistence/repository/nx/` because
- * NX entities ARE the domain model (SSOT). See NxWorkRepository for full explanation.
+ * ## Domain Model Architecture
+ * This repository interface is in `core/model/repository/` and uses domain types only.
+ * The implementation in `infra/data-nx/` maps between domain models and persistence entities.
+ * This avoids circular dependencies and keeps domain logic separate from storage details.
  *
- * @see NX_WorkUserState
- * @see NX_Work
- * @see NxWorkRepository
+ * @see WorkUserState
  */
 @Suppress("TooManyFunctions") // Repository interfaces legitimately need comprehensive data access methods
-interface NxWorkUserStateRepository {
+interface WorkUserStateRepository {
+    /**
+     * Domain model representing per-profile, per-work user state.
+     *
+     * This is a pure domain model without persistence annotations.
+     * The implementation layer maps this to/from persistence entities.
+     */
+    data class WorkUserState(
+        val id: Long = 0,
+        // Keys
+        val profileId: Long,
+        val workKey: String,
+        // Watch State
+        val positionMs: Long = 0,
+        val durationMs: Long = 0,
+        val isWatched: Boolean = false,
+        val watchCount: Int = 0,
+        // User Actions
+        val isFavorite: Boolean = false,
+        val userRating: Int? = null,
+        val inWatchlist: Boolean = false,
+        val isHidden: Boolean = false,
+        // Timestamps
+        val lastWatchedAt: Long? = null,
+        val createdAt: Long = System.currentTimeMillis(),
+        val updatedAt: Long = System.currentTimeMillis(),
+    ) {
+        /**
+         * Calculate resume percentage (0.0 to 1.0).
+         */
+        val resumePercentage: Float
+            get() = if (durationMs > 0) positionMs.toFloat() / durationMs else 0f
+
+        /**
+         * Check if this qualifies for "Continue Watching" (resume > 0 and < 90%).
+         */
+        val isContinueWatching: Boolean
+            get() = positionMs > 0 && resumePercentage < 0.9f
+    }
+
     // ═══════════════════════════════════════════════════════════════════════
     // CRUD Operations
     // ═══════════════════════════════════════════════════════════════════════
 
     /**
-     * Find user state by ObjectBox ID.
+     * Find user state by ID.
      *
-     * @param id ObjectBox entity ID
+     * @param id Entity ID
      * @return User state if found, null otherwise
      */
-    suspend fun findById(id: Long): NX_WorkUserState?
+    suspend fun findById(id: Long): WorkUserState?
 
     /**
      * Find user state by profile and work key (composite key lookup).
@@ -82,7 +119,7 @@ interface NxWorkUserStateRepository {
     suspend fun findByProfileAndWork(
         profileId: Long,
         workKey: String,
-    ): NX_WorkUserState?
+    ): WorkUserState?
 
     /**
      * Insert or update user state.
@@ -95,12 +132,12 @@ interface NxWorkUserStateRepository {
      * @param state User state to upsert
      * @return Updated state with ID populated
      */
-    suspend fun upsert(state: NX_WorkUserState): NX_WorkUserState
+    suspend fun upsert(state: WorkUserState): WorkUserState
 
     /**
      * Delete user state by ID.
      *
-     * @param id ObjectBox entity ID
+     * @param id Entity ID
      * @return true if deleted, false if not found
      */
     suspend fun delete(id: Long): Boolean
@@ -131,7 +168,7 @@ interface NxWorkUserStateRepository {
     suspend fun findByProfileId(
         profileId: Long,
         limit: Int = 100,
-    ): List<NX_WorkUserState>
+    ): List<WorkUserState>
 
     /**
      * Find all user states for a profile.
@@ -141,7 +178,7 @@ interface NxWorkUserStateRepository {
      * @param profileId Profile ID
      * @return List of all user states for the profile
      */
-    suspend fun findAllForProfile(profileId: Long): List<NX_WorkUserState>
+    suspend fun findAllForProfile(profileId: Long): List<WorkUserState>
 
     /**
      * Delete all user states for a profile.
@@ -163,7 +200,7 @@ interface NxWorkUserStateRepository {
      * @param workKey Work key
      * @return List of user states for the work
      */
-    suspend fun findByWorkKey(workKey: String): List<NX_WorkUserState>
+    suspend fun findByWorkKey(workKey: String): List<WorkUserState>
 
     /**
      * Find user states for multiple works (for a specific profile).
@@ -177,7 +214,7 @@ interface NxWorkUserStateRepository {
     suspend fun findByWorkKeys(
         workKeys: List<String>,
         profileId: Long,
-    ): List<NX_WorkUserState>
+    ): List<WorkUserState>
 
     /**
      * Delete all user states for a work (across all profiles).
@@ -202,15 +239,15 @@ interface NxWorkUserStateRepository {
      * @param profileId Profile ID
      * @param workKey Work key
      * @param positionMs Resume position in milliseconds
-     * @param totalDurationMs Total duration in milliseconds
+     * @param durationMs Total duration in milliseconds
      * @return Updated user state
      */
     suspend fun updateResumePosition(
         profileId: Long,
         workKey: String,
         positionMs: Long,
-        totalDurationMs: Long,
-    ): NX_WorkUserState
+        durationMs: Long,
+    ): WorkUserState
 
     /**
      * Get resume position in milliseconds.
@@ -262,7 +299,7 @@ interface NxWorkUserStateRepository {
     suspend fun findWithResumePosition(
         profileId: Long,
         limit: Int = 50,
-    ): List<NX_WorkUserState>
+    ): List<WorkUserState>
 
     // ═══════════════════════════════════════════════════════════════════════
     // Continue Watching (Resume > 0 and < 90%)
@@ -272,7 +309,7 @@ interface NxWorkUserStateRepository {
      * Find works in progress for "Continue Watching" row.
      *
      * Returns states where:
-     * - `resumePositionMs > 0`
+     * - `positionMs > 0`
      * - Resume percentage < 90%
      * - Ordered by `lastWatchedAt` DESC
      *
@@ -283,7 +320,7 @@ interface NxWorkUserStateRepository {
     suspend fun findContinueWatching(
         profileId: Long,
         limit: Int = 20,
-    ): List<NX_WorkUserState>
+    ): List<WorkUserState>
 
     /**
      * Observe works in progress for "Continue Watching" row (reactive).
@@ -295,7 +332,7 @@ interface NxWorkUserStateRepository {
     fun observeContinueWatching(
         profileId: Long,
         limit: Int = 20,
-    ): Flow<List<NX_WorkUserState>>
+    ): Flow<List<WorkUserState>>
 
     // ═══════════════════════════════════════════════════════════════════════
     // Watched Status Operations
@@ -314,7 +351,7 @@ interface NxWorkUserStateRepository {
     suspend fun markAsWatched(
         profileId: Long,
         workKey: String,
-    ): NX_WorkUserState
+    ): WorkUserState
 
     /**
      * Mark work as unwatched.
@@ -328,7 +365,7 @@ interface NxWorkUserStateRepository {
     suspend fun markAsUnwatched(
         profileId: Long,
         workKey: String,
-    ): NX_WorkUserState
+    ): WorkUserState
 
     /**
      * Check if work is marked as watched.
@@ -354,7 +391,7 @@ interface NxWorkUserStateRepository {
     suspend fun findWatched(
         profileId: Long,
         limit: Int = 100,
-    ): List<NX_WorkUserState>
+    ): List<WorkUserState>
 
     /**
      * Find all unwatched works for a profile.
@@ -366,7 +403,7 @@ interface NxWorkUserStateRepository {
     suspend fun findUnwatched(
         profileId: Long,
         limit: Int = 100,
-    ): List<NX_WorkUserState>
+    ): List<WorkUserState>
 
     /**
      * Get watch count for a work.
@@ -392,7 +429,7 @@ interface NxWorkUserStateRepository {
     suspend fun incrementWatchCount(
         profileId: Long,
         workKey: String,
-    ): NX_WorkUserState
+    ): WorkUserState
 
     // ═══════════════════════════════════════════════════════════════════════
     // Favorites Operations
@@ -410,7 +447,7 @@ interface NxWorkUserStateRepository {
     suspend fun addToFavorites(
         profileId: Long,
         workKey: String,
-    ): NX_WorkUserState
+    ): WorkUserState
 
     /**
      * Remove work from favorites.
@@ -424,7 +461,7 @@ interface NxWorkUserStateRepository {
     suspend fun removeFromFavorites(
         profileId: Long,
         workKey: String,
-    ): NX_WorkUserState
+    ): WorkUserState
 
     /**
      * Check if work is in favorites.
@@ -450,7 +487,7 @@ interface NxWorkUserStateRepository {
     suspend fun findFavorites(
         profileId: Long,
         limit: Int = 100,
-    ): List<NX_WorkUserState>
+    ): List<WorkUserState>
 
     /**
      * Observe favorite works for a profile (reactive).
@@ -458,7 +495,7 @@ interface NxWorkUserStateRepository {
      * @param profileId Profile ID
      * @return Flow of favorite user states
      */
-    fun observeFavorites(profileId: Long): Flow<List<NX_WorkUserState>>
+    fun observeFavorites(profileId: Long): Flow<List<WorkUserState>>
 
     // ═══════════════════════════════════════════════════════════════════════
     // Watchlist Operations
@@ -476,7 +513,7 @@ interface NxWorkUserStateRepository {
     suspend fun addToWatchlist(
         profileId: Long,
         workKey: String,
-    ): NX_WorkUserState
+    ): WorkUserState
 
     /**
      * Remove work from watchlist.
@@ -490,7 +527,7 @@ interface NxWorkUserStateRepository {
     suspend fun removeFromWatchlist(
         profileId: Long,
         workKey: String,
-    ): NX_WorkUserState
+    ): WorkUserState
 
     /**
      * Check if work is in watchlist.
@@ -516,7 +553,7 @@ interface NxWorkUserStateRepository {
     suspend fun findWatchlist(
         profileId: Long,
         limit: Int = 100,
-    ): List<NX_WorkUserState>
+    ): List<WorkUserState>
 
     /**
      * Observe watchlist works for a profile (reactive).
@@ -524,7 +561,7 @@ interface NxWorkUserStateRepository {
      * @param profileId Profile ID
      * @return Flow of watchlist user states
      */
-    fun observeWatchlist(profileId: Long): Flow<List<NX_WorkUserState>>
+    fun observeWatchlist(profileId: Long): Flow<List<WorkUserState>>
 
     // ═══════════════════════════════════════════════════════════════════════
     // User Rating Operations
@@ -545,7 +582,7 @@ interface NxWorkUserStateRepository {
         profileId: Long,
         workKey: String,
         rating: Int,
-    ): NX_WorkUserState
+    ): WorkUserState
 
     /**
      * Clear user rating for a work.
@@ -559,7 +596,7 @@ interface NxWorkUserStateRepository {
     suspend fun clearRating(
         profileId: Long,
         workKey: String,
-    ): NX_WorkUserState
+    ): WorkUserState
 
     /**
      * Get user rating for a work.
@@ -585,7 +622,7 @@ interface NxWorkUserStateRepository {
     suspend fun findRated(
         profileId: Long,
         limit: Int = 100,
-    ): List<NX_WorkUserState>
+    ): List<WorkUserState>
 
     /**
      * Find works with rating >= minimum rating.
@@ -601,7 +638,7 @@ interface NxWorkUserStateRepository {
         profileId: Long,
         minRating: Int,
         limit: Int = 100,
-    ): List<NX_WorkUserState>
+    ): List<WorkUserState>
 
     // ═══════════════════════════════════════════════════════════════════════
     // Hidden Operations
@@ -619,7 +656,7 @@ interface NxWorkUserStateRepository {
     suspend fun hideFromRecommendations(
         profileId: Long,
         workKey: String,
-    ): NX_WorkUserState
+    ): WorkUserState
 
     /**
      * Unhide work from recommendations.
@@ -633,7 +670,7 @@ interface NxWorkUserStateRepository {
     suspend fun unhideFromRecommendations(
         profileId: Long,
         workKey: String,
-    ): NX_WorkUserState
+    ): WorkUserState
 
     /**
      * Check if work is hidden from recommendations.
@@ -657,7 +694,7 @@ interface NxWorkUserStateRepository {
     suspend fun findHidden(
         profileId: Long,
         limit: Int = 100,
-    ): List<NX_WorkUserState>
+    ): List<WorkUserState>
 
     // ═══════════════════════════════════════════════════════════════════════
     // Recently Watched Queries
@@ -675,7 +712,7 @@ interface NxWorkUserStateRepository {
     suspend fun findRecentlyWatched(
         profileId: Long,
         limit: Int = 20,
-    ): List<NX_WorkUserState>
+    ): List<WorkUserState>
 
     /**
      * Observe recently watched works (reactive).
@@ -687,7 +724,7 @@ interface NxWorkUserStateRepository {
     fun observeRecentlyWatched(
         profileId: Long,
         limit: Int = 20,
-    ): Flow<List<NX_WorkUserState>>
+    ): Flow<List<WorkUserState>>
 
     /**
      * Find works watched since a timestamp.
@@ -699,7 +736,7 @@ interface NxWorkUserStateRepository {
     suspend fun findWatchedSince(
         profileId: Long,
         sinceTimestamp: Long,
-    ): List<NX_WorkUserState>
+    ): List<WorkUserState>
 
     // ═══════════════════════════════════════════════════════════════════════
     // Reactive Streams (Flow)
@@ -715,7 +752,7 @@ interface NxWorkUserStateRepository {
     fun observeByProfileAndWork(
         profileId: Long,
         workKey: String,
-    ): Flow<NX_WorkUserState?>
+    ): Flow<WorkUserState?>
 
     /**
      * Observe all user states for a profile (reactive).
@@ -723,7 +760,7 @@ interface NxWorkUserStateRepository {
      * @param profileId Profile ID
      * @return Flow of user states for the profile
      */
-    fun observeByProfileId(profileId: Long): Flow<List<NX_WorkUserState>>
+    fun observeByProfileId(profileId: Long): Flow<List<WorkUserState>>
 
     /**
      * Observe all user states (reactive).
@@ -732,7 +769,7 @@ interface NxWorkUserStateRepository {
      *
      * @return Flow of all user states
      */
-    fun observeAll(): Flow<List<NX_WorkUserState>>
+    fun observeAll(): Flow<List<WorkUserState>>
 
     // ═══════════════════════════════════════════════════════════════════════
     // Counts & Statistics
@@ -788,7 +825,7 @@ interface NxWorkUserStateRepository {
     /**
      * Get total watch time in milliseconds for a profile.
      *
-     * Sums all `resumePositionMs` values for the profile.
+     * Sums all `positionMs` values for the profile.
      *
      * @param profileId Profile ID
      * @return Total watch time in milliseconds
@@ -815,12 +852,12 @@ interface NxWorkUserStateRepository {
      * @param states List of user states to upsert
      * @return List of updated states with IDs populated
      */
-    suspend fun upsertBatch(states: List<NX_WorkUserState>): List<NX_WorkUserState>
+    suspend fun upsertBatch(states: List<WorkUserState>): List<WorkUserState>
 
     /**
      * Delete multiple user states by ID.
      *
-     * @param ids List of ObjectBox entity IDs
+     * @param ids List of entity IDs
      * @return Number of states deleted
      */
     suspend fun deleteBatch(ids: List<Long>): Int
@@ -873,7 +910,7 @@ interface NxWorkUserStateRepository {
      * @param limit Maximum results (default 100)
      * @return List of orphaned user states
      */
-    suspend fun findOrphanedStates(limit: Int = 100): List<NX_WorkUserState>
+    suspend fun findOrphanedStates(limit: Int = 100): List<WorkUserState>
 
     /**
      * Find user states with invalid rating values.
@@ -883,7 +920,7 @@ interface NxWorkUserStateRepository {
      * @param limit Maximum results (default 100)
      * @return List of user states with invalid ratings
      */
-    suspend fun findInvalidRatings(limit: Int = 100): List<NX_WorkUserState>
+    suspend fun findInvalidRatings(limit: Int = 100): List<WorkUserState>
 
     /**
      * Find duplicate user states (same profileId + workKey).
@@ -893,7 +930,7 @@ interface NxWorkUserStateRepository {
      * @param limit Maximum results (default 100)
      * @return List of duplicate user states
      */
-    suspend fun findDuplicateStates(limit: Int = 100): List<NX_WorkUserState>
+    suspend fun findDuplicateStates(limit: Int = 100): List<WorkUserState>
 
     /**
      * Validate user state entity.
@@ -902,12 +939,12 @@ interface NxWorkUserStateRepository {
      * - profileId > 0
      * - workKey is not blank
      * - userRating is null or in 1..5 range
-     * - resumePositionMs >= 0
-     * - totalDurationMs >= 0
-     * - resumePositionMs <= totalDurationMs
+     * - positionMs >= 0
+     * - durationMs >= 0
+     * - positionMs <= durationMs
      *
      * @param state User state to validate
      * @return List of validation error messages (empty if valid)
      */
-    suspend fun validateState(state: NX_WorkUserState): List<String>
+    suspend fun validateState(state: WorkUserState): List<String>
 }
