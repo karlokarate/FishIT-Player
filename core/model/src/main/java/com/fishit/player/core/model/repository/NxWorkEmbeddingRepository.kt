@@ -13,7 +13,7 @@ interface NxWorkEmbeddingRepository {
         val workKey: String,
         val embeddingModel: String,
         val embeddingVersion: Int,
-        val embedding: FloatArray,
+        val embedding: List<Float>,
         val updatedAtMs: Long = 0L,
     )
 

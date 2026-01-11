@@ -1,6 +1,26 @@
 package com.fishit.player.core.model.userstate
 
 /**
+ * Cloud sync state for user state entities.
+ */
+enum class CloudSyncState {
+    /**
+     * State is only on this device, not intended for cloud sync.
+     */
+    LOCAL_ONLY,
+
+    /**
+     * State has been modified locally and needs to be synced to cloud.
+     */
+    DIRTY,
+
+    /**
+     * State is synchronized with cloud.
+     */
+    SYNCED,
+}
+
+/**
  * Domain model for per-work user state.
  *
  * This is a pure domain model (no ObjectBox annotations).
@@ -20,7 +40,7 @@ package com.fishit.player.core.model.userstate
  * @property createdAtMs Creation timestamp in milliseconds
  * @property updatedAtMs Last update timestamp in milliseconds
  * @property lastUpdatedByDeviceId Device that last updated this state
- * @property cloudSyncState Cloud sync state (LOCAL_ONLY, DIRTY, SYNCED)
+ * @property cloudSyncState Cloud sync state
  */
 data class WorkUserState(
     val profileKey: String,
@@ -37,5 +57,5 @@ data class WorkUserState(
     val createdAtMs: Long = 0L,
     val updatedAtMs: Long = 0L,
     val lastUpdatedByDeviceId: String? = null,
-    val cloudSyncState: String = "LOCAL_ONLY", // LOCAL_ONLY, DIRTY, SYNCED
+    val cloudSyncState: CloudSyncState = CloudSyncState.LOCAL_ONLY,
 )

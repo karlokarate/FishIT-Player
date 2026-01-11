@@ -36,5 +36,10 @@ interface NxProfileRuleRepository {
 
     suspend fun upsert(rule: ProfileRule): ProfileRule
 
-    suspend fun delete(rule: ProfileRule): Boolean
+    suspend fun delete(
+        profileKey: String,
+        ruleType: RuleType,
+        targetType: TargetType,
+        targetKey: String,
+    ): Boolean
 }

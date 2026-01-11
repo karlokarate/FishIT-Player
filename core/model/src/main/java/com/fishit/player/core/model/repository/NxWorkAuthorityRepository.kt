@@ -17,6 +17,8 @@ interface NxWorkAuthorityRepository {
 
     enum class Status { CONFIRMED, PROBABLE, REJECTED }
 
+    enum class MatchSource { AUTO, MANUAL }
+
     data class AuthorityRef(
         val authorityKey: String, // e.g. "tmdb:movie:550"
         val workKey: String,
@@ -26,7 +28,7 @@ interface NxWorkAuthorityRepository {
         val status: Status,
         val confidenceScore: Float = 0f,
         val matchedAtMs: Long = 0L,
-        val matchedBy: String = "AUTO", // AUTO|MANUAL
+        val matchedBy: MatchSource = MatchSource.AUTO,
         val evidenceSummary: String? = null,
     )
 
