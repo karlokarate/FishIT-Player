@@ -1,7 +1,7 @@
 /**
  * TEMP IMPLEMENTATION NOTES (REMOVE AFTER IMPLEMENTATION)
  * -------------------------------------------------------
- * - Diagnostics are NOT allowed in UI hot paths (feature/*).
+ * - Diagnostics are NOT allowed in UI hot paths (feature layer).
  * - Intended for debug screens and verifier workers.
  * - Implementation may join against other repos internally (e.g., source refs / variants).
  * - Remove this block after diagnostics implementation + debug screen wiring exists.
@@ -15,6 +15,7 @@ package com.fishit.player.core.model.repository
  */
 interface NxWorkDiagnostics {
     suspend fun countAll(): Long
+
     suspend fun countByType(type: NxWorkRepository.WorkType): Long
 
     /**
@@ -22,6 +23,7 @@ interface NxWorkDiagnostics {
      * - missing sources / variants are common "broken graph" issues.
      */
     suspend fun findWorksMissingSources(limit: Int = 200): List<NxWorkRepository.Work>
+
     suspend fun findWorksMissingVariants(limit: Int = 200): List<NxWorkRepository.Work>
 
     /**

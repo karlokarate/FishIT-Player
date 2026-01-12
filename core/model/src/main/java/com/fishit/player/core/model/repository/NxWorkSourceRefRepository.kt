@@ -16,7 +16,6 @@ import kotlinx.coroutines.flow.Flow
  * MVP repository for source references linking Works to pipeline/account items.
  */
 interface NxWorkSourceRefRepository {
-
     enum class SourceType {
         TELEGRAM,
         XTREAM,
@@ -84,5 +83,8 @@ interface NxWorkSourceRefRepository {
 
     suspend fun upsertBatch(sourceRefs: List<SourceRef>): List<SourceRef>
 
-    suspend fun updateLastSeen(sourceKey: String, lastSeenAtMs: Long): Boolean
+    suspend fun updateLastSeen(
+        sourceKey: String,
+        lastSeenAtMs: Long,
+    ): Boolean
 }
