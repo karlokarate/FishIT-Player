@@ -15,23 +15,29 @@
  * **Category Handling:**
  * Categories are derived from NX_WorkSourceRef's sourceItemKind and metadata.
  * The category grouping is done by sourceItemKind for now (VOD, SERIES).
+ *
+ * **Sort/Filter:**
+ * Uses unified core/model types (SortOption, FilterConfig) for shared sort/filter
+ * logic across all screens. Maps to NxWorkRepository.QueryOptions internally.
  */
 package com.fishit.player.infra.data.nx.library
 
 import com.fishit.player.core.library.domain.LibraryCategory
 import com.fishit.player.core.library.domain.LibraryContentRepository
-import com.fishit.player.core.library.domain.LibraryFilterConfig
 import com.fishit.player.core.library.domain.LibraryMediaItem
 import com.fishit.player.core.library.domain.LibraryQueryOptions
-import com.fishit.player.core.library.domain.LibrarySortDirection
-import com.fishit.player.core.library.domain.LibrarySortField
 import com.fishit.player.core.model.ImageRef
 import com.fishit.player.core.model.MediaType
 import com.fishit.player.core.model.SourceType
+import com.fishit.player.core.model.filter.FilterConfig
+import com.fishit.player.core.model.filter.FilterCriterion
 import com.fishit.player.core.model.repository.NxWorkRepository
 import com.fishit.player.core.model.repository.NxWorkRepository.Work
 import com.fishit.player.core.model.repository.NxWorkRepository.WorkType
 import com.fishit.player.core.model.repository.NxWorkSourceRefRepository
+import com.fishit.player.core.model.sort.SortDirection
+import com.fishit.player.core.model.sort.SortField
+import com.fishit.player.core.model.sort.SortOption
 import com.fishit.player.infra.logging.UnifiedLog
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
@@ -261,37 +267,84 @@ class NxLibraryContentRepositoryImpl @Inject constructor(
         }
     }
 
-    // ==================== Mapping Helpers ====================
+    // ==================== Mapping Helpers (Unified core/model types) ====================
 
+    /**
+     * Map LibraryQueryOptions (using unified core/model types) to NxWorkRepository.QueryOptions.
+     *
+     * This bridges the unified SortOption/FilterConfig to the NX repository's internal query model.
+     */
     private fun LibraryQueryOptions.toNxQueryOptions(workType: WorkType): NxWorkRepository.QueryOptions {
         return NxWorkRepository.QueryOptions(
             type = workType,
             sortField = sort.field.toNxSortField(),
             sortDirection = sort.direction.toNxSortDirection(),
             hideAdult = filter.hideAdult,
-            minRating = filter.minRating,
-            genres = filter.includeGenres,
-            excludeGenres = filter.excludeGenres,
-            yearRange = filter.yearRange,
+            minRating = filter.extractMinRating(),
+            genres = filter.extractIncludedGenres(),
+            excludeGenres = filter.excludedGenres,
+            yearRange = filter.extractYearRange(),
             limit = limit,
         )
     }
 
-    private fun LibrarySortField.toNxSortField(): NxWorkRepository.SortField {
+    /**
+     * Map unified SortField (core/model) to NxWorkRepository.SortField.
+     */
+    private fun SortField.toNxSortField(): NxWorkRepository.SortField {
         return when (this) {
-            LibrarySortField.TITLE -> NxWorkRepository.SortField.TITLE
-            LibrarySortField.YEAR -> NxWorkRepository.SortField.YEAR
-            LibrarySortField.RATING -> NxWorkRepository.SortField.RATING
-            LibrarySortField.RECENTLY_ADDED -> NxWorkRepository.SortField.RECENTLY_ADDED
-            LibrarySortField.RECENTLY_UPDATED -> NxWorkRepository.SortField.RECENTLY_UPDATED
-            LibrarySortField.DURATION -> NxWorkRepository.SortField.DURATION
+            SortField.TITLE -> NxWorkRepository.SortField.TITLE
+            SortField.YEAR -> NxWorkRepository.SortField.YEAR
+            SortField.RATING -> NxWorkRepository.SortField.RATING
+            SortField.RECENTLY_ADDED -> NxWorkRepository.SortField.RECENTLY_ADDED
+            SortField.RECENTLY_UPDATED -> NxWorkRepository.SortField.RECENTLY_UPDATED
+            SortField.DURATION -> NxWorkRepository.SortField.DURATION
+            SortField.GENRE -> NxWorkRepository.SortField.TITLE // Fallback - NX doesn't support genre sort
         }
     }
 
-    private fun LibrarySortDirection.toNxSortDirection(): NxWorkRepository.SortDirection {
+    /**
+     * Map unified SortDirection (core/model) to NxWorkRepository.SortDirection.
+     */
+    private fun SortDirection.toNxSortDirection(): NxWorkRepository.SortDirection {
         return when (this) {
-            LibrarySortDirection.ASCENDING -> NxWorkRepository.SortDirection.ASCENDING
-            LibrarySortDirection.DESCENDING -> NxWorkRepository.SortDirection.DESCENDING
+            SortDirection.ASCENDING -> NxWorkRepository.SortDirection.ASCENDING
+            SortDirection.DESCENDING -> NxWorkRepository.SortDirection.DESCENDING
         }
+    }
+
+    /**
+     * Extract minimum rating from FilterConfig criteria.
+     */
+    private fun FilterConfig.extractMinRating(): Double? {
+        return criteria
+            .filterIsInstance<FilterCriterion.RatingMinimum>()
+            .firstOrNull { it.isActive }
+            ?.minRating
+    }
+
+    /**
+     * Extract included genres from FilterConfig criteria.
+     */
+    private fun FilterConfig.extractIncludedGenres(): Set<String>? {
+        val included = criteria
+            .filterIsInstance<FilterCriterion.GenreInclude>()
+            .firstOrNull { it.isActive }
+            ?.genres
+        return if (included.isNullOrEmpty()) null else included
+    }
+
+    /**
+     * Extract year range from FilterConfig criteria.
+     */
+    private fun FilterConfig.extractYearRange(): IntRange? {
+        val yearCriterion = criteria
+            .filterIsInstance<FilterCriterion.YearRange>()
+            .firstOrNull { it.isActive }
+            ?: return null
+
+        val min = yearCriterion.minYear ?: return null
+        val max = yearCriterion.maxYear ?: return null
+        return min..max
     }
 }

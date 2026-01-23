@@ -48,13 +48,14 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil3.compose.AsyncImage
 import com.fishit.player.core.library.domain.LibraryCategory
-import com.fishit.player.core.library.domain.LibraryFilterConfig
 import com.fishit.player.core.library.domain.LibraryMediaItem
-import com.fishit.player.core.library.domain.LibrarySortDirection
-import com.fishit.player.core.library.domain.LibrarySortField
-import com.fishit.player.core.library.domain.LibrarySortOption
 import com.fishit.player.core.model.ImageRef
 import com.fishit.player.core.model.MediaType
+import com.fishit.player.core.model.filter.FilterConfig
+import com.fishit.player.core.model.filter.FilterCriterion
+import com.fishit.player.core.model.sort.SortDirection
+import com.fishit.player.core.model.sort.SortField
+import com.fishit.player.core.model.sort.SortOption
 import com.fishit.player.core.ui.layout.SortFilterBar
 import com.fishit.player.core.ui.layout.UiFilterConfig
 import com.fishit.player.core.ui.layout.UiSortDirection
@@ -140,17 +141,17 @@ fun LibraryScreen(
                     )
                 }
 
-                // Sort & Filter bar
+                // Sort & Filter bar (using unified core/model types)
                 SortFilterBar(
                     currentSort = state.currentSortOption.toUiSortOption(),
                     currentFilter = state.currentFilterConfig.toUiFilterConfig(),
                     availableGenres = state.availableGenres.toList(),
                     yearRange = state.yearRange?.let { it.first..it.second } ?: (1900..2025),
                     onSortChanged = { uiSort ->
-                        viewModel.updateSort(uiSort.toLibrarySortOption())
+                        viewModel.updateSort(uiSort.toSortOption())
                     },
                     onFilterChanged = { uiFilter ->
-                        viewModel.updateFilter(uiFilter.toLibraryFilterConfig())
+                        viewModel.updateFilter(uiFilter.toFilterConfig())
                     },
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
                 )
@@ -410,62 +411,104 @@ private fun EmptyState(
     }
 }
 
-// ===== Mapping Extensions: Domain ↔ UI =====
+// ===== Mapping Extensions: Unified Domain (core/model) ↔ UI =====
 
-/** Convert domain LibrarySortOption to UI UiSortOption */
-private fun LibrarySortOption.toUiSortOption(): UiSortOption =
+/** Convert unified SortOption (core/model) to UI UiSortOption */
+private fun SortOption.toUiSortOption(): UiSortOption =
     UiSortOption(
         field =
             when (field) {
-                LibrarySortField.TITLE -> UiSortField.TITLE
-                LibrarySortField.YEAR -> UiSortField.YEAR
-                LibrarySortField.RATING -> UiSortField.RATING
-                LibrarySortField.RECENTLY_ADDED -> UiSortField.RECENTLY_ADDED
-                LibrarySortField.RECENTLY_UPDATED -> UiSortField.RECENTLY_UPDATED
-                LibrarySortField.DURATION -> UiSortField.DURATION
+                SortField.TITLE -> UiSortField.TITLE
+                SortField.YEAR -> UiSortField.YEAR
+                SortField.RATING -> UiSortField.RATING
+                SortField.RECENTLY_ADDED -> UiSortField.RECENTLY_ADDED
+                SortField.RECENTLY_UPDATED -> UiSortField.RECENTLY_UPDATED
+                SortField.DURATION -> UiSortField.DURATION
+                SortField.GENRE -> UiSortField.TITLE // Fallback - UI doesn't have genre sort
             },
         direction =
             when (direction) {
-                LibrarySortDirection.ASCENDING -> UiSortDirection.ASCENDING
-                LibrarySortDirection.DESCENDING -> UiSortDirection.DESCENDING
+                SortDirection.ASCENDING -> UiSortDirection.ASCENDING
+                SortDirection.DESCENDING -> UiSortDirection.DESCENDING
             },
     )
 
-/** Convert UI UiSortOption to domain LibrarySortOption */
-private fun UiSortOption.toLibrarySortOption(): LibrarySortOption =
-    LibrarySortOption(
+/** Convert UI UiSortOption to unified SortOption (core/model) */
+private fun UiSortOption.toSortOption(): SortOption =
+    SortOption(
         field =
             when (field) {
-                UiSortField.TITLE -> LibrarySortField.TITLE
-                UiSortField.YEAR -> LibrarySortField.YEAR
-                UiSortField.RATING -> LibrarySortField.RATING
-                UiSortField.RECENTLY_ADDED -> LibrarySortField.RECENTLY_ADDED
-                UiSortField.RECENTLY_UPDATED -> LibrarySortField.RECENTLY_UPDATED
-                UiSortField.DURATION -> LibrarySortField.DURATION
+                UiSortField.TITLE -> SortField.TITLE
+                UiSortField.YEAR -> SortField.YEAR
+                UiSortField.RATING -> SortField.RATING
+                UiSortField.RECENTLY_ADDED -> SortField.RECENTLY_ADDED
+                UiSortField.RECENTLY_UPDATED -> SortField.RECENTLY_UPDATED
+                UiSortField.DURATION -> SortField.DURATION
             },
         direction =
             when (direction) {
-                UiSortDirection.ASCENDING -> LibrarySortDirection.ASCENDING
-                UiSortDirection.DESCENDING -> LibrarySortDirection.DESCENDING
+                UiSortDirection.ASCENDING -> SortDirection.ASCENDING
+                UiSortDirection.DESCENDING -> SortDirection.DESCENDING
             },
     )
 
-/** Convert domain LibraryFilterConfig to UI UiFilterConfig */
-private fun LibraryFilterConfig.toUiFilterConfig(): UiFilterConfig =
+/** Convert unified FilterConfig (core/model) to UI UiFilterConfig */
+private fun FilterConfig.toUiFilterConfig(): UiFilterConfig =
     UiFilterConfig(
         hideAdult = hideAdult,
-        selectedGenres = includeGenres ?: emptySet(),
-        excludedGenres = excludeGenres ?: emptySet(),
-        minRating = minRating?.toFloat(),
-        yearRange = yearRange,
+        selectedGenres = criteria
+            .filterIsInstance<FilterCriterion.GenreInclude>()
+            .filter { it.isActive }
+            .flatMap { it.genres }
+            .toSet(),
+        excludedGenres = excludedGenres,
+        minRating = criteria
+            .filterIsInstance<FilterCriterion.RatingMinimum>()
+            .firstOrNull { it.isActive }
+            ?.minRating
+            ?.toFloat(),
+        yearRange = criteria
+            .filterIsInstance<FilterCriterion.YearRange>()
+            .firstOrNull { it.isActive }
+            ?.let { yearCriterion ->
+                val min = yearCriterion.minYear ?: return@let null
+                val max = yearCriterion.maxYear ?: return@let null
+                min..max
+            },
     )
 
-/** Convert UI UiFilterConfig to domain LibraryFilterConfig */
-private fun UiFilterConfig.toLibraryFilterConfig(): LibraryFilterConfig =
-    LibraryFilterConfig(
-        hideAdult = hideAdult,
-        includeGenres = selectedGenres.takeIf { it.isNotEmpty() },
-        excludeGenres = excludedGenres.takeIf { it.isNotEmpty() },
-        minRating = minRating?.toDouble(),
-        yearRange = yearRange,
-    )
+/** Convert UI UiFilterConfig to unified FilterConfig (core/model) */
+private fun UiFilterConfig.toFilterConfig(): FilterConfig {
+    val criteriaList = mutableListOf<FilterCriterion>()
+
+    // Adult filter
+    criteriaList.add(FilterCriterion.HideAdult(isActive = hideAdult))
+
+    // Genre include
+    if (selectedGenres.isNotEmpty()) {
+        criteriaList.add(FilterCriterion.GenreInclude(genres = selectedGenres, isActive = true))
+    }
+
+    // Genre exclude
+    if (excludedGenres.isNotEmpty()) {
+        criteriaList.add(FilterCriterion.GenreExclude(genres = excludedGenres, isActive = true))
+    }
+
+    // Rating minimum
+    minRating?.let {
+        criteriaList.add(FilterCriterion.RatingMinimum(minRating = it.toDouble(), isActive = true))
+    }
+
+    // Year range
+    yearRange?.let {
+        criteriaList.add(
+            FilterCriterion.YearRange(
+                minYear = it.first,
+                maxYear = it.last,
+                isActive = true,
+            ),
+        )
+    }
+
+    return FilterConfig(criteria = criteriaList)
+}

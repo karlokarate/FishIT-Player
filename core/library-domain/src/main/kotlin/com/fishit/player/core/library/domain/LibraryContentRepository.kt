@@ -1,74 +1,31 @@
 package com.fishit.player.core.library.domain
 
+import com.fishit.player.core.model.filter.FilterConfig
+import com.fishit.player.core.model.sort.SortOption
 import kotlinx.coroutines.flow.Flow
 
 /**
- * Sort field for library content.
+ * Query options combining sort and filter for library content.
+ *
+ * Uses unified core/model types instead of library-specific duplicates.
+ * This enables sharing sort/filter logic across all screens (Home, Library, Live).
+ *
+ * @param sort Unified sort configuration from core/model/sort
+ * @param filter Unified filter configuration from core/model/filter
+ * @param limit Maximum items to retrieve
  */
-enum class LibrarySortField {
-    TITLE,
-    YEAR,
-    RATING,
-    RECENTLY_ADDED,
-    RECENTLY_UPDATED,
-    DURATION,
-}
-
-/**
- * Sort direction.
- */
-enum class LibrarySortDirection {
-    ASCENDING,
-    DESCENDING,
-}
-
-/**
- * Combined sort option.
- */
-data class LibrarySortOption(
-    val field: LibrarySortField = LibrarySortField.TITLE,
-    val direction: LibrarySortDirection = LibrarySortDirection.ASCENDING,
+data class LibraryQueryOptions(
+    val sort: SortOption = SortOption.DEFAULT,
+    val filter: FilterConfig = FilterConfig.DEFAULT,
+    val limit: Int = 200,
 ) {
     companion object {
-        val DEFAULT = LibrarySortOption()
-        val RECENTLY_ADDED = LibrarySortOption(
-            field = LibrarySortField.RECENTLY_ADDED,
-            direction = LibrarySortDirection.DESCENDING,
+        val DEFAULT = LibraryQueryOptions()
+        val RECENTLY_ADDED = LibraryQueryOptions(
+            sort = SortOption.RECENTLY_ADDED,
         )
     }
 }
-
-/**
- * Filter configuration for library content.
- */
-data class LibraryFilterConfig(
-    val hideAdult: Boolean = true,
-    val minRating: Double? = null,
-    val yearRange: IntRange? = null,
-    val includeGenres: Set<String>? = null,
-    val excludeGenres: Set<String>? = null,
-) {
-    val hasActiveFilters: Boolean
-        get() = hideAdult ||
-            minRating != null ||
-            yearRange != null ||
-            includeGenres != null ||
-            excludeGenres != null
-
-    companion object {
-        val DEFAULT = LibraryFilterConfig(hideAdult = true)
-        val NONE = LibraryFilterConfig(hideAdult = false)
-    }
-}
-
-/**
- * Query options combining sort and filter.
- */
-data class LibraryQueryOptions(
-    val sort: LibrarySortOption = LibrarySortOption.DEFAULT,
-    val filter: LibraryFilterConfig = LibraryFilterConfig.DEFAULT,
-    val limit: Int = 200,
-)
 
 // Repository interface for Library screen content.
 //

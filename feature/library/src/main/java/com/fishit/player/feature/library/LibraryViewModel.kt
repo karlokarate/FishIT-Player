@@ -4,12 +4,13 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.fishit.player.core.library.domain.LibraryCategory
 import com.fishit.player.core.library.domain.LibraryContentRepository
-import com.fishit.player.core.library.domain.LibraryFilterConfig
 import com.fishit.player.core.library.domain.LibraryMediaItem
 import com.fishit.player.core.library.domain.LibraryQueryOptions
-import com.fishit.player.core.library.domain.LibrarySortDirection
-import com.fishit.player.core.library.domain.LibrarySortField
-import com.fishit.player.core.library.domain.LibrarySortOption
+import com.fishit.player.core.model.filter.FilterConfig
+import com.fishit.player.core.model.filter.FilterCriterion
+import com.fishit.player.core.model.sort.SortDirection
+import com.fishit.player.core.model.sort.SortField
+import com.fishit.player.core.model.sort.SortOption
 import com.fishit.player.infra.logging.UnifiedLog
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -47,11 +48,11 @@ data class LibraryState(
     val searchResults: List<LibraryMediaItem> = emptyList(),
     val isSearchActive: Boolean = false,
     val error: String? = null,
-    // Sort & Filter state
-    val vodSortOption: LibrarySortOption = LibrarySortOption.DEFAULT,
-    val seriesSortOption: LibrarySortOption = LibrarySortOption.DEFAULT,
-    val vodFilterConfig: LibraryFilterConfig = LibraryFilterConfig.DEFAULT,
-    val seriesFilterConfig: LibraryFilterConfig = LibraryFilterConfig.DEFAULT,
+    // Sort & Filter state (using unified core/model types)
+    val vodSortOption: SortOption = SortOption.DEFAULT,
+    val seriesSortOption: SortOption = SortOption.DEFAULT,
+    val vodFilterConfig: FilterConfig = FilterConfig.DEFAULT,
+    val seriesFilterConfig: FilterConfig = FilterConfig.DEFAULT,
     val availableGenres: Set<String> = emptySet(),
     val yearRange: Pair<Int, Int>? = null,
 ) {
@@ -72,12 +73,12 @@ data class LibraryState(
     val currentSelectedCategory: String?
         get() = if (currentTab == LibraryTab.VOD) selectedVodCategory else selectedSeriesCategory
 
-    /** Current sort option for active tab */
-    val currentSortOption: LibrarySortOption
+    /** Current sort option for active tab (unified core/model type) */
+    val currentSortOption: SortOption
         get() = if (currentTab == LibraryTab.VOD) vodSortOption else seriesSortOption
 
-    /** Current filter config for active tab */
-    val currentFilterConfig: LibraryFilterConfig
+    /** Current filter config for active tab (unified core/model type) */
+    val currentFilterConfig: FilterConfig
         get() = if (currentTab == LibraryTab.VOD) vodFilterConfig else seriesFilterConfig
 
     /** True if there is content to display */
@@ -109,11 +110,11 @@ class LibraryViewModel
         private val _isSearchActive = MutableStateFlow(false)
         private val _searchResults = MutableStateFlow<List<LibraryMediaItem>>(emptyList())
 
-        // Sort & Filter state
-        private val _vodSortOption = MutableStateFlow(LibrarySortOption.DEFAULT)
-        private val _seriesSortOption = MutableStateFlow(LibrarySortOption.DEFAULT)
-        private val _vodFilterConfig = MutableStateFlow(LibraryFilterConfig.DEFAULT)
-        private val _seriesFilterConfig = MutableStateFlow(LibraryFilterConfig.DEFAULT)
+        // Sort & Filter state (using unified core/model types)
+        private val _vodSortOption = MutableStateFlow(SortOption.DEFAULT)
+        private val _seriesSortOption = MutableStateFlow(SortOption.DEFAULT)
+        private val _vodFilterConfig = MutableStateFlow(FilterConfig.DEFAULT)
+        private val _seriesFilterConfig = MutableStateFlow(FilterConfig.DEFAULT)
         private val _availableGenres = MutableStateFlow<Set<String>>(emptySet())
         private val _yearRange = MutableStateFlow<Pair<Int, Int>?>(null)
 
@@ -237,40 +238,40 @@ class LibraryViewModel
             }
         }
 
-        // ===== Sort Actions =====
+        // ===== Sort Actions (using unified core/model types) =====
 
         /** Update sort option for VOD */
-        fun updateVodSort(sort: LibrarySortOption) {
+        fun updateVodSort(sort: SortOption) {
             _vodSortOption.value = sort
         }
 
         /** Update sort option for Series */
-        fun updateSeriesSort(sort: LibrarySortOption) {
+        fun updateSeriesSort(sort: SortOption) {
             _seriesSortOption.value = sort
         }
 
         /** Update sort for current tab */
-        fun updateSort(sort: LibrarySortOption) {
+        fun updateSort(sort: SortOption) {
             when (_currentTab.value) {
                 LibraryTab.VOD -> updateVodSort(sort)
                 LibraryTab.SERIES -> updateSeriesSort(sort)
             }
         }
 
-        // ===== Filter Actions =====
+        // ===== Filter Actions (using unified core/model types) =====
 
         /** Update filter config for VOD */
-        fun updateVodFilter(filter: LibraryFilterConfig) {
+        fun updateVodFilter(filter: FilterConfig) {
             _vodFilterConfig.value = filter
         }
 
         /** Update filter config for Series */
-        fun updateSeriesFilter(filter: LibraryFilterConfig) {
+        fun updateSeriesFilter(filter: FilterConfig) {
             _seriesFilterConfig.value = filter
         }
 
         /** Update filter for current tab */
-        fun updateFilter(filter: LibraryFilterConfig) {
+        fun updateFilter(filter: FilterConfig) {
             when (_currentTab.value) {
                 LibraryTab.VOD -> updateVodFilter(filter)
                 LibraryTab.SERIES -> updateSeriesFilter(filter)
@@ -280,8 +281,8 @@ class LibraryViewModel
         /** Reset filters for current tab */
         fun resetFilters() {
             when (_currentTab.value) {
-                LibraryTab.VOD -> _vodFilterConfig.value = LibraryFilterConfig.DEFAULT
-                LibraryTab.SERIES -> _seriesFilterConfig.value = LibraryFilterConfig.DEFAULT
+                LibraryTab.VOD -> _vodFilterConfig.value = FilterConfig.DEFAULT
+                LibraryTab.SERIES -> _seriesFilterConfig.value = FilterConfig.DEFAULT
             }
         }
 
@@ -320,7 +321,8 @@ class LibraryViewModel
     }
 
 /**
- * Intermediate data class for combine chain
+ * Intermediate data class for combine chain.
+ * Uses unified core/model types for sort and filter.
  */
 private data class CombinedBase(
     val vodItems: List<LibraryMediaItem> = emptyList(),
@@ -332,10 +334,10 @@ private data class CombinedBase(
     val selectedSeriesCategory: String? = null,
     val isSearchActive: Boolean = false,
     val searchResults: List<LibraryMediaItem> = emptyList(),
-    val vodSortOption: LibrarySortOption = LibrarySortOption.DEFAULT,
-    val seriesSortOption: LibrarySortOption = LibrarySortOption.DEFAULT,
-    val vodFilterConfig: LibraryFilterConfig = LibraryFilterConfig.DEFAULT,
-    val seriesFilterConfig: LibraryFilterConfig = LibraryFilterConfig.DEFAULT,
+    val vodSortOption: SortOption = SortOption.DEFAULT,
+    val seriesSortOption: SortOption = SortOption.DEFAULT,
+    val vodFilterConfig: FilterConfig = FilterConfig.DEFAULT,
+    val seriesFilterConfig: FilterConfig = FilterConfig.DEFAULT,
     val availableGenres: Set<String> = emptySet(),
 ) {
     fun toLibraryState(yearRange: Pair<Int, Int>?) =
