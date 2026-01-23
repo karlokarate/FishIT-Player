@@ -31,6 +31,7 @@ import com.fishit.player.core.ui.theme.FishTheme
 import com.fishit.player.feature.detail.ui.DetailScreen
 import com.fishit.player.feature.home.HomeScreen
 import com.fishit.player.feature.home.debug.DebugPlaybackScreen
+import com.fishit.player.feature.library.LibraryScreen
 import com.fishit.player.feature.onboarding.StartScreen
 import com.fishit.player.feature.settings.DebugScreen
 import com.fishit.player.feature.settings.SettingsScreen
@@ -111,6 +112,24 @@ fun AppNavHost(playbackPendingState: PlaybackPendingState) {
                     onDebugClick = {
                         navController.navigate(Routes.DEBUG)
                     },
+                    onLibraryClick = {
+                        navController.navigate(Routes.LIBRARY)
+                    },
+                )
+            }
+
+            // Library Screen
+            composable(Routes.LIBRARY) {
+                LibraryScreen(
+                    onItemClick = { item ->
+                        navController.navigate(
+                            Routes.detail(
+                                mediaId = item.id,
+                                sourceType = item.sourceType.name,
+                            ),
+                        )
+                    },
+                    onBack = { navController.popBackStack() },
                 )
             }
 
@@ -304,6 +323,7 @@ object Routes {
     // Main routes
     const val START = "start"
     const val HOME = "home"
+    const val LIBRARY = "library"
     const val DEBUG = "debug"
     const val DEBUG_PLAYBACK = "debug_playback"
     const val DEBUG_SKELETON = "debug_skeleton"

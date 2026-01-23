@@ -14,6 +14,7 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.PlayCircle
 import androidx.compose.material.icons.filled.Search
@@ -72,12 +73,14 @@ import com.fishit.player.core.ui.layout.UiSortOption
  * - Grid display of media items
  *
  * @param onItemClick Callback when a media item is clicked
+ * @param onBack Callback when back navigation is requested
  * @param viewModel ViewModel for state management
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LibraryScreen(
     onItemClick: (LibraryMediaItem) -> Unit,
+    onBack: () -> Unit = {},
     modifier: Modifier = Modifier,
     viewModel: LibraryViewModel = hiltViewModel(),
 ) {
@@ -87,6 +90,14 @@ fun LibraryScreen(
         topBar = {
             TopAppBar(
                 title = { Text("Library") },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Back",
+                        )
+                    }
+                },
                 actions = {
                     if (!state.isSearchActive) {
                         IconButton(onClick = { viewModel.startSearch() }) {

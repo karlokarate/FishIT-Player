@@ -7,6 +7,7 @@ import com.fishit.player.core.catalogsync.SyncUiState
 import com.fishit.player.core.home.domain.HomeContentRepository
 import com.fishit.player.core.home.domain.HomeMediaItem
 import com.fishit.player.core.model.SourceType
+import com.fishit.player.core.model.filter.PresetGenreFilter
 import com.fishit.player.core.sourceactivation.SourceActivationSnapshot
 import com.fishit.player.core.sourceactivation.SourceActivationStore
 import com.fishit.player.infra.logging.UnifiedLog
@@ -24,31 +25,6 @@ import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
-
-/**
- * Predefined genre filters for quick access. Maps display name to keywords that match in genres
- * field.
- */
-enum class GenreFilter(
-    val displayName: String,
-    val keywords: List<String>,
-) {
-    ALL("Alle", emptyList()),
-    ACTION("Action", listOf("action")),
-    HORROR("Horror", listOf("horror", "thriller")),
-    COMEDY("Comedy", listOf("comedy", "komödie")),
-    DRAMA("Drama", listOf("drama")),
-    SCIFI("Sci-Fi", listOf("sci-fi", "science fiction", "science-fiction")),
-    DOCUMENTARY("Dokus", listOf("documentary", "dokumentation", "doku")),
-    KIDS("Kids", listOf("kids", "kinder", "animation", "family", "familie")),
-    ROMANCE("Romance", listOf("romance", "romantik", "love")),
-    CRIME("Crime", listOf("crime", "krimi", "criminal")),
-    ;
-
-    companion object {
-        val all: List<GenreFilter> = entries.toList()
-    }
-}
 
 /**
  * Home screen state
@@ -79,7 +55,7 @@ data class HomeState(
     /** Current search query (empty = no search active) */
     val searchQuery: String = "",
     /** Currently selected genre filter */
-    val selectedGenre: GenreFilter = GenreFilter.ALL,
+    val selectedGenre: PresetGenreFilter = PresetGenreFilter.ALL,
     /** Whether search/filter panel is visible */
     val isSearchVisible: Boolean = false,
     /** All available genres extracted from content (for dynamic filtering) */
@@ -97,7 +73,7 @@ data class HomeState(
 
     /** True if search or filter is active */
     val isFilterActive: Boolean
-        get() = searchQuery.isNotBlank() || selectedGenre != GenreFilter.ALL
+        get() = searchQuery.isNotBlank() || selectedGenre != PresetGenreFilter.ALL
 }
 
 /**
@@ -234,7 +210,7 @@ class HomeViewModel
         // ==================== Search & Filter State ====================
 
         private val _searchQuery = MutableStateFlow("")
-        private val _selectedGenre = MutableStateFlow(GenreFilter.ALL)
+        private val _selectedGenre = MutableStateFlow(PresetGenreFilter.ALL)
         private val _isSearchVisible = MutableStateFlow(false)
 
         /**
@@ -316,7 +292,7 @@ class HomeViewModel
                 _isSearchVisible,
             ) { currentState, query, genre, isSearchVisible ->
                 val baseState =
-                    if (query.isBlank() && genre == GenreFilter.ALL) {
+                    if (query.isBlank() && genre == PresetGenreFilter.ALL) {
                         currentState
                     } else {
                         currentState.copy(
@@ -401,14 +377,14 @@ class HomeViewModel
         }
 
         /** Update selected genre filter */
-        fun setGenreFilter(genre: GenreFilter) {
+        fun setGenreFilter(genre: PresetGenreFilter) {
             _selectedGenre.value = genre
         }
 
         /** Clear all filters */
         fun clearFilters() {
             _searchQuery.value = ""
-            _selectedGenre.value = GenreFilter.ALL
+            _selectedGenre.value = PresetGenreFilter.ALL
         }
 
         // ==================== Private Helpers ====================
@@ -421,12 +397,12 @@ class HomeViewModel
          * - Year (if query is a 4-digit number)
          *
          * Genre matches:
-         * - Any keyword from GenreFilter.keywords in item.genres field
+         * - Uses PresetGenreFilter.matchesGenres() for consistent filtering
          */
         private fun filterItems(
             items: List<HomeMediaItem>,
             query: String,
-            genre: GenreFilter,
+            genre: PresetGenreFilter,
         ): List<HomeMediaItem> {
             val queryLower = query.lowercase().trim()
             val yearQuery = queryLower.toIntOrNull()?.takeIf { it in 1900..2100 }
@@ -437,11 +413,9 @@ class HomeViewModel
                         item.title.lowercase().contains(queryLower) ||
                         (yearQuery != null && item.year == yearQuery)
 
-                val matchesGenre =
-                    genre == GenreFilter.ALL ||
-                        genre.keywords.any { keyword ->
-                            item.genres?.lowercase()?.contains(keyword) == true
-                        }
+                // Use PresetGenreFilter.matchesGenres() for consistent filtering across all screens
+                val itemGenres = item.genres?.split(",")?.map { it.trim() }?.toSet() ?: emptySet()
+                val matchesGenre = genre.matchesGenres(itemGenres)
 
                 matchesQuery && matchesGenre
             }

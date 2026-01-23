@@ -68,6 +68,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.fishit.player.core.catalogsync.SyncUiState
 import com.fishit.player.core.home.domain.HomeMediaItem
 import com.fishit.player.core.model.SourceType
+import com.fishit.player.core.model.filter.PresetGenreFilter
 import com.fishit.player.core.sourceactivation.SourceId
 import com.fishit.player.core.ui.layout.FishTile
 import com.fishit.player.core.ui.theme.FishColors
@@ -82,7 +83,7 @@ import com.fishit.player.core.ui.theme.LocalFishDimens
  * - Source-specific rows (Telegram, Xtream VOD/Series/Live)
  *
  * Navigation:
- * - Top bar with Home/Settings/Debug icons
+ * - Top bar with Home/Library/Settings/Debug icons
  * - DPAD navigation between rows and tiles
  */
 @Composable
@@ -90,6 +91,7 @@ fun HomeScreen(
     onItemClick: (HomeMediaItem) -> Unit,
     onSettingsClick: () -> Unit,
     onDebugClick: () -> Unit,
+    onLibraryClick: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
@@ -112,6 +114,7 @@ fun HomeScreen(
                 onRefreshClick = viewModel::refresh,
                 onSettingsClick = onSettingsClick,
                 onDebugClick = onDebugClick,
+                onLibraryClick = onLibraryClick,
             )
 
             // Search & Filter Panel
@@ -162,6 +165,7 @@ private fun HomeTopBar(
     onRefreshClick: () -> Unit,
     onSettingsClick: () -> Unit,
     onDebugClick: () -> Unit,
+    onLibraryClick: () -> Unit,
 ) {
     Row(
         modifier =
@@ -204,6 +208,15 @@ private fun HomeTopBar(
                     Icons.Default.Search,
                     contentDescription = "Search",
                     tint = if (isSearchActive) FishColors.Primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+
+            // Library Button - Browse all content with advanced filters
+            IconButton(onClick = onLibraryClick) {
+                Icon(
+                    Icons.Default.VideoLibrary,
+                    contentDescription = "Library",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
 
@@ -322,9 +335,9 @@ private fun com.fishit.player.core.catalogsync.SyncFailureReason.toDisplayString
 @Composable
 private fun SearchFilterPanel(
     searchQuery: String,
-    selectedGenre: GenreFilter,
+    selectedGenre: PresetGenreFilter,
     onSearchQueryChange: (String) -> Unit,
-    onGenreSelected: (GenreFilter) -> Unit,
+    onGenreSelected: (PresetGenreFilter) -> Unit,
     onClearFilters: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -414,7 +427,7 @@ private fun SearchFilterPanel(
             }
 
             // Clear All Button (only visible when filters are active)
-            if (searchQuery.isNotEmpty() || selectedGenre != GenreFilter.ALL) {
+            if (searchQuery.isNotEmpty() || selectedGenre != PresetGenreFilter.ALL) {
                 IconButton(onClick = onClearFilters) {
                     Icon(
                         Icons.Default.Clear,
@@ -432,7 +445,7 @@ private fun SearchFilterPanel(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             modifier = Modifier.fillMaxWidth(),
         ) {
-            items(GenreFilter.all) { genre ->
+            items(PresetGenreFilter.all) { genre ->
                 FilterChip(
                     selected = selectedGenre == genre,
                     onClick = { onGenreSelected(genre) },
