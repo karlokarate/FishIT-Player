@@ -113,6 +113,22 @@ object WorkerConstants {
     const val SYNC_MODE_AUTO = "AUTO"
     const val SYNC_MODE_EXPERT_NOW = "EXPERT_SYNC_NOW"
     const val SYNC_MODE_FORCE_RESCAN = "EXPERT_FORCE_RESCAN"
+    
+    /** Incremental sync: Only fetch items added since last sync (2h periodic) */
+    const val SYNC_MODE_INCREMENTAL = "INCREMENTAL"
+
+    // =========================================================================
+    // Periodic Sync Configuration
+    // =========================================================================
+
+    /** Default interval for periodic incremental sync (2 hours) */
+    const val PERIODIC_SYNC_INTERVAL_HOURS = 2L
+    
+    /** Minimum interval for periodic sync (1 hour) */
+    const val PERIODIC_SYNC_MIN_INTERVAL_HOURS = 1L
+    
+    /** Work name for periodic sync */
+    const val WORK_NAME_PERIODIC_SYNC = "catalog_sync_periodic"
 
     // =========================================================================
     // Sync Scopes

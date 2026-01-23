@@ -480,25 +480,27 @@ private fun HomeContent(
         verticalArrangement = Arrangement.spacedBy(24.dp),
         modifier = Modifier.fillMaxSize(),
     ) {
-        // Continue Watching
+        // Recently Added - FIRST ROW (sorted by added timestamp descending)
+        // This shows newest content from all sources, enabling users to discover
+        // newly added content immediately after incremental sync updates.
+        if (state.recentlyAddedItems.isNotEmpty()) {
+            item(key = "recently_added") {
+                MediaRow(
+                    title = "Recently Added",
+                    icon = Icons.Default.Add,
+                    items = state.recentlyAddedItems,
+                    onItemClick = onItemClick,
+                )
+            }
+        }
+
+        // Continue Watching - Second row (user's in-progress content)
         if (state.continueWatchingItems.isNotEmpty()) {
             item(key = "continue_watching") {
                 MediaRow(
                     title = "Continue Watching",
                     icon = Icons.Default.PlayCircle,
                     items = state.continueWatchingItems,
-                    onItemClick = onItemClick,
-                )
-            }
-        }
-
-        // Recently Added
-        if (state.recentlyAddedItems.isNotEmpty()) {
-            item(key = "recently_added") {
-                MediaRow(
-                    title = "Recently Added",
-                    icon = Icons.Default.Home,
-                    items = state.recentlyAddedItems,
                     onItemClick = onItemClick,
                 )
             }
