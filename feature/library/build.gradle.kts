@@ -31,6 +31,7 @@ android {
 dependencies {
     implementation(project(":core:model"))
     implementation(project(":core:library-domain"))
+    implementation(project(":core:ui-layout"))
     implementation(project(":playback:domain"))
     implementation(project(":infra:logging"))
 

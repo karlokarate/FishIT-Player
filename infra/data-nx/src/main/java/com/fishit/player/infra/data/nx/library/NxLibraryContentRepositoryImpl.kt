@@ -20,7 +20,11 @@ package com.fishit.player.infra.data.nx.library
 
 import com.fishit.player.core.library.domain.LibraryCategory
 import com.fishit.player.core.library.domain.LibraryContentRepository
+import com.fishit.player.core.library.domain.LibraryFilterConfig
 import com.fishit.player.core.library.domain.LibraryMediaItem
+import com.fishit.player.core.library.domain.LibraryQueryOptions
+import com.fishit.player.core.library.domain.LibrarySortDirection
+import com.fishit.player.core.library.domain.LibrarySortField
 import com.fishit.player.core.model.ImageRef
 import com.fishit.player.core.model.MediaType
 import com.fishit.player.core.model.SourceType
@@ -198,6 +202,96 @@ class NxLibraryContentRepositoryImpl @Inject constructor(
             "tg" -> ImageRef.TelegramThumb(remoteId = value)
             "file" -> ImageRef.LocalFile(path = value)
             else -> null
+        }
+    }
+
+    // ==================== Advanced Query (Sort/Filter) ====================
+
+    override fun observeVodWithOptions(
+        categoryId: String?,
+        options: LibraryQueryOptions,
+    ): Flow<List<LibraryMediaItem>> {
+        val queryOptions = options.toNxQueryOptions(WorkType.MOVIE)
+        return workRepository.observeWithOptions(queryOptions)
+            .map { works ->
+                works.mapNotNull { work ->
+                    val sourceType = determineSourceType(work.workKey)
+                    work.toLibraryMediaItem(sourceType = sourceType)
+                }
+            }
+            .catch { e ->
+                UnifiedLog.e(TAG, e) { "Failed to observe VOD with options" }
+                emit(emptyList())
+            }
+    }
+
+    override fun observeSeriesWithOptions(
+        categoryId: String?,
+        options: LibraryQueryOptions,
+    ): Flow<List<LibraryMediaItem>> {
+        val queryOptions = options.toNxQueryOptions(WorkType.SERIES)
+        return workRepository.observeWithOptions(queryOptions)
+            .map { works ->
+                works.mapNotNull { work ->
+                    val sourceType = determineSourceType(work.workKey)
+                    work.toLibraryMediaItem(sourceType = sourceType)
+                }
+            }
+            .catch { e ->
+                UnifiedLog.e(TAG, e) { "Failed to observe series with options" }
+                emit(emptyList())
+            }
+    }
+
+    override suspend fun getAllGenres(): Set<String> {
+        return try {
+            workRepository.getAllGenres()
+        } catch (e: Exception) {
+            UnifiedLog.e(TAG, e) { "Failed to get all genres" }
+            emptySet()
+        }
+    }
+
+    override suspend fun getYearRange(): Pair<Int, Int>? {
+        return try {
+            workRepository.getYearRange()
+        } catch (e: Exception) {
+            UnifiedLog.e(TAG, e) { "Failed to get year range" }
+            null
+        }
+    }
+
+    // ==================== Mapping Helpers ====================
+
+    private fun LibraryQueryOptions.toNxQueryOptions(workType: WorkType): NxWorkRepository.QueryOptions {
+        return NxWorkRepository.QueryOptions(
+            type = workType,
+            sortField = sort.field.toNxSortField(),
+            sortDirection = sort.direction.toNxSortDirection(),
+            hideAdult = filter.hideAdult,
+            minRating = filter.minRating,
+            genres = filter.includeGenres,
+            excludeGenres = filter.excludeGenres,
+            yearRange = filter.yearRange,
+            limit = limit,
+        )
+    }
+
+    private fun LibrarySortField.toNxSortField(): NxWorkRepository.SortField {
+        return when (this) {
+            LibrarySortField.TITLE -> NxWorkRepository.SortField.TITLE
+            LibrarySortField.YEAR -> NxWorkRepository.SortField.YEAR
+            LibrarySortField.RATING -> NxWorkRepository.SortField.RATING
+            LibrarySortField.RECENTLY_ADDED -> NxWorkRepository.SortField.RECENTLY_ADDED
+            LibrarySortField.RECENTLY_UPDATED -> NxWorkRepository.SortField.RECENTLY_UPDATED
+            LibrarySortField.DURATION -> NxWorkRepository.SortField.DURATION
+        }
+    }
+
+    private fun LibrarySortDirection.toNxSortDirection(): NxWorkRepository.SortDirection {
+        return when (this) {
+            LibrarySortDirection.ASCENDING -> NxWorkRepository.SortDirection.ASCENDING
+            LibrarySortDirection.DESCENDING -> NxWorkRepository.SortDirection.DESCENDING
         }
     }
 }

@@ -93,6 +93,155 @@ class NxWorkRepositoryImpl @Inject constructor(
     }
 
     // ──────────────────────────────────────────────────────────────────────
+    // Advanced Query (Sort/Filter/Search)
+    // ──────────────────────────────────────────────────────────────────────
+
+    override fun observeWithOptions(options: NxWorkRepository.QueryOptions): Flow<List<Work>> {
+        return buildQuery(options)
+            .flow()
+            .map { list -> list.take(options.limit).map { it.toDomain() } }
+    }
+
+    override suspend fun advancedSearch(
+        query: String,
+        options: NxWorkRepository.QueryOptions,
+    ): List<Work> = withContext(Dispatchers.IO) {
+        if (query.isBlank()) {
+            return@withContext buildQuery(options)
+                .find(0, options.limit.toLong())
+                .map { it.toDomain() }
+        }
+
+        val queryLower = query.lowercase().trim()
+
+        // Search in title, plot, cast, director
+        val queryBuilder = box.query()
+
+        // Title search (primary)
+        queryBuilder.contains(NX_Work_.canonicalTitleLower, queryLower, StringOrder.CASE_INSENSITIVE)
+
+        // Apply type filter
+        options.type?.let { type ->
+            queryBuilder.and().equal(NX_Work_.workType, type.toEntityString(), StringOrder.CASE_SENSITIVE)
+        }
+
+        // Apply adult filter
+        if (options.hideAdult) {
+            queryBuilder.and().equal(NX_Work_.isAdult, false)
+        }
+
+        // Apply rating filter
+        options.minRating?.let { minRating ->
+            queryBuilder.and().greaterOrEqual(NX_Work_.rating, minRating)
+        }
+
+        // Apply year filter
+        options.yearRange?.let { range ->
+            queryBuilder.and().between(NX_Work_.year, range.first.toLong(), range.last.toLong())
+        }
+
+        // Apply sorting
+        applySorting(queryBuilder, options.sortField, options.sortDirection)
+
+        queryBuilder.build()
+            .find(0, options.limit.toLong())
+            .map { it.toDomain() }
+    }
+
+    override suspend fun getAllGenres(): Set<String> = withContext(Dispatchers.IO) {
+        val allWorks = box.query()
+            .notNull(NX_Work_.genres)
+            .build()
+            .property(NX_Work_.genres)
+            .findStrings()
+
+        // Parse comma-separated genres and collect unique
+        allWorks
+            .filterNotNull()
+            .flatMap { genreString ->
+                genreString.split(",", ";", "/")
+                    .map { it.trim() }
+                    .filter { it.isNotBlank() }
+            }
+            .toSet()
+    }
+
+    override suspend fun getYearRange(type: WorkType?): Pair<Int, Int>? = withContext(Dispatchers.IO) {
+        val queryBuilder = box.query().notNull(NX_Work_.year)
+
+        type?.let {
+            queryBuilder.and().equal(NX_Work_.workType, it.toEntityString(), StringOrder.CASE_SENSITIVE)
+        }
+
+        val years = queryBuilder.build()
+            .property(NX_Work_.year)
+            .findInts()
+            .toList()
+
+        if (years.isEmpty()) {
+            null
+        } else {
+            Pair(years.minOrNull() ?: 0, years.maxOrNull() ?: 0)
+        }
+    }
+
+    /**
+     * Build a query with the given options.
+     */
+    private fun buildQuery(options: NxWorkRepository.QueryOptions): io.objectbox.query.Query<NX_Work> {
+        val queryBuilder = box.query()
+
+        // Apply type filter
+        options.type?.let { type ->
+            queryBuilder.equal(NX_Work_.workType, type.toEntityString(), StringOrder.CASE_SENSITIVE)
+        }
+
+        // Apply adult filter
+        if (options.hideAdult) {
+            queryBuilder.and().equal(NX_Work_.isAdult, false)
+        }
+
+        // Apply rating filter
+        options.minRating?.let { minRating ->
+            queryBuilder.and().greaterOrEqual(NX_Work_.rating, minRating)
+        }
+
+        // Apply year filter
+        options.yearRange?.let { range ->
+            queryBuilder.and().between(NX_Work_.year, range.first.toLong(), range.last.toLong())
+        }
+
+        // Apply sorting
+        applySorting(queryBuilder, options.sortField, options.sortDirection)
+
+        return queryBuilder.build()
+    }
+
+    /**
+     * Apply sorting to the query builder.
+     */
+    private fun applySorting(
+        queryBuilder: io.objectbox.query.QueryBuilder<NX_Work>,
+        sortField: NxWorkRepository.SortField,
+        sortDirection: NxWorkRepository.SortDirection,
+    ) {
+        val flags = if (sortDirection == NxWorkRepository.SortDirection.DESCENDING) {
+            QueryBuilder.DESCENDING
+        } else {
+            0
+        }
+
+        when (sortField) {
+            NxWorkRepository.SortField.TITLE -> queryBuilder.order(NX_Work_.canonicalTitle, flags)
+            NxWorkRepository.SortField.YEAR -> queryBuilder.order(NX_Work_.year, flags)
+            NxWorkRepository.SortField.RATING -> queryBuilder.order(NX_Work_.rating, flags)
+            NxWorkRepository.SortField.RECENTLY_ADDED -> queryBuilder.order(NX_Work_.createdAt, flags)
+            NxWorkRepository.SortField.RECENTLY_UPDATED -> queryBuilder.order(NX_Work_.updatedAt, flags)
+            NxWorkRepository.SortField.DURATION -> queryBuilder.order(NX_Work_.durationMs, flags)
+        }
+    }
+
+    // ──────────────────────────────────────────────────────────────────────
     // Writes (MVP)
     // ──────────────────────────────────────────────────────────────────────
 

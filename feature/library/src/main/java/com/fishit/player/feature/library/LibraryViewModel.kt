@@ -4,7 +4,12 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.fishit.player.core.library.domain.LibraryCategory
 import com.fishit.player.core.library.domain.LibraryContentRepository
+import com.fishit.player.core.library.domain.LibraryFilterConfig
 import com.fishit.player.core.library.domain.LibraryMediaItem
+import com.fishit.player.core.library.domain.LibraryQueryOptions
+import com.fishit.player.core.library.domain.LibrarySortDirection
+import com.fishit.player.core.library.domain.LibrarySortField
+import com.fishit.player.core.library.domain.LibrarySortOption
 import com.fishit.player.infra.logging.UnifiedLog
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -42,6 +47,13 @@ data class LibraryState(
     val searchResults: List<LibraryMediaItem> = emptyList(),
     val isSearchActive: Boolean = false,
     val error: String? = null,
+    // Sort & Filter state
+    val vodSortOption: LibrarySortOption = LibrarySortOption.DEFAULT,
+    val seriesSortOption: LibrarySortOption = LibrarySortOption.DEFAULT,
+    val vodFilterConfig: LibraryFilterConfig = LibraryFilterConfig.DEFAULT,
+    val seriesFilterConfig: LibraryFilterConfig = LibraryFilterConfig.DEFAULT,
+    val availableGenres: Set<String> = emptySet(),
+    val yearRange: Pair<Int, Int>? = null,
 ) {
     /** Items to display based on current tab */
     val currentItems: List<LibraryMediaItem>
@@ -60,6 +72,14 @@ data class LibraryState(
     val currentSelectedCategory: String?
         get() = if (currentTab == LibraryTab.VOD) selectedVodCategory else selectedSeriesCategory
 
+    /** Current sort option for active tab */
+    val currentSortOption: LibrarySortOption
+        get() = if (currentTab == LibraryTab.VOD) vodSortOption else seriesSortOption
+
+    /** Current filter config for active tab */
+    val currentFilterConfig: LibraryFilterConfig
+        get() = if (currentTab == LibraryTab.VOD) vodFilterConfig else seriesFilterConfig
+
     /** True if there is content to display */
     val hasContent: Boolean
         get() = vodItems.isNotEmpty() || seriesItems.isNotEmpty()
@@ -68,7 +88,8 @@ data class LibraryState(
 /**
  * LibraryViewModel - Manages Library screen state.
  *
- * Provides VOD and Series browsing with category filtering.
+ * Provides VOD and Series browsing with category filtering,
+ * sorting, and content filtering.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
@@ -88,29 +109,65 @@ class LibraryViewModel
         private val _isSearchActive = MutableStateFlow(false)
         private val _searchResults = MutableStateFlow<List<LibraryMediaItem>>(emptyList())
 
-        /** VOD items filtered by selected category */
-        private val vodItems =
-            _selectedVodCategory
-                .flatMapLatest { categoryId ->
-                    libraryContentRepository
-                        .observeVod(categoryId)
-                        .catch { e ->
-                            UnifiedLog.e(TAG) { "Error loading VOD: ${e.message}" }
-                            emit(emptyList())
-                        }
-                }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+        // Sort & Filter state
+        private val _vodSortOption = MutableStateFlow(LibrarySortOption.DEFAULT)
+        private val _seriesSortOption = MutableStateFlow(LibrarySortOption.DEFAULT)
+        private val _vodFilterConfig = MutableStateFlow(LibraryFilterConfig.DEFAULT)
+        private val _seriesFilterConfig = MutableStateFlow(LibraryFilterConfig.DEFAULT)
+        private val _availableGenres = MutableStateFlow<Set<String>>(emptySet())
+        private val _yearRange = MutableStateFlow<Pair<Int, Int>?>(null)
 
-        /** Series items filtered by selected category */
+        init {
+            loadMetadata()
+        }
+
+        /** Load genres and year range for filter UI */
+        private fun loadMetadata() {
+            viewModelScope.launch {
+                try {
+                    _availableGenres.value = libraryContentRepository.getAllGenres()
+                    _yearRange.value = libraryContentRepository.getYearRange()
+                } catch (e: Exception) {
+                    UnifiedLog.e(TAG) { "Error loading metadata: ${e.message}" }
+                }
+            }
+        }
+
+        /** VOD items with sort and filter options */
+        private val vodItems =
+            combine(
+                _selectedVodCategory,
+                _vodSortOption,
+                _vodFilterConfig,
+            ) { categoryId, sort, filter ->
+                Triple(categoryId, sort, filter)
+            }.flatMapLatest { (categoryId, sort, filter) ->
+                val options = LibraryQueryOptions(sort = sort, filter = filter)
+                libraryContentRepository
+                    .observeVodWithOptions(categoryId, options)
+                    .catch { e ->
+                        UnifiedLog.e(TAG) { "Error loading VOD: ${e.message}" }
+                        emit(emptyList())
+                    }
+            }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+        /** Series items with sort and filter options */
         private val seriesItems =
-            _selectedSeriesCategory
-                .flatMapLatest { categoryId ->
-                    libraryContentRepository
-                        .observeSeries(categoryId)
-                        .catch { e ->
-                            UnifiedLog.e(TAG) { "Error loading series: ${e.message}" }
-                            emit(emptyList())
-                        }
-                }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+            combine(
+                _selectedSeriesCategory,
+                _seriesSortOption,
+                _seriesFilterConfig,
+            ) { categoryId, sort, filter ->
+                Triple(categoryId, sort, filter)
+            }.flatMapLatest { (categoryId, sort, filter) ->
+                val options = LibraryQueryOptions(sort = sort, filter = filter)
+                libraryContentRepository
+                    .observeSeriesWithOptions(categoryId, options)
+                    .catch { e ->
+                        UnifiedLog.e(TAG) { "Error loading series: ${e.message}" }
+                        emit(emptyList())
+                    }
+            }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
         /** VOD categories */
         private val vodCategories =
@@ -138,24 +195,28 @@ class LibraryViewModel
                 vodCategories,
                 seriesCategories,
                 _currentTab,
-                _selectedVodCategory,
-                _selectedSeriesCategory,
-                _isSearchActive,
-                _searchResults,
-            ) { values ->
-                @Suppress("UNCHECKED_CAST")
-                LibraryState(
-                    isLoading = false,
-                    vodItems = values[0] as List<LibraryMediaItem>,
-                    seriesItems = values[1] as List<LibraryMediaItem>,
-                    vodCategories = values[2] as List<LibraryCategory>,
-                    seriesCategories = values[3] as List<LibraryCategory>,
-                    currentTab = values[4] as LibraryTab,
-                    selectedVodCategory = values[5] as String?,
-                    selectedSeriesCategory = values[6] as String?,
-                    isSearchActive = values[7] as Boolean,
-                    searchResults = values[8] as List<LibraryMediaItem>,
-                )
+            ) { vodList, seriesList, vodCats, seriesCats, tab ->
+                CombinedBase(vodList, seriesList, vodCats, seriesCats, tab)
+            }.combine(_selectedVodCategory) { base, vodCat ->
+                base.copy(selectedVodCategory = vodCat)
+            }.combine(_selectedSeriesCategory) { base, seriesCat ->
+                base.copy(selectedSeriesCategory = seriesCat)
+            }.combine(_isSearchActive) { base, searching ->
+                base.copy(isSearchActive = searching)
+            }.combine(_searchResults) { base, results ->
+                base.copy(searchResults = results)
+            }.combine(_vodSortOption) { base, sort ->
+                base.copy(vodSortOption = sort)
+            }.combine(_seriesSortOption) { base, sort ->
+                base.copy(seriesSortOption = sort)
+            }.combine(_vodFilterConfig) { base, filter ->
+                base.copy(vodFilterConfig = filter)
+            }.combine(_seriesFilterConfig) { base, filter ->
+                base.copy(seriesFilterConfig = filter)
+            }.combine(_availableGenres) { base, genres ->
+                base.copy(availableGenres = genres)
+            }.combine(_yearRange) { base, range ->
+                base.toLibraryState(range)
             }.stateIn(
                 viewModelScope,
                 SharingStarted.WhileSubscribed(5000),
@@ -175,6 +236,56 @@ class LibraryViewModel
                 LibraryTab.SERIES -> _selectedSeriesCategory.value = categoryId
             }
         }
+
+        // ===== Sort Actions =====
+
+        /** Update sort option for VOD */
+        fun updateVodSort(sort: LibrarySortOption) {
+            _vodSortOption.value = sort
+        }
+
+        /** Update sort option for Series */
+        fun updateSeriesSort(sort: LibrarySortOption) {
+            _seriesSortOption.value = sort
+        }
+
+        /** Update sort for current tab */
+        fun updateSort(sort: LibrarySortOption) {
+            when (_currentTab.value) {
+                LibraryTab.VOD -> updateVodSort(sort)
+                LibraryTab.SERIES -> updateSeriesSort(sort)
+            }
+        }
+
+        // ===== Filter Actions =====
+
+        /** Update filter config for VOD */
+        fun updateVodFilter(filter: LibraryFilterConfig) {
+            _vodFilterConfig.value = filter
+        }
+
+        /** Update filter config for Series */
+        fun updateSeriesFilter(filter: LibraryFilterConfig) {
+            _seriesFilterConfig.value = filter
+        }
+
+        /** Update filter for current tab */
+        fun updateFilter(filter: LibraryFilterConfig) {
+            when (_currentTab.value) {
+                LibraryTab.VOD -> updateVodFilter(filter)
+                LibraryTab.SERIES -> updateSeriesFilter(filter)
+            }
+        }
+
+        /** Reset filters for current tab */
+        fun resetFilters() {
+            when (_currentTab.value) {
+                LibraryTab.VOD -> _vodFilterConfig.value = LibraryFilterConfig.DEFAULT
+                LibraryTab.SERIES -> _seriesFilterConfig.value = LibraryFilterConfig.DEFAULT
+            }
+        }
+
+        // ===== Search Actions =====
 
         /** Start search mode */
         fun startSearch() {
@@ -207,3 +318,43 @@ class LibraryViewModel
             }
         }
     }
+
+/**
+ * Intermediate data class for combine chain
+ */
+private data class CombinedBase(
+    val vodItems: List<LibraryMediaItem> = emptyList(),
+    val seriesItems: List<LibraryMediaItem> = emptyList(),
+    val vodCategories: List<LibraryCategory> = emptyList(),
+    val seriesCategories: List<LibraryCategory> = emptyList(),
+    val currentTab: LibraryTab = LibraryTab.VOD,
+    val selectedVodCategory: String? = null,
+    val selectedSeriesCategory: String? = null,
+    val isSearchActive: Boolean = false,
+    val searchResults: List<LibraryMediaItem> = emptyList(),
+    val vodSortOption: LibrarySortOption = LibrarySortOption.DEFAULT,
+    val seriesSortOption: LibrarySortOption = LibrarySortOption.DEFAULT,
+    val vodFilterConfig: LibraryFilterConfig = LibraryFilterConfig.DEFAULT,
+    val seriesFilterConfig: LibraryFilterConfig = LibraryFilterConfig.DEFAULT,
+    val availableGenres: Set<String> = emptySet(),
+) {
+    fun toLibraryState(yearRange: Pair<Int, Int>?) =
+        LibraryState(
+            isLoading = false,
+            vodItems = vodItems,
+            seriesItems = seriesItems,
+            vodCategories = vodCategories,
+            seriesCategories = seriesCategories,
+            currentTab = currentTab,
+            selectedVodCategory = selectedVodCategory,
+            selectedSeriesCategory = selectedSeriesCategory,
+            isSearchActive = isSearchActive,
+            searchResults = searchResults,
+            vodSortOption = vodSortOption,
+            seriesSortOption = seriesSortOption,
+            vodFilterConfig = vodFilterConfig,
+            seriesFilterConfig = seriesFilterConfig,
+            availableGenres = availableGenres,
+            yearRange = yearRange,
+        )
+}

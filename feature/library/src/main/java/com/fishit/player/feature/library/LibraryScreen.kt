@@ -48,9 +48,18 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil3.compose.AsyncImage
 import com.fishit.player.core.library.domain.LibraryCategory
+import com.fishit.player.core.library.domain.LibraryFilterConfig
 import com.fishit.player.core.library.domain.LibraryMediaItem
+import com.fishit.player.core.library.domain.LibrarySortDirection
+import com.fishit.player.core.library.domain.LibrarySortField
+import com.fishit.player.core.library.domain.LibrarySortOption
 import com.fishit.player.core.model.ImageRef
 import com.fishit.player.core.model.MediaType
+import com.fishit.player.core.ui.layout.SortFilterBar
+import com.fishit.player.core.ui.layout.UiFilterConfig
+import com.fishit.player.core.ui.layout.UiSortDirection
+import com.fishit.player.core.ui.layout.UiSortField
+import com.fishit.player.core.ui.layout.UiSortOption
 
 /**
  * Library Screen - Browse VOD and Series content.
@@ -130,6 +139,21 @@ fun LibraryScreen(
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                     )
                 }
+
+                // Sort & Filter bar
+                SortFilterBar(
+                    currentSort = state.currentSortOption.toUiSortOption(),
+                    currentFilter = state.currentFilterConfig.toUiFilterConfig(),
+                    availableGenres = state.availableGenres.toList(),
+                    yearRange = state.yearRange?.let { it.first..it.second } ?: (1900..2025),
+                    onSortChanged = { uiSort ->
+                        viewModel.updateSort(uiSort.toLibrarySortOption())
+                    },
+                    onFilterChanged = { uiFilter ->
+                        viewModel.updateFilter(uiFilter.toLibraryFilterConfig())
+                    },
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                )
             }
 
             // Content
@@ -385,3 +409,63 @@ private fun EmptyState(
         }
     }
 }
+
+// ===== Mapping Extensions: Domain ↔ UI =====
+
+/** Convert domain LibrarySortOption to UI UiSortOption */
+private fun LibrarySortOption.toUiSortOption(): UiSortOption =
+    UiSortOption(
+        field =
+            when (field) {
+                LibrarySortField.TITLE -> UiSortField.TITLE
+                LibrarySortField.YEAR -> UiSortField.YEAR
+                LibrarySortField.RATING -> UiSortField.RATING
+                LibrarySortField.RECENTLY_ADDED -> UiSortField.RECENTLY_ADDED
+                LibrarySortField.RECENTLY_UPDATED -> UiSortField.RECENTLY_UPDATED
+                LibrarySortField.DURATION -> UiSortField.DURATION
+            },
+        direction =
+            when (direction) {
+                LibrarySortDirection.ASCENDING -> UiSortDirection.ASCENDING
+                LibrarySortDirection.DESCENDING -> UiSortDirection.DESCENDING
+            },
+    )
+
+/** Convert UI UiSortOption to domain LibrarySortOption */
+private fun UiSortOption.toLibrarySortOption(): LibrarySortOption =
+    LibrarySortOption(
+        field =
+            when (field) {
+                UiSortField.TITLE -> LibrarySortField.TITLE
+                UiSortField.YEAR -> LibrarySortField.YEAR
+                UiSortField.RATING -> LibrarySortField.RATING
+                UiSortField.RECENTLY_ADDED -> LibrarySortField.RECENTLY_ADDED
+                UiSortField.RECENTLY_UPDATED -> LibrarySortField.RECENTLY_UPDATED
+                UiSortField.DURATION -> LibrarySortField.DURATION
+            },
+        direction =
+            when (direction) {
+                UiSortDirection.ASCENDING -> LibrarySortDirection.ASCENDING
+                UiSortDirection.DESCENDING -> LibrarySortDirection.DESCENDING
+            },
+    )
+
+/** Convert domain LibraryFilterConfig to UI UiFilterConfig */
+private fun LibraryFilterConfig.toUiFilterConfig(): UiFilterConfig =
+    UiFilterConfig(
+        hideAdult = hideAdult,
+        selectedGenres = includeGenres ?: emptySet(),
+        excludedGenres = excludeGenres ?: emptySet(),
+        minRating = minRating?.toFloat(),
+        yearRange = yearRange,
+    )
+
+/** Convert UI UiFilterConfig to domain LibraryFilterConfig */
+private fun UiFilterConfig.toLibraryFilterConfig(): LibraryFilterConfig =
+    LibraryFilterConfig(
+        hideAdult = hideAdult,
+        includeGenres = selectedGenres.takeIf { it.isNotEmpty() },
+        excludeGenres = excludedGenres.takeIf { it.isNotEmpty() },
+        minRating = minRating?.toDouble(),
+        yearRange = yearRange,
+    )

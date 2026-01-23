@@ -106,6 +106,84 @@ interface NxWorkRepository {
     ): List<Work>
 
     // ──────────────────────────────────────────────────────────────────────
+    // Advanced Query (Sort/Filter/Search)
+    // ──────────────────────────────────────────────────────────────────────
+
+    /**
+     * Sort field options for content lists.
+     */
+    enum class SortField {
+        TITLE,
+        YEAR,
+        RATING,
+        RECENTLY_ADDED,
+        RECENTLY_UPDATED,
+        DURATION,
+    }
+
+    /**
+     * Sort direction.
+     */
+    enum class SortDirection {
+        ASCENDING,
+        DESCENDING,
+    }
+
+    /**
+     * Query options for advanced content retrieval.
+     */
+    data class QueryOptions(
+        val type: WorkType? = null,
+        val sortField: SortField = SortField.TITLE,
+        val sortDirection: SortDirection = SortDirection.ASCENDING,
+        val hideAdult: Boolean = false,
+        val minRating: Double? = null,
+        val genres: Set<String>? = null,
+        val excludeGenres: Set<String>? = null,
+        val yearRange: IntRange? = null,
+        val limit: Int = 200,
+    )
+
+    /**
+     * Observe works with advanced sorting and filtering.
+     *
+     * @param options Query configuration including sort and filter options
+     * @return Flow of works matching the query
+     */
+    fun observeWithOptions(options: QueryOptions): Flow<List<Work>>
+
+    /**
+     * Advanced search across multiple fields.
+     *
+     * Searches title, plot, cast, and director fields.
+     *
+     * @param query Search text (case-insensitive)
+     * @param options Additional query options for filtering/sorting results
+     * @return List of matching works
+     */
+    suspend fun advancedSearch(
+        query: String,
+        options: QueryOptions = QueryOptions(),
+    ): List<Work>
+
+    /**
+     * Get all unique genres in the database.
+     *
+     * Useful for filter UI population.
+     *
+     * @return Set of unique genre names
+     */
+    suspend fun getAllGenres(): Set<String>
+
+    /**
+     * Get year range of available content.
+     *
+     * @param type Optional content type filter
+     * @return Pair of (minYear, maxYear) or null if no content
+     */
+    suspend fun getYearRange(type: WorkType? = null): Pair<Int, Int>?
+
+    // ──────────────────────────────────────────────────────────────────────
     // Writes (MVP)
     // ──────────────────────────────────────────────────────────────────────
 
