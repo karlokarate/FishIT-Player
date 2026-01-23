@@ -31,10 +31,12 @@ import com.fishit.player.core.model.repository.NxWorkSourceRefRepository
 import com.fishit.player.core.model.repository.NxWorkUserStateRepository
 import com.fishit.player.core.model.userstate.WorkUserState
 import com.fishit.player.infra.logging.UnifiedLog
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.mapLatest
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -64,11 +66,12 @@ class NxHomeContentRepositoryImpl @Inject constructor(
 
     // ==================== Primary Content Methods ====================
 
+    @OptIn(ExperimentalCoroutinesApi::class)
     override fun observeContinueWatching(): Flow<List<HomeMediaItem>> {
         return userStateRepository.observeContinueWatching(
             profileKey = DEFAULT_PROFILE_KEY,
             limit = CONTINUE_WATCHING_LIMIT,
-        ).map { userStates ->
+        ).mapLatest { userStates ->
             userStates.mapNotNull { state ->
                 val work = workRepository.get(state.workKey) ?: return@mapNotNull null
                 val sourceType = determineSourceType(state.workKey)
@@ -84,9 +87,10 @@ class NxHomeContentRepositoryImpl @Inject constructor(
         }
     }
 
+    @OptIn(ExperimentalCoroutinesApi::class)
     override fun observeRecentlyAdded(): Flow<List<HomeMediaItem>> {
         return workRepository.observeRecentlyUpdated(limit = RECENTLY_ADDED_LIMIT)
-            .map { works ->
+            .mapLatest { works ->
                 val now = System.currentTimeMillis()
                 works
                     .filter { it.type != WorkType.EPISODE } // Episodes don't show as standalone tiles
@@ -104,9 +108,10 @@ class NxHomeContentRepositoryImpl @Inject constructor(
             }
     }
 
+    @OptIn(ExperimentalCoroutinesApi::class)
     override fun observeMovies(): Flow<List<HomeMediaItem>> {
         return workRepository.observeByType(WorkType.MOVIE, limit = MOVIES_LIMIT)
-            .map { works ->
+            .mapLatest { works ->
                 works.mapNotNull { work ->
                     val sourceType = determineSourceType(work.workKey)
                     work.toHomeMediaItem(sourceType = sourceType)
@@ -118,9 +123,10 @@ class NxHomeContentRepositoryImpl @Inject constructor(
             }
     }
 
+    @OptIn(ExperimentalCoroutinesApi::class)
     override fun observeSeries(): Flow<List<HomeMediaItem>> {
         return workRepository.observeByType(WorkType.SERIES, limit = SERIES_LIMIT)
-            .map { works ->
+            .mapLatest { works ->
                 works.mapNotNull { work ->
                     val sourceType = determineSourceType(work.workKey)
                     work.toHomeMediaItem(sourceType = sourceType)
@@ -132,9 +138,10 @@ class NxHomeContentRepositoryImpl @Inject constructor(
             }
     }
 
+    @OptIn(ExperimentalCoroutinesApi::class)
     override fun observeClips(): Flow<List<HomeMediaItem>> {
         return workRepository.observeByType(WorkType.CLIP, limit = CLIPS_LIMIT)
-            .map { works ->
+            .mapLatest { works ->
                 works.mapNotNull { work ->
                     val sourceType = determineSourceType(work.workKey)
                     work.toHomeMediaItem(sourceType = sourceType)
@@ -146,9 +153,10 @@ class NxHomeContentRepositoryImpl @Inject constructor(
             }
     }
 
+    @OptIn(ExperimentalCoroutinesApi::class)
     override fun observeXtreamLive(): Flow<List<HomeMediaItem>> {
         return workRepository.observeByType(WorkType.LIVE_CHANNEL, limit = LIVE_LIMIT)
-            .map { works ->
+            .mapLatest { works ->
                 works.mapNotNull { work ->
                     work.toHomeMediaItem(sourceType = SourceType.XTREAM)
                 }
@@ -190,13 +198,25 @@ class NxHomeContentRepositoryImpl @Inject constructor(
 
     /**
      * Map NX_Work to HomeMediaItem.
+     * Loads all source types from NX_WorkSourceRef to populate sourceTypes list.
      */
-    private fun Work.toHomeMediaItem(
+    private suspend fun Work.toHomeMediaItem(
         sourceType: SourceType,
         resumePosition: Long = 0L,
         duration: Long = runtimeMs ?: 0L,
         isNew: Boolean = false,
     ): HomeMediaItem {
+        // Load all source types for this work
+        val sourceRefs = sourceRefRepository.findByWorkKey(workKey)
+        val allSourceTypes = sourceRefs.mapNotNull { ref ->
+            when (ref.sourceType) {
+                NxWorkSourceRefRepository.SourceType.XTREAM -> SourceType.XTREAM
+                NxWorkSourceRefRepository.SourceType.TELEGRAM -> SourceType.TELEGRAM
+                NxWorkSourceRefRepository.SourceType.IO -> SourceType.IO
+                else -> null
+            }
+        }.distinct().ifEmpty { listOf(sourceType) }
+
         return HomeMediaItem(
             id = workKey,
             title = displayTitle,
@@ -205,7 +225,7 @@ class NxHomeContentRepositoryImpl @Inject constructor(
             backdrop = backdropRef?.let { parseImageRef(it) },
             mediaType = mapWorkTypeToMediaType(type),
             sourceType = sourceType,
-            sourceTypes = listOf(sourceType), // TODO: Expand from source refs
+            sourceTypes = allSourceTypes, // All sources for this work (multi-source variants)
             resumePosition = resumePosition,
             duration = duration,
             isNew = isNew,

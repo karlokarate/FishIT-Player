@@ -103,4 +103,47 @@ data class NormalizedMediaMetadata(
      * May be a YouTube URL or video ID. May be enriched by TMDB resolver.
      */
     val trailer: String? = null,
+    /**
+     * Release date passed through from source (ISO format: "2014-09-21").
+     *
+     * Useful for sorting and display.
+     */
+    val releaseDate: String? = null,
+    // === Content Classification Fields (v2) ===
+    /**
+     * Adult content flag passed through from source.
+     *
+     * Used for kids profile filtering and parental controls.
+     */
+    val isAdult: Boolean = false,
+    /**
+     * Category ID passed through from source.
+     *
+     * Used to link content to categories in NX_WorkCategoryRef.
+     */
+    val categoryId: String? = null,
+    // === Live Channel Fields (v2) ===
+    /**
+     * EPG channel ID for live TV guide integration.
+     *
+     * Used to match channels with external EPG data sources.
+     */
+    val epgChannelId: String? = null,
+    /**
+     * Catchup/timeshift availability indicator.
+     *
+     * 0 = no catchup, 1+ = catchup available.
+     */
+    val tvArchive: Int = 0,
+    /**
+     * Catchup/timeshift duration in days.
+     */
+    val tvArchiveDuration: Int = 0,
+    // === Timing Fields (v2) ===
+    /**
+     * Unix epoch timestamp (seconds) when this item was added to the source.
+     *
+     * Used for "Recently Added" sorting and new content discovery.
+     */
+    val addedTimestamp: Long? = null,
 )

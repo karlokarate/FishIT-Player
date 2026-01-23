@@ -152,6 +152,8 @@ private fun XtreamVodStream.toPipelineItem(): XtreamVodItem =
         genre = genre,
         plot = plot,
         duration = duration,
+        // Adult content flag ("1" = adult, else = not adult)
+        isAdult = isAdult == "1",
     )
 
 private fun XtreamSeriesStream.toPipelineItem(): XtreamSeriesItem =
@@ -176,6 +178,8 @@ private fun XtreamSeriesStream.toPipelineItem(): XtreamSeriesItem =
         youtubeTrailer = youtubeTrailer?.takeIf { it.isNotBlank() },
         episodeRunTime = episodeRunTime,
         lastModified = lastModified?.toLongOrNull(),
+        // Adult content flag ("1" = adult, else = not adult)
+        isAdult = isAdult == "1",
     )
 
 private fun XtreamLiveStream.toPipelineItem(): XtreamChannel =
@@ -188,6 +192,8 @@ private fun XtreamLiveStream.toPipelineItem(): XtreamChannel =
         tvArchiveDuration = tvArchiveDuration ?: 0,
         categoryId = categoryId,
         added = added?.toLongOrNull(),
+        // Adult content flag ("1" = adult, else = not adult)
+        isAdult = isAdult == "1",
     )
 
 private fun XtreamSeriesInfo.toEpisodes(

@@ -560,7 +560,7 @@ class NxCanonicalMediaRepositoryImpl @Inject constructor(
             genres = work.genres,
             director = work.director,
             cast = work.cast,
-            trailer = null, // NX_Work doesn't store trailer
+            trailer = work.trailer,
             sources = sources,
         )
     }

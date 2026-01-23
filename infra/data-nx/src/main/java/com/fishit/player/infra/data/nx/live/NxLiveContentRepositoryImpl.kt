@@ -29,10 +29,12 @@ import com.fishit.player.core.model.repository.NxWorkRepository.WorkType
 import com.fishit.player.core.model.repository.NxWorkSourceRefRepository
 import com.fishit.player.core.model.repository.NxWorkUserStateRepository
 import com.fishit.player.infra.logging.UnifiedLog
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.mapLatest
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -58,11 +60,14 @@ class NxLiveContentRepositoryImpl @Inject constructor(
 
     // ==================== Channel Content ====================
 
+    @OptIn(ExperimentalCoroutinesApi::class)
     override fun observeChannels(categoryId: String?): Flow<List<LiveChannel>> {
         return combine(
             workRepository.observeByType(WorkType.LIVE_CHANNEL, limit = CHANNELS_LIMIT),
             userStateRepository.observeFavorites(DEFAULT_PROFILE_KEY, limit = FAVORITES_LIMIT),
         ) { works, favoriteStates ->
+            works to favoriteStates
+        }.mapLatest { (works, favoriteStates) ->
             val favoriteWorkKeys = favoriteStates.map { it.workKey }.toSet()
             works.mapNotNull { work ->
                 val sourceType = determineSourceType(work.workKey)
@@ -151,9 +156,10 @@ class NxLiveContentRepositoryImpl @Inject constructor(
 
     // ==================== Favorites ====================
 
+    @OptIn(ExperimentalCoroutinesApi::class)
     override fun observeFavorites(): Flow<List<LiveChannel>> {
         return userStateRepository.observeFavorites(DEFAULT_PROFILE_KEY, limit = FAVORITES_LIMIT)
-            .map { favoriteStates ->
+            .mapLatest { favoriteStates ->
                 favoriteStates.mapNotNull { state ->
                     val work = workRepository.get(state.workKey)
                     if (work?.type == WorkType.LIVE_CHANNEL) {
@@ -200,11 +206,15 @@ class NxLiveContentRepositoryImpl @Inject constructor(
 
     // ==================== Mapping Helpers ====================
 
-    private fun Work.toLiveChannel(
+    private suspend fun Work.toLiveChannel(
         sourceType: SourceType,
         isFavorite: Boolean = false,
         lastWatched: Long? = null,
     ): LiveChannel {
+        // Get source ref for EPG/Catchup data
+        val sourceRefs = sourceRefRepository.findByWorkKey(workKey)
+        val primarySource = sourceRefs.firstOrNull()
+        
         return LiveChannel(
             id = workKey,
             name = displayTitle,
@@ -219,6 +229,11 @@ class NxLiveContentRepositoryImpl @Inject constructor(
             sourceType = sourceType,
             isFavorite = isFavorite,
             lastWatched = lastWatched,
+            // EPG/Catchup from source ref
+            epgChannelId = primarySource?.epgChannelId,
+            hasCatchup = (primarySource?.tvArchive ?: 0) > 0,
+            catchupDays = primarySource?.tvArchiveDuration ?: 0,
+            isAdult = isAdult,
         )
     }
 

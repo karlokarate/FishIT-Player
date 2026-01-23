@@ -54,6 +54,25 @@ interface NxWorkRepository {
         val rating: Double? = null, // 0..10 if present
         val genres: String? = null,
         val plot: String? = null,
+        /**
+         * Director name(s) from metadata.
+         * May be comma-separated for multiple directors.
+         */
+        val director: String? = null,
+        /**
+         * Cast list from metadata.
+         * Comma-separated list of actor names.
+         */
+        val cast: String? = null,
+        /**
+         * YouTube trailer URL or video ID.
+         * May be a full URL (https://youtube.com/watch?v=xxx) or just the video ID.
+         */
+        val trailer: String? = null,
+        /**
+         * Adult content flag for parental controls.
+         */
+        val isAdult: Boolean = false,
         val recognitionState: RecognitionState = RecognitionState.HEURISTIC,
         val createdAtMs: Long = 0L,
         val updatedAtMs: Long = 0L,

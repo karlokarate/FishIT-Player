@@ -77,6 +77,16 @@ class RegexMediaMetadataNormalizer(
             rating = raw.rating,
             durationMs = raw.durationMs,
             trailer = raw.trailer,
+            releaseDate = raw.releaseDate,
+            // === Pass through content classification ===
+            isAdult = raw.isAdult,
+            categoryId = raw.categoryId,
+            // === Pass through live channel fields ===
+            epgChannelId = raw.epgChannelId,
+            tvArchive = raw.tvArchive,
+            tvArchiveDuration = raw.tvArchiveDuration,
+            // === Pass through timing ===
+            addedTimestamp = raw.addedTimestamp,
         )
     }
 }

@@ -20,6 +20,15 @@ data class LiveChannel(
     val sourceType: SourceType,
     val isFavorite: Boolean = false,
     val lastWatched: Long? = null,
+    // === EPG/Catchup Support ===
+    /** EPG channel ID for program guide integration */
+    val epgChannelId: String? = null,
+    /** TV archive/catchup flag: true if catchup is available */
+    val hasCatchup: Boolean = false,
+    /** TV archive duration in days (catchup window) */
+    val catchupDays: Int = 0,
+    /** Adult content flag for parental controls */
+    val isAdult: Boolean = false,
 )
 
 data class LiveCategory(

@@ -411,6 +411,14 @@ class UnifiedDetailViewModel
             _state.update { it.copy(showSourcePicker = false) }
         }
 
+        /** Open trailer in YouTube or WebView. */
+        fun openTrailer() {
+            val trailer = _state.value.media?.trailer?.takeIf { it.isNotBlank() } ?: return
+            viewModelScope.launch {
+                _events.emit(UnifiedDetailEvent.OpenTrailer(trailer))
+            }
+        }
+
         /** Clear resume position. */
         fun clearResume() {
             val media = _state.value.media ?: return
@@ -817,6 +825,10 @@ data class UnifiedDetailState(
     /** Quality label for active source (derived) */
     val activeSourceQualityLabel: String?
         get() = activeSource?.quality?.toDisplayLabel()
+
+    /** YouTube trailer URL (if available) */
+    val trailer: String?
+        get() = media?.trailer?.takeIf { it.isNotBlank() }
 }
 
 /** Events from unified detail screen. */
@@ -844,6 +856,15 @@ sealed class UnifiedDetailEvent {
 
     data class ShowError(
         val message: String,
+    ) : UnifiedDetailEvent()
+
+    /**
+     * Open trailer in YouTube or WebView.
+     *
+     * @property trailerUrl YouTube URL or ID to open
+     */
+    data class OpenTrailer(
+        val trailerUrl: String,
     ) : UnifiedDetailEvent()
 }
 

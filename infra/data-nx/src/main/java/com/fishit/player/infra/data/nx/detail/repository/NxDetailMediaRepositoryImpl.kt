@@ -306,7 +306,7 @@ class NxDetailMediaRepositoryImpl @Inject constructor(
             genres = work.genres,
             director = work.director,
             cast = work.cast,
-            trailer = null, // TODO: Add trailer to NX_Work if needed
+            trailer = work.trailer,
             isAdult = work.isAdult,
             sources = sources,
         )

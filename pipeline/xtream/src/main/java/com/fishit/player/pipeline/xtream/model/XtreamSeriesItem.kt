@@ -47,6 +47,12 @@ data class XtreamSeriesItem(
      * Episodes inherit this from the parent series.
      */
     val tmdbId: Int? = null,
+    /**
+     * Adult content flag from provider.
+     *
+     * Xtream provides this from API (is_adult field as "1" or "0" string).
+     */
+    val isAdult: Boolean = false,
 ) {
     /**
      * Validates if the series ID is valid. Some Xtream panels return negative IDs - we treat them

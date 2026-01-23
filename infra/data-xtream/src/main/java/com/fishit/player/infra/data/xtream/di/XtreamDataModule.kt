@@ -1,13 +1,7 @@
 package com.fishit.player.infra.data.xtream.di
 
 import com.fishit.player.core.detail.domain.XtreamSeriesIndexRefresher
-import com.fishit.player.infra.data.xtream.ObxXtreamCatalogRepository
-import com.fishit.player.infra.data.xtream.ObxXtreamLiveRepository
-import com.fishit.player.infra.data.xtream.ObxXtreamSeriesIndexRepository
-import com.fishit.player.infra.data.xtream.XtreamCatalogRepository
-import com.fishit.player.infra.data.xtream.XtreamLiveRepository
 import com.fishit.player.infra.data.xtream.XtreamSeriesIndexRefresherImpl
-import com.fishit.player.infra.data.xtream.XtreamSeriesIndexRepository
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -27,31 +21,39 @@ import javax.inject.Singleton
  *
  * **Dependencies:**
  * - Requires BoxStore from core:persistence module
+ *
+ * ## NX Migration Status (Jan 2026)
+ * The following bindings have been migrated to NxDataModule:
+ * - XtreamCatalogRepository → NxXtreamCatalogRepositoryImpl
+ * - XtreamLiveRepository → NxXtreamLiveRepositoryImpl
+ * - XtreamSeriesIndexRepository → NxXtreamSeriesIndexRepository
+ *
+ * Only XtreamSeriesIndexRefresher remains here (depends on transport, not NX).
  */
 @Module
 @InstallIn(SingletonComponent::class)
 abstract class XtreamDataModule {
-    /**
-     * Binds [ObxXtreamCatalogRepository] as the implementation for [XtreamCatalogRepository].
-     *
-     * Handles VOD, Series, and Episodes persistence using ObjectBox entities:
-     * - ObxVod for movies
-     * - ObxSeries for series metadata
-     * - ObxEpisode for individual episodes
-     */
-    @Binds
-    @Singleton
-    abstract fun bindXtreamCatalogRepository(impl: ObxXtreamCatalogRepository): XtreamCatalogRepository
+    // NOTE: XtreamCatalogRepository binding has been migrated to NxDataModule.
+    // The NX implementation (NxXtreamCatalogRepositoryImpl) reads from NX_Work + NX_WorkSourceRef.
+    // See: infra/data-nx/src/main/java/.../xtream/NxXtreamCatalogRepositoryImpl.kt
 
-    /**
-     * Binds [ObxXtreamLiveRepository] as the implementation for [XtreamLiveRepository].
-     *
-     * Handles Live channel persistence using ObjectBox entity:
-     * - ObxLive for live streams
-     */
-    @Binds
-    @Singleton
-    abstract fun bindXtreamLiveRepository(impl: ObxXtreamLiveRepository): XtreamLiveRepository
+    // /**
+    //  * @deprecated Replaced by NxXtreamCatalogRepositoryImpl in infra:data-nx.
+    //  */
+    // @Binds
+    // @Singleton
+    // abstract fun bindXtreamCatalogRepository(impl: ObxXtreamCatalogRepository): XtreamCatalogRepository
+
+    // NOTE: XtreamLiveRepository binding has been migrated to NxDataModule.
+    // The NX implementation (NxXtreamLiveRepositoryImpl) reads from NX_Work + NX_WorkSourceRef.
+    // See: infra/data-nx/src/main/java/.../xtream/NxXtreamLiveRepositoryImpl.kt
+
+    // /**
+    //  * @deprecated Replaced by NxXtreamLiveRepositoryImpl in infra:data-nx.
+    //  */
+    // @Binds
+    // @Singleton
+    // abstract fun bindXtreamLiveRepository(impl: ObxXtreamLiveRepository): XtreamLiveRepository
 
     // ========== Feature Layer Repository Bindings ==========
     // NOTE: These bindings have been migrated to NxDataModule (NX-based implementations).

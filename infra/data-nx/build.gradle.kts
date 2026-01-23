@@ -34,6 +34,9 @@ dependencies {
     implementation(project(":core:telegrammedia-domain"))
     implementation(project(":infra:logging"))
 
+    // Data layer dependencies (for repository interfaces)
+    implementation(project(":infra:data-xtream"))
+
     // Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")

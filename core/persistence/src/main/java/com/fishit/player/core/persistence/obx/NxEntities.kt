@@ -130,6 +130,8 @@ data class NX_Work(
     var director: String? = null,
     var cast: String? = null,
     var releaseDate: String? = null,
+    /** YouTube trailer URL or ID */
+    var trailer: String? = null,
     // === Classification ===
     /** True if classification was UNKNOWN and needs manual review */
     var needsReview: Boolean = false,
@@ -199,6 +201,13 @@ data class NX_WorkSourceRef(
     var xtreamStreamId: Int? = null,
     /** Xtream category ID */
     var xtreamCategoryId: Int? = null,
+    // === Live Channel Specific (EPG/Catchup) ===
+    /** EPG channel ID for program guide integration */
+    var epgChannelId: String? = null,
+    /** TV archive flag: 0=no catchup, 1=catchup available */
+    var tvArchive: Int = 0,
+    /** TV archive duration in days (catchup window) */
+    var tvArchiveDuration: Int = 0,
     // === Timestamps ===
     var discoveredAt: Long = System.currentTimeMillis(),
     var lastSeenAt: Long = System.currentTimeMillis(),

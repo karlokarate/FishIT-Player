@@ -149,6 +149,50 @@ data class RawMediaMetadata(
      * video ID.
      */
     val trailer: String? = null,
+    /**
+     * Release date from source (ISO format: "2014-09-21").
+     *
+     * Xtream provides this for series. Useful for sorting and display.
+     */
+    val releaseDate: String? = null,
+    // === Content Classification Fields (v2) ===
+    /**
+     * Adult content flag from source.
+     *
+     * Xtream provides this from API (is_adult field). Used for:
+     * - Kids profile content filtering
+     * - Adult content warnings
+     * - Parental controls
+     */
+    val isAdult: Boolean = false,
+    /**
+     * Category ID from source for category-based filtering.
+     *
+     * Xtream provides this from API (category_id field). Used to link content to categories.
+     * Maps to NX_WorkCategoryRef in the work graph.
+     */
+    val categoryId: String? = null,
+    // === Live Channel Fields (v2) ===
+    /**
+     * EPG channel ID for live TV guide integration.
+     *
+     * Xtream provides this from API (epg_channel_id field). Used to match channels
+     * with external EPG data sources.
+     */
+    val epgChannelId: String? = null,
+    /**
+     * Catchup/timeshift availability indicator.
+     *
+     * 0 = no catchup, 1+ = catchup available. Xtream provides this from API (tv_archive field).
+     */
+    val tvArchive: Int = 0,
+    /**
+     * Catchup/timeshift duration in days.
+     *
+     * Xtream provides this from API (tv_archive_duration field). Indicates how many days
+     * of past programming are available for replay.
+     */
+    val tvArchiveDuration: Int = 0,
     // === Playback Hints (v2) ===
     /**
      * Source-specific hints required for playback but NOT part of media identity.

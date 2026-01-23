@@ -51,7 +51,11 @@ import com.fishit.player.infra.data.nx.repository.NxWorkUserStateRepositoryImpl
 import com.fishit.player.infra.data.nx.repository.NxWorkVariantDiagnosticsImpl
 import com.fishit.player.infra.data.nx.repository.NxWorkVariantRepositoryImpl
 import com.fishit.player.infra.data.nx.telegram.NxTelegramMediaRepositoryImpl
+import com.fishit.player.infra.data.nx.xtream.NxXtreamCatalogRepositoryImpl
+import com.fishit.player.infra.data.nx.xtream.NxXtreamLiveRepositoryImpl
 import com.fishit.player.infra.data.nx.xtream.NxXtreamSeriesIndexRepository
+import com.fishit.player.infra.data.xtream.XtreamCatalogRepository
+import com.fishit.player.infra.data.xtream.XtreamLiveRepository
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -327,6 +331,44 @@ abstract class NxDataModule {
     abstract fun bindXtreamSeriesIndexRepository(
         impl: NxXtreamSeriesIndexRepository,
     ): XtreamSeriesIndexRepository
+
+    /**
+     * Binds the NX-based XtreamCatalogRepository implementation.
+     *
+     * This replaces the legacy ObxXtreamCatalogRepository from infra:data-xtream.
+     * The XtreamDataModule binding MUST be removed to avoid duplicate bindings.
+     *
+     * ## Architecture Note
+     * The NX implementation reads from:
+     * - NX_Work (workType=MOVIE/SERIES/EPISODE) for media entries
+     * - NX_WorkSourceRef (sourceType=XTREAM) for source mapping
+     *
+     * Write operations delegate to NxCatalogWriter via CatalogSyncService.
+     */
+    @Binds
+    @Singleton
+    abstract fun bindXtreamCatalogRepository(
+        impl: NxXtreamCatalogRepositoryImpl,
+    ): XtreamCatalogRepository
+
+    /**
+     * Binds the NX-based XtreamLiveRepository implementation.
+     *
+     * This replaces the legacy ObxXtreamLiveRepository from infra:data-xtream.
+     * The XtreamDataModule binding MUST be removed to avoid duplicate bindings.
+     *
+     * ## Architecture Note
+     * The NX implementation reads from:
+     * - NX_Work (workType=LIVE_CHANNEL) for live channels
+     * - NX_WorkSourceRef (sourceType=XTREAM) for source mapping
+     *
+     * Write operations delegate to NxCatalogWriter via CatalogSyncService.
+     */
+    @Binds
+    @Singleton
+    abstract fun bindXtreamLiveRepository(
+        impl: NxXtreamLiveRepositoryImpl,
+    ): XtreamLiveRepository
 
     // ────────────────────────────────────────────────────────────────────
     // Canonical Media Repository (NX-based implementation)

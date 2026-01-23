@@ -61,6 +61,8 @@ class NxCatalogWriter @Inject constructor(
     ): String? {
         return try {
             val now = System.currentTimeMillis()
+            // Use addedTimestamp from API if available, otherwise use current time
+            val createdAt = normalized.addedTimestamp?.takeIf { it > 0 } ?: now
 
             // 1. Create/update the canonical work
             val workKey = buildWorkKey(normalized)
@@ -77,12 +79,16 @@ class NxCatalogWriter @Inject constructor(
                 rating = normalized.rating,
                 genres = normalized.genres,
                 plot = normalized.plot,
+                director = normalized.director,
+                cast = normalized.cast,
+                trailer = normalized.trailer,
+                isAdult = normalized.isAdult,
                 recognitionState = if (normalized.tmdb != null) {
                     NxWorkRepository.RecognitionState.CONFIRMED
                 } else {
                     NxWorkRepository.RecognitionState.HEURISTIC
                 },
-                createdAtMs = now,
+                createdAtMs = createdAt,
                 updatedAtMs = now,
             )
             workRepository.upsert(work)
@@ -101,6 +107,10 @@ class NxCatalogWriter @Inject constructor(
                 firstSeenAtMs = now,
                 lastSeenAtMs = now,
                 availability = NxWorkSourceRefRepository.AvailabilityState.ACTIVE,
+                // Live channel specific (EPG/Catchup)
+                epgChannelId = raw.epgChannelId,
+                tvArchive = raw.tvArchive,
+                tvArchiveDuration = raw.tvArchiveDuration,
             )
             sourceRefRepository.upsert(sourceRef)
 

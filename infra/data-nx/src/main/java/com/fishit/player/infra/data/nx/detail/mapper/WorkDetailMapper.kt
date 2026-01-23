@@ -85,7 +85,7 @@ class WorkDetailMapper @Inject constructor() {
             genres = work.genres,
             director = work.director,
             cast = work.cast,
-            trailer = null, // TODO: Add trailer field to NX_Work if needed
+            trailer = work.trailer,
             sources = sortedSources,
         )
     }

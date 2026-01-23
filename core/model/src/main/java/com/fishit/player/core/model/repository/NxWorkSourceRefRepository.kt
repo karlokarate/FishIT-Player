@@ -52,6 +52,13 @@ interface NxWorkSourceRefRepository {
         val lastSeenAtMs: Long = 0L,
         val availability: AvailabilityState = AvailabilityState.ACTIVE,
         val note: String? = null,
+        // === Live Channel Specific (EPG/Catchup) ===
+        /** EPG channel ID for program guide integration */
+        val epgChannelId: String? = null,
+        /** TV archive flag: 0=no catchup, 1=catchup available */
+        val tvArchive: Int = 0,
+        /** TV archive duration in days (catchup window) */
+        val tvArchiveDuration: Int = 0,
     )
 
     // ──────────────────────────────────────────────────────────────────────

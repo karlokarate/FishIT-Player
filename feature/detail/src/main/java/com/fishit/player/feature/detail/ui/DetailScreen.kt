@@ -20,6 +20,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.Hd
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.PlayCircle
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Timelapse
@@ -131,6 +132,7 @@ fun DetailScreen(
                     onPlay = { if (state.isLive) viewModel.playLive() else viewModel.play() },
                     onResume = viewModel::resume,
                     onPlayFromStart = viewModel::playFromStart,
+                    onTrailer = viewModel::openTrailer,
                     onShowSourcePicker = viewModel::showSourcePicker,
                     onSelectSource = viewModel::selectSource,
                     onSeasonSelected = viewModel::selectSeason,
@@ -149,6 +151,7 @@ private fun DetailContent(
     onPlay: () -> Unit,
     onResume: () -> Unit,
     onPlayFromStart: () -> Unit,
+    onTrailer: () -> Unit,
     onShowSourcePicker: () -> Unit,
     onSelectSource: (MediaSourceRef) -> Unit,
     onSeasonSelected: (Int) -> Unit,
@@ -281,9 +284,11 @@ private fun DetailContent(
                 mediaType = state.effectiveMediaType,
                 canResume = state.canResume && !state.isLive,
                 resumeProgress = state.resumeProgressPercent,
+                hasTrailer = state.trailer != null,
                 onPlay = onPlay,
                 onResume = onResume,
                 onPlayFromStart = onPlayFromStart,
+                onTrailer = onTrailer,
             )
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -567,9 +572,11 @@ private fun ActionButtonsRow(
     mediaType: MediaType,
     canResume: Boolean,
     resumeProgress: Int,
+    hasTrailer: Boolean,
     onPlay: () -> Unit,
     onResume: () -> Unit,
     onPlayFromStart: () -> Unit,
+    onTrailer: () -> Unit,
 ) {
     // Determine button label based on media type
     val playLabel =
@@ -580,38 +587,53 @@ private fun ActionButtonsRow(
             else -> "Play"
         }
 
-    Row(horizontalArrangement = Arrangement.spacedBy(16.dp), modifier = Modifier.fillMaxWidth()) {
-        if (canResume) {
-            // Resume button (primary)
-            Button(
-                onClick = onResume,
-                colors = ButtonDefaults.buttonColors(containerColor = FishColors.Primary),
-                modifier = Modifier.weight(1f).height(56.dp),
-            ) {
-                Icon(Icons.Default.Refresh, contentDescription = null)
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Resume ($resumeProgress%)")
-            }
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        // Primary action row
+        Row(horizontalArrangement = Arrangement.spacedBy(16.dp), modifier = Modifier.fillMaxWidth()) {
+            if (canResume) {
+                // Resume button (primary)
+                Button(
+                    onClick = onResume,
+                    colors = ButtonDefaults.buttonColors(containerColor = FishColors.Primary),
+                    modifier = Modifier.weight(1f).height(56.dp),
+                ) {
+                    Icon(Icons.Default.Refresh, contentDescription = null)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Resume ($resumeProgress%)")
+                }
 
-            // Play from start (secondary)
-            OutlinedButton(
-                onClick = onPlayFromStart,
-                modifier = Modifier.weight(1f).height(56.dp),
-            ) {
-                Icon(Icons.Default.PlayArrow, contentDescription = null)
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Start Over")
+                // Play from start (secondary)
+                OutlinedButton(
+                    onClick = onPlayFromStart,
+                    modifier = Modifier.weight(1f).height(56.dp),
+                ) {
+                    Icon(Icons.Default.PlayArrow, contentDescription = null)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Start Over")
+                }
+            } else {
+                // Single play button
+                Button(
+                    onClick = onPlay,
+                    colors = ButtonDefaults.buttonColors(containerColor = FishColors.Primary),
+                    modifier = Modifier.fillMaxWidth().height(56.dp),
+                ) {
+                    Icon(Icons.Default.PlayArrow, contentDescription = null)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(playLabel)
+                }
             }
-        } else {
-            // Single play button
-            Button(
-                onClick = onPlay,
-                colors = ButtonDefaults.buttonColors(containerColor = FishColors.Primary),
-                modifier = Modifier.fillMaxWidth().height(56.dp),
+        }
+
+        // Trailer button (shown below primary actions when available)
+        if (hasTrailer) {
+            OutlinedButton(
+                onClick = onTrailer,
+                modifier = Modifier.fillMaxWidth().height(48.dp),
             ) {
-                Icon(Icons.Default.PlayArrow, contentDescription = null)
+                Icon(Icons.Default.PlayCircle, contentDescription = null)
                 Spacer(modifier = Modifier.width(8.dp))
-                Text(playLabel)
+                Text("Watch Trailer")
             }
         }
     }

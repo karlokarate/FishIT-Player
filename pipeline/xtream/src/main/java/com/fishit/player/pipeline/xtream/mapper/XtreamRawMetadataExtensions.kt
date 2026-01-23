@@ -159,6 +159,9 @@ fun XtreamVodItem.toRawMediaMetadata(authHeaders: Map<String, String> = emptyMap
         // === Rich metadata (v2) - from provider TMDB scraping ===
         plot = plot,
         genres = genre, // Xtream uses "genre" singular
+        // === Content Classification (v2) ===
+        isAdult = isAdult,
+        categoryId = categoryId,
     )
 }
 
@@ -199,13 +202,18 @@ fun XtreamSeriesItem.toRawMediaMetadata(authHeaders: Map<String, String> = empty
         rating = rating,
         // === ImageRef from XtreamImageRefExtensions ===
         poster = toPosterImageRef(authHeaders),
-        backdrop = null, // Series list doesn't provide backdrop
+        backdrop = toBackdropImageRef(authHeaders), // Series provides backdrop from API
         thumbnail = null,
         // === Rich metadata (v2) - from provider TMDB scraping ===
         plot = plot,
         genres = genre, // Xtream uses "genre" singular
         director = director,
         cast = cast,
+        releaseDate = releaseDate, // ISO format: "2014-09-21"
+        trailer = youtubeTrailer, // YouTube trailer URL/ID
+        // === Content Classification (v2) ===
+        isAdult = isAdult,
+        categoryId = categoryId,
     )
 }
 
@@ -321,6 +329,13 @@ fun XtreamChannel.toRawMediaMetadata(authHeaders: Map<String, String> = emptyMap
         thumbnail = toLogoImageRef(authHeaders), // Thumbnail same as logo
         // === Playback Hints (v2) ===
         playbackHints = hints,
+        // === Content Classification (v2) ===
+        isAdult = isAdult,
+        categoryId = categoryId,
+        // === Live Channel Fields (v2) ===
+        epgChannelId = epgChannelId,
+        tvArchive = tvArchive,
+        tvArchiveDuration = tvArchiveDuration,
     )
 }
 

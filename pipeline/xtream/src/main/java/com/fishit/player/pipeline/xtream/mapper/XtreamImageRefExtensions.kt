@@ -63,6 +63,24 @@ fun XtreamSeriesItem.toPosterImageRef(authHeaders: Map<String, String> = emptyMa
     )
 }
 
+/**
+ * Extract backdrop ImageRef from series item.
+ *
+ * Uses the `backdrop_path` field from the Xtream API (typically a TMDB backdrop URL).
+ *
+ * @param authHeaders Optional headers for panel authentication
+ * @return ImageRef.Http or null if no backdrop URL available
+ */
+fun XtreamSeriesItem.toBackdropImageRef(authHeaders: Map<String, String> = emptyMap()): ImageRef? {
+    val url = backdrop?.takeIf { it.isNotBlank() && it.isValidImageUrl() } ?: return null
+    return ImageRef.Http(
+        url = url,
+        headers = XtreamHttpHeaders.withDefaults(authHeaders),
+        preferredWidth = 1280, // Backdrop width hint (HD)
+        preferredHeight = 720, // Backdrop height hint (16:9 aspect)
+    )
+}
+
 // =============================================================================
 // Episode Extensions
 // =============================================================================

@@ -36,4 +36,10 @@ data class XtreamVodItem(
     val genre: String? = null,
     val plot: String? = null,
     val duration: String? = null,
+    /**
+     * Adult content flag from provider.
+     *
+     * Xtream provides this from API (is_adult field as "1" or "0" string).
+     */
+    val isAdult: Boolean = false,
 )
