@@ -40,9 +40,16 @@ abstract class PersistenceModule {
     @Singleton
     abstract fun bindScreenTimeRepository(impl: ObxScreenTimeRepository): ScreenTimeRepository
 
-    @Binds
-    @Singleton
-    abstract fun bindCanonicalMediaRepository(impl: ObxCanonicalMediaRepository): CanonicalMediaRepository
+    // ────────────────────────────────────────────────────────────────────
+    // ⚠️ MIGRATED TO NX: CanonicalMediaRepository binding moved to NxDataModule
+    // The NX implementation (NxCanonicalMediaRepositoryImpl) is now the SSOT.
+    // See: infra/data-nx/src/main/java/.../di/NxDataModule.kt
+    //
+    // Old binding (REMOVED - DO NOT UNCOMMENT):
+    // @Binds
+    // @Singleton
+    // abstract fun bindCanonicalMediaRepository(impl: ObxCanonicalMediaRepository): CanonicalMediaRepository
+    // ────────────────────────────────────────────────────────────────────
 
     // Debug / power-user tooling
     @Binds

@@ -1,9 +1,11 @@
 package com.fishit.player.infra.data.nx.di
 
+import com.fishit.player.core.detail.domain.NxDetailMediaRepository
 import com.fishit.player.core.detail.domain.XtreamSeriesIndexRepository
 import com.fishit.player.core.home.domain.HomeContentRepository
 import com.fishit.player.core.library.domain.LibraryContentRepository
 import com.fishit.player.core.live.domain.LiveContentRepository
+import com.fishit.player.core.model.repository.CanonicalMediaRepository
 import com.fishit.player.core.model.repository.NxCloudOutboxRepository
 import com.fishit.player.core.model.repository.NxIngestLedgerRepository
 import com.fishit.player.core.model.repository.NxProfileRepository
@@ -36,6 +38,8 @@ import com.fishit.player.infra.data.nx.repository.NxSourceAccountRepositoryImpl
 import com.fishit.player.infra.data.nx.repository.NxWorkAuthorityRepositoryImpl
 import com.fishit.player.infra.data.nx.repository.NxWorkDiagnosticsImpl
 import com.fishit.player.infra.data.nx.repository.NxWorkEmbeddingRepositoryImpl
+import com.fishit.player.infra.data.nx.detail.repository.NxDetailMediaRepositoryImpl
+import com.fishit.player.infra.data.nx.canonical.NxCanonicalMediaRepositoryImpl
 import com.fishit.player.infra.data.nx.repository.NxWorkRedirectRepositoryImpl
 import com.fishit.player.infra.data.nx.repository.NxWorkRelationRepositoryImpl
 import com.fishit.player.infra.data.nx.repository.NxWorkRepositoryImpl
@@ -323,4 +327,53 @@ abstract class NxDataModule {
     abstract fun bindXtreamSeriesIndexRepository(
         impl: NxXtreamSeriesIndexRepository,
     ): XtreamSeriesIndexRepository
+
+    // ────────────────────────────────────────────────────────────────────
+    // Canonical Media Repository (NX-based implementation)
+    // ────────────────────────────────────────────────────────────────────
+
+    /**
+     * Binds the NX-based CanonicalMediaRepository implementation.
+     *
+     * ⚠️ MIGRATION NOTE: This replaces the legacy ObxCanonicalMediaRepository
+     * from infra:data-obx. The PersistenceModule binding MUST be removed
+     * to avoid duplicate Hilt bindings.
+     *
+     * ## Architecture Note
+     * The NX implementation maps CanonicalMediaRepository operations to:
+     * - NX_Work → CanonicalMedia / NormalizedMediaMetadata
+     * - NX_WorkSourceRef → MediaSourceRef
+     * - NX_WorkUserState → CanonicalResumeInfo
+     *
+     * ## INV-6 Compliance
+     * This is the SSOT for canonical media across the entire app.
+     * All layers MUST use this interface for media operations.
+     */
+    @Binds
+    @Singleton
+    abstract fun bindCanonicalMediaRepository(
+        impl: NxCanonicalMediaRepositoryImpl,
+    ): CanonicalMediaRepository
+
+    // ────────────────────────────────────────────────────────────────────
+    // Detail Repository (NX-based implementation)
+    // ────────────────────────────────────────────────────────────────────
+
+    /**
+     * Binds the NX-based NxDetailMediaRepository implementation.
+     *
+     * This provides the detail screen data from NX_* entities:
+     * - NX_Work → media metadata
+     * - NX_WorkSourceRef + NX_WorkVariant → playback sources
+     * - NX_WorkUserState → resume/favorites
+     *
+     * ## INV-6 Compliance
+     * This is the SSOT for detail screen data. Feature:detail MUST use
+     * this interface instead of legacy CanonicalMediaRepository.
+     */
+    @Binds
+    @Singleton
+    abstract fun bindNxDetailMediaRepository(
+        impl: NxDetailMediaRepositoryImpl,
+    ): NxDetailMediaRepository
 }
