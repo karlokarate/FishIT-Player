@@ -229,6 +229,7 @@ dependencies {
     implementation(project(":infra:data-xtream"))
     implementation(project(":infra:data-detail"))
     implementation(project(":infra:data-home"))
+    implementation(project(":infra:data-nx"))
     implementation(project(":infra:work"))
 
     // Coil for ImageLoader singleton

@@ -2,6 +2,7 @@
 applyTo: 
   - infra/data-telegram/**
   - infra/data-xtream/**
+  - infra/data-nx/**
   - infra/data-home/**
   - infra/data-library/**
   - infra/data-live/**
@@ -265,6 +266,106 @@ import androidx.lifecycle.*                             // ViewModel (unless ada
 
 **Public Interface:**
 - `DetailContentRepository` - Detail screen content
+
+---
+
+### infra/data-nx (NX SSOT System)
+
+**Purpose:** NX (Next Generation) SSOT entities and repositories. The unified data layer for all UI consumption.
+
+| Responsibility | Allowed | Forbidden |
+|----------------|---------|-----------|
+| Store NX_Work and related entities | ✅ | Direct Obx* entity access from UI |
+| Map NX entities ↔ Domain DTOs | ✅ | Pipeline DTOs in mappers |
+| Profile-scoped state (resume, etc.) | ✅ | Global singletons |
+| Multi-source aggregation | ✅ | Source-specific business logic |
+
+**Public Interfaces (in `core/model/repository/`):**
+- `NxWorkRepository` - Main work (movie, series, episode, live, clip)
+- `NxWorkSourceRefRepository` - Source origin references
+- `NxWorkVariantRepository` - Playback variants
+- `NxWorkRelationRepository` - Series↔Episode relationships
+- `NxWorkUserStateRepository` - Resume positions per profile
+- `NxIngestLedgerRepository` - Ingestion audit trail (INV-01)
+- `NxSourceAccountRepository` - Multi-account management
+- `NxProfileRepository` - Profile management
+
+**Internal Entities (in `core/persistence/obx/NxEntities.kt`):**
+- `NX_Work`, `NX_WorkSourceRef`, `NX_WorkVariant`, `NX_WorkRelation`
+- `NX_WorkUserState`, `NX_WorkRuntimeState`, `NX_IngestLedger`
+- `NX_Profile`, `NX_ProfileRule`, `NX_ProfileUsage`
+- `NX_SourceAccount`, `NX_CloudOutboxEvent`, `NX_WorkEmbedding`, `NX_WorkRedirect`
+
+**Key Format Specifications (per NX_SSOT_CONTRACT):**
+- `workKey`: `{workType}:{authority}:{id}` (e.g., `movie:tmdb:12345`)
+- `sourceKey`: `{sourceType}:{accountKey}:{sourceId}` (e.g., `xtream:user@server:vod:123`)
+- `variantKey`: `{sourceKey}#{qualityTag}:{languageTag}`
+
+**Contract Reference:** `/contracts/NX_SSOT_CONTRACT.md`
+
+---
+
+## 🔴 MANDATORY: NX Schema Consistency Tests
+
+> **HARD RULE:** Before ANY modification to NX entities, DTOs, or mappers, agents MUST run the NX Schema Consistency Tests to verify schema integrity.
+
+### Test Location
+```
+infra/data-nx/src/test/java/com/fishit/player/infra/data/nx/schema/NxSchemaConsistencyTest.kt
+```
+
+### Execution Command
+```bash
+./gradlew :infra:data-nx:testDebugUnitTest --tests "com.fishit.player.infra.data.nx.schema.*"
+```
+
+### What the Tests Verify
+
+| Test Class | Validates |
+|------------|-----------|
+| `NxWorkSchemaConsistencyTest` | Work DTO ↔ NX_Work field mapping |
+| `NxWorkSourceRefSchemaConsistencyTest` | SourceRef DTO ↔ Entity + INV-13 (accountKey mandatory) |
+| `NxWorkVariantSchemaConsistencyTest` | Variant DTO ↔ Entity + playbackHints |
+| `NxWorkRelationSchemaConsistencyTest` | Relation DTO ↔ Entity (Series↔Episodes) |
+| `NxWorkUserStateSchemaConsistencyTest` | UserState per INV-05 (profile-scoped) |
+| `NxIngestLedgerSchemaConsistencyTest` | Ledger per INV-01 (no silent drops) |
+| `NxSourceAccountSchemaConsistencyTest` | Multi-account fields |
+| `NxProfileSchemaConsistencyTest` | Profile + PIN protection |
+| `NxCrossEntitySchemaConsistencyTest` | workKey/sourceKey consistency across entities |
+| `NxKeyFormatValidationTest` | Key format validation per contract |
+
+### Agent Workflow for NX Changes
+
+1. **BEFORE making changes:**
+   ```bash
+   ./gradlew :infra:data-nx:testDebugUnitTest --tests "com.fishit.player.infra.data.nx.schema.*"
+   ```
+   - All tests MUST pass before proceeding
+
+2. **AFTER making changes:**
+   ```bash
+   ./gradlew :infra:data-nx:testDebugUnitTest --tests "com.fishit.player.infra.data.nx.schema.*"
+   ```
+   - All tests MUST pass
+   - If tests fail: FIX the issue before committing
+   - If schema change is intentional: UPDATE the test to reflect new contract
+
+3. **When adding new NX entities:**
+   - Add corresponding test class to `NxSchemaConsistencyTest.kt`
+   - Follow existing test patterns (field mapping, contract invariants)
+
+### Contract Invariants Verified by Tests
+
+| Invariant | Description | Test Class |
+|-----------|-------------|------------|
+| INV-01 | No silent drops (IngestLedger audit) | `NxIngestLedgerSchemaConsistencyTest` |
+| INV-04 | sourceKey globally unique with accountKey | `NxWorkSourceRefSchemaConsistencyTest` |
+| INV-05 | Profile-scoped resume in NX_WorkUserState | `NxWorkUserStateSchemaConsistencyTest` |
+| INV-13 | accountKey mandatory in NX_WorkSourceRef | `NxWorkSourceRefSchemaConsistencyTest` |
+
+### Test Failure = Blocker
+
+> ⚠️ **Any NX schema test failure is a BLOCKER.** Do not commit, do not create PR, do not proceed until all tests pass.
 
 ---
 
@@ -565,18 +666,33 @@ grep -rn "normalizeTitle\|classifyMediaType\|generateGlobalId\|searchTmdb" infra
 - [ ] Category name lookups are cached
 - [ ] Adapters are `@Singleton` with DI
 
+### Data-NX Specific (MANDATORY)
+- [ ] **Schema tests run BEFORE any NX changes**
+- [ ] **Schema tests pass AFTER any NX changes**
+- [ ] NX_* entities are internal (never exposed in public interfaces)
+- [ ] Domain DTOs defined in `core/model/repository/Nx*Repository.kt`
+- [ ] Mappers use canonical patterns from `NxSchemaConsistencyTest.kt`
+- [ ] Key formats follow NX_SSOT_CONTRACT (workKey, sourceKey, variantKey)
+- [ ] INV-01: IngestLedger audit for all ingestion operations
+- [ ] INV-04: sourceKey includes accountKey
+- [ ] INV-05: Profile-scoped resume in NX_WorkUserState
+- [ ] INV-13: accountKey mandatory in NX_WorkSourceRef
+- [ ] New entities: Add corresponding schema test class
+
 ---
 
 ## 📚 Reference Documents (Priority Order)
 
-1. **`/docs/v2/MEDIA_NORMALIZATION_CONTRACT.md`** - RawMediaMetadata contract (AUTHORITATIVE)
-2. **`/docs/v2/OBJECTBOX_REACTIVE_PATTERNS.md`** - Flow patterns
-3. **`/contracts/TELEGRAM_ID_ARCHITECTURE_CONTRACT.md`** - Telegram source ID format
-4. **`/AGENTS.md`** - Section 4.5 (Layer Boundary Enforcement)
-5. **`/contracts/GLOSSARY_v2_naming_and_modules.md`** - Data layer definition
-6. **`/contracts/LOGGING_CONTRACT_V2.md`** - Logging rules
-7. **`infra/data-telegram/README.md`** - Module-specific rules
-8. **`infra/data-xtream/README.md`** - Module-specific rules
+1. **`/contracts/NX_SSOT_CONTRACT.md`** - NX entity schema and invariants (AUTHORITATIVE for data-nx)
+2. **`/docs/v2/MEDIA_NORMALIZATION_CONTRACT.md`** - RawMediaMetadata contract (AUTHORITATIVE)
+3. **`/docs/v2/OBJECTBOX_REACTIVE_PATTERNS.md`** - Flow patterns
+4. **`/contracts/TELEGRAM_ID_ARCHITECTURE_CONTRACT.md`** - Telegram source ID format
+5. **`/AGENTS.md`** - Section 4.5 (Layer Boundary Enforcement)
+6. **`/contracts/GLOSSARY_v2_naming_and_modules.md`** - Data layer definition
+7. **`/contracts/LOGGING_CONTRACT_V2.md`** - Logging rules
+8. **`infra/data-telegram/README.md`** - Module-specific rules
+9. **`infra/data-xtream/README.md`** - Module-specific rules
+10. **`infra/data-nx/README.md`** - NX module rules
 
 ---
 

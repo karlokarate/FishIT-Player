@@ -34,15 +34,20 @@ abstract class TelegramDataModule {
     @Singleton
     abstract fun bindTelegramContentRepository(impl: ObxTelegramContentRepository): TelegramContentRepository
 
-    /**
-     * Binds the adapter that implements the feature's repository interface.
-     *
-     * This allows the feature layer to depend on its own interface
-     * while the data layer provides the implementation (Dependency Inversion).
-     */
-    @Binds
-    @Singleton
-    abstract fun bindTelegramMediaRepository(adapter: TelegramMediaRepositoryAdapter): TelegramMediaRepository
+    // NOTE: TelegramMediaRepository binding has been migrated to NxDataModule (NX-based implementation).
+    // The legacy adapter is kept for reference but binding is disabled to avoid DI conflicts.
+
+    // /**
+    //  * Binds the adapter that implements the feature's repository interface.
+    //  *
+    //  * This allows the feature layer to depend on its own interface
+    //  * while the data layer provides the implementation (Dependency Inversion).
+    //  *
+    //  * @deprecated Replaced by NxTelegramMediaRepositoryImpl in infra:data-nx.
+    //  */
+    // @Binds
+    // @Singleton
+    // abstract fun bindTelegramMediaRepository(adapter: TelegramMediaRepositoryAdapter): TelegramMediaRepository
 
     @Binds
     @Singleton

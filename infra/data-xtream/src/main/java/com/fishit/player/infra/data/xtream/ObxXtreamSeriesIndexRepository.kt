@@ -25,6 +25,10 @@ import javax.inject.Singleton
 /**
  * ObjectBox-backed implementation of [XtreamSeriesIndexRepository].
  *
+ * @deprecated Use [NxXtreamSeriesIndexRepository] for all Series Index operations.
+ * This class is retained for dual-write migration period only.
+ * See NX_SSOT_CONTRACT.md INV-6 for migration requirements.
+ *
  * **Architecture:**
  * - Uses ObxSeasonIndex and ObxEpisodeIndex entities
  * - Provides reactive Flows for UI consumption
@@ -36,6 +40,7 @@ import javax.inject.Singleton
  * - Paging via ObjectBox find(offset, limit)
  * - Indexes on seriesId, seasonNumber, sourceKey for fast lookups
  */
+@Deprecated("Use NxXtreamSeriesIndexRepository. See NX_SSOT_CONTRACT.md INV-6.")
 @Singleton
 class ObxXtreamSeriesIndexRepository
     @Inject

@@ -33,7 +33,7 @@
 | `infra-transport.instructions.md` | `infra/transport-*/**` | ✅ Active | 1.1 | infra-logging |
 | `infra-transport-telegram.instructions.md` | `infra/transport-telegram/**` | ✅ Active | 1.0 | infra-transport, infra-logging |
 | `infra-transport-xtream.instructions.md` | `infra/transport-xtream/**` | ✅ Active | 1.0 | infra-transport, infra-logging |
-| `infra-data.instructions.md` | `infra/data-*/**` | ✅ Active | 1.1 | core-model, core-persistence, infra-logging |
+| `infra-data.instructions.md` | `infra/data-*/**` (incl. data-nx) | ✅ Active | 1.2 | core-model, core-persistence, infra-logging, NX_SSOT_CONTRACT |
 
 ### Pipeline Layer
 
@@ -115,6 +115,7 @@ All instruction files MUST comply with these authoritative contracts:
 |----------|----------|-------|
 | **AGENTS.md** | `/AGENTS.md` | PRIMARY AUTHORITY - All architecture rules |
 | **GLOSSARY** | `/contracts/GLOSSARY_v2_naming_and_modules.md` | Naming conventions, module taxonomy |
+| **NX_SSOT** | `/contracts/NX_SSOT_CONTRACT.md` | NX entity schema, invariants (INV-01 to INV-13) |
 | **LOGGING** | `/contracts/LOGGING_CONTRACT_V2.md` | UnifiedLog usage (v1.1) |
 | **NORMALIZATION** | `/docs/v2/MEDIA_NORMALIZATION_CONTRACT.md` | RawMediaMetadata, pipeline rules (⚠️ Forwarded from `/contracts/`) |
 | **TMDB_ENRICHMENT** | `/docs/v2/TMDB_ENRICHMENT_CONTRACT.md` | TMDB enrichment, canonical identity |
@@ -136,6 +137,7 @@ All instruction files MUST comply with these authoritative contracts:
 
 | Version | Date | Changes |
 |---------|------|---------|
+| 1.2 | 2026-01-23 | Added infra/data-nx scope, NX Schema Consistency Tests mandate (MANDATORY), NX_SSOT_CONTRACT reference |
 | 1.1 | 2026-01-07 | PLATIN Audit fixes: Dot-space typos, broken refs, extractSeasonEpisode ownership, contract path clarification, imaging exception, TAG length guidance |
 | 1.0 | 2026-01-07 | Initial index creation |
 

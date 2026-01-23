@@ -27,7 +27,15 @@ import com.fishit.player.core.playermodel.SourceType as PlayerSourceType
  * Per TODO_AUDIT_BLOCKING_ISSUES.md:
  * - Replaces in-memory [DefaultResumeManager] with real persistence
  * - Uses existing `ObxCanonicalResumeMark` entity via repository
+ *
+ * @deprecated Use [NxResumeManager] instead. This class uses the legacy
+ * CanonicalMediaRepository which is being phased out in favor of NX entities.
+ * The NxResumeManager uses NxWorkUserStateRepository for persistence.
  */
+@Deprecated(
+    message = "Use NxResumeManager instead. This uses legacy CanonicalMediaRepository.",
+    replaceWith = ReplaceWith("NxResumeManager", "com.fishit.player.playback.domain.defaults.NxResumeManager"),
+)
 @Singleton
 class ObxResumeManager
     @Inject

@@ -1,10 +1,6 @@
 package com.fishit.player.infra.data.xtream.di
 
 import com.fishit.player.core.detail.domain.XtreamSeriesIndexRefresher
-import com.fishit.player.core.library.domain.LibraryContentRepository
-import com.fishit.player.core.live.domain.LiveContentRepository
-import com.fishit.player.infra.data.xtream.LibraryContentRepositoryAdapter
-import com.fishit.player.infra.data.xtream.LiveContentRepositoryAdapter
 import com.fishit.player.infra.data.xtream.ObxXtreamCatalogRepository
 import com.fishit.player.infra.data.xtream.ObxXtreamLiveRepository
 import com.fishit.player.infra.data.xtream.ObxXtreamSeriesIndexRepository
@@ -58,50 +54,62 @@ abstract class XtreamDataModule {
     abstract fun bindXtreamLiveRepository(impl: ObxXtreamLiveRepository): XtreamLiveRepository
 
     // ========== Feature Layer Repository Bindings ==========
+    // NOTE: These bindings have been migrated to NxDataModule (NX-based implementations).
+    // The legacy adapters are kept for reference but bindings are disabled to avoid DI conflicts.
 
-    /**
-     * Binds [LibraryContentRepositoryAdapter] as the implementation for [LibraryContentRepository].
-     *
-     * Provides VOD/Series content for the Library feature screen.
-     * Maps ObxVod/ObxSeries entities → LibraryMediaItem domain models (direct entity mapping).
-     *
-     * Direct entity mapping provides access to:
-     * - categoryId, categoryName (via lookup)
-     * - genres (parsed from entity)
-     * - description/plot
-     */
-    @Binds
-    @Singleton
-    abstract fun bindLibraryContentRepository(impl: LibraryContentRepositoryAdapter): LibraryContentRepository
+    // /**
+    //  * Binds [LibraryContentRepositoryAdapter] as the implementation for [LibraryContentRepository].
+    //  *
+    //  * Provides VOD/Series content for the Library feature screen.
+    //  * Maps ObxVod/ObxSeries entities → LibraryMediaItem domain models (direct entity mapping).
+    //  *
+    //  * Direct entity mapping provides access to:
+    //  * - categoryId, categoryName (via lookup)
+    //  * - genres (parsed from entity)
+    //  * - description/plot
+    //  *
+    //  * @deprecated Replaced by NxLibraryContentRepositoryImpl in infra:data-nx.
+    //  */
+    // @Binds
+    // @Singleton
+    // abstract fun bindLibraryContentRepository(impl: LibraryContentRepositoryAdapter): LibraryContentRepository
 
-    /**
-     * Binds [LiveContentRepositoryAdapter] as the implementation for [LiveContentRepository].
-     *
-     * Provides live TV channels for the Live feature screen.
-     * Maps ObxLive entities → LiveChannel domain models (direct entity mapping).
-     *
-     * Direct entity mapping provides access to:
-     * - categoryId, categoryName (via lookup)
-     * - channelNumber (from streamId)
-     * - EPG data (from ObxEpgNowNext)
-     */
-    @Binds
-    @Singleton
-    abstract fun bindLiveContentRepository(impl: LiveContentRepositoryAdapter): LiveContentRepository
+    // /**
+    //  * Binds [LiveContentRepositoryAdapter] as the implementation for [LiveContentRepository].
+    //  *
+    //  * Provides live TV channels for the Live feature screen.
+    //  * Maps ObxLive entities → LiveChannel domain models (direct entity mapping).
+    //  *
+    //  * Direct entity mapping provides access to:
+    //  * - categoryId, categoryName (via lookup)
+    //  * - channelNumber (from streamId)
+    //  * - EPG data (from ObxEpgNowNext)
+    //  *
+    //  * @deprecated Replaced by NxLiveContentRepositoryImpl in infra:data-nx.
+    //  */
+    // @Binds
+    // @Singleton
+    // abstract fun bindLiveContentRepository(impl: LiveContentRepositoryAdapter): LiveContentRepository
 
-    /**
-     * Binds [ObxXtreamSeriesIndexRepository] as the implementation for [XtreamSeriesIndexRepository].
-     *
-     * Provides lazy-loaded season and episode indices for series detail screens.
-     * Features:
-     * - Season index (7-day TTL)
-     * - Episode index with paging (7-day TTL)
-     * - Playback hints for deterministic playback (30-day TTL)
-     * - Used by LoadSeriesSeasonsUseCase, LoadSeasonEpisodesUseCase, EnsureEpisodePlaybackReadyUseCase
-     */
-    @Binds
-    @Singleton
-    abstract fun bindXtreamSeriesIndexRepository(impl: ObxXtreamSeriesIndexRepository): XtreamSeriesIndexRepository
+    // NOTE: XtreamSeriesIndexRepository binding has been migrated to NxDataModule.
+    // The NX implementation uses NX_Work + NX_WorkRelation instead of ObxSeasonIndex/ObxEpisodeIndex.
+    // See: NxXtreamSeriesIndexRepository
+
+    // /**
+    //  * Binds [ObxXtreamSeriesIndexRepository] as the implementation for [XtreamSeriesIndexRepository].
+    //  *
+    //  * Provides lazy-loaded season and episode indices for series detail screens.
+    //  * Features:
+    //  * - Season index (7-day TTL)
+    //  * - Episode index with paging (7-day TTL)
+    //  * - Playback hints for deterministic playback (30-day TTL)
+    //  * - Used by LoadSeriesSeasonsUseCase, LoadSeasonEpisodesUseCase, EnsureEpisodePlaybackReadyUseCase
+    //  *
+    //  * @deprecated Replaced by NxXtreamSeriesIndexRepository in infra:data-nx.
+    //  */
+    // @Binds
+    // @Singleton
+    // abstract fun bindXtreamSeriesIndexRepository(impl: ObxXtreamSeriesIndexRepository): XtreamSeriesIndexRepository
 
     @Binds
     @Singleton

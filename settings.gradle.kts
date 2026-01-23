@@ -103,6 +103,7 @@ include(":infra:data-telegram")
 include(":infra:data-xtream")
 include(":infra:data-home")
 include(":infra:data-detail")
+include(":infra:data-nx")
 include(":infra:imaging")
 include(":infra:work")
 

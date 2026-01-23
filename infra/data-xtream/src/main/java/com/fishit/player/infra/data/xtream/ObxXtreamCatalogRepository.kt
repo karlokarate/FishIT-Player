@@ -28,6 +28,11 @@ import javax.inject.Singleton
 /**
  * ObjectBox-backed implementation of [XtreamCatalogRepository].
  *
+ * @deprecated Use [com.fishit.player.infra.data.nx.NxCatalogWriter] for writes
+ * and NX repositories (NxWorkRepository, etc.) for reads.
+ * This class is retained for dual-write migration period only.
+ * See NX_SSOT_CONTRACT.md INV-6 for migration requirements.
+ *
  * **Architecture Compliance:**
  * - Works only with RawMediaMetadata (no pipeline DTOs)
  * - Uses ObjectBox entities internally (ObxVod, ObxSeries, ObxEpisode)
@@ -44,6 +49,7 @@ import javax.inject.Singleton
  * - Series: "xtream:series:{seriesId}"
  * - Episode: "xtream:episode:{seriesId}:{seasonNum}:{episodeNum}"
  */
+@Deprecated("Use NX repositories for reads. See NX_SSOT_CONTRACT.md INV-6.")
 @Singleton
 class ObxXtreamCatalogRepository
     @Inject

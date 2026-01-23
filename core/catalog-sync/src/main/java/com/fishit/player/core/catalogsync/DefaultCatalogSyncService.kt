@@ -2,14 +2,9 @@ package com.fishit.player.core.catalogsync
 
 import com.fishit.player.core.feature.auth.TelegramAuthRepository
 import com.fishit.player.core.metadata.MediaMetadataNormalizer
-import com.fishit.player.core.model.MediaSourceRef
 import com.fishit.player.core.model.PlaybackHintKeys
 import com.fishit.player.core.model.RawMediaMetadata
-import com.fishit.player.core.model.ids.asPipelineItemId
-import com.fishit.player.core.model.repository.CanonicalMediaRepository
-import com.fishit.player.infra.data.telegram.TelegramContentRepository
-import com.fishit.player.infra.data.xtream.XtreamCatalogRepository
-import com.fishit.player.infra.data.xtream.XtreamLiveRepository
+import com.fishit.player.infra.data.nx.writer.NxCatalogWriter
 import com.fishit.player.infra.logging.UnifiedLog
 import com.fishit.player.pipeline.telegram.catalog.TelegramCatalogConfig
 import com.fishit.player.pipeline.telegram.catalog.TelegramCatalogEvent
@@ -57,13 +52,15 @@ import javax.inject.Singleton
  *
  * **Layer Position:** Transport → Pipeline → **CatalogSync** → Normalizer → Data → Domain → UI
  *
- * **Cross-Pipeline Flow:**
+ * **Cross-Pipeline Flow (NX-ONLY as of Jan 2026):**
  * 1. Pipeline produces RawMediaMetadata
- * 2. CatalogSync stores raw in pipeline-specific repo (fast local queries)
- * 3. CatalogSync normalizes via MediaMetadataNormalizer
- * 4. CatalogSync upserts to CanonicalMediaRepository (cross-pipeline identity)
- * 5. CatalogSync links source via addOrUpdateSourceRef
- * 6. Resume positions work across all sources via percentage-based positioning
+ * 2. CatalogSync normalizes via MediaMetadataNormalizer
+ * 3. CatalogSync ingests to NX work graph via NxCatalogWriter
+ * 4. Resume positions work across all sources via NxWorkUserStateRepository
+ *
+ * **Migration Note:** Old OBX repositories (TelegramContentRepository, XtreamCatalogRepository,
+ * XtreamLiveRepository, CanonicalMediaRepository) are no longer used for writes.
+ * All persistence now flows through NxCatalogWriter → NX_Work/NX_WorkSourceRef/NX_WorkVariant.
  */
 @Singleton
 class DefaultCatalogSyncService
@@ -71,11 +68,8 @@ class DefaultCatalogSyncService
     constructor(
         private val telegramPipeline: TelegramCatalogPipeline,
         private val xtreamPipeline: XtreamCatalogPipeline,
-        private val telegramRepository: TelegramContentRepository,
-        private val xtreamCatalogRepository: XtreamCatalogRepository,
-        private val xtreamLiveRepository: XtreamLiveRepository,
         private val normalizer: MediaMetadataNormalizer,
-        private val canonicalMediaRepository: CanonicalMediaRepository,
+        private val nxCatalogWriter: NxCatalogWriter,
         private val checkpointStore: SyncCheckpointStore,
         private val telegramAuthRepository: TelegramAuthRepository,
     ) : CatalogSyncService {
@@ -567,10 +561,17 @@ class DefaultCatalogSyncService
         override suspend fun clearSource(source: String) {
             UnifiedLog.i(TAG, "Clearing source: $source")
             when (source) {
-                SOURCE_TELEGRAM -> telegramRepository.deleteAll()
+                SOURCE_TELEGRAM -> {
+                    val count = nxCatalogWriter.clearSourceType(
+                        com.fishit.player.core.model.repository.NxWorkSourceRefRepository.SourceType.TELEGRAM
+                    )
+                    UnifiedLog.i(TAG, "clearSource(TELEGRAM): Removed $count source refs from NX")
+                }
                 SOURCE_XTREAM -> {
-                    xtreamCatalogRepository.deleteAll()
-                    xtreamLiveRepository.deleteAll()
+                    val count = nxCatalogWriter.clearSourceType(
+                        com.fishit.player.core.model.repository.NxWorkSourceRefRepository.SourceType.XTREAM
+                    )
+                    UnifiedLog.i(TAG, "clearSource(XTREAM): Removed $count source refs from NX")
                 }
                 else -> UnifiedLog.w(TAG, "Unknown source: $source")
             }
@@ -907,31 +908,36 @@ class DefaultCatalogSyncService
          * - Validates PlaybackHints per source type
          * - Counts linking failures (warning, not fatal)
          */
+        /**
+         * Persist Telegram batch - NX-ONLY (dual-write disabled).
+         *
+         * As of Jan 2026, all persistence goes through NxCatalogWriter.
+         * Old OBX repositories (telegramRepository, canonicalMediaRepository) are no longer used.
+         *
+         * Flow:
+         * 1. Normalize metadata
+         * 2. Ingest to NX work graph via NxCatalogWriter
+         */
         private suspend fun persistTelegramBatch(
             items: List<RawMediaMetadata>,
             config: SyncConfig = SyncConfig.DEFAULT,
         ) {
             val batchStartMs = System.currentTimeMillis()
             UnifiedLog.d(TAG) { 
-                "Persisting Telegram batch: ${items.size} items " +
-                "(canonical_linking=${config.enableCanonicalLinking}, hot_path_relief=${!config.enableCanonicalLinking})" 
+                "Persisting Telegram batch (NX-ONLY): ${items.size} items " +
+                "(canonical_linking=${config.enableCanonicalLinking})" 
             }
 
-            // Step 1: Store raw in pipeline-specific repo (ALWAYS - for fast Telegram-only queries)
-            val rawPersistStart = System.currentTimeMillis()
-            telegramRepository.upsertAll(items)
-            val rawPersistDuration = System.currentTimeMillis() - rawPersistStart
-
-            // Step 2-4: Normalize and link to canonical (OPTIONAL - for cross-pipeline unification)
+            // NX-ONLY: Skip old repos, write directly to NX work graph
             if (config.enableCanonicalLinking) {
-                var linkedCount = 0
+                var ingestedCount = 0
                 var failedCount = 0
                 var playbackHintWarnings = 0
-                val linkingStartMs = System.currentTimeMillis()
+                val ingestStartMs = System.currentTimeMillis()
 
                 items.forEach { raw ->
                     try {
-                        // PLATINUM: Validate playback hints before linking
+                        // Validate playback hints
                         val hintValidation = validateTelegramPlaybackHints(raw)
                         if (!hintValidation.isValid) {
                             playbackHintWarnings++
@@ -940,44 +946,50 @@ class DefaultCatalogSyncService
                             }
                         }
 
-                        // Step 2: Normalize metadata
+                        // Normalize metadata
                         val normalized = normalizer.normalize(raw)
 
-                        // Step 3: Upsert to canonical repository
-                        val canonicalId = canonicalMediaRepository.upsertCanonicalMedia(normalized)
+                        // Ingest to NX work graph (SSOT)
+                        val telegramAccountKey = "telegram:${raw.playbackHints[PlaybackHintKeys.Telegram.CHAT_ID] ?: raw.sourceLabel}"
+                        nxCatalogWriter.ingest(raw, normalized, telegramAccountKey)
 
-                        // Step 4: Link this source to the canonical entry
-                        val sourceRef = raw.toMediaSourceRef()
-                        canonicalMediaRepository.addOrUpdateSourceRef(canonicalId, sourceRef)
-                        linkedCount++
+                        ingestedCount++
                     } catch (e: Exception) {
                         failedCount++
-                        UnifiedLog.w(TAG) { "Failed to link ${raw.sourceId} to canonical: ${e.message}" }
+                        UnifiedLog.w(TAG) { "Failed to ingest ${raw.sourceId} to NX: ${e.message}" }
                     }
                 }
 
-                val linkingDuration = System.currentTimeMillis() - linkingStartMs
+                val ingestDuration = System.currentTimeMillis() - ingestStartMs
                 val totalDuration = System.currentTimeMillis() - batchStartMs
 
-                // PLATINUM: Log integrity summary with performance metrics (DEBUG level for normal runs)
                 if (failedCount > 0 || playbackHintWarnings > 0) {
                     UnifiedLog.w(TAG) {
-                        "Telegram batch integrity: linked=$linkedCount failed=$failedCount " +
-                        "hint_warnings=$playbackHintWarnings " +
-                        "raw_persist_ms=$rawPersistDuration linking_ms=$linkingDuration total_ms=$totalDuration"
+                        "Telegram batch (NX): ingested=$ingestedCount failed=$failedCount " +
+                        "hint_warnings=$playbackHintWarnings ingest_ms=$ingestDuration total_ms=$totalDuration"
                     }
                 } else {
                     UnifiedLog.d(TAG) { 
-                        "Telegram batch complete: linked=$linkedCount " +
-                        "raw_persist_ms=$rawPersistDuration linking_ms=$linkingDuration total_ms=$totalDuration"
+                        "Telegram batch complete (NX): ingested=$ingestedCount " +
+                        "ingest_ms=$ingestDuration total_ms=$totalDuration"
                     }
                 }
             } else {
+                // HOT PATH: Still need to ingest to NX, just skip normalization overhead
+                var ingestedCount = 0
+                items.forEach { raw ->
+                    try {
+                        val normalized = normalizer.normalize(raw)
+                        val telegramAccountKey = "telegram:${raw.playbackHints[PlaybackHintKeys.Telegram.CHAT_ID] ?: raw.sourceLabel}"
+                        nxCatalogWriter.ingest(raw, normalized, telegramAccountKey)
+                        ingestedCount++
+                    } catch (e: Exception) {
+                        UnifiedLog.w(TAG) { "HOT PATH: Failed to ingest ${raw.sourceId}: ${e.message}" }
+                    }
+                }
                 val totalDuration = System.currentTimeMillis() - batchStartMs
                 UnifiedLog.d(TAG) { 
-                    "Telegram batch complete (HOT PATH): raw stored, canonical linking skipped " +
-                    "raw_persist_ms=$rawPersistDuration total_ms=$totalDuration " +
-                    "(backlog processing should be scheduled by caller)"
+                    "Telegram batch complete (HOT PATH/NX): ingested=$ingestedCount total_ms=$totalDuration"
                 }
             }
         }
@@ -997,31 +1009,36 @@ class DefaultCatalogSyncService
          * - Validates PlaybackHints per content type (VOD/Series/Episode)
          * - Counts linking failures
          */
+        /**
+         * Persist Xtream catalog batch - NX-ONLY (dual-write disabled).
+         *
+         * As of Jan 2026, all persistence goes through NxCatalogWriter.
+         * Old OBX repositories (xtreamCatalogRepository, canonicalMediaRepository) are no longer used.
+         *
+         * Flow:
+         * 1. Normalize metadata
+         * 2. Ingest to NX work graph via NxCatalogWriter
+         */
         private suspend fun persistXtreamCatalogBatch(
             items: List<RawMediaMetadata>,
             config: SyncConfig = SyncConfig.DEFAULT,
         ) {
             val batchStartMs = System.currentTimeMillis()
             UnifiedLog.d(TAG) { 
-                "Persisting Xtream catalog batch: ${items.size} items " +
-                "(canonical_linking=${config.enableCanonicalLinking}, hot_path_relief=${!config.enableCanonicalLinking})" 
+                "Persisting Xtream catalog batch (NX-ONLY): ${items.size} items " +
+                "(canonical_linking=${config.enableCanonicalLinking})" 
             }
 
-            // Step 1: Store raw in pipeline-specific repo (ALWAYS)
-            val rawPersistStart = System.currentTimeMillis()
-            xtreamCatalogRepository.upsertAll(items)
-            val rawPersistDuration = System.currentTimeMillis() - rawPersistStart
-
-            // Step 2-4: Normalize and link to canonical (OPTIONAL)
+            // NX-ONLY: Skip old repos, write directly to NX work graph
             if (config.enableCanonicalLinking) {
-                var linkedCount = 0
+                var ingestedCount = 0
                 var failedCount = 0
                 var playbackHintWarnings = 0
-                val linkingStartMs = System.currentTimeMillis()
+                val ingestStartMs = System.currentTimeMillis()
 
                 items.forEach { raw ->
                     try {
-                        // PLATINUM: Validate playback hints before linking
+                        // Validate playback hints
                         val hintValidation = validateXtreamPlaybackHints(raw)
                         if (!hintValidation.isValid) {
                             playbackHintWarnings++
@@ -1031,52 +1048,78 @@ class DefaultCatalogSyncService
                         }
 
                         val normalized = normalizer.normalize(raw)
-                        val canonicalId = canonicalMediaRepository.upsertCanonicalMedia(normalized)
-                        val sourceRef = raw.toMediaSourceRef()
-                        canonicalMediaRepository.addOrUpdateSourceRef(canonicalId, sourceRef)
-                        linkedCount++
+
+                        // Ingest to NX work graph (SSOT)
+                        val xtreamAccountKey = "xtream:${raw.sourceLabel}"
+                        nxCatalogWriter.ingest(raw, normalized, xtreamAccountKey)
+
+                        ingestedCount++
                     } catch (e: Exception) {
                         failedCount++
-                        UnifiedLog.w(TAG) { "Failed to link ${raw.sourceId} to canonical: ${e.message}" }
+                        UnifiedLog.w(TAG) { "Failed to ingest ${raw.sourceId} to NX: ${e.message}" }
                     }
                 }
 
-                val linkingDuration = System.currentTimeMillis() - linkingStartMs
+                val ingestDuration = System.currentTimeMillis() - ingestStartMs
                 val totalDuration = System.currentTimeMillis() - batchStartMs
 
-                // PLATINUM: Log integrity summary with performance metrics
                 if (failedCount > 0 || playbackHintWarnings > 0) {
                     UnifiedLog.w(TAG) {
-                        "Xtream batch integrity: linked=$linkedCount failed=$failedCount " +
-                        "hint_warnings=$playbackHintWarnings " +
-                        "raw_persist_ms=$rawPersistDuration linking_ms=$linkingDuration total_ms=$totalDuration"
+                        "Xtream batch (NX): ingested=$ingestedCount failed=$failedCount " +
+                        "hint_warnings=$playbackHintWarnings ingest_ms=$ingestDuration total_ms=$totalDuration"
                     }
                 } else {
                     UnifiedLog.d(TAG) { 
-                        "Xtream batch complete: linked=$linkedCount " +
-                        "raw_persist_ms=$rawPersistDuration linking_ms=$linkingDuration total_ms=$totalDuration"
+                        "Xtream batch complete (NX): ingested=$ingestedCount " +
+                        "ingest_ms=$ingestDuration total_ms=$totalDuration"
                     }
                 }
             } else {
+                // HOT PATH: Still need to ingest to NX, just skip normalization overhead
+                var ingestedCount = 0
+                items.forEach { raw ->
+                    try {
+                        val normalized = normalizer.normalize(raw)
+                        val xtreamAccountKey = "xtream:${raw.sourceLabel}"
+                        nxCatalogWriter.ingest(raw, normalized, xtreamAccountKey)
+                        ingestedCount++
+                    } catch (e: Exception) {
+                        UnifiedLog.w(TAG) { "HOT PATH: Failed to ingest ${raw.sourceId}: ${e.message}" }
+                    }
+                }
                 val totalDuration = System.currentTimeMillis() - batchStartMs
                 UnifiedLog.d(TAG) { 
-                    "Xtream batch complete (HOT PATH): raw stored, canonical linking skipped " +
-                    "raw_persist_ms=$rawPersistDuration total_ms=$totalDuration " +
-                    "(backlog processing should be scheduled by caller)"
+                    "Xtream batch complete (HOT PATH/NX): ingested=$ingestedCount total_ms=$totalDuration"
                 }
             }
         }
 
         /**
-         * Persist Xtream live batch.
+         * Persist Xtream live batch - NX-ONLY (dual-write disabled).
          *
-         * Live channels are NOT linked to canonical media (they're ephemeral streams, not on-demand
-         * content that benefits from cross-pipeline unification).
+         * Live channels go through NxCatalogWriter like VOD/Series.
+         * The NX work graph handles them with WorkType.LIVE_CHANNEL.
          */
         private suspend fun persistXtreamLiveBatch(items: List<RawMediaMetadata>) {
-            UnifiedLog.d(TAG) { "Persisting Xtream live batch: ${items.size} items" }
-            xtreamLiveRepository.upsertAll(items)
-            // Note: Live channels don't get canonical entries - they're ephemeral streams
+            val batchStartMs = System.currentTimeMillis()
+            UnifiedLog.d(TAG) { "Persisting Xtream live batch (NX-ONLY): ${items.size} items" }
+
+            var ingestedCount = 0
+            items.forEach { raw ->
+                try {
+                    val normalized = normalizer.normalize(raw)
+                    val xtreamAccountKey = "xtream:${raw.sourceLabel}"
+                    nxCatalogWriter.ingest(raw, normalized, xtreamAccountKey)
+                    ingestedCount++
+                } catch (e: Exception) {
+                    UnifiedLog.w(TAG) { "Failed to ingest live channel ${raw.sourceId}: ${e.message}" }
+                }
+            }
+
+            val totalDuration = System.currentTimeMillis() - batchStartMs
+            UnifiedLog.d(TAG) { 
+                "Xtream live batch complete (NX): ingested=$ingestedCount total_ms=$totalDuration"
+            }
         }
 
         // ========================================================================
@@ -1175,22 +1218,6 @@ class DefaultCatalogSyncService
                 else -> PlaybackHintValidation(false, "unknown contentType: $contentType")
             }
         }
-
-        // ========================================================================
-        // Extension: RawMediaMetadata → MediaSourceRef
-        // ========================================================================
-
-        /**
-         * Convert RawMediaMetadata to MediaSourceRef for canonical linking.
-         *
-         * Delegates to MediaSourceRefBuilder for SSOT implementation.
-         *
-         * This creates the source reference that links a pipeline item to its canonical media identity,
-         * enabling:
-         * - Cross-pipeline resume (percentage-based positioning)
-         * - Source selection in unified detail screen
-         * - Quality/language comparison across sources
-         */
-        private fun RawMediaMetadata.toMediaSourceRef(): MediaSourceRef =
-            MediaSourceRefBuilder.fromRawMetadata(this)
+        // NOTE: toMediaSourceRef() was removed - no longer needed with NX-only persistence.
+        // Source references are now created directly in NxCatalogWriter.
     }

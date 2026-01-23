@@ -116,8 +116,33 @@ data class NX_WorkUserState(
 )
 ```
 
-### INV-6: UI SSOT Rule
-> UI reads **exclusively** from the NX_* entity graph. No UI code may import or query legacy `Obx*` entities.
+### INV-6: UI SSOT Rule (🚨 UNUMGEHBAR / NON-NEGOTIABLE)
+
+> **🚨 HARD RULE:** UI reads **exclusively** from the NX_* entity graph.
+> **No UI code, ViewModel, or feature module may import or query legacy `Obx*` entities.**
+
+This invariant is **binding and non-negotiable**. Documented in:
+- `AGENTS.md` Section 4.3.3 (Primary Authority)
+- `.github/copilot-instructions.md` (Cloud Agent Reference)
+
+**SSOT Entity Hierarchy:**
+```text
+NX_Work (UI SSOT) ─────────────────────────────────────────────
+    │               │               │               │
+    ▼               ▼               ▼               ▼
+NX_WorkSourceRef  NX_WorkVariant  NX_WorkRelation  NX_WorkUserState
+(Source origin)   (Playback info) (Series↔Eps)    (Resume per profile)
+```
+
+**What Each Screen Reads:**
+| Screen | Primary Repository | Related Repositories |
+|--------|-------------------|---------------------|
+| Home | `NxWorkRepository` | `NxWorkUserStateRepository` |
+| Library | `NxWorkRepository` | - |
+| Detail | `NxWorkRepository` | `NxWorkRelationRepository` |
+| Live TV | `NxWorkRepository` | - |
+| Search | `NxWorkRepository` | - |
+| Player | `NxWorkVariantRepository` | `NxWorkUserStateRepository` |
 
 ```kotlin
 // ✅ CORRECT

@@ -87,4 +87,46 @@ interface NxWorkSourceRefRepository {
         sourceKey: String,
         lastSeenAtMs: Long,
     ): Boolean
+
+    // ──────────────────────────────────────────────────────────────────────
+    // Bulk Delete (for source clearing)
+    // ──────────────────────────────────────────────────────────────────────
+
+    /**
+     * Delete all source refs by source type.
+     *
+     * Used for clearing entire pipelines (e.g., "clear all Telegram sources").
+     *
+     * @param sourceType Source type to delete (TELEGRAM, XTREAM, etc.)
+     * @return Number of source refs deleted
+     */
+    suspend fun deleteBySourceType(sourceType: SourceType): Int
+
+    /**
+     * Delete all source refs for a specific account.
+     *
+     * @param accountKey Account key (e.g., "telegram:123456")
+     * @return Number of source refs deleted
+     */
+    suspend fun deleteByAccountKey(accountKey: String): Int
+
+    // ──────────────────────────────────────────────────────────────────────
+    // Pattern Search (for legacy ID lookups)
+    // ──────────────────────────────────────────────────────────────────────
+
+    /**
+     * Find source refs by source type and item kind with optional item key pattern.
+     *
+     * Used for bridging legacy Xtream seriesId-based lookups to NX workKey.
+     *
+     * @param sourceType Source type (XTREAM, TELEGRAM, etc.)
+     * @param itemKind Item kind (SERIES, EPISODE, etc.)
+     * @param itemKeyPrefix Optional prefix to match sourceItemKey (e.g., "123" for seriesId)
+     * @return List of matching source refs
+     */
+    suspend fun findBySourceTypeAndKind(
+        sourceType: SourceType,
+        itemKind: SourceItemKind,
+        itemKeyPrefix: String? = null,
+    ): List<SourceRef>
 }

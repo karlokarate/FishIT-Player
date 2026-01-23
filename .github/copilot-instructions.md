@@ -126,6 +126,32 @@ fun getMessage(): TdApi.Message  // WRONG - use TgMessage!
 fun getClient(): TdlClient       // WRONG - never expose!
 ```
 
+### 🚨 NX_Work UI SSOT (UNUMGEHBAR / NON-NEGOTIABLE)
+
+> **HARD RULE:** `NX_Work` is the **ONLY** Single Source of Truth for ALL UI screens and Player.
+> No UI code, ViewModel, or feature module may read from legacy `Obx*` entities.
+
+```kotlin
+// ✅ CORRECT – UI reads exclusively from NX_*
+class HomeRepository @Inject constructor(
+    private val nxWorkRepository: NxWorkRepository,
+)
+
+// ❌ FORBIDDEN – Legacy entities in UI layer
+class HomeRepository @Inject constructor(
+    private val obxCanonicalMediaRepository: ObxCanonicalMediaRepository, // VIOLATION!
+)
+```
+
+**NX Entity Hierarchy:**
+- `NX_Work` – UI SSOT for all media (Movie/Series/Episode/Live/Clip)
+- `NX_WorkSourceRef` – Source origin (Xtream/Telegram account + IDs)
+- `NX_WorkVariant` – Playback info (URL, quality, codec)
+- `NX_WorkRelation` – Series↔Episode relationships
+- `NX_WorkUserState` – Resume position per profile
+
+**See:** `AGENTS.md` Section 4.3.3 and `/contracts/NX_SSOT_CONTRACT.md`
+
 ---
 
 ## ⚠️ MANDATORY: Contracts Folder

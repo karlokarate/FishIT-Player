@@ -346,6 +346,78 @@ See **`/legacy/gold/EXTRACTION_SUMMARY.md`** for complete porting guidance and *
 
 **Reference:** `docs/v2/architecture/TELEGRAM_TRANSPORT_SSOT.md`
 
+4.3.3. NX_Work UI SSOT (BINDING – NON-NEGOTIABLE)
+
+> **🚨 HARD RULE (UNUMGEHBAR):** `NX_Work` is the **ONLY** Single Source of Truth for ALL UI screens.
+> No UI code, ViewModel, or feature module may read from legacy `Obx*` entities.
+
+**SSOT Entity Hierarchy:**
+
+```text
+┌─────────────────────────────────────────────────────────────────┐
+│                    NX_Work (UI SSOT)                           │
+│  The ONLY entity that UI screens consume for media display     │
+└─────────────────────────────────────────────────────────────────┘
+         │                     │                      │
+         ▼                     ▼                      ▼
+┌─────────────────┐  ┌─────────────────┐  ┌─────────────────────┐
+│ NX_WorkSourceRef│  │ NX_WorkVariant  │  │ NX_WorkRelation     │
+│ (Source origin) │  │ (Playback info) │  │ (Series↔Episodes)   │
+└─────────────────┘  └─────────────────┘  └─────────────────────┘
+         │
+         ▼
+┌─────────────────────┐
+│ NX_WorkUserState    │
+│ (Resume per profile)│
+└─────────────────────┘
+```
+
+**What This Means:**
+
+| Component | MUST Read From | MUST NOT Read From |
+|-----------|----------------|-------------------|
+| Home Screen | `NxWorkRepository` | ~~`ObxCanonicalMediaRepository`~~ |
+| Library Screen | `NxWorkRepository` | ~~`ObxXtreamVodRepository`~~ |
+| Detail Screen | `NxWorkRepository` + `NxWorkRelationRepository` | ~~`ObxXtreamSeries`~~, ~~`ObxTelegramVideo`~~ |
+| Live TV Screen | `NxWorkRepository` | ~~`ObxXtreamLiveStream`~~ |
+| Search | `NxWorkRepository` | ~~Any `Obx*` entity~~ |
+| Player | `NxWorkVariantRepository` + `NxWorkUserStateRepository` | ~~Legacy resume entities~~ |
+
+**Canonical Code Pattern:**
+
+```kotlin
+// ✅ CORRECT – UI reads exclusively from NX_*
+class HomeRepository @Inject constructor(
+    private val nxWorkRepository: NxWorkRepository,
+    private val nxUserStateRepository: NxWorkUserStateRepository,
+)
+
+// ❌ FORBIDDEN – Legacy entities in UI layer
+class HomeRepository @Inject constructor(
+    private val obxCanonicalMediaRepository: ObxCanonicalMediaRepository, // VIOLATION!
+    private val obxXtreamVodRepository: ObxXtreamVodRepository,           // VIOLATION!
+)
+```
+
+**Contract Violations (HARD ERRORS):**
+
+| Violation | Severity | Action |
+|-----------|----------|--------|
+| UI imports `Obx*Entity` | 🔴 BLOCKER | Immediate refactor required |
+| ViewModel queries legacy repository | 🔴 BLOCKER | Replace with NX repository |
+| Feature module depends on `infra/data-obx` | 🔴 BLOCKER | Switch to `infra/data-nx` |
+| Adapter that wraps `Obx*` for UI | 🔴 BLOCKER | Remove adapter, use NX directly |
+| New `Obx*` entity for UI data | 🔴 BLOCKER | Use NX_* schema instead |
+
+**Transition Rules:**
+
+1. **New features** MUST use NX_* entities from day one
+2. **Existing features** MUST be migrated before Phase 6 completion
+3. **No new Obx* entities** may be created for UI consumption
+4. **Adapters/bridges** between Obx* and UI are FORBIDDEN – direct NX access only
+
+**Reference:** `/contracts/NX_SSOT_CONTRACT.md` (INV-6: UI SSOT Rule)
+
 4.4. No global mutable Singletons (hard clause)
 
 > Do not introduce new global singletons with mutable state.

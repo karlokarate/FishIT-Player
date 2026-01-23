@@ -35,6 +35,7 @@ dependencies {
     // Data layer repositories (for persisting catalog data)
     implementation(project(":infra:data-telegram"))
     implementation(project(":infra:data-xtream"))
+    implementation(project(":infra:data-nx")) // NX work graph (v2 SSOT)
 
     // Pipeline events (for consuming catalog events)
     implementation(project(":pipeline:telegram"))

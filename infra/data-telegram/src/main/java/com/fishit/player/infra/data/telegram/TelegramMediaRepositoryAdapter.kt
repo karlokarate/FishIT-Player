@@ -23,7 +23,18 @@ import javax.inject.Singleton
  * **Responsibility:**
  * - Maps RawMediaMetadata (from TelegramContentRepository) → TelegramMediaItem (domain model)
  * - Shields feature layer from pipeline concerns
+ *
+ * @deprecated Use [NxTelegramMediaRepositoryImpl] instead. This adapter uses legacy
+ * TelegramContentRepository which is being phased out in favor of NX_* entities.
  */
+@Deprecated(
+    message = "Use NxTelegramMediaRepositoryImpl instead. Legacy OBX adapter scheduled for removal.",
+    replaceWith = ReplaceWith(
+        "NxTelegramMediaRepositoryImpl",
+        "com.fishit.player.infra.data.telegram.NxTelegramMediaRepositoryImpl"
+    ),
+    level = DeprecationLevel.WARNING
+)
 @Singleton
 class TelegramMediaRepositoryAdapter
     @Inject
