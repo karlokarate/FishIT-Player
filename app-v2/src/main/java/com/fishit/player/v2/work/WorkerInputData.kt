@@ -7,6 +7,7 @@ import android.os.BatteryManager
 import android.os.Build
 import androidx.work.Data
 import androidx.work.WorkerParameters
+import com.fishit.player.core.persistence.config.ObxWriteConfig
 import com.fishit.player.infra.logging.UnifiedLog
 
 /**
@@ -38,9 +39,9 @@ data class WorkerInputData(
     val batchSize: Int
         get() =
             if (isFireTvLowRam) {
-                WorkerConstants.FIRETV_BATCH_SIZE
+                ObxWriteConfig.FIRETV_BATCH_CAP
             } else {
-                WorkerConstants.NORMAL_BATCH_SIZE
+                ObxWriteConfig.NORMAL_BATCH_SIZE
             }
 
     /** Returns retry limit based on sync mode (W-19) */
