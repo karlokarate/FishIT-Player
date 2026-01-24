@@ -1,6 +1,7 @@
 package com.fishit.player.v2.work
 
 import androidx.work.Data
+import com.fishit.player.core.persistence.config.ObxWriteConfig
 import org.junit.Test
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -126,7 +127,7 @@ class WorkerInputDataTest {
                 ioSyncScope = null,
             )
 
-        assertEquals(WorkerConstants.FIRETV_BATCH_SIZE, fireTvInput.batchSize)
-        assertEquals(WorkerConstants.NORMAL_BATCH_SIZE, normalInput.batchSize)
+        assertEquals(ObxWriteConfig.FIRETV_BATCH_CAP, fireTvInput.batchSize)
+        assertEquals(ObxWriteConfig.NORMAL_BATCH_SIZE, normalInput.batchSize)
     }
 }

@@ -1,6 +1,7 @@
 package com.fishit.player.v2.work
 
 import com.fishit.player.core.model.SourceType
+import com.fishit.player.core.persistence.config.ObxWriteConfig
 import org.junit.Test
 import org.junit.Assert.assertEquals
 
@@ -61,14 +62,14 @@ class CanonicalLinkingInputDataTest {
         val minimal = CanonicalLinkingInputData(
             runId = "minimal-run",
             sourceType = SourceType.XTREAM,
-            batchSize = WorkerConstants.NORMAL_BATCH_SIZE,
+            batchSize = ObxWriteConfig.NORMAL_BATCH_SIZE,
             maxRuntimeMs = WorkerConstants.DEFAULT_MAX_RUNTIME_MS,
         )
         
         val data = minimal.toData()
         val decoded = CanonicalLinkingInputData.from(data)
         
-        assertEquals(WorkerConstants.NORMAL_BATCH_SIZE, decoded.batchSize)
+        assertEquals(ObxWriteConfig.NORMAL_BATCH_SIZE, decoded.batchSize)
         assertEquals(WorkerConstants.DEFAULT_MAX_RUNTIME_MS, decoded.maxRuntimeMs)
     }
 
