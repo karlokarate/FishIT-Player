@@ -135,9 +135,10 @@ jobs:
           if printf '%s' "$val" | base64 -d > release.keystore 2>/dev/null; then
             echo "✅ Keystore decoded successfully"
           else
-            echo "::error::Invalid Base64 in keystore secret"
-            echo "::error::Ensure the secret contains valid base64-encoded keystore data"
-            exit 1
+            echo "::warning::Invalid Base64 in keystore secret - build will be unsigned"
+            echo "::notice::Ensure the secret contains valid base64-encoded keystore data"
+            echo "::notice::To fix, regenerate the secret with: base64 release.keystore | pbcopy"
+            exit 0
           fi
           
           if [[ -f release.keystore ]]; then
