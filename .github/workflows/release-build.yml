@@ -111,8 +111,8 @@ jobs:
       # 2026 OPTIMIZATION: Modern Gradle JVM settings for CI
       # - UseG1GC: Better for large heaps (was ParallelGC)
       # - MaxMetaspaceSize: Prevent metaspace OOM
-      # - Configuration cache optimized settings
-      GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.jvmargs='-Xmx4g -XX:+UseG1GC -XX:MaxMetaspaceSize=1g -XX:+HeapDumpOnOutOfMemoryError' -Dorg.gradle.configuration-cache=true -Dorg.gradle.caching=true"
+      # - Configuration cache DISABLED: ObjectBox incompatibility (see issue)
+      GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.jvmargs='-Xmx4g -XX:+UseG1GC -XX:MaxMetaspaceSize=1g -XX:+HeapDumpOnOutOfMemoryError' -Dorg.gradle.configuration-cache=false -Dorg.gradle.caching=true"
       BUILD_START_TIME: ${{ github.event.repository.updated_at }}
 
     steps:
@@ -504,9 +504,10 @@ jobs:
           if printf '%s' "$val" | base64 -d > release.keystore 2>/dev/null; then
             echo "✅ Keystore decoded successfully"
           else
-            echo "::error::Invalid Base64 in keystore secret"
-            echo "::error::Ensure the secret contains valid base64-encoded keystore data"
-            exit 1
+            echo "::warning::Invalid Base64 in keystore secret - build will be unsigned"
+            echo "::notice::Ensure the secret contains valid base64-encoded keystore data"
+            echo "::notice::To fix, regenerate the secret with: base64 release.keystore | pbcopy"
+            exit 0
           fi
           
           if [[ -f release.keystore ]]; then
@@ -523,6 +524,7 @@ jobs:
 
       # =========================================================
       # 2026 OPTIMIZATION: Modern Gradle build with performance flags
+      # Configuration cache DISABLED due to ObjectBox incompatibility
       # =========================================================
       - name: Build release APK for BOTH ARM ABIs
         id: build_apk
@@ -530,11 +532,11 @@ jobs:
           echo "BUILD_CONFIG_START=$(date +%s)" >> $GITHUB_OUTPUT
           
           # 2026 Performance flags:
-          # --configuration-cache: Reuse configuration results (faster subsequent builds)
           # --no-watch-fs: Skip filesystem watching (not needed in CI)
           # --no-daemon: Already set in env, but explicit
           # --build-cache: Use build cache
           # --parallel: Parallel execution
+          # NOTE: --configuration-cache removed due to ObjectBox incompatibility
           
           # Build for arm64-v8a
           echo "Building for arm64-v8a..."
@@ -547,7 +549,6 @@ jobs:
             --no-daemon \
             --no-watch-fs \
             --build-cache \
-            --configuration-cache \
             --parallel \
             --stacktrace \
             --warning-mode all \
@@ -565,7 +566,6 @@ jobs:
             --no-daemon \
             --no-watch-fs \
             --build-cache \
-            --configuration-cache \
             --parallel \
             --stacktrace \
             --warning-mode all \

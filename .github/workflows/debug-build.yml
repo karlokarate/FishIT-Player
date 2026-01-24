@@ -49,7 +49,8 @@ jobs:
 
     env:
       # 2026 OPTIMIZATION: Modern Gradle JVM settings for CI
-      GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.jvmargs='-Xmx4g -XX:+UseG1GC -XX:MaxMetaspaceSize=1g -XX:+HeapDumpOnOutOfMemoryError' -Dorg.gradle.configuration-cache=true -Dorg.gradle.caching=true"
+      # Configuration cache DISABLED: ObjectBox incompatibility
+      GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.jvmargs='-Xmx4g -XX:+UseG1GC -XX:MaxMetaspaceSize=1g -XX:+HeapDumpOnOutOfMemoryError' -Dorg.gradle.configuration-cache=false -Dorg.gradle.caching=true"
 
     steps:
       - name: Capture start time
@@ -136,6 +137,7 @@ jobs:
           echo "Building debug APK for ABI: $ABI_FILTER"
           
           # Build debug APK with 2026 performance flags
+          # NOTE: --configuration-cache removed due to ObjectBox incompatibility
           ./gradlew :app-v2:assembleDebug \
             -PabiFilters=$ABI_FILTER \
             -PuseSplits=false \
@@ -144,7 +146,6 @@ jobs:
             --no-daemon \
             --no-watch-fs \
             --build-cache \
-            --configuration-cache \
             --parallel \
             --stacktrace \
             --warning-mode all \
