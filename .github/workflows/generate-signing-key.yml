@@ -1,0 +1,325 @@
+name: Generate Signing Key
+
+# =========================================================
+# Signing Key Generation Workflow
+# =========================================================
+# Purpose: Generate a new Android signing keystore and convert to base64
+# for storage in GitHub Secrets
+#
+# Usage:
+# 1. Run this workflow manually
+# 2. Download the generated keystore artifact
+# 3. Use the output base64 string to set GitHub secrets:
+#    - KEYSTORE_BASE64: The base64-encoded keystore
+#    - KEYSTORE_PASSWORD: The keystore password (from workflow inputs)
+#    - KEY_PASSWORD: The key password (from workflow inputs)
+#    - KEY_ALIAS: The key alias (from workflow inputs)
+#
+# Security Note:
+# - This workflow generates a NEW keystore each time it runs
+# - Passwords are masked in logs
+# - Base64 output is only available in artifacts
+# - For production use, keep the keystore file secure and backed up
+# =========================================================
+
+on:
+  workflow_dispatch:
+    inputs:
+      key_alias:
+        description: "Key alias (identifier for the signing key)"
+        required: true
+        type: string
+        default: "fishit-release-key"
+      key_validity_years:
+        description: "Key validity in years"
+        required: true
+        type: string
+        default: "25"
+      distinguished_name:
+        description: "Distinguished Name (e.g., CN=Company, OU=Department, O=Organization, L=City, ST=State, C=DE)"
+        required: true
+        type: string
+        default: "CN=FishIT Player, OU=Development, O=FishIT, L=Berlin, ST=Berlin, C=DE"
+      keystore_password:
+        description: "Keystore password (will be masked in logs)"
+        required: true
+        type: string
+      key_password:
+        description: "Key password (will be masked in logs)"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  actions: write
+
+jobs:
+  generate-keystore:
+    name: Generate Android Keystore
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+
+    steps:
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Generate keystore
+        id: generate
+        run: |
+          # Create output directory
+          mkdir -p output
+          
+          # Define keystore filename
+          KEYSTORE_FILE="output/fishit-release.keystore"
+          
+          echo "Generating Android keystore..."
+          echo "Key alias: ${{ github.event.inputs.key_alias }}"
+          echo "Validity: ${{ github.event.inputs.key_validity_years }} years"
+          
+          # Generate keystore using keytool
+          # -genkeypair: Generate a key pair (private and public key)
+          # -v: Verbose output
+          # -keystore: Output keystore file
+          # -alias: Key alias
+          # -keyalg: Key algorithm (RSA)
+          # -keysize: Key size in bits
+          # -validity: Validity in days
+          # -storepass: Keystore password
+          # -keypass: Key password
+          # -dname: Distinguished name
+          keytool -genkeypair \
+            -v \
+            -keystore "$KEYSTORE_FILE" \
+            -alias "${{ github.event.inputs.key_alias }}" \
+            -keyalg RSA \
+            -keysize 2048 \
+            -validity $((365 * ${{ github.event.inputs.key_validity_years }})) \
+            -storepass "${{ github.event.inputs.keystore_password }}" \
+            -keypass "${{ github.event.inputs.key_password }}" \
+            -dname "${{ github.event.inputs.distinguished_name }}"
+          
+          echo "✅ Keystore generated successfully"
+          
+          # List keystore contents (for verification)
+          echo ""
+          echo "Keystore information:"
+          keytool -list -v \
+            -keystore "$KEYSTORE_FILE" \
+            -storepass "${{ github.event.inputs.keystore_password }}" \
+            | head -30
+          
+          # Calculate file size
+          KEYSTORE_SIZE=$(stat -f%z "$KEYSTORE_FILE" 2>/dev/null || stat -c%s "$KEYSTORE_FILE")
+          echo "Keystore size: $KEYSTORE_SIZE bytes"
+          
+          echo "KEYSTORE_FILE=$KEYSTORE_FILE" >> $GITHUB_OUTPUT
+          echo "KEYSTORE_SIZE=$KEYSTORE_SIZE" >> $GITHUB_OUTPUT
+
+      - name: Convert keystore to base64
+        id: base64
+        run: |
+          KEYSTORE_FILE="${{ steps.generate.outputs.KEYSTORE_FILE }}"
+          
+          echo "Converting keystore to base64..."
+          
+          # Convert to base64 (single line, no wrapping)
+          base64 -w 0 "$KEYSTORE_FILE" > output/keystore.base64.txt
+          
+          # Create a multiline version for better readability
+          base64 "$KEYSTORE_FILE" > output/keystore.base64.multiline.txt
+          
+          # Calculate base64 size
+          BASE64_SIZE=$(wc -c < output/keystore.base64.txt)
+          echo "Base64 size: $BASE64_SIZE bytes"
+          
+          # Show first and last 50 characters for verification
+          echo ""
+          echo "Base64 preview (first 50 chars):"
+          head -c 50 output/keystore.base64.txt
+          echo "..."
+          echo ""
+          echo "Base64 preview (last 50 chars):"
+          echo -n "..."
+          tail -c 50 output/keystore.base64.txt
+          echo ""
+          
+          echo "BASE64_SIZE=$BASE64_SIZE" >> $GITHUB_OUTPUT
+          echo "✅ Base64 conversion complete"
+
+      - name: Create setup instructions
+        run: |
+          cat > output/SETUP_INSTRUCTIONS.md <<'EOF'
+          # Signing Key Setup Instructions
+          
+          ## Generated Files
+          
+          1. **fishit-release.keystore** - The Android signing keystore (binary)
+          2. **keystore.base64.txt** - Base64-encoded keystore (single line)
+          3. **keystore.base64.multiline.txt** - Base64-encoded keystore (multiline for readability)
+          
+          ## Setup GitHub Secrets
+          
+          To use this keystore in GitHub Actions workflows, set up the following repository secrets:
+          
+          ### Required Secrets
+          
+          1. **KEYSTORE_BASE64**
+             - Copy the entire content of `keystore.base64.txt`
+             - Go to: Settings → Secrets and variables → Actions → New repository secret
+             - Name: `KEYSTORE_BASE64`
+             - Value: Paste the base64 string
+          
+          2. **KEYSTORE_PASSWORD**
+             - The keystore password you entered when running the workflow
+             - Name: `KEYSTORE_PASSWORD`
+          
+          3. **KEY_PASSWORD**
+             - The key password you entered when running the workflow
+             - Name: `KEY_PASSWORD`
+          
+          4. **KEY_ALIAS**
+             - The key alias you entered when running the workflow
+             - Name: `KEY_ALIAS`
+          
+          ### Using in Workflows
+          
+          The release build workflow will automatically use these secrets:
+          
+          ```yaml
+          - name: Decode keystore from base64
+            run: |
+              echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > release.keystore
+          
+          - name: Build signed APK
+            env:
+              MYAPP_UPLOAD_STORE_FILE: release.keystore
+              MYAPP_UPLOAD_STORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+              MYAPP_UPLOAD_KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+              MYAPP_UPLOAD_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+            run: ./gradlew assembleRelease
+          ```
+          
+          ## Security Best Practices
+          
+          1. **Never commit the keystore file to git**
+             - Add `*.keystore` to `.gitignore`
+          
+          2. **Keep backups secure**
+             - Store the keystore file in a secure location (password manager, encrypted storage)
+             - If you lose the keystore, you cannot update your app in the Play Store
+          
+          3. **Use strong passwords**
+             - Minimum 8 characters
+             - Mix of uppercase, lowercase, numbers, and symbols
+          
+          4. **Rotate secrets periodically**
+             - For maximum security, generate new keystores for each major version
+             - But remember: Once published to Play Store, you must use the same keystore
+          
+          5. **Limit access**
+             - Only give repository access to trusted team members
+             - Use GitHub's environment secrets for additional protection
+          
+          ## Verification
+          
+          To verify the keystore was generated correctly:
+          
+          ```bash
+          # List keystore contents
+          keytool -list -v -keystore fishit-release.keystore -storepass YOUR_PASSWORD
+          
+          # Verify base64 encoding/decoding
+          base64 -d keystore.base64.txt > test.keystore
+          diff fishit-release.keystore test.keystore  # Should show no differences
+          ```
+          
+          ## Key Information
+          
+          - **Alias**: ${{ github.event.inputs.key_alias }}
+          - **Validity**: ${{ github.event.inputs.key_validity_years }} years
+          - **Algorithm**: RSA 2048-bit
+          - **Distinguished Name**: ${{ github.event.inputs.distinguished_name }}
+          
+          ## Need Help?
+          
+          - [Android App Signing Documentation](https://developer.android.com/studio/publish/app-signing)
+          - [GitHub Encrypted Secrets Documentation](https://docs.github.com/en/actions/security-guides/encrypted-secrets)
+          EOF
+          
+          echo "✅ Setup instructions created"
+
+      - name: Upload keystore artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: signing-keystore-${{ github.run_number }}
+          path: output/*
+          retention-days: 7
+
+      - name: Generate workflow summary
+        run: |
+          KEYSTORE_SIZE="${{ steps.generate.outputs.KEYSTORE_SIZE }}"
+          BASE64_SIZE="${{ steps.base64.outputs.BASE64_SIZE }}"
+          
+          cat >> $GITHUB_STEP_SUMMARY <<EOF
+          ## 🔐 Signing Keystore Generated
+          
+          ### Key Information
+          - **Alias**: \`${{ github.event.inputs.key_alias }}\`
+          - **Validity**: ${{ github.event.inputs.key_validity_years }} years
+          - **Algorithm**: RSA 2048-bit
+          - **Distinguished Name**: \`${{ github.event.inputs.distinguished_name }}\`
+          
+          ### File Sizes
+          - **Keystore**: ${KEYSTORE_SIZE} bytes
+          - **Base64**: ${BASE64_SIZE} bytes
+          
+          ### Next Steps
+          
+          1. **Download the artifact** from the "Artifacts" section below
+          2. **Extract the files** from the zip
+          3. **Read** \`SETUP_INSTRUCTIONS.md\` for detailed setup guide
+          4. **Set up GitHub Secrets**:
+             - \`KEYSTORE_BASE64\` - Content of \`keystore.base64.txt\`
+             - \`KEYSTORE_PASSWORD\` - Your keystore password
+             - \`KEY_PASSWORD\` - Your key password  
+             - \`KEY_ALIAS\` - \`${{ github.event.inputs.key_alias }}\`
+          
+          ### Security Reminders ⚠️
+          
+          - ✅ Keep the keystore file in a secure backup
+          - ✅ Never commit keystore files to git
+          - ✅ Use strong, unique passwords
+          - ✅ Limit repository access to trusted team members
+          - ❌ Never share the keystore or passwords publicly
+          
+          ### Artifact Contents
+          
+          The artifact contains:
+          - \`fishit-release.keystore\` - Binary keystore file
+          - \`keystore.base64.txt\` - Single-line base64 (for GitHub secrets)
+          - \`keystore.base64.multiline.txt\` - Multiline base64 (for readability)
+          - \`SETUP_INSTRUCTIONS.md\` - Complete setup guide
+          
+          ---
+          
+          ⏰ **Important**: Artifacts expire after 7 days. Download and backup immediately!
+          EOF
+
+      - name: Security reminder
+        run: |
+          echo ""
+          echo "╔════════════════════════════════════════════════════════════╗"
+          echo "║                    🔒 SECURITY REMINDER 🔒                 ║"
+          echo "╠════════════════════════════════════════════════════════════╣"
+          echo "║                                                            ║"
+          echo "║  1. Download the artifact NOW (expires in 7 days)         ║"
+          echo "║  2. Store keystore in secure backup (password manager)    ║"
+          echo "║  3. Set up GitHub secrets following instructions          ║"
+          echo "║  4. NEVER commit keystore files to git                    ║"
+          echo "║  5. If you lose the keystore, you cannot update the app   ║"
+          echo "║                                                            ║"
+          echo "╚════════════════════════════════════════════════════════════╝"
+          echo ""

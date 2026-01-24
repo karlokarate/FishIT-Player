@@ -1,0 +1,270 @@
+name: Debug Build – Unsigned APK (Development)
+
+# =========================================================
+# Debug Build Workflow - 2026 GitHub Standards
+# =========================================================
+# Purpose: Build unsigned debug APKs for development/testing
+# - No code signing required
+# - Faster build times (no ProGuard/R8)
+# - All debug tools included (LeakCanary, Chucker)
+# - Uses 2026 optimization patterns from release-build.yml
+# =========================================================
+
+on:
+  workflow_dispatch:
+    inputs:
+      version_name:
+        description: "Version name (e.g., v2.0.0-debug)"
+        required: true
+        type: string
+        default: "2.0.0-debug"
+      version_code:
+        description: "Version code (integer)"
+        required: true
+        type: string
+        default: "1"
+      abi_target:
+        description: "ABI target"
+        required: true
+        type: choice
+        options:
+          - arm64-v8a
+          - armeabi-v7a
+          - both
+        default: "arm64-v8a"
+
+permissions:
+  contents: read
+  actions: write
+
+concurrency:
+  group: debug-build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-debug:
+    name: Build Debug APK (Unsigned)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+
+    env:
+      # 2026 OPTIMIZATION: Modern Gradle JVM settings for CI
+      GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.jvmargs='-Xmx4g -XX:+UseG1GC -XX:MaxMetaspaceSize=1g -XX:+HeapDumpOnOutOfMemoryError' -Dorg.gradle.configuration-cache=true -Dorg.gradle.caching=true"
+
+    steps:
+      - name: Capture start time
+        id: start_time
+        run: echo "START_TIME=$(date +%s)" >> $GITHUB_OUTPUT
+
+      # =========================================================
+      # 2026 OPTIMIZATION: Use latest checkout action
+      # =========================================================
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          lfs: true
+          submodules: recursive
+
+      # =========================================================
+      # 2026 OPTIMIZATION: Setup Java with built-in caching
+      # =========================================================
+      - name: Setup Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+          cache: 'gradle'
+
+      # =========================================================
+      # 2026 OPTIMIZATION: Use Gradle actions with built-in caching
+      # =========================================================
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: false
+          cache-write-only: false
+          build-scan-publish: true
+          build-scan-terms-of-use-url: "https://gradle.com/terms-of-service"
+          build-scan-terms-of-use-agree: "yes"
+          gradle-home-cache-cleanup: true
+
+      # =========================================================
+      # 2026 OPTIMIZATION: Use preinstalled Android SDK
+      # =========================================================
+      - name: Setup Android SDK
+        run: |
+          set -euo pipefail
+          echo "Android SDK Location: $ANDROID_HOME"
+          
+          # Accept all SDK licenses
+          yes | sdkmanager --licenses >/dev/null 2>&1 || true
+          
+          # Install only missing packages
+          echo "Installing Android SDK packages..."
+          sdkmanager --install \
+            "platforms;android-36" \
+            "build-tools;35.0.0" 2>&1 | grep -v "%" || true
+          
+          echo "Android SDK setup completed."
+
+      # =========================================================
+      # BUILD: Debug APK (Unsigned, No Minification)
+      # =========================================================
+      - name: Build debug APK
+        id: build_apk
+        run: |
+          echo "BUILD_START=$(date +%s)" >> $GITHUB_OUTPUT
+          
+          # Determine which ABIs to build
+          case "${{ github.event.inputs.abi_target }}" in
+            arm64-v8a)
+              ABI_FILTER="arm64-v8a"
+              ;;
+            armeabi-v7a)
+              ABI_FILTER="armeabi-v7a"
+              ;;
+            both)
+              ABI_FILTER="arm64-v8a,armeabi-v7a"
+              ;;
+            *)
+              echo "Unknown ABI target: ${{ github.event.inputs.abi_target }}"
+              exit 1
+              ;;
+          esac
+          
+          echo "Building debug APK for ABI: $ABI_FILTER"
+          
+          # Build debug APK with 2026 performance flags
+          ./gradlew :app-v2:assembleDebug \
+            -PabiFilters=$ABI_FILTER \
+            -PuseSplits=false \
+            -PversionCode=${{ github.event.inputs.version_code }} \
+            -PversionName=${{ github.event.inputs.version_name }} \
+            --no-daemon \
+            --no-watch-fs \
+            --build-cache \
+            --configuration-cache \
+            --parallel \
+            --stacktrace \
+            --warning-mode all \
+            -x lint
+          
+          echo "BUILD_END=$(date +%s)" >> $GITHUB_OUTPUT
+          
+          # List built APKs
+          echo "Built APKs:"
+          find app-v2/build/outputs/apk/debug -name "*.apk" -type f
+
+      # =========================================================
+      # ARTIFACT: Upload Debug APKs
+      # =========================================================
+      - name: Prepare APK artifacts
+        id: prepare_artifacts
+        run: |
+          mkdir -p artifacts
+          
+          # Copy all debug APKs to artifacts directory
+          find app-v2/build/outputs/apk/debug -name "*.apk" -type f -exec cp {} artifacts/ \;
+          
+          # Rename APKs with version info
+          cd artifacts
+          for apk in *.apk; do
+            if [ -f "$apk" ]; then
+              # Extract ABI from filename if present
+              if [[ $apk == *"arm64-v8a"* ]]; then
+                abi="arm64-v8a"
+              elif [[ $apk == *"armeabi-v7a"* ]]; then
+                abi="armeabi-v7a"
+              else
+                abi="universal"
+              fi
+              
+              new_name="FishIT-Player-${{ github.event.inputs.version_name }}-debug-${abi}.apk"
+              mv "$apk" "$new_name"
+              
+              # Calculate checksums
+              sha256sum "$new_name" > "${new_name}.sha256"
+              
+              echo "Prepared: $new_name"
+            fi
+          done
+          
+          ls -lh
+
+      - name: Upload debug APK artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug-apk-${{ github.event.inputs.version_name }}
+          path: artifacts/*.apk
+          retention-days: 30
+          compression-level: 0
+
+      - name: Upload checksums
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug-checksums-${{ github.event.inputs.version_name }}
+          path: artifacts/*.sha256
+          retention-days: 30
+
+      # =========================================================
+      # SUMMARY: Build Metrics
+      # =========================================================
+      - name: Calculate build metrics
+        id: metrics
+        run: |
+          BUILD_START=${{ steps.build_apk.outputs.BUILD_START }}
+          BUILD_END=${{ steps.build_apk.outputs.BUILD_END }}
+          TOTAL_START=${{ steps.start_time.outputs.START_TIME }}
+          TOTAL_END=$(date +%s)
+          
+          BUILD_TIME=$((BUILD_END - BUILD_START))
+          TOTAL_TIME=$((TOTAL_END - TOTAL_START))
+          
+          echo "BUILD_TIME=$BUILD_TIME" >> $GITHUB_OUTPUT
+          echo "TOTAL_TIME=$TOTAL_TIME" >> $GITHUB_OUTPUT
+
+      - name: Generate summary
+        run: |
+          BUILD_TIME=${{ steps.metrics.outputs.BUILD_TIME }}
+          TOTAL_TIME=${{ steps.metrics.outputs.TOTAL_TIME }}
+          
+          cat >> $GITHUB_STEP_SUMMARY <<EOF
+          ## 🐛 Debug Build Summary
+          
+          ### Build Information
+          - **Version**: ${{ github.event.inputs.version_name }}
+          - **Version Code**: ${{ github.event.inputs.version_code }}
+          - **ABI Target**: ${{ github.event.inputs.abi_target }}
+          - **Build Type**: Debug (Unsigned)
+          - **Workflow Run**: #${{ github.run_number }}
+          
+          ### Build Performance
+          - **Build Time**: ${BUILD_TIME}s ($(($BUILD_TIME / 60))m $(($BUILD_TIME % 60))s)
+          - **Total CI Time**: ${TOTAL_TIME}s ($(($TOTAL_TIME / 60))m $(($TOTAL_TIME % 60))s)
+          
+          ### Debug Features Included ✅
+          - LeakCanary (memory leak detection)
+          - Chucker (network inspection)
+          - Debug settings UI
+          - Verbose logging
+          - No code obfuscation
+          - No resource shrinking
+          
+          ### Artifacts
+          Check the "Artifacts" section below to download:
+          - Debug APK(s)
+          - SHA256 checksums
+          
+          ### 2026 Optimizations Applied 🚀
+          - Gradle configuration cache
+          - No filesystem watching
+          - Build cache enabled
+          - Parallel execution
+          - Latest GitHub Actions (v4)
+          
+          ---
+          
+          ⚠️ **Note**: This is an UNSIGNED debug build for development/testing only.
+          Do not distribute to end users. Use the release workflow for production builds.
+          EOF
