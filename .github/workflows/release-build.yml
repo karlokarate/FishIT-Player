@@ -619,12 +619,12 @@ jobs:
 
       - name: Verify APK signature
         run: |
-          find app/build/outputs/apk/release -type f -name "*.apk" -print0 | \
+          find app-v2/build/outputs/apk/release -type f -name "*.apk" -print0 | \
             xargs -0 -I{} bash -c 'apksigner verify --verbose "{}" || true'
 
       - name: Calculate checksums
         run: |
-          find app/build/outputs/apk/release -type f -name "*.apk" -print0 | \
+          find app-v2/build/outputs/apk/release -type f -name "*.apk" -print0 | \
             xargs -0 sha256sum > checksums-all.txt
           cat checksums-all.txt
 
@@ -779,7 +779,7 @@ jobs:
         with:
           name: app-release-apks
           path: |
-            app/build/outputs/apk/release/*.apk
+            app-v2/build/outputs/apk/release/*.apk
             checksums-all.txt
           retention-days: 30
           if-no-files-found: error
