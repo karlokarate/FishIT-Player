@@ -149,12 +149,12 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
+          gradle-version: wrapper
           cache-read-only: false
           cache-write-only: false
-          # Enable Gradle Build Scan for performance insights
-          build-scan-publish: true
-          build-scan-terms-of-use-url: "https://gradle.com/terms-of-service"
-          build-scan-terms-of-use-agree: "yes"
+          # Disable Develocity/Build Scan (we don't use Gradle Enterprise)
+          build-scan-publish: false
+          develocity-injection-enabled: false
           gradle-home-cache-cleanup: true
 
       # =========================================================
