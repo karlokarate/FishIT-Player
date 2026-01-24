@@ -103,39 +103,44 @@ Set up the following repository secrets to enable signed builds:
 
 ### Required Secrets
 
-Create these four secrets:
+Create these four secrets (you can use either naming convention):
 
-#### 1. KEYSTORE_BASE64
+#### 1. KEYSTORE_BASE64 (Recommended) or ANDROID_SIGNING_KEYSTORE_BASE64
 
-- **Name**: `KEYSTORE_BASE64`
+- **Name**: `KEYSTORE_BASE64` (or `ANDROID_SIGNING_KEYSTORE_BASE64` for legacy)
 - **Value**: Copy the entire content of `keystore.base64.txt` (single line)
 - This is the base64-encoded keystore that will be decoded during builds
 
-#### 2. KEYSTORE_PASSWORD
+#### 2. KEYSTORE_PASSWORD (Recommended) or ANDROID_SIGNING_KEYSTORE_PASSWORD
 
-- **Name**: `KEYSTORE_PASSWORD`
+- **Name**: `KEYSTORE_PASSWORD` (or `ANDROID_SIGNING_KEYSTORE_PASSWORD` for legacy)
 - **Value**: The keystore password you entered when generating the key
 - This protects access to the keystore file
 
-#### 3. KEY_PASSWORD
+#### 3. KEY_PASSWORD (Recommended) or ANDROID_SIGNING_KEY_PASSWORD
 
-- **Name**: `KEY_PASSWORD`
+- **Name**: `KEY_PASSWORD` (or `ANDROID_SIGNING_KEY_PASSWORD` for legacy)
 - **Value**: The key password you entered when generating the key
 - This protects the specific signing key within the keystore
 
-#### 4. KEY_ALIAS
+#### 4. KEY_ALIAS (Recommended) or ANDROID_SIGNING_KEY_ALIAS
 
-- **Name**: `KEY_ALIAS`
+- **Name**: `KEY_ALIAS` (or `ANDROID_SIGNING_KEY_ALIAS` for legacy)
 - **Value**: The key alias you entered when generating the key (e.g., `fishit-release-key`)
 - This identifies which key to use from the keystore
 
-### Alternative Secret Names
+### Supported Secret Names
 
-The release workflow also supports these legacy secret names:
-- `ANDROID_SIGNING_KEYSTORE_BASE64` (alternative to `KEYSTORE_BASE64`)
-- `ANDROID_SIGNING_KEYSTORE_PASSWORD` (alternative to `KEYSTORE_PASSWORD`)
-- `ANDROID_SIGNING_KEY_ALIAS` (alternative to `KEY_ALIAS`)
-- `ANDROID_SIGNING_KEY_PASSWORD` (alternative to `KEY_PASSWORD`)
+The workflows support both naming conventions for maximum compatibility:
+
+| Purpose | Recommended Name | Legacy Alternative |
+|---------|------------------|-------------------|
+| Base64 Keystore | `KEYSTORE_BASE64` | `ANDROID_SIGNING_KEYSTORE_BASE64` |
+| Keystore Password | `KEYSTORE_PASSWORD` | `ANDROID_SIGNING_KEYSTORE_PASSWORD` |
+| Key Alias | `KEY_ALIAS` | `ANDROID_SIGNING_KEY_ALIAS` or `ANDROID_SIGN_KEY_ALIAS` |
+| Key Password | `KEY_PASSWORD` | `ANDROID_SIGNING_KEY_PASSWORD` |
+
+**Note**: You only need to set ONE of each pair. The workflows will automatically check for both and use whichever is available. Using the recommended names (without `ANDROID_SIGNING_` prefix) is preferred for new setups.
 
 ## Build Workflows
 
