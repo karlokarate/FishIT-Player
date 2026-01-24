@@ -54,7 +54,7 @@ dependencies {
     if (includeChucker) {
         debugImplementation(libs.chucker)
     }
-    // NOTE: No releaseImplementation(libs.chucker.noop) - completely removed per Issue #564
+    // NOTE: Release build uses source-set stubs instead of library (Issue #564)
 
     // Hilt DI
     implementation("com.google.dagger:hilt-android:2.56.1")

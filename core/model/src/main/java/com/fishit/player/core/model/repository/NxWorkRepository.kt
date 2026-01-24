@@ -98,6 +98,12 @@ interface NxWorkRepository {
 
     fun observeRecentlyUpdated(limit: Int = 50): Flow<List<Work>>
 
+    /**
+     * Observe recently CREATED works (sorted by createdAt DESC).
+     * Use for "Recently Added" UI - shows newly ingested content.
+     */
+    fun observeRecentlyCreated(limit: Int = 50): Flow<List<Work>>
+
     fun observeNeedsReview(limit: Int = 200): Flow<List<Work>>
 
     suspend fun searchByTitle(

@@ -89,7 +89,8 @@ class NxHomeContentRepositoryImpl @Inject constructor(
 
     @OptIn(ExperimentalCoroutinesApi::class)
     override fun observeRecentlyAdded(): Flow<List<HomeMediaItem>> {
-        return workRepository.observeRecentlyUpdated(limit = RECENTLY_ADDED_LIMIT)
+        // Use createdAt sort for "Recently Added" - shows newly ingested content
+        return workRepository.observeRecentlyCreated(limit = RECENTLY_ADDED_LIMIT)
             .mapLatest { works ->
                 val now = System.currentTimeMillis()
                 works

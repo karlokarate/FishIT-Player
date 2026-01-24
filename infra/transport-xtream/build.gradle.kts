@@ -61,7 +61,7 @@ dependencies {
     if (includeChucker) {
         debugImplementation(libs.chucker)
     }
-    // NOTE: No releaseImplementation(libs.chucker.noop) - completely removed per Issue #564
+    // NOTE: Release build uses source-set stubs instead of library (Issue #564)
 
     // Testing
     testImplementation("junit:junit:4.13.2")

@@ -76,6 +76,14 @@ class NxWorkRepositoryImpl @Inject constructor(
             .map { list -> list.take(limit).map { it.toDomain() } }
     }
 
+    override fun observeRecentlyCreated(limit: Int): Flow<List<Work>> {
+        return box.query()
+            .orderDesc(NX_Work_.createdAt)
+            .build()
+            .flow()
+            .map { list -> list.take(limit).map { it.toDomain() } }
+    }
+
     override fun observeNeedsReview(limit: Int): Flow<List<Work>> {
         return box.query(NX_Work_.needsReview.equal(true))
             .order(NX_Work_.canonicalTitle)
