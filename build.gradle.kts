@@ -102,4 +102,6 @@ doctor {
     warnWhenNotUsingParallelGC = false
     // Enable test caching
     enableTestCaching = true
+    // Disable Develocity integration (we don't use it)
+    disableDevelocityIntegration = true
 }
