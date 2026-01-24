@@ -482,17 +482,17 @@ jobs:
 
 
       - name: Decode Keystore (if available)
-      env:
-        KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
-      run: |
-        if [ -n "$KEYSTORE_BASE64" ]; then
-          echo "$KEYSTORE_BASE64" | base64 -d > ./androidApp/keystore.jks
-          echo "✅ Keystore decoded successfully"
-          echo "KEYSTORE_AVAILABLE=true" >> $GITHUB_ENV
-        else
-          echo "⚠️  No keystore available, will build without signing"
-          echo "KEYSTORE_AVAILABLE=false" >> $GITHUB_ENV
-        fi
+        run: |
+          if [ -n "$KEYSTORE_BASE64" ]; then
+            echo "$KEYSTORE_BASE64" | base64 -d > ./androidApp/keystore.jks
+            echo "✅ Keystore decoded successfully"
+            echo "KEYSTORE_AVAILABLE=true" >> $GITHUB_ENV
+          else
+            echo "⚠️  No keystore available, will build without signing"
+            echo "KEYSTORE_AVAILABLE=false" >> $GITHUB_ENV
+          fi
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
 
       # =========================================================
       # 2026 OPTIMIZATION: Modern Gradle build with performance flags
