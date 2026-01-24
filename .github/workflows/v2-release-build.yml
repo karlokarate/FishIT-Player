@@ -91,6 +91,9 @@ jobs:
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v5
+        with:
+          gradle-version: wrapper
+          develocity-injection-enabled: false
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3.2.2
@@ -292,6 +295,9 @@ jobs:
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v5
+        with:
+          gradle-version: wrapper
+          develocity-injection-enabled: false
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3.2.2
