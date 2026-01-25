@@ -7,6 +7,13 @@
 # GENERAL OPTIMIZATION SETTINGS
 # ==============================================================================
 
+# R8 Full Mode Compatibility (AGP 8.7.x + Kotlin 2.1.0)
+# Enable aggressive optimizations while maintaining stability
+-optimizationpasses 5
+-allowaccessmodification
+-dontpreverify
+-repackageclasses ''
+
 # Keep source file and line number information for better stack traces
 -keepattributes SourceFile,LineNumberTable
 
@@ -298,6 +305,38 @@
 
 # ==============================================================================
 # R8 FULL MODE (AGGRESSIVE OPTIMIZATION)
+# ==============================================================================
+# Enabled in gradle.properties: android.enableR8.fullMode=true
+# Compatible with: AGP 8.7.3, Kotlin 2.1.0
+
+# R8 full mode specific optimizations
+-optimizations !code/simplification/arithmetic,!code/simplification/cast,!field/*,!class/merging/*
+-verbose
+
+# Keep debugging information for crashes
+-keepattributes SourceFile,LineNumberTable
+
+# Optimization options for R8 full mode
+-dontusemixedcaseclassnames
+-dontskipnonpubliclibraryclasses
+
+# ==============================================================================
+# KOTLIN 2.1.0 + R8 COMPATIBILITY
+# ==============================================================================
+
+# Critical for Kotlin 2.1.0 + R8 Full Mode
+-keep class kotlin.coroutines.Continuation
+-keep class kotlin.coroutines.jvm.internal.** { *; }
+
+# Kotlin metadata (required for reflection in Hilt/Dagger)
+-keep class kotlin.Metadata { *; }
+-keep class kotlin.reflect.** { *; }
+-dontwarn kotlin.reflect.**
+
+# Kotlin annotation retention
+-keepattributes RuntimeVisibleAnnotations,RuntimeInvisibleAnnotations
+-keepattributes RuntimeVisibleParameterAnnotations,RuntimeInvisibleParameterAnnotations
+
 # ==============================================================================
 
 # Enable R8 full mode for maximum optimization
