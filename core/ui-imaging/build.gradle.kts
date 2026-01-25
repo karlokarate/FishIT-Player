@@ -31,15 +31,15 @@ dependencies {
     implementation(project(":core:model"))
 
     // Coil 3 - Image loading
-    api("io.coil-kt.coil3:coil-compose:3.0.4")
-    api("io.coil-kt.coil3:coil-network-okhttp:3.0.4")
+    api("io.coil-kt.coil3:coil-compose:3.0.6")
+    api("io.coil-kt.coil3:coil-network-okhttp:3.0.6")
 
     // OkHttp (shared client for HTTP fetching)
     implementation("com.squareup.okhttp3:okhttp:5.0.0-alpha.12")
 
     // Coroutines
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.1")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.1")
 
     // Compose (for AsyncImage wrapper)
     implementation(platform("androidx.compose:compose-bom:2024.12.01"))
@@ -55,6 +55,6 @@ dependencies {
 
     // Testing
     testImplementation("junit:junit:4.13.2")
-    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.9.0")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.1")
     testImplementation("io.mockk:mockk:1.13.13")
 }

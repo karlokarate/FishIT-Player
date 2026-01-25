@@ -34,15 +34,15 @@ dependencies {
     implementation("androidx.datastore:datastore-preferences:1.1.2")
 
     // Coroutines
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.1")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.1")
 
     // Hilt
     implementation("com.google.dagger:hilt-android:2.56.1")
     ksp("com.google.dagger:hilt-compiler:2.56.1")
 
     // OkHttp for interceptor interface
-    implementation("com.squareup.okhttp3:okhttp:5.0.0-alpha.14")
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
 
     // ========== COMPILE-TIME GATING: Chucker & LeakCanary (Issue #564) ==========
     // These dependencies are ONLY included when enabled via Gradle properties.
@@ -63,7 +63,7 @@ dependencies {
 
     // Testing
     testImplementation("junit:junit:4.13.2")
-    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.9.0")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.1")
     testImplementation("app.cash.turbine:turbine:1.2.0")
     testImplementation("io.mockk:mockk:1.13.12")
     testImplementation("androidx.test:core:1.6.1")

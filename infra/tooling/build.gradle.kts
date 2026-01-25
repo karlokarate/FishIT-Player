@@ -38,7 +38,7 @@ dependencies {
     // debugImplementation("com.squareup.leakcanary:leakcanary-android:2.14")
 
     // Coroutines
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.1")
 
     // Test dependencies for architecture tests
     testImplementation("junit:junit:4.13.2")

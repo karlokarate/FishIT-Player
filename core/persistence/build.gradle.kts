@@ -61,8 +61,8 @@ dependencies {
     implementation("androidx.datastore:datastore-preferences:1.1.1")
 
     // Coroutines
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.1")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.1")
 
     // ObjectBox - use api() to expose generated cursor classes (ObxVod_, ObxSeries_, etc.)
     // to consumer modules like infra:data-xtream
@@ -78,7 +78,7 @@ dependencies {
 
     // Testing
     testImplementation("junit:junit:4.13.2")
-    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.9.0")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.1")
     testImplementation("io.mockk:mockk:1.13.12")
     testImplementation("org.jetbrains.kotlin:kotlin-test:2.0.21")
     testImplementation("androidx.test:core:1.6.1")

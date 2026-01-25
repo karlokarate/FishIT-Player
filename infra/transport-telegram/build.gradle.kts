@@ -30,14 +30,14 @@ dependencies {
     implementation(project(":infra:logging"))
 
     // Coroutines
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.1")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.1")
 
     // TDLib integration (g00sha tdlib-coroutines)
     api("dev.g000sha256:tdl-coroutines-android:5.0.0")
     
     // Coil 3 - For CoilTelegramThumbFetcherImpl bridge
-    implementation("io.coil-kt.coil3:coil-core:3.0.4")
+    implementation("io.coil-kt.coil3:coil-core:3.0.6")
     
     // OkIO - For file sources
     implementation("com.squareup.okio:okio:3.9.0")
@@ -49,7 +49,7 @@ dependencies {
     // Testing
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.jetbrains.kotlin:kotlin-test:2.0.21")
-    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.9.0")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.1")
     testImplementation("io.mockk:mockk:1.13.12")
     testImplementation("io.mockk:mockk-agent-jvm:1.13.12")
 }

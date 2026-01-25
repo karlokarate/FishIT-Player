@@ -23,7 +23,7 @@ android {
 
 dependencies {
     // Kotlin stdlib only - pure model module
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.1")
 
     // Testing
     testImplementation("junit:junit:4.13.2")

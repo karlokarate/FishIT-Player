@@ -29,12 +29,12 @@ dependencies {
     implementation("io.ktor:ktor-serialization-kotlinx-json:3.1.1")
 
     // === Kotlin extensions ===
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.1")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
     implementation("org.jetbrains.kotlinx:kotlinx-io-core:0.6.0")
 
     // === OkHttp for Xtream API calls ===
-    implementation("com.squareup.okhttp3:okhttp:5.0.0-alpha.14")
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
 
     // === TDLib JVM Client (g00sha's tdl-coroutines) ===
     // The JVM artifact bundles native libraries for Linux x64, macOS arm64, macOS x64
