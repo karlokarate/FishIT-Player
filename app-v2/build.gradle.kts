@@ -233,8 +233,8 @@ dependencies {
     implementation(project(":infra:work"))
 
     // Coil for ImageLoader singleton
-    implementation("io.coil-kt.coil3:coil-compose:3.0.6")
-    implementation("io.coil-kt.coil3:coil-network-okhttp:3.0.6")
+    implementation("io.coil-kt.coil3:coil-compose:3.0.4")
+    implementation("io.coil-kt.coil3:coil-network-okhttp:3.0.4")
 
     // OkHttp (for shared image loading client)
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
