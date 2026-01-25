@@ -5,7 +5,8 @@ plugins {
     id("com.google.devtools.ksp") apply false
     id("org.jetbrains.kotlin.plugin.serialization") apply false
     id("org.jetbrains.kotlin.plugin.compose") apply false
-    id("com.google.dagger.hilt.android") version "2.51.1" apply false
+    // Hilt 2.56.2: supports Kotlin 2.1.0 metadata (2.2.0), compatible with AGP 8.8.2
+    id("com.google.dagger.hilt.android") version "2.56.2" apply false
     id("io.gitlab.arturbosch.detekt") version "1.23.8" apply false
     id("org.jlleitschuh.gradle.ktlint") version "12.1.2" apply false
     id("com.github.ben-manes.versions") version "0.51.0" apply true

@@ -42,8 +42,8 @@ dependencies {
     implementation("androidx.media3:media3-datasource:$media3Version")
 
     // Hilt DI
-    implementation("com.google.dagger:hilt-android:2.51.1")
-    ksp("com.google.dagger:hilt-compiler:2.51.1")
+    implementation("com.google.dagger:hilt-android:2.56.2")
+    ksp("com.google.dagger:hilt-compiler:2.56.2")
 
     // Testing
     testImplementation("junit:junit:4.13.2")
