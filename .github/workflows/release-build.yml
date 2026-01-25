@@ -1199,12 +1199,16 @@ jobs:
           done
           cd ../..
           
-          # Copy checksums
-          if [ -f "artifacts/app-release-apks/checksums-all.txt" ]; then
+          # Copy checksums from separate artifact (if exists)
+          if [ -f "artifacts/apk-checksums/checksums-all.txt" ]; then
+            cp artifacts/apk-checksums/checksums-all.txt release-assets/checksums.txt
+            echo "✅ Copied checksums file from apk-checksums artifact"
+          elif [ -f "artifacts/app-release-apks/checksums-all.txt" ]; then
+            # Fallback: legacy location (for backwards compatibility)
             cp artifacts/app-release-apks/checksums-all.txt release-assets/checksums.txt
-            echo "✅ Copied checksums file"
+            echo "✅ Copied checksums file from app-release-apks artifact (legacy)"
           else
-            echo "⚠️ No checksums file found"
+            echo "⚠️ No checksums file found (checksums will not be included in release)"
           fi
           
           # List release assets
