@@ -278,6 +278,14 @@ jobs:
           echo "# Quality Report - Build ${{ github.run_number }}" > quality-report.txt
           echo "Generated: $(date -u +"%Y-%m-%d %H:%M:%S UTC")" >> quality-report.txt
           echo "Commit: ${{ github.sha }}" >> quality-report.txt
+          
+          # Initialize Build Error Summary
+          echo "# 🚨 Build Error & Warning Summary" > build-errors.txt
+          echo "Build: #${{ github.run_number }}" >> build-errors.txt
+          echo "Variant: ${{ github.event.inputs.build_variant }}" >> build-errors.txt
+          echo "ABIs: ${{ github.event.inputs.abi_target }}" >> build-errors.txt
+          echo "Generated: $(date -u +"%Y-%m-%d %H:%M:%S UTC")" >> build-errors.txt
+          echo "" >> build-errors.txt
           echo "" >> quality-report.txt
 
       # =========================================================
@@ -634,6 +642,42 @@ jobs:
           echo "Building variant: $VARIANT using task: $GRADLE_TASK"
           echo "Target ABIs: $ABI_TARGET"
           
+          # Function to parse and annotate build output
+          parse_build_output() {
+            local output_file="$1"
+            local error_count=0
+            local warning_count=0
+            
+            # Parse warnings (yellow annotations)
+            while IFS= read -r line; do
+              if echo "$line" | grep -qiE "warning:|deprecated|task.*up-to-date"; then
+                echo "::warning::$line"
+                echo "⚠️ $line" >> build-errors.txt
+                ((warning_count++))
+              fi
+            done < <(grep -iE "warning:|deprecated|task.*up-to-date" "$output_file" 2>/dev/null || true)
+            
+            # Parse errors (red annotations)
+            while IFS= read -r line; do
+              if echo "$line" | grep -qiE "error:|failure:|failed|exception|BUILD FAILED"; then
+                # Filter out false positives
+                if ! echo "$line" | grep -qiE "0 errors|error-prone"; then
+                  echo "::error::$line"
+                  echo "❌ $line" >> build-errors.txt
+                  ((error_count++))
+                fi
+              fi
+            done < <(grep -iE "error:|failure:|failed|exception|BUILD FAILED" "$output_file" 2>/dev/null || true)
+            
+            echo "$error_count" > .github/metrics/error_count.txt
+            echo "$warning_count" > .github/metrics/warning_count.txt
+            
+            # Add summary to build-errors.txt
+            echo "" >> build-errors.txt
+            echo "---" >> build-errors.txt
+            echo "**Summary:** $error_count errors, $warning_count warnings" >> build-errors.txt
+          }
+          
           # 2026 Performance flags:
           # --no-watch-fs: Skip filesystem watching (not needed in CI)
           # --no-daemon: Already set in env, but explicit
@@ -657,7 +701,10 @@ jobs:
               --stacktrace \
               --warning-mode all \
               -x test \
-              -x lint
+              -x lint 2>&1 | tee build-arm64.log
+            
+            # Parse build output for errors/warnings
+            parse_build_output "build-arm64.log"
           fi
           
           if [[ "$ABI_TARGET" == "both" || "$ABI_TARGET" == "armeabi-v7a" ]]; then
@@ -675,7 +722,10 @@ jobs:
               --stacktrace \
               --warning-mode all \
               -x test \
-              -x lint
+              -x lint 2>&1 | tee build-arm32.log
+            
+            # Parse build output for errors/warnings
+            parse_build_output "build-arm32.log"
           fi
           
           echo "BUILD_CONFIG_END=$(date +%s)" >> $GITHUB_OUTPUT
@@ -907,6 +957,46 @@ jobs:
           
           EOF
 
+      - name: Generate Build Error Summary
+        if: always()
+        run: |
+          # Read error and warning counts
+          ERROR_COUNT=$(cat .github/metrics/error_count.txt 2>/dev/null || echo "0")
+          WARNING_COUNT=$(cat .github/metrics/warning_count.txt 2>/dev/null || echo "0")
+          
+          # Add Build Error Summary to GitHub Step Summary
+          cat >> $GITHUB_STEP_SUMMARY <<EOF
+          
+          ---
+          
+          ## 🚨 Build Error & Warning Summary
+          
+          **Build Configuration:**
+          - Variant: ${{ github.event.inputs.build_variant }}
+          - Target ABIs: ${{ github.event.inputs.abi_target }}
+          - Build Number: #${{ github.run_number }}
+          
+          **Results:**
+          - ❌ Errors: **${ERROR_COUNT}**
+          - ⚠️ Warnings: **${WARNING_COUNT}**
+          
+          EOF
+          
+          # Add detailed errors and warnings if any exist
+          if [ -f "build-errors.txt" ] && [ -s "build-errors.txt" ]; then
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### Detailed Issues" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            cat build-errors.txt >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+          else
+            echo "✅ **No errors or warnings detected!**" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "---" >> $GITHUB_STEP_SUMMARY
+
       - name: Upload APK artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -955,6 +1045,20 @@ jobs:
             reports/android-lint/**
             reports/leakcanary/**
             reports/r8/**
+          retention-days: 30
+          if-no-files-found: ignore
+      
+      - name: Upload Build Error Summary
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: build-error-summary
+          path: |
+            build-errors.txt
+            build-arm64.log
+            build-arm32.log
+            .github/metrics/error_count.txt
+            .github/metrics/warning_count.txt
           retention-days: 30
           if-no-files-found: ignore
 
