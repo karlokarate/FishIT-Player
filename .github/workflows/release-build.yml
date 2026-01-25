@@ -686,9 +686,12 @@ jobs:
           # NOTE: --configuration-cache removed due to ObjectBox incompatibility
           
           # Build based on ABI selection
+          # CRITICAL FIX: Enable pipefail to catch Gradle failures in pipes
+          set -o pipefail
+          
           if [[ "$ABI_TARGET" == "both" || "$ABI_TARGET" == "arm64-v8a" ]]; then
             echo "Building for arm64-v8a..."
-            ./gradlew :app-v2:${GRADLE_TASK} \
+            if ! ./gradlew :app-v2:${GRADLE_TASK} \
               -PabiFilters=arm64-v8a \
               -PuseSplits=true \
               -PuniversalApk=false \
@@ -701,7 +704,12 @@ jobs:
               --stacktrace \
               --warning-mode all \
               -x test \
-              -x lint 2>&1 | tee build-arm64.log
+              -x lint 2>&1 | tee build-arm64.log; then
+              
+              echo "::error::Gradle build failed for arm64-v8a"
+              echo "❌ Build failed for arm64-v8a - check build-arm64.log for details" >> build-errors.txt
+              exit 1
+            fi
             
             # Parse build output for errors/warnings
             parse_build_output "build-arm64.log"
@@ -709,7 +717,7 @@ jobs:
           
           if [[ "$ABI_TARGET" == "both" || "$ABI_TARGET" == "armeabi-v7a" ]]; then
             echo "Building for armeabi-v7a..."
-            ./gradlew :app-v2:${GRADLE_TASK} \
+            if ! ./gradlew :app-v2:${GRADLE_TASK} \
               -PabiFilters=armeabi-v7a \
               -PuseSplits=true \
               -PuniversalApk=false \
@@ -722,7 +730,12 @@ jobs:
               --stacktrace \
               --warning-mode all \
               -x test \
-              -x lint 2>&1 | tee build-arm32.log
+              -x lint 2>&1 | tee build-arm32.log; then
+              
+              echo "::error::Gradle build failed for armeabi-v7a"
+              echo "❌ Build failed for armeabi-v7a - check build-arm32.log for details" >> build-errors.txt
+              exit 1
+            fi
             
             # Parse build output for errors/warnings
             parse_build_output "build-arm32.log"
