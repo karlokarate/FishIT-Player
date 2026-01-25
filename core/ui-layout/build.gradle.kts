@@ -48,5 +48,5 @@ dependencies {
     implementation("androidx.tv:tv-material:1.0.0")
 
     // Coil for images
-    implementation("io.coil-kt.coil3:coil-compose:3.0.6")
+    implementation("io.coil-kt.coil3:coil-compose:3.3.0")
 }

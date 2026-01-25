@@ -51,8 +51,8 @@ dependencies {
     implementation("androidx.security:security-crypto:1.1.0-alpha06")
 
     // Hilt DI
-    implementation("com.google.dagger:hilt-android:2.56.1")
-    ksp("com.google.dagger:hilt-compiler:2.56.1")
+    implementation("com.google.dagger:hilt-android:2.59")
+    ksp("com.google.dagger:hilt-compiler:2.59")
 
     // ========== COMPILE-TIME GATING: Chucker (Issue #564) ==========
     // Chucker is ONLY included when -PincludeChucker=true (default).
@@ -68,5 +68,5 @@ dependencies {
     testImplementation("org.jetbrains.kotlin:kotlin-test:2.0.21")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.1")
     testImplementation("io.mockk:mockk:1.13.12")
-    testImplementation("com.squareup.okhttp3:mockwebserver:5.0.0-alpha.14")
+    testImplementation("com.squareup.okhttp3:mockwebserver:4.12.0")
 }

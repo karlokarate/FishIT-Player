@@ -57,8 +57,8 @@ dependencies {
     // NOTE: Release build uses source-set stubs instead of library (Issue #564)
 
     // Hilt DI
-    implementation("com.google.dagger:hilt-android:2.56.1")
-    ksp("com.google.dagger:hilt-compiler:2.56.1")
+    implementation("com.google.dagger:hilt-android:2.59")
+    ksp("com.google.dagger:hilt-compiler:2.59")
 
     // Testing
     testImplementation("junit:junit:4.13.2")

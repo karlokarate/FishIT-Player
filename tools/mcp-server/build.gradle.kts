@@ -39,7 +39,7 @@ dependencies {
     // === TDLib JVM Client (g00sha's tdl-coroutines) ===
     // The JVM artifact bundles native libraries for Linux x64, macOS arm64, macOS x64
     // See: https://github.com/g000sha256/tdl-coroutines
-    implementation("dev.g000sha256:tdl-coroutines:5.0.0")
+    implementation("dev.g000sha256:tdl-coroutines:8.0.0")
 
     // === Logging (no-op for STDIO server) ===
     implementation("org.slf4j:slf4j-nop:2.0.9")

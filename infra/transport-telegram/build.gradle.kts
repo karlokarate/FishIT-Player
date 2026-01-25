@@ -34,17 +34,17 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.1")
 
     // TDLib integration (g00sha tdlib-coroutines)
-    api("dev.g000sha256:tdl-coroutines-android:5.0.0")
+    api("dev.g000sha256:tdl-coroutines-android:8.0.0")
     
     // Coil 3 - For CoilTelegramThumbFetcherImpl bridge
-    implementation("io.coil-kt.coil3:coil-core:3.0.6")
+    implementation("io.coil-kt.coil3:coil-core:3.3.0")
     
     // OkIO - For file sources
     implementation("com.squareup.okio:okio:3.9.0")
 
     // Hilt DI
-    implementation("com.google.dagger:hilt-android:2.56.1")
-    ksp("com.google.dagger:hilt-compiler:2.56.1")
+    implementation("com.google.dagger:hilt-android:2.59")
+    ksp("com.google.dagger:hilt-compiler:2.59")
 
     // Testing
     testImplementation("junit:junit:4.13.2")

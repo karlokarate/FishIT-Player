@@ -44,7 +44,7 @@ dependencies {
     debugImplementation("androidx.compose.ui:ui-tooling")
 
     // Coil Image Loading
-    implementation("io.coil-kt.coil3:coil-compose:3.1.0")
+    implementation("io.coil-kt.coil3:coil-compose:3.3.0")
 
     // Navigation
     implementation("androidx.navigation:navigation-compose:2.8.4")
@@ -59,6 +59,6 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.1")
 
     // Hilt DI
-    implementation("com.google.dagger:hilt-android:2.56.1")
-    ksp("com.google.dagger:hilt-compiler:2.56.1")
+    implementation("com.google.dagger:hilt-android:2.59")
+    ksp("com.google.dagger:hilt-compiler:2.59")
 }

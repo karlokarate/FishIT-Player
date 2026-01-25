@@ -106,8 +106,8 @@ dependencies {
     implementation("androidx.work:work-runtime-ktx:2.10.0")
 
     // Hilt
-    implementation("com.google.dagger:hilt-android:2.56.1")
-    ksp("com.google.dagger:hilt-compiler:2.56.1")
+    implementation("com.google.dagger:hilt-android:2.59")
+    ksp("com.google.dagger:hilt-compiler:2.59")
     implementation("androidx.hilt:hilt-navigation-compose:1.2.0")
 
     // ========== COMPILE-TIME GATING: LeakCanary & Chucker (Issue #564) ==========

@@ -1079,7 +1079,7 @@ class DefaultXtreamApiClient(
                 }
 
                 // Get body as bytes first to allow gzip detection before string conversion
-                val bodyBytes = response.body.bytes()
+                val bodyBytes = response.body?.bytes() ?: return null
 
                 // Network Probe: Log success with response metadata (no body content)
                 UnifiedLog.d(TAG) {
@@ -1486,7 +1486,7 @@ class DefaultXtreamApiClient(
             try {
                 http.newCall(request).execute().use { response ->
                     if (response.code in 200..299) {
-                        val rawBody = response.body.string()
+                        val rawBody = response.body?.string() ?: return false
                         // Trim whitespace and BOM (U+FEFF) before checking JSON start
                         val body = rawBody.trim { it.isWhitespace() || it == '\uFEFF' }
                         if (body.isNotEmpty() && (body.startsWith("{") || body.startsWith("["))) {
