@@ -1085,12 +1085,19 @@ jobs:
             exit 0
           fi
 
+      # =========================================================
+      # 2026 FIX: Upload APK artifacts with ABI split support
+      # When useSplits=true, APKs are in ABI-specific subdirectories:
+      #   - app-v2/build/outputs/apk/release/arm64-v8a/*.apk
+      #   - app-v2/build/outputs/apk/release/armeabi-v7a/*.apk
+      # The /** pattern ensures we capture APKs in subdirectories
+      # =========================================================
       - name: Upload APK artifacts
         uses: actions/upload-artifact@v4
         with:
           name: app-${{ github.event.inputs.build_variant }}-apks
           path: |
-            app-v2/build/outputs/apk/${{ github.event.inputs.build_variant }}/*.apk
+            app-v2/build/outputs/apk/${{ github.event.inputs.build_variant }}/**/*.apk
           retention-days: 30
           if-no-files-found: error
       
