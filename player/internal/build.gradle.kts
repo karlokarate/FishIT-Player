@@ -23,6 +23,7 @@ android {
         jvmTarget = "17"
     }
 
+
     buildFeatures {
         compose = true
         buildConfig = true
@@ -43,8 +44,8 @@ dependencies {
     implementation(project(":player:nextlib-codecs"))
 
     // Hilt DI
-    implementation("com.google.dagger:hilt-android:2.59")
-    ksp("com.google.dagger:hilt-compiler:2.59")
+    implementation("com.google.dagger:hilt-android:2.51.1")
+    ksp("com.google.dagger:hilt-compiler:2.51.1")
 
     // Media3 / ExoPlayer
     val media3Version = "1.8.0"

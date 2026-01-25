@@ -23,6 +23,7 @@ android {
         jvmTarget = "17"
     }
 
+
     buildFeatures {
         compose = true
     }
@@ -56,8 +57,8 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2")
 
     // Hilt DI
-    implementation("com.google.dagger:hilt-android:2.59")
-    ksp("com.google.dagger:hilt-compiler:2.59")
+    implementation("com.google.dagger:hilt-android:2.51.1")
+    ksp("com.google.dagger:hilt-compiler:2.51.1")
     implementation("androidx.hilt:hilt-navigation-compose:1.2.0")
 
     // Testing

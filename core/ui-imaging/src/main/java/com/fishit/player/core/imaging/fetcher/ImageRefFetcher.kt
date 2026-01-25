@@ -63,7 +63,7 @@ class ImageRefFetcher(
             throw IOException("HTTP ${response.code}: ${response.message}")
         }
 
-        val body = response.body
+        val body = response.body ?: throw IOException("Response body is null")
 
         return SourceFetchResult(
             source =

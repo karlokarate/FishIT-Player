@@ -23,6 +23,7 @@ android {
         jvmTarget = "17"
     }
 
+
     buildFeatures {
         compose = true
     }
@@ -36,8 +37,8 @@ dependencies {
     implementation(project(":infra:logging"))
 
     // Hilt DI
-    implementation("com.google.dagger:hilt-android:2.59")
-    ksp("com.google.dagger:hilt-compiler:2.59")
+    implementation("com.google.dagger:hilt-android:2.51.1")
+    ksp("com.google.dagger:hilt-compiler:2.51.1")
 
     // Compose
     implementation(platform("androidx.compose:compose-bom:2024.12.01"))

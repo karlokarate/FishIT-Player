@@ -22,6 +22,7 @@ android {
     kotlinOptions {
         jvmTarget = "17"
     }
+
 }
 
 // Ensure ObjectBox cursor classes are generated before this module compiles
@@ -54,8 +55,8 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.8.0")
 
     // Hilt DI
-    implementation("com.google.dagger:hilt-android:2.59")
-    ksp("com.google.dagger:hilt-compiler:2.59")
+    implementation("com.google.dagger:hilt-android:2.51.1")
+    ksp("com.google.dagger:hilt-compiler:2.51.1")
 
     // Testing
     testImplementation("junit:junit:4.13.2")

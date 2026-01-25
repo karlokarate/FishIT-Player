@@ -25,6 +25,7 @@ android {
         jvmTarget = "17"
     }
 
+
     // Include kapt-generated ObjectBox sources in Java compilation
     sourceSets {
         getByName("debug") {
@@ -73,8 +74,8 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
 
     // Hilt for DI
-    implementation("com.google.dagger:hilt-android:2.59")
-    ksp("com.google.dagger:hilt-compiler:2.59")
+    implementation("com.google.dagger:hilt-android:2.51.1")
+    ksp("com.google.dagger:hilt-compiler:2.51.1")
 
     // Testing
     testImplementation("junit:junit:4.13.2")

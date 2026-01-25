@@ -21,6 +21,7 @@ android {
     kotlinOptions {
         jvmTarget = "17"
     }
+
 }
 
 dependencies {
@@ -29,8 +30,8 @@ dependencies {
     implementation(project(":infra:logging"))
 
     // Hilt DI
-    implementation("com.google.dagger:hilt-android:2.59")
-    ksp("com.google.dagger:hilt-compiler:2.59")
+    implementation("com.google.dagger:hilt-android:2.51.1")
+    ksp("com.google.dagger:hilt-compiler:2.51.1")
 
     // Coil (future integration)
     // TODO: Add Coil dependencies when implementing ImageLoader provisioning

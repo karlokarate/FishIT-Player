@@ -21,6 +21,7 @@ android {
     kotlinOptions {
         jvmTarget = "17"
     }
+
 }
 
 dependencies {
@@ -28,8 +29,8 @@ dependencies {
     implementation(project(":core:device-api"))
 
     // Hilt
-    implementation("com.google.dagger:hilt-android:2.59")
-    ksp("com.google.dagger:hilt-compiler:2.59")
+    implementation("com.google.dagger:hilt-android:2.51.1")
+    ksp("com.google.dagger:hilt-compiler:2.51.1")
 
     // Testing
     testImplementation("junit:junit:4.13.2")

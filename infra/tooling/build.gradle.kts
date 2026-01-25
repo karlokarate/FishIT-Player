@@ -22,6 +22,7 @@ android {
         jvmTarget = "17"
     }
 
+
     // Enable unit tests
     testOptions {
         unitTests {

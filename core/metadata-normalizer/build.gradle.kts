@@ -21,6 +21,7 @@ android {
     kotlinOptions {
         jvmTarget = "17"
     }
+
 }
 
 dependencies {
@@ -36,8 +37,8 @@ dependencies {
     implementation("com.google.re2j:re2j:1.7")
 
     // Hilt DI
-    implementation("com.google.dagger:hilt-android:2.59")
-    ksp("com.google.dagger:hilt-compiler:2.59")
+    implementation("com.google.dagger:hilt-android:2.51.1")
+    ksp("com.google.dagger:hilt-compiler:2.51.1")
 
     // TMDB Kotlin API - app.moviebase:tmdb-api:1.6.0
     // ONLY this module may have TMDB API dependency per TMDB_ENRICHMENT_CONTRACT.md
