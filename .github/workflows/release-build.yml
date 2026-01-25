@@ -1062,6 +1062,16 @@ jobs:
           
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "---" >> $GITHUB_STEP_SUMMARY
+          
+          # CRITICAL FIX: Only fail if there are actual BUILD ERRORS (not warnings)
+          # Deprecation warnings should not fail the workflow
+          if [ "$ERROR_COUNT" -gt 0 ]; then
+            echo "::error::Build failed with $ERROR_COUNT errors"
+            exit 1
+          else
+            echo "✅ Build completed successfully with $WARNING_COUNT warnings"
+            exit 0
+          fi
 
       - name: Upload APK artifacts
         uses: actions/upload-artifact@v4
