@@ -31,11 +31,11 @@ dependencies {
     implementation(project(":core:model"))
 
     // Coil 3 - Image loading
-    api("io.coil-kt.coil3:coil-compose:3.0.6")
-    api("io.coil-kt.coil3:coil-network-okhttp:3.0.6")
+    api("io.coil-kt.coil3:coil-compose:3.0.4")
+    api("io.coil-kt.coil3:coil-network-okhttp:3.0.4")
 
     // OkHttp (shared client for HTTP fetching)
-    implementation("com.squareup.okhttp3:okhttp:5.0.0-alpha.12")
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
 
     // Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.1")
