@@ -6,15 +6,15 @@ pluginManagement {
     }
     plugins {
         // --- Platform: pin plugin versions project-wide ---
-        id("com.android.application") version "8.7.3" apply false
-        id("com.android.library") version "8.7.3" apply false
+        id("com.android.application") version "8.13.2" apply false
+        id("com.android.library") version "8.13.2" apply false
 
-        // Kotlin Gradle plugins (align with Kotlin 2.1.0 / Compose 1.9.x)
-        kotlin("android") version "2.1.0" apply false
-        kotlin("jvm") version "2.1.0" apply false
-        kotlin("plugin.serialization") version "2.1.0" apply false
-        kotlin("plugin.compose") version "2.1.0" apply false
-        id("com.google.devtools.ksp") version "2.1.0-1.0.29" apply false
+        // Kotlin Gradle plugins (align with Kotlin 2.3.0 / Compose)
+        kotlin("android") version "2.3.0" apply false
+        kotlin("jvm") version "2.3.0" apply false
+        kotlin("plugin.serialization") version "2.3.0" apply false
+        kotlin("plugin.compose") version "2.3.0" apply false
+        id("com.google.devtools.ksp") version "2.3.4" apply false
         
         // Quality tools
         id("io.gitlab.arturbosch.detekt") version "1.23.8" apply false

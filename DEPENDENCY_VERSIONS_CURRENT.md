@@ -47,9 +47,9 @@ The jump from 5.0.0 → 6.0.0 → 7.0.0 → 8.0.0 within a short time suggests:
 **RC versions:** 3.2.0-rc02
 
 **Artifacts affected:**
-- `io.coil-kt.coil3:coil-core:3.0.4`
-- `io.coil-kt.coil3:coil-compose:3.0.4`
-- `io.coil-kt.coil3:coil-network-okhttp:3.0.4`
+- `io.coil-kt.coil3:coil-core:3.3.0`
+- `io.coil-kt.coil3:coil-compose:3.3.0`
+- `io.coil-kt.coil3:coil-network-okhttp:3.3.0`
 
 **Action:** ⚠️ **UPDATE to 3.3.0** (stable, tested)
 

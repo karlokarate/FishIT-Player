@@ -117,8 +117,8 @@ implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")
 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
 
 // AFTER
-implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.1")
-implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.1")
+implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
+implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2")
 ```
 
 **Affected Files:** (multiple - use find/replace)
@@ -170,8 +170,8 @@ implementation("dev.g000sha256:tdl-coroutines-android:5.1.0") // if available
 **Fix:**
 ```kotlin
 // BEFORE
-implementation("io.coil-kt.coil3:coil-compose:3.0.4")
-implementation("io.coil-kt.coil3:coil-network-okhttp:3.0.4")
+implementation("io.coil-kt.coil3:coil-compose:3.3.0")
+implementation("io.coil-kt.coil3:coil-network-okhttp:3.3.0")
 
 // AFTER
 val coilVersion = "3.0.6"

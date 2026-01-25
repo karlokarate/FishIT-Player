@@ -34,8 +34,8 @@ dependencies {
     implementation("androidx.datastore:datastore-preferences:1.1.2")
 
     // Coroutines
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.1")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.1")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2")
 
     // Hilt
     implementation("com.google.dagger:hilt-android:2.59")
@@ -63,7 +63,7 @@ dependencies {
 
     // Testing
     testImplementation("junit:junit:4.13.2")
-    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.1")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.2")
     testImplementation("app.cash.turbine:turbine:1.2.0")
     testImplementation("io.mockk:mockk:1.13.12")
     testImplementation("androidx.test:core:1.6.1")

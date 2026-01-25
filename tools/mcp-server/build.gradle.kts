@@ -29,7 +29,7 @@ dependencies {
     implementation("io.ktor:ktor-serialization-kotlinx-json:3.1.1")
 
     // === Kotlin extensions ===
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.1")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
     implementation("org.jetbrains.kotlinx:kotlinx-io-core:0.6.0")
 

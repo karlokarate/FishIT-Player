@@ -24,7 +24,7 @@ android {
 }
 
 dependencies {
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.1")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
     
     // Hilt for AppFeatureRegistry implementation
     implementation("com.google.dagger:hilt-android:2.59")
