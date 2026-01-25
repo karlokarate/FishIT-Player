@@ -294,6 +294,7 @@ jobs:
           # Initialize error and warning count files with default value "0"
           # This prevents workflow failure if the build step doesn't complete
           # or doesn't execute the error counting logic
+          mkdir -p .github/metrics
           echo "0" > .github/metrics/error_count.txt
           echo "0" > .github/metrics/warning_count.txt
 
@@ -669,8 +670,8 @@ jobs:
             # Parse errors (red annotations)
             while IFS= read -r line; do
               if echo "$line" | grep -qiE "error:|failure:|failed|exception|BUILD FAILED"; then
-                # Filter out false positives
-                if ! echo "$line" | grep -qiE "0 errors|error-prone"; then
+                # Filter out false positives and R8 metadata warnings
+                if ! echo "$line" | grep -qiE "0 errors|error-prone|parsing kotlin metadata|An error occurred when parsing kotlin metadata"; then
                   echo "::error::$line"
                   echo "❌ $line" >> build-errors.txt
                   ((error_count++))
@@ -678,6 +679,8 @@ jobs:
               fi
             done < <(grep -iE "error:|failure:|failed|exception|BUILD FAILED" "$output_file" 2>/dev/null || true)
             
+            # Ensure metrics directory exists before writing
+            mkdir -p .github/metrics
             echo "$error_count" > .github/metrics/error_count.txt
             echo "$warning_count" > .github/metrics/warning_count.txt
             
