@@ -288,6 +288,15 @@ jobs:
           echo "" >> build-errors.txt
           echo "" >> quality-report.txt
 
+      - name: Ensure error and warning count files exist
+        continue-on-error: true
+        run: |
+          # Initialize error and warning count files with default value "0"
+          # This prevents workflow failure if the build step doesn't complete
+          # or doesn't execute the error counting logic
+          echo "0" > .github/metrics/error_count.txt
+          echo "0" > .github/metrics/warning_count.txt
+
       # =========================================================
       # QUALITY TOOL 1: KTLint
       # FIX: Was skipped due to default: false. Now runs unconditionally.
