@@ -794,15 +794,68 @@ jobs:
       - name: Verify APK signature
         run: |
           VARIANT="${{ github.event.inputs.build_variant }}"
-          find app-v2/build/outputs/apk/${VARIANT} -type f -name "*.apk" -print0 | \
-            xargs -0 -I{} bash -c 'echo "Verifying: {}" && apksigner verify --verbose "{}" || echo "⚠️ APK not signed or verification failed"'
+          APK_DIR="app-v2/build/outputs/apk/${VARIANT}"
+          
+          if [ ! -d "$APK_DIR" ]; then
+            echo "::error::APK directory not found: $APK_DIR"
+            echo "❌ APK directory missing - build may have failed" >> build-errors.txt
+            exit 1
+          fi
+          
+          APK_COUNT=$(find "$APK_DIR" -type f -name "*.apk" | wc -l)
+          if [ "$APK_COUNT" -eq 0 ]; then
+            echo "::error::No APK files found in $APK_DIR"
+            echo "❌ No APKs found - build may have failed" >> build-errors.txt
+            ls -laR app-v2/build/outputs/ || true
+            exit 1
+          fi
+          
+          echo "Found $APK_COUNT APK(s) to verify"
+          
+          VERIFY_FAILED=0
+          while IFS= read -r -d '' apk; do
+            echo "Verifying: $apk"
+            if apksigner verify --verbose "$apk" 2>&1; then
+              echo "  ✅ Signature valid"
+            else
+              echo "  ⚠️ APK not signed or verification failed (expected for debug builds)"
+              if [ "$VARIANT" == "release" ]; then
+                echo "::warning::Release APK signature verification failed: $apk"
+                VERIFY_FAILED=1
+              fi
+            fi
+          done < <(find "$APK_DIR" -type f -name "*.apk" -print0)
+          
+          if [ $VERIFY_FAILED -eq 1 ]; then
+            echo "⚠️ Some release APKs failed signature verification" >> build-errors.txt
+          fi
 
       - name: Calculate checksums
         run: |
           VARIANT="${{ github.event.inputs.build_variant }}"
-          find app-v2/build/outputs/apk/${VARIANT} -type f -name "*.apk" -print0 | \
-            xargs -0 sha256sum > checksums-all.txt
-          cat checksums-all.txt
+          APK_DIR="app-v2/build/outputs/apk/${VARIANT}"
+          
+          if [ ! -d "$APK_DIR" ]; then
+            echo "::error::Cannot calculate checksums - APK directory not found"
+            exit 1
+          fi
+          
+          APK_COUNT=$(find "$APK_DIR" -type f -name "*.apk" | wc -l)
+          if [ "$APK_COUNT" -eq 0 ]; then
+            echo "::error::No APK files found for checksum calculation"
+            exit 1
+          fi
+          
+          echo "Calculating checksums for $APK_COUNT APK(s)..."
+          find "$APK_DIR" -type f -name "*.apk" -print0 | xargs -0 sha256sum > checksums-all.txt
+          
+          if [ -s checksums-all.txt ]; then
+            echo "✅ Checksums calculated:"
+            cat checksums-all.txt
+          else
+            echo "::error::Checksum file is empty"
+            exit 1
+          fi
 
       # =========================================================
       # SPEED METRICS: Measure and record build times
@@ -1016,9 +1069,16 @@ jobs:
           name: app-${{ github.event.inputs.build_variant }}-apks
           path: |
             app-v2/build/outputs/apk/${{ github.event.inputs.build_variant }}/*.apk
-            checksums-all.txt
           retention-days: 30
           if-no-files-found: error
+      
+      - name: Upload APK Checksums
+        if: hashFiles('checksums-all.txt') != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: apk-checksums
+          path: checksums-all.txt
+          retention-days: 30
 
       - name: Upload ProGuard mapping
         if: ${{ github.event.inputs.build_variant == 'release' }}
