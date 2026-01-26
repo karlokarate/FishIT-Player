@@ -91,6 +91,54 @@ jobs:
           gradle-home-cache-cleanup: true
 
       # =========================================================
+      # 2026 OPTIMIZATION: Gradle Build Cache (CRITICAL for incremental rebuilds)
+      # This caches task outputs so only changed files trigger recompilation
+      # The build cache stores task outputs keyed by inputs hash
+      # =========================================================
+      - name: Cache Gradle Build Cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches/build-cache-1
+            ~/.gradle/caches/transforms-*
+            ~/.gradle/caches/journal-*
+          key: gradle-build-cache-${{ runner.os }}-debug-${{ hashFiles('**/*.gradle.kts', '**/gradle-wrapper.properties', '**/gradle.properties') }}
+          restore-keys: |
+            gradle-build-cache-${{ runner.os }}-debug-
+            gradle-build-cache-${{ runner.os }}-
+
+      # =========================================================
+      # 2026 OPTIMIZATION: KSP Generated Code Cache
+      # Cache Hilt/Dagger/ObjectBox generated code
+      # =========================================================
+      - name: Cache KSP Generated Code
+        uses: actions/cache@v4
+        with:
+          path: |
+            **/build/generated/ksp
+            **/.gradle/*/kotlin/kotlin-build
+          key: ksp-debug-${{ runner.os }}-${{ hashFiles('**/*.gradle.kts', '**/gradle-wrapper.properties') }}-${{ hashFiles('**/*.kt') }}
+          restore-keys: |
+            ksp-debug-${{ runner.os }}-${{ hashFiles('**/*.gradle.kts', '**/gradle-wrapper.properties') }}-
+            ksp-debug-${{ runner.os }}-
+
+      # =========================================================
+      # 2026 OPTIMIZATION: Build Output Cache for Debug APKs
+      # =========================================================
+      - name: Cache Build Outputs
+        uses: actions/cache@v4
+        with:
+          path: |
+            **/build/intermediates/compile_*
+            **/build/intermediates/dex
+            **/build/intermediates/merged_res
+            **/build/tmp/kotlin-classes
+          key: build-outputs-debug-${{ runner.os }}-${{ github.event.inputs.abi_target }}-${{ github.sha }}
+          restore-keys: |
+            build-outputs-debug-${{ runner.os }}-${{ github.event.inputs.abi_target }}-
+            build-outputs-debug-${{ runner.os }}-
+
+      # =========================================================
       # 2026 OPTIMIZATION: Use preinstalled Android SDK
       # =========================================================
       - name: Setup Android SDK

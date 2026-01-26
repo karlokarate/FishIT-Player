@@ -12,9 +12,12 @@ name: "Build APK – V2 App (Selectable ABIs: arm64-v8a | armeabi-v7a | both)"
 #    - Removed NDK installation (not needed for release builds)
 #    - SDK component caching (platforms, platform-tools, build-tools)
 #
-# 2. Caching Strategy (Multi-Layer):
+# 2. Caching Strategy (Multi-Layer for Incremental Rebuilds):
 #    - gradle/actions/setup-gradle@v4 (intelligent dependency caching)
 #    - setup-java@v4 with built-in Gradle caching
+#    - **Gradle Build Cache**: Persists ~/.gradle/caches/build-cache-1
+#      This caches task outputs so only changed files trigger recompilation
+#    - Transforms cache (~/.gradle/caches/transforms-*)
 #    - Android SDK component caching
 #    - KSP generated code caching (Hilt/Dagger/ObjectBox)
 #    - Build output caching (intermediates, dex, merged resources)
@@ -52,11 +55,13 @@ name: "Build APK – V2 App (Selectable ABIs: arm64-v8a | armeabi-v7a | both)"
 #    - ✅ Improved R8 compatibility with AGP 8.7.x + Kotlin 2.1.0
 #    - ✅ Multi-layer caching (SDK, KSP, Build outputs)
 #    - ✅ Conditional build logic for selected ABIs only
+#    - ✅ Gradle Build Cache persisted for incremental rebuilds
 #
 # Expected performance improvement:
 # - First run: 20-30% faster (SDK optimization)
 # - Subsequent runs: 50-70% faster (multi-layer caching)
 # - Single ABI builds: 80%+ faster (conditional + ABI-specific cache)
+# - Incremental builds (minor changes): Only changed tasks re-run
 # =========================================================
 
 on:
@@ -248,6 +253,23 @@ jobs:
           restore-keys: |
             ksp-${{ runner.os }}-${{ hashFiles('**/*.gradle.kts', '**/gradle-wrapper.properties') }}-
             ksp-${{ runner.os }}-
+      
+      # =========================================================
+      # 2026 OPTIMIZATION: Gradle Build Cache (CRITICAL for incremental rebuilds)
+      # This caches task outputs so only changed files trigger recompilation
+      # The build cache stores task outputs keyed by inputs hash
+      # =========================================================
+      - name: Cache Gradle Build Cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches/build-cache-1
+            ~/.gradle/caches/transforms-*
+            ~/.gradle/caches/journal-*
+          key: gradle-build-cache-${{ runner.os }}-${{ github.event.inputs.build_variant }}-${{ hashFiles('**/*.gradle.kts', '**/gradle-wrapper.properties', '**/gradle.properties') }}
+          restore-keys: |
+            gradle-build-cache-${{ runner.os }}-${{ github.event.inputs.build_variant }}-
+            gradle-build-cache-${{ runner.os }}-
       
       # =========================================================
       # 2026 OPTIMIZATION: Build output caching for ABI-specific builds
@@ -903,6 +925,44 @@ jobs:
           cat .github/metrics/build_speed.json
 
       # =========================================================
+      # CACHE STATUS: Show cache hit/miss statistics
+      # =========================================================
+      
+      - name: Report Cache Statistics
+        id: cache_stats
+        run: |
+          echo "### 📦 Cache Statistics" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Check Gradle build cache size
+          GRADLE_CACHE_DIR="$HOME/.gradle/caches/build-cache-1"
+          if [ -d "$GRADLE_CACHE_DIR" ]; then
+            CACHE_SIZE=$(du -sh "$GRADLE_CACHE_DIR" 2>/dev/null | cut -f1 || echo "N/A")
+            CACHE_ENTRIES=$(find "$GRADLE_CACHE_DIR" -type f 2>/dev/null | wc -l || echo "0")
+            echo "| Metric | Value |" >> $GITHUB_STEP_SUMMARY
+            echo "|--------|-------|" >> $GITHUB_STEP_SUMMARY
+            echo "| Build Cache Size | $CACHE_SIZE |" >> $GITHUB_STEP_SUMMARY
+            echo "| Cached Task Outputs | $CACHE_ENTRIES entries |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "ℹ️ Build cache not yet populated (first run)" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          # Check transforms cache
+          TRANSFORMS_DIR="$HOME/.gradle/caches/transforms-3"
+          if [ -d "$TRANSFORMS_DIR" ]; then
+            TRANSFORMS_SIZE=$(du -sh "$TRANSFORMS_DIR" 2>/dev/null | cut -f1 || echo "N/A")
+            echo "| Transforms Cache | $TRANSFORMS_SIZE |" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          # Check KSP generated code
+          KSP_COUNT=$(find . -path "*/build/generated/ksp" -type d 2>/dev/null | wc -l || echo "0")
+          echo "| KSP Generated Modules | $KSP_COUNT |" >> $GITHUB_STEP_SUMMARY
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Note:** Subsequent builds with minor changes should show 50-80% faster times due to Gradle Build Cache." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+      # =========================================================
       # SPEED COACHING: Generate summary
       # =========================================================
       
@@ -937,6 +997,7 @@ jobs:
           - ✅ Dependency graph caching enabled (faster subsequent runs)
           
           **Build Performance:**
+          - ✅ Gradle Build Cache enabled (persisted between runs)
           - ✅ Gradle configuration cache DISABLED (ObjectBox incompatibility)
           - ✅ --no-watch-fs flag (CI optimized)
           - ✅ Build cache enabled across all tasks
@@ -956,11 +1017,12 @@ jobs:
           - ✅ **ABI Selection**: Can build arm64-v8a, armeabi-v7a, or both
           - ✅ **Path Resolution**: Dynamic variant path resolution for APKs and mappings
           - ✅ **Multi-layer Caching**: SDK, KSP, Build outputs cached separately
+          - ✅ **Gradle Build Cache**: Task outputs persisted between workflow runs
           
           ### Performance Improvements
           - **First run**: 20-30% faster (SDK optimization)
-          - **Subsequent runs**: 50-70% faster (multi-layer caching)
-          - **Partial builds**: 80%+ faster (ABI-specific caching)
+          - **Subsequent runs**: 50-70% faster (multi-layer caching + build cache)
+          - **Partial builds**: 80%+ faster (only changed tasks re-run)
           
           **Tip**: Enable quality tools selectively to balance speed vs. coverage.
           **Tip**: Build single ABI (arm64-v8a) for fastest iteration during development.
