@@ -1,0 +1,20 @@
+{
+  "app": "com.fishit.player.v2",
+  "code": 200,
+  "duration": "153ms",
+  "headers": {
+    "Server": "nginx/1.18.0 (Ubuntu)",
+    "Date": "Mon, 26 Jan 2026 16:20:28 GMT",
+    "Content-Type": "application/json",
+    "Transfer-Encoding": "chunked",
+    "Connection": "keep-alive",
+    "Access-Control-Allow-Credentials": "true",
+    "X-Backend": "Second"
+  },
+  "message": "OK",
+  "protocol": "HTTP/1.1",
+  "remoteIp": "45.12.32.214",
+  "remotePort": 8080,
+  "sessionId": "a5f644f8-1324-4d19-8185-e65d3dc4fa9c",
+  "time": "2026-01-26 17:20:28"
+}

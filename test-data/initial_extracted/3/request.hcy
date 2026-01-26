@@ -1,0 +1,7 @@
+GET /player_api.php?action=get_short_epg&stream_id=1&limit=1&username=Christoph10&password=JQ2rKsQ744 HTTP/1.1
+Accept: application/json
+Accept-Encoding: gzip
+User-Agent: FishIT-Player/2.x (Android)
+Host: konigtv.com:8080
+Connection: Keep-Alive
+

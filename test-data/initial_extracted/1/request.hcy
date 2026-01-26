@@ -1,0 +1,7 @@
+GET /player_api.php?action=get_live_streams&category_id=*&username=Christoph10&password=JQ2rKsQ744 HTTP/1.1
+Accept: application/json
+Accept-Encoding: gzip
+User-Agent: FishIT-Player/2.x (Android)
+Host: konigtv.com:8080
+Connection: Keep-Alive
+

@@ -47,8 +47,9 @@ dependencies {
     implementation("com.google.dagger:hilt-android:2.56.2")
     ksp("com.google.dagger:hilt-compiler:2.56.2")
 
-    // ObjectBox (via core:persistence transitive, but explicit for clarity)
-    implementation("io.objectbox:objectbox-kotlin:4.0.3")
+    // ObjectBox - version must match core:persistence (5.0.1)
+    // Note: core:persistence provides transitive api() dependency, but explicit for flow() extensions
+    implementation("io.objectbox:objectbox-kotlin:5.0.1")
 
     // Serialization for JSON storage of playbackHints
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
