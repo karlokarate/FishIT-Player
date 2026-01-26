@@ -48,6 +48,10 @@ dependencies {
     api("com.squareup.okhttp3:okhttp:4.12.0")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
 
+    // Jackson Streaming JSON Parser (O(1) memory for large arrays)
+    // See: streaming/StreamingJsonParser.kt
+    implementation(libs.jackson.core)
+
     // Security for credential storage
     implementation("androidx.security:security-crypto:1.1.0-alpha06")
 

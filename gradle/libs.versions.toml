@@ -7,6 +7,16 @@ tmdbApi = "1.6.0"
 # Repository: https://github.com/ChuckerTeam/chucker
 chucker = "4.1.0"
 
+# Jackson Streaming JSON - High-performance streaming parser
+# Repository: https://github.com/FasterXML/jackson-core
+# Benefits: O(1) memory for any JSON array size, progressive emission via Flow
+# Used in: :infra:transport-xtream
+jackson = "2.18.5"
+
+# kotlinx.serialization - Existing JSON library (shared version)
+# Note: Keep for backward compat, migrate hot paths to Jackson Streaming
+kotlinxSerialization = "1.8.0"
+
 [libraries]
 # TMDB Kotlin API Client
 # ONLY used in :core:metadata-normalizer per TMDB_ENRICHMENT_CONTRACT.md
@@ -15,6 +25,13 @@ tmdb-api = { module = "app.moviebase:tmdb-api", version.ref = "tmdbApi" }
 # Chucker HTTP Inspector (debug only)
 chucker = { module = "com.github.chuckerteam.chucker:library", version.ref = "chucker" }
 chucker-noop = { module = "com.github.chuckerteam.chucker:library-no-op", version.ref = "chucker" }
+
+# Jackson Streaming JSON Parser
+# ONLY jackson-core needed for streaming (no jackson-databind = no ObjectMapper overhead)
+jackson-core = { module = "com.fasterxml.jackson.core:jackson-core", version.ref = "jackson" }
+
+# kotlinx.serialization (unified version)
+kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinxSerialization" }
 
 [bundles]
 # No bundles defined yet
