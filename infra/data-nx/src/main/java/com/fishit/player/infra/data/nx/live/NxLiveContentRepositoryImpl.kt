@@ -23,6 +23,7 @@ import com.fishit.player.core.live.domain.LiveChannel
 import com.fishit.player.core.live.domain.LiveContentRepository
 import com.fishit.player.core.model.ImageRef
 import com.fishit.player.core.model.SourceType
+import com.fishit.player.core.model.repository.NxEpgRepository
 import com.fishit.player.core.model.repository.NxWorkRepository
 import com.fishit.player.core.model.repository.NxWorkRepository.Work
 import com.fishit.player.core.model.repository.NxWorkRepository.WorkType
@@ -43,6 +44,7 @@ class NxLiveContentRepositoryImpl @Inject constructor(
     private val workRepository: NxWorkRepository,
     private val sourceRefRepository: NxWorkSourceRefRepository,
     private val userStateRepository: NxWorkUserStateRepository,
+    private val epgRepository: NxEpgRepository,
 ) : LiveContentRepository {
 
     companion object {
@@ -215,6 +217,12 @@ class NxLiveContentRepositoryImpl @Inject constructor(
         val sourceRefs = sourceRefRepository.findByWorkKey(workKey)
         val primarySource = sourceRefs.firstOrNull()
         
+        // NOTE: EPG data (now/next) is NOT fetched here for performance reasons.
+        // EPG should be:
+        // 1. Fetched on-demand when player opens (via epgRepository.getNowNext())
+        // 2. Prefetched periodically for favorites (via background worker - TODO)
+        // The epgRepository is injected but used elsewhere (player, prefetch worker).
+        
         return LiveChannel(
             id = workKey,
             name = displayTitle,
@@ -222,14 +230,15 @@ class NxLiveContentRepositoryImpl @Inject constructor(
             logo = posterRef?.let { parseImageRef(it) },
             categoryId = null, // TODO: Add category support
             categoryName = null,
-            currentProgram = null, // TODO: Add EPG support
+            // EPG Now/Next: null here, fetched on-demand by player
+            currentProgram = null,
             currentProgramDescription = null,
             programStart = null,
             programEnd = null,
             sourceType = sourceType,
             isFavorite = isFavorite,
             lastWatched = lastWatched,
-            // EPG/Catchup from source ref
+            // EPG/Catchup capabilities from source ref (static, not fetched)
             epgChannelId = primarySource?.epgChannelId,
             hasCatchup = (primarySource?.tvArchive ?: 0) > 0,
             catchupDays = primarySource?.tvArchiveDuration ?: 0,
