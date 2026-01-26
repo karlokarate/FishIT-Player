@@ -88,3 +88,4 @@ __pycache__/
 *.so
 .Python
 
+test-r8-filter.sh
