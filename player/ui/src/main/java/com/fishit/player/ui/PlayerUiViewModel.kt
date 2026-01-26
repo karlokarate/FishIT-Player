@@ -134,6 +134,27 @@ class PlayerUiViewModel
         }
 
         /**
+         * Toggle mute state.
+         */
+        fun toggleMute() {
+            playerEntryImpl.getCurrentSession()?.toggleMute()
+        }
+
+        /**
+         * Toggle controls visibility.
+         */
+        fun toggleControls() {
+            playerEntryImpl.getCurrentSession()?.toggleControls()
+        }
+
+        /**
+         * Hides the controls (used by auto-hide timer).
+         */
+        fun hideControls() {
+            playerEntryImpl.getCurrentSession()?.hideControls()
+        }
+
+        /**
          * Retries playback using the last context.
          */
         fun retry() {

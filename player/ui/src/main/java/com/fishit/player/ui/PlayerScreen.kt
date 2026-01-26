@@ -31,9 +31,12 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.Player
 import androidx.media3.ui.PlayerView
 import com.fishit.player.core.playermodel.PlaybackContext
+import com.fishit.player.internal.state.InternalPlayerState
+import com.fishit.player.internal.ui.InternalPlayerControls
 
 /**
  * Public entry point for the player UI.
@@ -143,8 +146,15 @@ private fun LoadingView() {
  *
  * **Integration:**
  * - Gets ExoPlayer instance from ViewModel
- * - Attaches to PlayerView via AndroidView
- * - Shows simple controls (play/pause, seek ±10s)
+ * - Attaches to PlayerView via AndroidView (useController = false)
+ * - Shows custom InternalPlayerControls overlay for consistent UX
+ *
+ * **Custom Controls Features:**
+ * - Play/Pause, Seek ±10s
+ * - Progress slider with time display
+ * - Mute toggle
+ * - Live indicator for streams
+ * - Animated visibility (tap to show/hide)
  */
 @Composable
 private fun PlayingView(
@@ -152,27 +162,17 @@ private fun PlayingView(
     context: PlaybackContext,
 ) {
     val player: Player? = viewModel.getPlayer()
-    val localContext = LocalContext.current
 
-    // Observe player state for play/pause button
-    val isPlaying = remember { mutableStateOf(true) }
-
-    // Update isPlaying state based on player state
-    LaunchedEffect(player) {
-        player?.let { p ->
-            val listener =
-                object : Player.Listener {
-                    override fun onIsPlayingChanged(playing: Boolean) {
-                        isPlaying.value = playing
-                    }
-                }
-            p.addListener(listener)
-        }
-    }
+    // Observe internal player state for custom controls
+    val sessionStateFlow = viewModel.getSessionState()
+    val sessionState: InternalPlayerState = sessionStateFlow
+        ?.collectAsStateWithLifecycle(initialValue = InternalPlayerState.INITIAL)
+        ?.value
+        ?: InternalPlayerState.INITIAL
 
     Box(modifier = Modifier.fillMaxSize()) {
         if (player != null) {
-            // Actual video surface via Media3 PlayerView
+            // Video surface via Media3 PlayerView (no built-in controls)
             AndroidView(
                 factory = { ctx ->
                     PlayerView(ctx).apply {
@@ -182,8 +182,8 @@ private fun PlayingView(
                                 ViewGroup.LayoutParams.MATCH_PARENT,
                                 ViewGroup.LayoutParams.MATCH_PARENT,
                             )
-                        // Use built-in controls from Media3
-                        useController = true
+                        // Disable Media3 built-in controls - we use custom controls
+                        useController = false
                         setShowBuffering(PlayerView.SHOW_BUFFERING_WHEN_PLAYING)
                     }
                 },
@@ -191,6 +191,18 @@ private fun PlayingView(
                     playerView.player = player
                 },
                 modifier = Modifier.fillMaxSize(),
+            )
+
+            // Custom controls overlay
+            InternalPlayerControls(
+                state = sessionState,
+                onTogglePlayPause = viewModel::togglePlayPause,
+                onSeekForward = viewModel::seekForward,
+                onSeekBackward = viewModel::seekBackward,
+                onSeekTo = viewModel::seekTo,
+                onToggleMute = viewModel::toggleMute,
+                onTapSurface = viewModel::toggleControls,
+                onHideControls = viewModel::hideControls,
             )
 
             // Cleanup when composable is disposed
