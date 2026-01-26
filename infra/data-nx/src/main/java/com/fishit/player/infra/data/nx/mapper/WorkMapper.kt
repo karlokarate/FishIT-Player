@@ -41,6 +41,9 @@ fun NX_Work.toDomain(): Work = Work(
 /**
  * Converts Work domain model to NX_Work entity.
  * Note: Only sets fields from Work domain model, preserves entity ID.
+ *
+ * **Important:** Converts posterRef/backdropRef URL strings back to ImageRef objects.
+ * Falls back to existing entity values if new value is null (preserves existing images).
  */
 fun Work.toEntity(existingEntity: NX_Work? = null): NX_Work {
     val entity = existingEntity ?: NX_Work()
@@ -52,10 +55,9 @@ fun Work.toEntity(existingEntity: NX_Work? = null): NX_Work {
         canonicalTitleLower = titleNormalized,
         year = year,
         durationMs = runtimeMs,
-        // ImageRef conversion requires full ImageRef, but Work only has URL string
-        // Preserving existing poster/backdrop if not provided
-        poster = existingEntity?.poster,
-        backdrop = existingEntity?.backdrop,
+        // Convert URL strings back to ImageRef - use new values if provided, else preserve existing
+        poster = posterRef?.let { parseSerializedImageRef(it) } ?: existingEntity?.poster,
+        backdrop = backdropRef?.let { parseSerializedImageRef(it) } ?: existingEntity?.backdrop,
         rating = rating,
         genres = genres,
         plot = plot,
@@ -71,13 +73,50 @@ fun Work.toEntity(existingEntity: NX_Work? = null): NX_Work {
 
 /**
  * Extracts URL string from ImageRef for domain model.
- * Works with Http and LocalFile variants, returns null for TelegramThumb.
+ * Works with Http and LocalFile variants, returns special URI for TelegramThumb.
  */
 private fun ImageRef.toUrlString(): String? = when (this) {
     is ImageRef.Http -> url
     is ImageRef.LocalFile -> path
     is ImageRef.TelegramThumb -> "tg://$remoteId" // Encode as special URI
     is ImageRef.InlineBytes -> null // Cannot convert to URL
+}
+
+/**
+ * Parses a serialized ImageRef string back to ImageRef.
+ *
+ * Supports formats from NxCatalogWriter.toSerializedString():
+ * - "http:<url>" → ImageRef.Http
+ * - "tg:<remoteId>" → ImageRef.TelegramThumb
+ * - "file:<path>" → ImageRef.LocalFile
+ * - "tg://<remoteId>" → ImageRef.TelegramThumb (legacy format)
+ * - Plain URL (starts with http/https) → ImageRef.Http (fallback)
+ */
+private fun parseSerializedImageRef(serialized: String): ImageRef? {
+    val colonIndex = serialized.indexOf(':')
+    if (colonIndex < 0) return null
+
+    val prefix = serialized.substring(0, colonIndex)
+    val value = serialized.substring(colonIndex + 1)
+
+    return when (prefix) {
+        "http" -> ImageRef.Http(url = value)
+        "https" -> ImageRef.Http(url = "https:$value") // Reconstruct full URL
+        "tg" -> {
+            // Handle both "tg:<remoteId>" and "tg://<remoteId>" formats
+            val remoteId = value.removePrefix("//")
+            ImageRef.TelegramThumb(remoteId = remoteId)
+        }
+        "file" -> ImageRef.LocalFile(path = value)
+        else -> {
+            // Fallback: treat as full URL if it starts with http/https
+            if (serialized.startsWith("http://") || serialized.startsWith("https://")) {
+                ImageRef.Http(url = serialized)
+            } else {
+                null
+            }
+        }
+    }
 }
 
 /**

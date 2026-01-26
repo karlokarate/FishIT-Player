@@ -1,5 +1,22 @@
 package com.fishit.player.core.persistence.inspector
 
+import com.fishit.player.core.persistence.obx.NX_Category
+import com.fishit.player.core.persistence.obx.NX_CloudOutboxEvent
+import com.fishit.player.core.persistence.obx.NX_EpgEntry
+import com.fishit.player.core.persistence.obx.NX_IngestLedger
+import com.fishit.player.core.persistence.obx.NX_Profile
+import com.fishit.player.core.persistence.obx.NX_ProfileRule
+import com.fishit.player.core.persistence.obx.NX_ProfileUsage
+import com.fishit.player.core.persistence.obx.NX_SourceAccount
+import com.fishit.player.core.persistence.obx.NX_Work
+import com.fishit.player.core.persistence.obx.NX_WorkCategoryRef
+import com.fishit.player.core.persistence.obx.NX_WorkEmbedding
+import com.fishit.player.core.persistence.obx.NX_WorkRedirect
+import com.fishit.player.core.persistence.obx.NX_WorkRelation
+import com.fishit.player.core.persistence.obx.NX_WorkRuntimeState
+import com.fishit.player.core.persistence.obx.NX_WorkSourceRef
+import com.fishit.player.core.persistence.obx.NX_WorkUserState
+import com.fishit.player.core.persistence.obx.NX_WorkVariant
 import com.fishit.player.core.persistence.obx.ObxCanonicalMedia
 import com.fishit.player.core.persistence.obx.ObxCanonicalResumeMark
 import com.fishit.player.core.persistence.obx.ObxCategory
@@ -27,6 +44,10 @@ import com.fishit.player.core.persistence.obx.ObxVod
  *
  * ObjectBox provides a model at runtime, but mapping it back to strongly-typed Box<T>
  * instances is awkward and not worth the complexity for a debug tool.
+ *
+ * Includes both:
+ * - Legacy Obx* entities (v1 SSOT, deprecated)
+ * - NX_* entities (v2 SSOT, current)
  */
 internal object ObxInspectorEntityRegistry {
     data class EntitySpec<T : Any>(
@@ -38,29 +59,52 @@ internal object ObxInspectorEntityRegistry {
     /** All entity types stored in the v2 ObjectBox DB (core:persistence). */
     val all: List<EntitySpec<out Any>> =
         listOf(
-            EntitySpec("ObxCategory", "Category", ObxCategory::class.java),
-            EntitySpec("ObxLive", "Live", ObxLive::class.java),
-            EntitySpec("ObxVod", "VOD", ObxVod::class.java),
-            EntitySpec("ObxSeries", "Series", ObxSeries::class.java),
-            EntitySpec("ObxEpisode", "Episode", ObxEpisode::class.java),
-            EntitySpec("ObxEpgNowNext", "EPG Now/Next", ObxEpgNowNext::class.java),
-            EntitySpec("ObxProfile", "Profile", ObxProfile::class.java),
-            EntitySpec("ObxProfilePermissions", "Profile Permissions", ObxProfilePermissions::class.java),
-            EntitySpec("ObxKidContentAllow", "Kid Allow: Content", ObxKidContentAllow::class.java),
-            EntitySpec("ObxKidCategoryAllow", "Kid Allow: Category", ObxKidCategoryAllow::class.java),
-            EntitySpec("ObxKidContentBlock", "Kid Block: Content", ObxKidContentBlock::class.java),
-            EntitySpec("ObxScreenTimeEntry", "Screen Time", ObxScreenTimeEntry::class.java),
-            EntitySpec("ObxTelegramMessage", "Telegram Message", ObxTelegramMessage::class.java),
-            // Aggregated index tables
-            EntitySpec("ObxIndexProvider", "Index: Provider", ObxIndexProvider::class.java),
-            EntitySpec("ObxIndexYear", "Index: Year", ObxIndexYear::class.java),
-            EntitySpec("ObxIndexGenre", "Index: Genre", ObxIndexGenre::class.java),
-            EntitySpec("ObxIndexLang", "Index: Language", ObxIndexLang::class.java),
-            EntitySpec("ObxIndexQuality", "Index: Quality", ObxIndexQuality::class.java),
-            // Canonical identity (v2 SSOT)
-            EntitySpec("ObxCanonicalMedia", "Canonical Media", ObxCanonicalMedia::class.java),
-            EntitySpec("ObxMediaSourceRef", "Canonical Source Ref", ObxMediaSourceRef::class.java),
-            EntitySpec("ObxCanonicalResumeMark", "Canonical Resume", ObxCanonicalResumeMark::class.java),
+            // =================================================================
+            // NX_* Entities (v2 SSOT - Primary for UI)
+            // =================================================================
+            EntitySpec("NX_Work", "NX: Work (UI SSOT)", NX_Work::class.java),
+            EntitySpec("NX_WorkSourceRef", "NX: Work Source Ref", NX_WorkSourceRef::class.java),
+            EntitySpec("NX_WorkVariant", "NX: Work Variant", NX_WorkVariant::class.java),
+            EntitySpec("NX_WorkRelation", "NX: Work Relation", NX_WorkRelation::class.java),
+            EntitySpec("NX_WorkUserState", "NX: Work User State", NX_WorkUserState::class.java),
+            EntitySpec("NX_WorkRuntimeState", "NX: Work Runtime State", NX_WorkRuntimeState::class.java),
+            EntitySpec("NX_IngestLedger", "NX: Ingest Ledger", NX_IngestLedger::class.java),
+            EntitySpec("NX_Profile", "NX: Profile", NX_Profile::class.java),
+            EntitySpec("NX_ProfileRule", "NX: Profile Rule", NX_ProfileRule::class.java),
+            EntitySpec("NX_ProfileUsage", "NX: Profile Usage", NX_ProfileUsage::class.java),
+            EntitySpec("NX_SourceAccount", "NX: Source Account", NX_SourceAccount::class.java),
+            EntitySpec("NX_CloudOutboxEvent", "NX: Cloud Outbox", NX_CloudOutboxEvent::class.java),
+            EntitySpec("NX_WorkEmbedding", "NX: Work Embedding", NX_WorkEmbedding::class.java),
+            EntitySpec("NX_WorkRedirect", "NX: Work Redirect", NX_WorkRedirect::class.java),
+            EntitySpec("NX_Category", "NX: Category", NX_Category::class.java),
+            EntitySpec("NX_WorkCategoryRef", "NX: Work Category Ref", NX_WorkCategoryRef::class.java),
+            EntitySpec("NX_EpgEntry", "NX: EPG Entry", NX_EpgEntry::class.java),
+            // =================================================================
+            // Legacy Obx* Entities (v1 - Deprecated, for reference only)
+            // =================================================================
+            EntitySpec("ObxCategory", "[Legacy] Category", ObxCategory::class.java),
+            EntitySpec("ObxLive", "[Legacy] Live", ObxLive::class.java),
+            EntitySpec("ObxVod", "[Legacy] VOD", ObxVod::class.java),
+            EntitySpec("ObxSeries", "[Legacy] Series", ObxSeries::class.java),
+            EntitySpec("ObxEpisode", "[Legacy] Episode", ObxEpisode::class.java),
+            EntitySpec("ObxEpgNowNext", "[Legacy] EPG Now/Next", ObxEpgNowNext::class.java),
+            EntitySpec("ObxProfile", "[Legacy] Profile", ObxProfile::class.java),
+            EntitySpec("ObxProfilePermissions", "[Legacy] Profile Permissions", ObxProfilePermissions::class.java),
+            EntitySpec("ObxKidContentAllow", "[Legacy] Kid Allow: Content", ObxKidContentAllow::class.java),
+            EntitySpec("ObxKidCategoryAllow", "[Legacy] Kid Allow: Category", ObxKidCategoryAllow::class.java),
+            EntitySpec("ObxKidContentBlock", "[Legacy] Kid Block: Content", ObxKidContentBlock::class.java),
+            EntitySpec("ObxScreenTimeEntry", "[Legacy] Screen Time", ObxScreenTimeEntry::class.java),
+            EntitySpec("ObxTelegramMessage", "[Legacy] Telegram Message", ObxTelegramMessage::class.java),
+            // Aggregated index tables (legacy)
+            EntitySpec("ObxIndexProvider", "[Legacy] Index: Provider", ObxIndexProvider::class.java),
+            EntitySpec("ObxIndexYear", "[Legacy] Index: Year", ObxIndexYear::class.java),
+            EntitySpec("ObxIndexGenre", "[Legacy] Index: Genre", ObxIndexGenre::class.java),
+            EntitySpec("ObxIndexLang", "[Legacy] Index: Language", ObxIndexLang::class.java),
+            EntitySpec("ObxIndexQuality", "[Legacy] Index: Quality", ObxIndexQuality::class.java),
+            // Canonical identity (legacy v2 SSOT - replaced by NX_Work)
+            EntitySpec("ObxCanonicalMedia", "[Legacy] Canonical Media", ObxCanonicalMedia::class.java),
+            EntitySpec("ObxMediaSourceRef", "[Legacy] Canonical Source Ref", ObxMediaSourceRef::class.java),
+            EntitySpec("ObxCanonicalResumeMark", "[Legacy] Canonical Resume", ObxCanonicalResumeMark::class.java),
         )
 
     val byId: Map<String, EntitySpec<out Any>> = all.associateBy { it.id }
