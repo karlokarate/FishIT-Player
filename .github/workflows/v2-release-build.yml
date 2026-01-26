@@ -71,7 +71,12 @@ jobs:
         abi: ${{ github.event.inputs.abi == 'both' && fromJson('["arm64-v8a", "armeabi-v7a"]') || fromJson(format('["{0}"]', github.event.inputs.abi)) }}
 
     env:
-      GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.jvmargs='-Xmx4g -XX:+UseParallelGC'"
+      # R8 full mode requires 4GB+ heap for large codebases
+      # Using separate properties to avoid quote escaping issues
+      GRADLE_OPTS: >-
+        -Dorg.gradle.daemon=false
+        -Dorg.gradle.jvmargs=-Xmx6g\ -XX:+UseG1GC\ -XX:MaxMetaspaceSize=512m
+        -Dfile.encoding=UTF-8
 
     steps:
       - name: Checkout repository
@@ -185,8 +190,8 @@ jobs:
             -PversionName=${{ github.event.inputs.version_name }} \
             -PincludeChucker=${INCLUDE_CHUCKER} \
             -PincludeLeakCanary=${INCLUDE_LEAKCANARY} \
+            --no-daemon \
             --build-cache \
-            --parallel \
             --stacktrace \
             --info \
             --warning-mode all \

@@ -6,8 +6,8 @@ pluginManagement {
     }
     plugins {
         // --- Platform: pin plugin versions project-wide ---
-        // AGP 8.8.2 - stable, compatible with Hilt 2.59
-        // Note: AGP 8.13.x has breaking changes for Hilt (ScopedArtifact API change)
+        // AGP 8.8.2 - stable, compatible with Gradle 8.13 and Hilt 2.59
+        // Gradle 8.13: embedded Kotlin 2.0.21, full Kotlin 2.1.0 plugin support
         id("com.android.application") version "8.8.2" apply false
         id("com.android.library") version "8.8.2" apply false
 
