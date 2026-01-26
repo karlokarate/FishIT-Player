@@ -9,6 +9,7 @@ import com.fishit.player.internal.source.PlaybackSourceResolver
 import com.fishit.player.nextlib.NextlibCodecConfigurator
 import com.fishit.player.playback.domain.DataSourceType
 import com.fishit.player.playback.domain.KidsPlaybackGate
+import com.fishit.player.playback.domain.LivePlaybackController
 import com.fishit.player.playback.domain.PlayerEntryPoint
 import com.fishit.player.playback.domain.ResumeManager
 import com.fishit.player.playback.xtream.XtreamDataSourceFactoryProvider
@@ -38,6 +39,11 @@ import javax.inject.Singleton
  * - Telegram uses TelegramFileDataSourceFactory (zero-copy TDLib streaming)
  * - Xtream uses XtreamDataSourceFactoryProvider (optional, for OkHttp redirect handling)
  *
+ * **Live TV Support:**
+ * - Injects [LivePlaybackController] for channel switching and EPG
+ * - EPG data fetched on-demand when live content starts
+ * - Supports D-Pad channel zapping (prev/next)
+ *
  * **Source-Agnostic Design:**
  * - Xtream provider is optional (compiles with zero playback sources)
  * - Graceful degradation when providers unavailable
@@ -49,6 +55,7 @@ import javax.inject.Singleton
  * @param codecConfigurator Configurator for FFmpeg codecs
  * @param dataSourceFactories Map of source-type-specific DataSource factories
  * @param xtreamDataSourceProvider Optional provider for Xtream DataSource factories (requires :playback:xtream)
+ * @param livePlaybackController Controller for Live TV channel switching and EPG (always available)
  */
 @Singleton
 class InternalPlayerEntryImpl
@@ -61,6 +68,7 @@ class InternalPlayerEntryImpl
         private val codecConfigurator: NextlibCodecConfigurator,
         private val dataSourceFactories: Map<DataSourceType, @JvmSuppressWildcards DataSource.Factory>,
         private val xtreamDataSourceProvider: XtreamDataSourceFactoryProvider?,
+        private val livePlaybackController: LivePlaybackController,
     ) : PlayerEntryPoint {
         private val mutex = Mutex()
         private var currentSession: InternalPlayerSession? = null
@@ -85,6 +93,7 @@ class InternalPlayerEntryImpl
                         codecConfigurator = codecConfigurator,
                         dataSourceFactories = dataSourceFactories,
                         xtreamDataSourceProvider = xtreamDataSourceProvider,
+                        livePlaybackController = livePlaybackController,
                     )
 
                 currentSession = session

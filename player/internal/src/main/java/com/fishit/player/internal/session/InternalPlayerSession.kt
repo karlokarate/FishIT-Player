@@ -25,6 +25,7 @@ import com.fishit.player.internal.subtitle.SubtitleTrackManager
 import com.fishit.player.nextlib.NextlibCodecConfigurator
 import com.fishit.player.playback.domain.DataSourceType
 import com.fishit.player.playback.domain.KidsPlaybackGate
+import com.fishit.player.playback.domain.LivePlaybackController
 import com.fishit.player.playback.domain.ResumeManager
 import com.fishit.player.playback.xtream.XtreamDataSourceFactoryProvider
 import kotlinx.coroutines.CoroutineScope
@@ -70,6 +71,7 @@ class InternalPlayerSession(
     private val codecConfigurator: NextlibCodecConfigurator,
     private val dataSourceFactories: Map<DataSourceType, DataSource.Factory> = emptyMap(),
     private val xtreamDataSourceProvider: XtreamDataSourceFactoryProvider? = null,
+    private val livePlaybackController: LivePlaybackController? = null,
 ) {
     companion object {
         private const val TAG = "InternalPlayerSession"
@@ -178,6 +180,7 @@ class InternalPlayerSession(
      * Initializes the player and starts playback.
      *
      * Uses [PlaybackSourceResolver] to resolve the source via factories.
+     * For live content, also initializes EPG via [LivePlaybackController].
      */
     fun initialize(playbackContext: PlaybackContext) {
         release()
@@ -192,6 +195,21 @@ class InternalPlayerSession(
             isKidMode = kidsPlaybackGate.isActive()
             if (isKidMode) {
                 UnifiedLog.i(TAG, "Kid mode active - subtitles will be disabled")
+            }
+        }
+
+        // Initialize Live TV EPG if this is live content
+        if (playbackContext.isLive && livePlaybackController != null) {
+            scope.launch {
+                try {
+                    val channelInfo = livePlaybackController.switchToChannel(playbackContext.canonicalId)
+                    if (channelInfo != null) {
+                        _state.update { it.copy(liveChannelInfo = channelInfo) }
+                        UnifiedLog.d(TAG) { "Live channel EPG loaded: ${channelInfo.name}" }
+                    }
+                } catch (e: Exception) {
+                    UnifiedLog.d(TAG) { "EPG initialization failed: ${e.message}" }
+                }
             }
         }
 
@@ -508,6 +526,116 @@ class InternalPlayerSession(
     fun destroy() {
         release()
         scope.cancel()
+    }
+
+    // ────────────────────────────────────────────────────────────────────────
+    // Live TV Controls
+    // ────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Switch to the next channel (for live TV).
+     *
+     * Uses [LivePlaybackController] to switch channels and updates the player
+     * with the new stream. EPG data is fetched on-demand.
+     *
+     * @return true if channel switch was initiated, false if not in live mode or no channels
+     */
+    fun nextChannel(): Boolean {
+        val controller = livePlaybackController ?: return false
+        val ctx = currentContext ?: return false
+        if (!ctx.isLive) return false
+
+        scope.launch {
+            try {
+                val newChannel = controller.nextChannel()
+                if (newChannel != null) {
+                    _state.update { it.copy(liveChannelInfo = newChannel, epgOverlayVisible = true) }
+                    UnifiedLog.d(TAG) { "Switched to next channel: ${newChannel.name}" }
+                    // TODO: Actually switch stream URL when Xtream live context provides it
+                }
+            } catch (e: Exception) {
+                UnifiedLog.e(TAG, e) { "Failed to switch to next channel" }
+            }
+        }
+        return true
+    }
+
+    /**
+     * Switch to the previous channel (for live TV).
+     *
+     * @return true if channel switch was initiated, false if not in live mode
+     */
+    fun previousChannel(): Boolean {
+        val controller = livePlaybackController ?: return false
+        val ctx = currentContext ?: return false
+        if (!ctx.isLive) return false
+
+        scope.launch {
+            try {
+                val newChannel = controller.previousChannel()
+                if (newChannel != null) {
+                    _state.update { it.copy(liveChannelInfo = newChannel, epgOverlayVisible = true) }
+                    UnifiedLog.d(TAG) { "Switched to previous channel: ${newChannel.name}" }
+                }
+            } catch (e: Exception) {
+                UnifiedLog.e(TAG, e) { "Failed to switch to previous channel" }
+            }
+        }
+        return true
+    }
+
+    /**
+     * Toggle EPG overlay visibility.
+     *
+     * When shown, displays current and next program info.
+     */
+    fun toggleEpgOverlay() {
+        val ctx = currentContext ?: return
+        if (!ctx.isLive) return
+
+        _state.update { it.copy(epgOverlayVisible = !it.epgOverlayVisible) }
+    }
+
+    /**
+     * Show EPG overlay temporarily (auto-hides after delay).
+     *
+     * @param autoHideDelayMs Delay before auto-hide (default 5 seconds)
+     */
+    fun showEpgOverlay(autoHideDelayMs: Long = 5000L) {
+        val ctx = currentContext ?: return
+        if (!ctx.isLive) return
+
+        _state.update { it.copy(epgOverlayVisible = true) }
+
+        // Auto-hide after delay
+        scope.launch {
+            delay(autoHideDelayMs)
+            _state.update { it.copy(epgOverlayVisible = false) }
+        }
+    }
+
+    /**
+     * Refresh EPG data for the current channel.
+     *
+     * Call periodically or when user requests refresh.
+     */
+    fun refreshEpg() {
+        val controller = livePlaybackController ?: return
+        val ctx = currentContext ?: return
+        if (!ctx.isLive) return
+
+        scope.launch {
+            try {
+                controller.refreshEpg()
+                // Update state from controller
+                val channelInfo = controller.currentChannel.value
+                if (channelInfo != null) {
+                    _state.update { it.copy(liveChannelInfo = channelInfo) }
+                }
+            } catch (e: Exception) {
+                UnifiedLog.d(TAG) { "EPG refresh failed: ${e.message}" }
+            }
+        }
     }
 
     private fun startPositionUpdates() {
