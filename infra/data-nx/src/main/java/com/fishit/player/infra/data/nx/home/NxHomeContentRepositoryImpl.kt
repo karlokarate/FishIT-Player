@@ -273,9 +273,24 @@ class NxHomeContentRepositoryImpl @Inject constructor(
 
     /**
      * Parse serialized ImageRef string back to ImageRef.
-     * Format: "http:url", "tg:remoteId", "file:path", "inline:Nbytes"
+     *
+     * Supports multiple formats:
+     * - Prefixed: "http:<url>", "tg:<remoteId>", "file:<path>"
+     * - Plain URLs: "https://..." or "http://..." (from toDomain().toUrlString())
+     * - Legacy Telegram: "tg://<remoteId>"
      */
     private fun parseImageRef(serialized: String): ImageRef? {
+        // Handle plain URLs first (most common case from Xtream)
+        if (serialized.startsWith("https://") || serialized.startsWith("http://")) {
+            return ImageRef.Http(url = serialized)
+        }
+
+        // Handle legacy Telegram format "tg://<remoteId>"
+        if (serialized.startsWith("tg://")) {
+            return ImageRef.TelegramThumb(remoteId = serialized.removePrefix("tg://"))
+        }
+
+        // Handle prefixed format "type:value"
         val colonIndex = serialized.indexOf(':')
         if (colonIndex < 0) return null
 
@@ -284,7 +299,8 @@ class NxHomeContentRepositoryImpl @Inject constructor(
 
         return when (type) {
             "http" -> ImageRef.Http(url = value)
-            "tg" -> ImageRef.TelegramThumb(remoteId = value)
+            "https" -> ImageRef.Http(url = "https:$value") // Reconstruct full URL
+            "tg" -> ImageRef.TelegramThumb(remoteId = value.removePrefix("//"))
             "file" -> ImageRef.LocalFile(path = value)
             else -> null
         }
