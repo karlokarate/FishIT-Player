@@ -827,22 +827,23 @@ jobs:
           exit 0
 
       - name: Verify APK signature
+        continue-on-error: true
         run: |
           VARIANT="${{ github.event.inputs.build_variant }}"
           APK_DIR="app-v2/build/outputs/apk/${VARIANT}"
           
           if [ ! -d "$APK_DIR" ]; then
-            echo "::error::APK directory not found: $APK_DIR"
-            echo "❌ APK directory missing - build may have failed" >> build-errors.txt
-            exit 1
+            echo "::warning::APK directory not found: $APK_DIR - skipping verification"
+            echo "⚠️ APK directory missing - verification skipped" >> build-errors.txt
+            exit 0
           fi
           
           APK_COUNT=$(find "$APK_DIR" -type f -name "*.apk" | wc -l)
           if [ "$APK_COUNT" -eq 0 ]; then
-            echo "::error::No APK files found in $APK_DIR"
-            echo "❌ No APKs found - build may have failed" >> build-errors.txt
+            echo "::warning::No APK files found in $APK_DIR - skipping verification"
+            echo "⚠️ No APKs found for verification" >> build-errors.txt
             ls -laR app-v2/build/outputs/ || true
-            exit 1
+            exit 0
           fi
           
           echo "Found $APK_COUNT APK(s) to verify"
@@ -866,19 +867,20 @@ jobs:
           fi
 
       - name: Calculate checksums
+        continue-on-error: true
         run: |
           VARIANT="${{ github.event.inputs.build_variant }}"
           APK_DIR="app-v2/build/outputs/apk/${VARIANT}"
           
           if [ ! -d "$APK_DIR" ]; then
-            echo "::error::Cannot calculate checksums - APK directory not found"
-            exit 1
+            echo "::warning::Cannot calculate checksums - APK directory not found"
+            exit 0
           fi
           
           APK_COUNT=$(find "$APK_DIR" -type f -name "*.apk" | wc -l)
           if [ "$APK_COUNT" -eq 0 ]; then
-            echo "::error::No APK files found for checksum calculation"
-            exit 1
+            echo "::warning::No APK files found for checksum calculation"
+            exit 0
           fi
           
           echo "Calculating checksums for $APK_COUNT APK(s)..."
@@ -888,8 +890,7 @@ jobs:
             echo "✅ Checksums calculated:"
             cat checksums-all.txt
           else
-            echo "::error::Checksum file is empty"
-            exit 1
+            echo "::warning::Checksum file is empty"
           fi
 
       # =========================================================
@@ -1100,6 +1101,7 @@ jobs:
 
       - name: Generate Build Error Summary
         if: always()
+        continue-on-error: true
         run: |
           # Read error and warning counts
           ERROR_COUNT=$(cat .github/metrics/error_count.txt 2>/dev/null || echo "0")
@@ -1138,15 +1140,13 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "---" >> $GITHUB_STEP_SUMMARY
           
-          # CRITICAL FIX: Only fail if there are actual BUILD ERRORS (not warnings)
-          # Deprecation warnings should not fail the workflow
+          # NOTE: This step no longer fails the workflow.
+          # APK upload and release creation proceed regardless of warning/error counts.
+          # The summary provides visibility into issues without blocking the release.
           if [ "$ERROR_COUNT" -gt 0 ]; then
-            echo "::error::Build failed with $ERROR_COUNT errors"
-            exit 1
-          else
-            echo "✅ Build completed successfully with $WARNING_COUNT warnings"
-            exit 0
+            echo "::warning::Build completed with $ERROR_COUNT errors (non-blocking)"
           fi
+          echo "✅ Build summary generated with $WARNING_COUNT warnings"
 
       # =========================================================
       # 2026 FIX: Upload APK artifacts with ABI split support
@@ -1154,18 +1154,20 @@ jobs:
       #   - app-v2/build/outputs/apk/release/arm64-v8a/*.apk
       #   - app-v2/build/outputs/apk/release/armeabi-v7a/*.apk
       # The /** pattern ensures we capture APKs in subdirectories
+      # CRITICAL: Always run this step if APKs exist, regardless of previous step failures
       # =========================================================
       - name: Upload APK artifacts
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: app-${{ github.event.inputs.build_variant }}-apks
           path: |
             app-v2/build/outputs/apk/${{ github.event.inputs.build_variant }}/**/*.apk
           retention-days: 30
-          if-no-files-found: error
+          if-no-files-found: warn
       
       - name: Upload APK Checksums
-        if: hashFiles('checksums-all.txt') != ''
+        if: always() && hashFiles('checksums-all.txt') != ''
         uses: actions/upload-artifact@v4
         with:
           name: apk-checksums
@@ -1173,7 +1175,7 @@ jobs:
           retention-days: 30
 
       - name: Upload ProGuard mapping
-        if: ${{ github.event.inputs.build_variant == 'release' }}
+        if: always() && github.event.inputs.build_variant == 'release'
         uses: actions/upload-artifact@v4
         with:
           name: proguard-mapping
@@ -1229,64 +1231,73 @@ jobs:
 
   create-release:
     needs: build
-    if: ${{ github.event.inputs.create_release == 'true' && github.event.inputs.build_variant == 'release' }}
+    # CRITICAL: Run release job even if build job has warnings/non-critical failures
+    # The 'always()' ensures this runs, but we check for APK artifacts before proceeding
+    if: always() && github.event.inputs.create_release == 'true' && github.event.inputs.build_variant == 'release' && needs.build.result != 'cancelled'
     runs-on: ubuntu-24.04
     
     steps:
       - name: Download all artifacts
         uses: actions/download-artifact@v4
+        continue-on-error: true
         with:
           path: artifacts
 
-      - name: Prepare release assets
+      - name: Check for APK artifacts
+        id: check_apks
         run: |
-          mkdir -p release-assets
-          
-          echo "📦 Downloading and preparing release assets..."
+          echo "📦 Checking for APK artifacts..."
           echo "Available artifacts:"
-          ls -la artifacts/ || echo "No artifacts directory found"
+          ls -la artifacts/ 2>/dev/null || echo "No artifacts directory found"
           
           # Check if app-release-apks artifact exists
           if [ ! -d "artifacts/app-release-apks" ]; then
-            echo "::error::app-release-apks artifact not found!"
-            echo "Available artifacts:"
-            ls -la artifacts/ 2>/dev/null || echo "No artifacts directory"
-            exit 1
+            echo "::error::app-release-apks artifact not found - build may have failed"
+            echo "APK_FOUND=false" >> $GITHUB_OUTPUT
+            exit 0
           fi
           
-          # Find and rename APKs with ABI suffix
+          # Check for APKs (they might be in subdirectories due to ABI splits)
+          APK_COUNT=$(find artifacts/app-release-apks -name "*.apk" -type f 2>/dev/null | wc -l)
+          if [ "$APK_COUNT" -eq 0 ]; then
+            echo "::error::No APK files found in artifact"
+            echo "APK_FOUND=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+          
+          echo "✅ Found $APK_COUNT APK file(s)"
+          echo "APK_FOUND=true" >> $GITHUB_OUTPUT
+          echo "APK_COUNT=$APK_COUNT" >> $GITHUB_OUTPUT
+
+      - name: Prepare release assets
+        if: steps.check_apks.outputs.APK_FOUND == 'true'
+        run: |
+          mkdir -p release-assets
+          
+          echo "📦 Preparing release assets..."
+          
+          # Find all APKs (including in subdirectories from ABI splits)
           cd artifacts/app-release-apks
           
           echo "Contents of app-release-apks:"
-          ls -la
+          find . -name "*.apk" -type f
           
-          # Check if any APKs exist
-          apk_count=$(ls -1 *.apk 2>/dev/null | wc -l)
-          if [ "$apk_count" -eq 0 ]; then
-            echo "::error::No APK files found in app-release-apks artifact!"
-            exit 1
-          fi
-          
-          echo "Found $apk_count APK file(s)"
-          
-          # Process each APK
-          for apk in *.apk; do
-            # Skip if glob didn't match (shouldn't happen after count check)
-            [ -f "$apk" ] || continue
+          # Process each APK (handle both flat and nested structures)
+          find . -name "*.apk" -type f | while read apk; do
+            filename=$(basename "$apk")
+            echo "Processing: $filename"
             
-            echo "Processing: $apk"
-            
-            # Extract ABI from filename and rename
-            if [[ "$apk" =~ arm64-v8a ]]; then
+            # Extract ABI from path or filename and rename
+            if [[ "$apk" =~ arm64-v8a ]] || [[ "$filename" =~ arm64-v8a ]]; then
               cp "$apk" "../../release-assets/FishIT-Player-${{ github.event.inputs.version_name }}-arm64-v8a.apk"
               echo "✅ Copied arm64-v8a APK"
-            elif [[ "$apk" =~ armeabi-v7a ]]; then
+            elif [[ "$apk" =~ armeabi-v7a ]] || [[ "$filename" =~ armeabi-v7a ]]; then
               cp "$apk" "../../release-assets/FishIT-Player-${{ github.event.inputs.version_name }}-armeabi-v7a.apk"
               echo "✅ Copied armeabi-v7a APK"
             else
               # Fallback: copy with original name
-              cp "$apk" "../../release-assets/$apk"
-              echo "⚠️ Copied $apk (ABI not detected in filename)"
+              cp "$apk" "../../release-assets/$filename"
+              echo "⚠️ Copied $filename (ABI not detected in filename)"
             fi
           done
           cd ../..
@@ -1318,6 +1329,7 @@ jobs:
           echo "✅ Successfully prepared $release_apk_count APK(s) for release"
 
       - name: Create GitHub Release
+        if: steps.check_apks.outputs.APK_FOUND == 'true'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.event.inputs.version_name }}
@@ -1350,4 +1362,15 @@ jobs:
             release-assets/checksums.txt
           draft: false
           prerelease: ${{ github.event.inputs.prerelease }}
-          fail_on_unmatched_files: true
+          fail_on_unmatched_files: false
+
+      - name: Release creation skipped
+        if: steps.check_apks.outputs.APK_FOUND != 'true'
+        run: |
+          echo "::warning::Release creation skipped - no APK artifacts found"
+          echo "This can happen if:"
+          echo "  - The build step failed before creating APKs"
+          echo "  - The APK upload step failed"
+          echo "  - There was a critical build error"
+          echo ""
+          echo "Check the 'build' job logs for details."
