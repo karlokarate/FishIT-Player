@@ -7,6 +7,7 @@ import com.fishit.player.core.persistence.obx.NX_WorkVariant
 import com.fishit.player.infra.data.nx.detail.dto.WorkResumeInfo
 import com.fishit.player.infra.data.nx.detail.dto.WorkSourceInfo
 import com.fishit.player.infra.data.nx.detail.dto.WorkWithSources
+import kotlinx.serialization.json.Json
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -183,6 +184,24 @@ class WorkDetailMapper @Inject constructor() {
      * These hints contain source-specific data needed for playback resolution.
      */
     private fun buildPlaybackHints(
+        sourceRef: NX_WorkSourceRef,
+        variant: NX_WorkVariant?,
+    ): Map<String, String> {
+        // Primary: JSON storage from variant (contains all source-specific hints)
+        if (variant != null && !variant.playbackHintsJson.isNullOrBlank()) {
+            return try {
+                Json.decodeFromString<Map<String, String>>(variant.playbackHintsJson!!)
+            } catch (e: Exception) {
+                // Fallback to legacy on decode error
+                buildLegacyPlaybackHints(sourceRef, variant)
+            }
+        }
+
+        // Fallback: Legacy entity fields (for old data without JSON)
+        return buildLegacyPlaybackHints(sourceRef, variant)
+    }
+
+    private fun buildLegacyPlaybackHints(
         sourceRef: NX_WorkSourceRef,
         variant: NX_WorkVariant?,
     ): Map<String, String> =

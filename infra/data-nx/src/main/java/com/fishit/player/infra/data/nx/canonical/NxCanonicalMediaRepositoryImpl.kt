@@ -31,6 +31,7 @@ import io.objectbox.BoxStore
 import io.objectbox.query.QueryCondition
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.Json
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -646,13 +647,26 @@ class NxCanonicalMediaRepositoryImpl @Inject constructor(
     private fun buildPlaybackHints(variant: NX_WorkVariant?): Map<String, String> {
         if (variant == null) return emptyMap()
 
-        return buildMap {
-            variant.playbackUrl?.let { put("playbackUrl", it) }
-            put("playbackMethod", variant.playbackMethod)
-            variant.containerFormat?.let { put("containerExtension", it) }
-            variant.videoCodec?.let { put("videoCodec", it) }
-            variant.audioCodec?.let { put("audioCodec", it) }
+        // Primary: JSON storage (contains all source-specific hints)
+        if (!variant.playbackHintsJson.isNullOrBlank()) {
+            return try {
+                Json.decodeFromString<Map<String, String>>(variant.playbackHintsJson!!)
+            } catch (e: Exception) {
+                // Fallback to legacy fields on decode error
+                buildLegacyPlaybackHints(variant)
+            }
         }
+
+        // Fallback: Legacy entity fields (for old data without JSON)
+        return buildLegacyPlaybackHints(variant)
+    }
+
+    private fun buildLegacyPlaybackHints(variant: NX_WorkVariant): Map<String, String> = buildMap {
+        variant.playbackUrl?.let { put("playbackUrl", it) }
+        put("playbackMethod", variant.playbackMethod)
+        variant.containerFormat?.let { put("containerExtension", it) }
+        variant.videoCodec?.let { put("videoCodec", it) }
+        variant.audioCodec?.let { put("audioCodec", it) }
     }
 
     private fun calculatePriority(

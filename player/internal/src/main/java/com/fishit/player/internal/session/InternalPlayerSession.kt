@@ -385,6 +385,11 @@ class InternalPlayerSession(
         _state.update { it.copy(areControlsVisible = !it.areControlsVisible) }
     }
 
+    /** Hides controls (used by auto-hide timer). */
+    fun hideControls() {
+        _state.update { it.copy(areControlsVisible = false) }
+    }
+
     // ========== Subtitle APIs (Phase 6) ==========
 
     /**

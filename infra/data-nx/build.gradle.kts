@@ -1,6 +1,7 @@
 plugins {
     id("com.android.library")
     id("org.jetbrains.kotlin.android")
+    id("org.jetbrains.kotlin.plugin.serialization")
     id("com.google.devtools.ksp")
     id("com.google.dagger.hilt.android")
 }
@@ -48,6 +49,9 @@ dependencies {
 
     // ObjectBox (via core:persistence transitive, but explicit for clarity)
     implementation("io.objectbox:objectbox-kotlin:4.0.3")
+
+    // Serialization for JSON storage of playbackHints
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
 
     // Testing
     testImplementation("junit:junit:4.13.2")

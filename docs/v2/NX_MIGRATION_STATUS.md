@@ -15,7 +15,8 @@ Per `NX_SSOT_CONTRACT.md` INV-6, no UI code may import or query legacy `Obx*` en
 - ✅ Legacy OBX repositories marked `@Deprecated`
 - ✅ Legacy ContentRepositoryAdapter files deleted
 - ✅ CatalogSyncService writes exclusively via NxCatalogWriter
-- ⏳ feature:detail migration to NX pending (uses CanonicalMediaRepository)
+- ✅ feature:detail uses NX via NxCanonicalMediaRepositoryImpl (bound in NxDataModule)
+- ✅ Profile/Content/ScreenTime legacy files deleted (7 files, Jan 2026)
 
 ---
 
@@ -189,9 +190,10 @@ NxHomeContentRepositoryImpl  [SSOT]
 2. ✅ ~~Create NX implementations for other repositories (Library, Live, Detail)~~ (Done)
 3. ✅ ~~Remove dual-write to old OBX layer~~ (Done - NX-ONLY mode active)
 4. ✅ ~~Delete unused ContentRepositoryAdapter files~~ (Done Jan 2026)
-5. **[CRITICAL]** Migrate `feature:detail` to use NX repositories (INV-6 violation pending)
-6. **[TODO]** Delete unused old OBX entities once feature:detail is migrated
+5. ✅ ~~Migrate `feature:detail` to use NX repositories~~ (Already uses NxCanonicalMediaRepositoryImpl)
+6. ✅ ~~Delete Profile/Content/ScreenTime legacy files~~ (7 files deleted Jan 2026)
 7. **[TODO]** Implement ProfileManager for proper multi-profile support
+8. **[DEFERRED]** Migrate TelegramContentRepository to NX (blocked by CatalogSync refactor)
 
 ---
 
