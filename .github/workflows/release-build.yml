@@ -698,7 +698,7 @@ jobs:
               --build-cache \
               --parallel \
               --stacktrace \
-              --warning-mode all \
+              --warning-mode summary \
               -x test \
               -x lint 2>&1 | tee build-arm64.log; then
               
@@ -722,7 +722,7 @@ jobs:
               --build-cache \
               --parallel \
               --stacktrace \
-              --warning-mode all \
+              --warning-mode summary \
               -x test \
               -x lint 2>&1 | tee build-arm32.log; then
               
