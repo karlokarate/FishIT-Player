@@ -65,7 +65,11 @@ class NxWorkRepositoryImpl @Inject constructor(
             .order(NX_Work_.canonicalTitle)
             .build()
             .asFlow()
-            .map { list -> list.take(limit).map { it.toDomain() } }
+            .map { list -> 
+                list.filter { isComplete(it) }
+                    .take(limit)
+                    .map { it.toDomain() } 
+            }
     }
 
     override fun observeRecentlyUpdated(limit: Int): Flow<List<Work>> {
@@ -73,7 +77,11 @@ class NxWorkRepositoryImpl @Inject constructor(
             .orderDesc(NX_Work_.updatedAt)
             .build()
             .asFlow()
-            .map { list -> list.take(limit).map { it.toDomain() } }
+            .map { list -> 
+                list.filter { isComplete(it) }
+                    .take(limit)
+                    .map { it.toDomain() } 
+            }
     }
 
     override fun observeRecentlyCreated(limit: Int): Flow<List<Work>> {
@@ -81,7 +89,11 @@ class NxWorkRepositoryImpl @Inject constructor(
             .orderDesc(NX_Work_.createdAt)
             .build()
             .asFlow()
-            .map { list -> list.take(limit).map { it.toDomain() } }
+            .map { list -> 
+                list.filter { isComplete(it) }
+                    .take(limit)
+                    .map { it.toDomain() } 
+            }
     }
 
     override fun observeNeedsReview(limit: Int): Flow<List<Work>> {
@@ -89,7 +101,11 @@ class NxWorkRepositoryImpl @Inject constructor(
             .order(NX_Work_.canonicalTitle)
             .build()
             .asFlow()
-            .map { list -> list.take(limit).map { it.toDomain() } }
+            .map { list -> 
+                list.filter { isComplete(it) }
+                    .take(limit)
+                    .map { it.toDomain() } 
+            }
     }
 
     override suspend fun searchByTitle(queryNormalized: String, limit: Int): List<Work> = withContext(Dispatchers.IO) {
@@ -97,6 +113,7 @@ class NxWorkRepositoryImpl @Inject constructor(
             .order(NX_Work_.canonicalTitle)
             .build()
             .find(0, limit.toLong())
+            .filter { isComplete(it) }
             .map { it.toDomain() }
     }
 
@@ -107,7 +124,11 @@ class NxWorkRepositoryImpl @Inject constructor(
     override fun observeWithOptions(options: NxWorkRepository.QueryOptions): Flow<List<Work>> {
         return buildQuery(options)
             .asFlow()
-            .map { list -> list.take(options.limit).map { it.toDomain() } }
+            .map { list -> 
+                list.filter { isComplete(it) }
+                    .take(options.limit)
+                    .map { it.toDomain() } 
+            }
     }
 
     override suspend fun advancedSearch(
@@ -117,6 +138,7 @@ class NxWorkRepositoryImpl @Inject constructor(
         if (query.isBlank()) {
             return@withContext buildQuery(options)
                 .find(0, options.limit.toLong())
+                .filter { isComplete(it) }
                 .map { it.toDomain() }
         }
 
@@ -153,6 +175,7 @@ class NxWorkRepositoryImpl @Inject constructor(
 
         queryBuilder.build()
             .find(0, options.limit.toLong())
+            .filter { isComplete(it) }
             .map { it.toDomain() }
     }
 
@@ -296,6 +319,20 @@ class NxWorkRepositoryImpl @Inject constructor(
     // ──────────────────────────────────────────────────────────────────────
     // Private helpers
     // ──────────────────────────────────────────────────────────────────────
+
+    /**
+     * Checks if a work is complete according to INV-3 (NX_SSOT_CONTRACT.md).
+     * 
+     * Every NX_Work visible in the UI must have:
+     * - ≥1 NX_WorkSourceRef
+     * - ≥1 NX_WorkVariant with valid playbackHints
+     *
+     * This filter ensures incomplete works are not shown in the UI.
+     * Incomplete works may exist during ingestion but should not appear to users.
+     */
+    private fun isComplete(work: NX_Work): Boolean {
+        return work.sourceRefs.isNotEmpty() && work.variants.isNotEmpty()
+    }
 
     private fun WorkType.toEntityString(): String = when (this) {
         WorkType.MOVIE -> "MOVIE"
