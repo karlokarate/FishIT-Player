@@ -248,53 +248,57 @@ class XtreamCatalogScanWorker
             }
         }
 
-        /** Run catalog sync for list phases (VOD_LIST, SERIES_LIST, SERIES_EPISODES, LIVE_LIST). */
+        /** Run catalog sync for list phases (VOD_LIST, SERIES_LIST, LIVE_LIST). */
         private suspend fun runCatalogSync(
             input: WorkerInputData,
             checkpoint: XtreamSyncCheckpoint,
             startTimeMs: Long,
         ): SyncPhaseResult {
             var itemsPersisted = 0L
-            var currentCheckpoint = checkpoint
             var budgetExceeded = false
 
+            // EPISODE LAZY-LOADING (Jan 2026):
+            // Episodes are NOT synced during background catalog sync.
+            // They are loaded on-demand via LoadSeasonEpisodesUseCase when user opens a series.
+            //
+            // Rationale:
+            // - Large catalogs have 100k+ episodes → slow initial sync
+            // - Users only watch a fraction of series → most episode data is never used
+            // - On-demand loading provides instant series browsing + fast initial sync
+            //
+            // If checkpoint is at SERIES_EPISODES phase, skip directly to LIVE_LIST
+            var currentCheckpoint =
+                if (checkpoint.phase == XtreamSyncPhase.SERIES_EPISODES) {
+                    UnifiedLog.i(TAG) {
+                        "LAZY_LOADING: Skipping SERIES_EPISODES phase - episodes loaded on-demand"
+                    }
+                    checkpoint.advancePhase() // Jump to LIVE_LIST
+                } else {
+                    checkpoint
+                }
+
             // Determine what to include based on checkpoint phase
-            val includeVod = checkpoint.phase == XtreamSyncPhase.VOD_LIST
+            val includeVod = currentCheckpoint.phase == XtreamSyncPhase.VOD_LIST
             val includeSeries =
-                checkpoint.phase in
+                currentCheckpoint.phase in
                     listOf(
                         XtreamSyncPhase.VOD_LIST,
                         XtreamSyncPhase.SERIES_LIST,
                     )
-            // PLATINUM FIX: Episodes are now ALWAYS included in normal runs
-            // Previously they were gated behind FULL/FORCE_RESCAN, leaving Episode count = 0
-            //
-            // New behavior:
-            // - INCREMENTAL: Ingest episodes (with checkpoint + bounded runtime)
-            // - FULL: Same as INCREMENTAL (episodes always included)
-            // - FORCE_RESCAN: Same, but clears checkpoint first
-            //
-            // The runtime budget (maxRuntimeMs) ensures we don't overrun in INCREMENTAL mode.
-            // If budget is exceeded during episode ingest, checkpoint is saved and resumed next run.
-            val includeEpisodes =
-                checkpoint.phase in
-                    listOf(
-                        XtreamSyncPhase.VOD_LIST,
-                        XtreamSyncPhase.SERIES_LIST,
-                        XtreamSyncPhase.SERIES_EPISODES,
-                    )
+            // Episodes are NEVER included in background sync (lazy loading)
+            val includeEpisodes = false
             val includeLive = true // Always include live in list phases
 
             UnifiedLog.d(TAG) {
-                "Catalog sync: includeVod=$includeVod includeSeries=$includeSeries includeEpisodes=$includeEpisodes includeLive=$includeLive scope=${input.xtreamSyncScope} enhanced=${input.xtreamUseEnhancedSync}"
+                "Catalog sync: includeVod=$includeVod includeSeries=$includeSeries includeEpisodes=$includeEpisodes (lazy) includeLive=$includeLive scope=${input.xtreamSyncScope} enhanced=${input.xtreamUseEnhancedSync}"
             }
 
-            // PLATINUM: Pass already-processed series IDs for checkpoint resume
-            val excludeSeriesIds = checkpoint.processedSeriesIds
+            // PLATINUM: Pass already-processed series IDs (kept for future episode pre-fetch feature)
+            val excludeSeriesIds = currentCheckpoint.processedSeriesIds
 
             if (excludeSeriesIds.isNotEmpty()) {
-                UnifiedLog.i(TAG) {
-                    "Resuming episode scan: skipping ${excludeSeriesIds.size} already-processed series"
+                UnifiedLog.d(TAG) {
+                    "Note: ${excludeSeriesIds.size} processed series IDs in checkpoint (unused with lazy loading)"
                 }
             }
 
