@@ -675,27 +675,36 @@ jobs:
           echo "Target ABIs: $ABI_TARGET"
           
           # Function to parse and annotate build output
+          # NOTE: We use ::notice:: instead of ::error:: to avoid marking the step as failed
+          # The step should only fail if Gradle actually fails (non-zero exit code)
           parse_build_output() {
             local output_file="$1"
             local error_count=0
             local warning_count=0
             
             # Parse warnings (yellow annotations)
+            # FIXED: Removed "task.*up-to-date" - that's normal Gradle output, not a warning
             while IFS= read -r line; do
-              if echo "$line" | grep -qiE "warning:|deprecated|task.*up-to-date"; then
+              if echo "$line" | grep -qiE "warning:|deprecated"; then
+                # Skip Gradle's incubating/problems report messages - these are informational
+                if echo "$line" | grep -qiE "Incubating|Problems report|problems-report"; then
+                  continue
+                fi
                 echo "::warning::$line"
                 echo "⚠️ $line" >> build-errors.txt
                 ((warning_count++))
               fi
-            done < <(grep -iE "warning:|deprecated|task.*up-to-date" "$output_file" 2>/dev/null || true)
+            done < <(grep -iE "warning:|deprecated" "$output_file" 2>/dev/null || true)
             
-            # Parse errors (red annotations)
+            # Parse errors - but DON'T use ::error:: as it marks the step as failed!
+            # Instead use ::notice:: with [ERROR] prefix for visibility
             while IFS= read -r line; do
               if echo "$line" | grep -qiE "error:|failure:|failed|exception|BUILD FAILED"; then
                 # Filter out false positives and R8 metadata warnings
                 # R8 metadata warnings are non-fatal and expected when using newer Kotlin versions
-                if ! echo "$line" | grep -qiE "0 errors|error-prone|parsing kotlin metadata|An error occurred when parsing kotlin metadata|R8:.*kotlin metadata|R8:.*An error occurred|R8.*metadata"; then
-                  echo "::error::$line"
+                if ! echo "$line" | grep -qiE "0 errors|error-prone|parsing kotlin metadata|An error occurred when parsing kotlin metadata|R8:.*kotlin metadata|R8:.*An error occurred|R8.*metadata|Incubating|Problems report|problems-report"; then
+                  # Use ::notice:: instead of ::error:: to avoid failing the step
+                  echo "::notice::[BUILD LOG] $line"
                   echo "❌ $line" >> build-errors.txt
                   ((error_count++))
                 fi
