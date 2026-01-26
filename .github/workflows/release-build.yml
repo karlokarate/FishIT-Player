@@ -674,54 +674,6 @@ jobs:
           echo "Building variant: $VARIANT using task: $GRADLE_TASK"
           echo "Target ABIs: $ABI_TARGET"
           
-          # Function to parse and annotate build output
-          # NOTE: We use ::notice:: instead of ::error:: to avoid marking the step as failed
-          # The step should only fail if Gradle actually fails (non-zero exit code)
-          parse_build_output() {
-            local output_file="$1"
-            local error_count=0
-            local warning_count=0
-            
-            # Parse warnings (yellow annotations)
-            # FIXED: Removed "task.*up-to-date" - that's normal Gradle output, not a warning
-            while IFS= read -r line; do
-              if echo "$line" | grep -qiE "warning:|deprecated"; then
-                # Skip Gradle's incubating/problems report messages - these are informational
-                if echo "$line" | grep -qiE "Incubating|Problems report|problems-report"; then
-                  continue
-                fi
-                echo "::warning::$line"
-                echo "⚠️ $line" >> build-errors.txt
-                ((warning_count++))
-              fi
-            done < <(grep -iE "warning:|deprecated" "$output_file" 2>/dev/null || true)
-            
-            # Parse errors - but DON'T use ::error:: as it marks the step as failed!
-            # Instead use ::notice:: with [ERROR] prefix for visibility
-            while IFS= read -r line; do
-              if echo "$line" | grep -qiE "error:|failure:|failed|exception|BUILD FAILED"; then
-                # Filter out false positives and R8 metadata warnings
-                # R8 metadata warnings are non-fatal and expected when using newer Kotlin versions
-                if ! echo "$line" | grep -qiE "0 errors|error-prone|parsing kotlin metadata|An error occurred when parsing kotlin metadata|R8:.*kotlin metadata|R8:.*An error occurred|R8.*metadata|Incubating|Problems report|problems-report"; then
-                  # Use ::notice:: instead of ::error:: to avoid failing the step
-                  echo "::notice::[BUILD LOG] $line"
-                  echo "❌ $line" >> build-errors.txt
-                  ((error_count++))
-                fi
-              fi
-            done < <(grep -iE "error:|failure:|failed|exception|BUILD FAILED" "$output_file" 2>/dev/null || true)
-            
-            # Ensure metrics directory exists before writing
-            mkdir -p .github/metrics
-            echo "$error_count" > .github/metrics/error_count.txt
-            echo "$warning_count" > .github/metrics/warning_count.txt
-            
-            # Add summary to build-errors.txt
-            echo "" >> build-errors.txt
-            echo "---" >> build-errors.txt
-            echo "**Summary:** $error_count errors, $warning_count warnings" >> build-errors.txt
-          }
-          
           # 2026 Performance flags:
           # --no-watch-fs: Skip filesystem watching (not needed in CI)
           # --no-daemon: Already set in env, but explicit
@@ -754,9 +706,7 @@ jobs:
               echo "❌ Build failed for arm64-v8a - check build-arm64.log for details" >> build-errors.txt
               exit 1
             fi
-            
-            # Parse build output for errors/warnings
-            parse_build_output "build-arm64.log"
+            echo "✅ arm64-v8a build completed successfully"
           fi
           
           if [[ "$ABI_TARGET" == "both" || "$ABI_TARGET" == "armeabi-v7a" ]]; then
@@ -780,11 +730,10 @@ jobs:
               echo "❌ Build failed for armeabi-v7a - check build-arm32.log for details" >> build-errors.txt
               exit 1
             fi
-            
-            # Parse build output for errors/warnings
-            parse_build_output "build-arm32.log"
+            echo "✅ armeabi-v7a build completed successfully"
           fi
           
+          echo "✅ All requested builds completed successfully"
           echo "BUILD_CONFIG_END=$(date +%s)" >> $GITHUB_OUTPUT
         env:
           TG_API_ID: ${{ secrets.TG_API_ID }}
