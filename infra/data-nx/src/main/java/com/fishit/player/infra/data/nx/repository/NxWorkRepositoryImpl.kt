@@ -9,13 +9,13 @@ package com.fishit.player.infra.data.nx.repository
 import com.fishit.player.core.model.repository.NxWorkRepository
 import com.fishit.player.core.model.repository.NxWorkRepository.Work
 import com.fishit.player.core.model.repository.NxWorkRepository.WorkType
+import com.fishit.player.core.persistence.ObjectBoxFlow.asFlow
 import com.fishit.player.core.persistence.obx.NX_Work
 import com.fishit.player.core.persistence.obx.NX_Work_
 import com.fishit.player.infra.data.nx.mapper.toDomain
 import com.fishit.player.infra.data.nx.mapper.toEntity
 import io.objectbox.BoxStore
 import io.objectbox.kotlin.boxFor
-import io.objectbox.kotlin.flow
 import io.objectbox.query.QueryBuilder
 import io.objectbox.query.QueryBuilder.StringOrder
 import kotlinx.coroutines.Dispatchers
@@ -51,7 +51,7 @@ class NxWorkRepositoryImpl @Inject constructor(
     override fun observe(workKey: String): Flow<Work?> {
         return box.query(NX_Work_.workKey.equal(workKey, StringOrder.CASE_SENSITIVE))
             .build()
-            .flow()
+            .asFlow()
             .map { list -> list.firstOrNull()?.toDomain() }
     }
 
@@ -64,7 +64,7 @@ class NxWorkRepositoryImpl @Inject constructor(
         return box.query(NX_Work_.workType.equal(typeString, StringOrder.CASE_SENSITIVE))
             .order(NX_Work_.canonicalTitle)
             .build()
-            .flow()
+            .asFlow()
             .map { list -> list.take(limit).map { it.toDomain() } }
     }
 
@@ -72,7 +72,7 @@ class NxWorkRepositoryImpl @Inject constructor(
         return box.query()
             .orderDesc(NX_Work_.updatedAt)
             .build()
-            .flow()
+            .asFlow()
             .map { list -> list.take(limit).map { it.toDomain() } }
     }
 
@@ -80,7 +80,7 @@ class NxWorkRepositoryImpl @Inject constructor(
         return box.query()
             .orderDesc(NX_Work_.createdAt)
             .build()
-            .flow()
+            .asFlow()
             .map { list -> list.take(limit).map { it.toDomain() } }
     }
 
@@ -88,7 +88,7 @@ class NxWorkRepositoryImpl @Inject constructor(
         return box.query(NX_Work_.needsReview.equal(true))
             .order(NX_Work_.canonicalTitle)
             .build()
-            .flow()
+            .asFlow()
             .map { list -> list.take(limit).map { it.toDomain() } }
     }
 
@@ -106,7 +106,7 @@ class NxWorkRepositoryImpl @Inject constructor(
 
     override fun observeWithOptions(options: NxWorkRepository.QueryOptions): Flow<List<Work>> {
         return buildQuery(options)
-            .flow()
+            .asFlow()
             .map { list -> list.take(options.limit).map { it.toDomain() } }
     }
 

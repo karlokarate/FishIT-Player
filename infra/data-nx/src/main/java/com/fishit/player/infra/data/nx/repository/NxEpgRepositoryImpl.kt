@@ -7,7 +7,7 @@ import com.fishit.player.core.persistence.obx.NX_EpgEntry
 import com.fishit.player.core.persistence.obx.NX_EpgEntry_
 import io.objectbox.Box
 import io.objectbox.BoxStore
-import io.objectbox.kotlin.flow
+import com.fishit.player.core.persistence.ObjectBoxFlow.asFlow
 import io.objectbox.query.QueryBuilder.StringOrder
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -67,7 +67,7 @@ class NxEpgRepositoryImpl @Inject constructor(
     override fun observeNowNext(channelWorkKey: String): Flow<NowNext> {
         return box.query(NX_EpgEntry_.channelWorkKey.equal(channelWorkKey, StringOrder.CASE_SENSITIVE))
             .build()
-            .flow()
+            .asFlow()
             .map { _ -> getNowNext(channelWorkKey) }
     }
 
@@ -80,7 +80,7 @@ class NxEpgRepositoryImpl @Inject constructor(
         // Observe all EPG entries and filter client-side
         return box.query()
             .build()
-            .flow()
+            .asFlow()
             .map { _ -> getNowNextBatch(channelWorkKeys) }
     }
 
@@ -112,7 +112,7 @@ class NxEpgRepositoryImpl @Inject constructor(
             .lessOrEqual(NX_EpgEntry_.startMs, toMs)
             .order(NX_EpgEntry_.startMs)
             .build()
-            .flow()
+            .asFlow()
             .map { entries -> entries.map { it.toDomain() } }
     }
 

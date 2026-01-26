@@ -8,7 +8,7 @@ import com.fishit.player.infra.data.nx.mapper.toDomain
 import com.fishit.player.infra.data.nx.mapper.toEntity
 import io.objectbox.Box
 import io.objectbox.BoxStore
-import io.objectbox.kotlin.flow
+import com.fishit.player.core.persistence.ObjectBoxFlow.asFlow
 import io.objectbox.query.QueryBuilder.StringOrder
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -44,7 +44,7 @@ class NxProfileRepositoryImpl @Inject constructor(
         box.query()
             .order(NX_Profile_.createdAt)
             .build()
-            .flow()
+            .asFlow()
             .map { list -> list.map { it.toDomain() } }
 
     // ──────────────────────────────────────────────────────────────────────────

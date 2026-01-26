@@ -16,7 +16,7 @@ import com.fishit.player.infra.data.nx.mapper.toDomain
 import com.fishit.player.infra.data.nx.mapper.toEntity
 import io.objectbox.BoxStore
 import io.objectbox.kotlin.boxFor
-import io.objectbox.kotlin.flow
+import com.fishit.player.core.persistence.ObjectBoxFlow.asFlow
 import io.objectbox.query.QueryBuilder.StringOrder
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -56,7 +56,7 @@ class NxWorkSourceRefRepositoryImpl @Inject constructor(
         // TODO: Optimize with proper ObjectBox link query if needed for large datasets
         return box.query()
             .build()
-            .flow()
+            .asFlow()
             .map { list -> list.filter { it.work.targetId == workId }.map { it.toDomain() } }
     }
 

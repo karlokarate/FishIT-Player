@@ -8,7 +8,7 @@ import com.fishit.player.infra.data.nx.mapper.toDomain
 import com.fishit.player.infra.data.nx.mapper.toEntity
 import io.objectbox.Box
 import io.objectbox.BoxStore
-import io.objectbox.kotlin.flow
+import com.fishit.player.core.persistence.ObjectBoxFlow.asFlow
 import io.objectbox.query.QueryBuilder.StringOrder
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -78,6 +78,6 @@ class NxCloudOutboxRepositoryImpl @Inject constructor(
         box.query()
             .equal(NX_CloudOutboxEvent_.syncStatus, "PENDING", StringOrder.CASE_SENSITIVE)
             .build()
-            .flow()
+            .asFlow()
             .map { list -> list.size.toLong() }
 }

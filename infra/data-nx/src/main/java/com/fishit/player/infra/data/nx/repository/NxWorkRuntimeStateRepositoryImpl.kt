@@ -8,7 +8,7 @@ import com.fishit.player.infra.data.nx.mapper.toDomain
 import com.fishit.player.infra.data.nx.mapper.toEntity
 import io.objectbox.Box
 import io.objectbox.BoxStore
-import io.objectbox.kotlin.flow
+import com.fishit.player.core.persistence.ObjectBoxFlow.asFlow
 import io.objectbox.query.QueryBuilder.StringOrder
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -43,13 +43,13 @@ class NxWorkRuntimeStateRepositoryImpl @Inject constructor(
     override fun observe(workKey: String): Flow<RuntimeState?> =
         box.query(NX_WorkRuntimeState_.workKey.equal(workKey, StringOrder.CASE_SENSITIVE))
             .build()
-            .flow()
+            .asFlow()
             .map { list -> list.firstOrNull()?.toDomain() }
 
     override fun observeForWorks(workKeys: List<String>): Flow<List<RuntimeState>> =
         box.query(NX_WorkRuntimeState_.workKey.oneOf(workKeys.toTypedArray(), StringOrder.CASE_SENSITIVE))
             .build()
-            .flow()
+            .asFlow()
             .map { list -> list.map { it.toDomain() } }
 
     // ──────────────────────────────────────────────────────────────────────────

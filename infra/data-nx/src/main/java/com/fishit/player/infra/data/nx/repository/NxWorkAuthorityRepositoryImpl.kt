@@ -8,7 +8,7 @@ import com.fishit.player.infra.data.nx.mapper.buildAuthorityKey
 import com.fishit.player.infra.data.nx.mapper.toAuthorityRef
 import io.objectbox.Box
 import io.objectbox.BoxStore
-import io.objectbox.kotlin.flow
+import com.fishit.player.core.persistence.ObjectBoxFlow.asFlow
 import io.objectbox.query.QueryBuilder.StringOrder
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -44,7 +44,7 @@ class NxWorkAuthorityRepositoryImpl @Inject constructor(
     override fun observeForWork(workKey: String): Flow<List<AuthorityRef>> =
         workBox.query(NX_Work_.workKey.equal(workKey, StringOrder.CASE_SENSITIVE))
             .build()
-            .flow()
+            .asFlow()
             .map { works ->
                 works.firstOrNull()?.toAuthorityRef()?.let { listOf(it) } ?: emptyList()
             }
