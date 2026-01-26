@@ -1,5 +1,7 @@
 package com.fishit.player.playback.domain.di
 
+import com.fishit.player.core.model.repository.NxEpgRepository
+import com.fishit.player.core.model.repository.NxWorkRepository
 import com.fishit.player.core.model.repository.NxWorkUserStateRepository
 import com.fishit.player.playback.domain.KidsPlaybackGate
 import com.fishit.player.playback.domain.LivePlaybackController
@@ -9,10 +11,10 @@ import com.fishit.player.playback.domain.SubtitleSelectionPolicy
 import com.fishit.player.playback.domain.SubtitleStyleManager
 import com.fishit.player.playback.domain.TvInputController
 import com.fishit.player.playback.domain.defaults.DefaultKidsPlaybackGate
-import com.fishit.player.playback.domain.defaults.DefaultLivePlaybackController
 import com.fishit.player.playback.domain.defaults.DefaultSubtitleSelectionPolicy
 import com.fishit.player.playback.domain.defaults.DefaultSubtitleStyleManager
 import com.fishit.player.playback.domain.defaults.DefaultTvInputController
+import com.fishit.player.playback.domain.defaults.NxLivePlaybackController
 import com.fishit.player.playback.domain.defaults.NxResumeManager
 import dagger.Module
 import dagger.Provides
@@ -104,9 +106,23 @@ abstract class PlaybackDomainModule {
         @Singleton
         fun provideSubtitleSelectionPolicy(): SubtitleSelectionPolicy = DefaultSubtitleSelectionPolicy()
 
+        /**
+         * Provides NX-backed LivePlaybackController with on-demand EPG fetching.
+         *
+         * EPG data is fetched only when:
+         * 1. switchToChannel() is called (player opens a live channel)
+         * 2. refreshEpg() is called explicitly
+         *
+         * This replaces DefaultLivePlaybackController (stub).
+         *
+         * @see NxLivePlaybackController for implementation details
+         */
         @Provides
         @Singleton
-        fun provideLivePlaybackController(): LivePlaybackController = DefaultLivePlaybackController()
+        fun provideLivePlaybackController(
+            workRepository: NxWorkRepository,
+            epgRepository: NxEpgRepository,
+        ): LivePlaybackController = NxLivePlaybackController(workRepository, epgRepository)
 
         @Provides
         @Singleton
