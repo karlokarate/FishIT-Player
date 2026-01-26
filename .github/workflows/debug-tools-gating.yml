@@ -167,7 +167,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: release-apk-debug-tools-verification
-          path: app-v2/build/outputs/apk/release/*.apk
+          path: app-v2/build/outputs/apk/release/**/*.apk
           retention-days: 7
           
   # Build debug to ensure it still compiles with all tools

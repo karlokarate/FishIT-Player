@@ -212,7 +212,7 @@ jobs:
         with:
           name: app-v2-${{ github.event.inputs.build_type }}-${{ matrix.abi }}
           path: |
-            app-v2/build/outputs/apk/${{ github.event.inputs.build_type }}/*.apk
+            app-v2/build/outputs/apk/${{ github.event.inputs.build_type }}/**/*.apk
             v2-checksums-${{ matrix.abi }}.txt
           retention-days: 30
           if-no-files-found: error
@@ -318,5 +318,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: app-v2-debug
-          path: app-v2/build/outputs/apk/debug/*.apk
+          path: app-v2/build/outputs/apk/debug/**/*.apk
           retention-days: 7

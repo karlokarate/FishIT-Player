@@ -56,5 +56,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: app-v2-debug-apk
-          path: app-v2/build/outputs/apk/debug/*.apk
+          path: app-v2/build/outputs/apk/debug/**/*.apk
           if-no-files-found: ignore
