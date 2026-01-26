@@ -14,12 +14,12 @@ import io.objectbox.relation.ToOne
 /**
  * NX_* Entity Definitions for OBX PLATIN Refactor (Issue #621)
  *
- * This file defines the 16 NX_* ObjectBox entities that form the SSOT Work Graph.
+ * This file defines the 17 NX_* ObjectBox entities that form the SSOT Work Graph.
  *
  * **SSOT Contract:** docs/v2/NX_SSOT_CONTRACT.md
  * **Roadmap:** docs/v2/OBX_PLATIN_REFACTOR_ROADMAP.md
  *
- * ## Entity Overview (16 total)
+ * ## Entity Overview (17 total)
  *
  * ### Work Graph (Core)
  * - [NX_Work] - Central UI SSOT for canonical media works
@@ -47,6 +47,11 @@ import io.objectbox.relation.ToOne
  *
  * ### Content Discovery
  * - [NX_WorkEmbedding] - Vector embeddings for semantic search
+ * - [NX_Category] - Content categories
+ * - [NX_WorkCategoryRef] - Work ↔ Category links
+ *
+ * ### EPG (Live TV)
+ * - [NX_EpgEntry] - EPG program guide entries
  *
  * ### Migration Support
  * - [NX_WorkRedirect] - Canonical merge redirects
@@ -258,6 +263,20 @@ data class NX_WorkVariant(
     var height: Int? = null,
     /** Bitrate in bps */
     var bitrateBps: Long? = null,
+    // === Playback Hints JSON ===
+    /**
+     * JSON-serialized playback hints map for source-specific playback data.
+     *
+     * Contains keys like:
+     * - Xtream: xtream.vodId, xtream.episodeId, xtream.contentType, xtream.containerExtension
+     * - Telegram: telegram.chatId, telegram.messageId, telegram.remoteId
+     *
+     * These hints are passed through to PlaybackContext.extras for PlaybackSourceFactory consumption.
+     *
+     * Format: JSON object `{"key1":"value1","key2":"value2"}`
+     * Empty map is stored as null (space optimization).
+     */
+    var playbackHintsJson: String? = null,
     // === Source Link ===
     /** Source reference key */
     @Index var sourceKey: String = "",
@@ -692,3 +711,96 @@ data class NX_WorkCategoryRef(
     var sortOrder: Int = 0,
     var createdAt: Long = System.currentTimeMillis(),
 )
+
+// =============================================================================
+// 17. NX_EpgEntry - EPG Program Guide Entries
+// =============================================================================
+
+/**
+ * EPG (Electronic Program Guide) entry for live TV channels.
+ *
+ * Stores program schedule data for live streams. Multiple entries per channel
+ * represent the program schedule over time.
+ *
+ * **Replaces:** `ObxEpgNowNext` (legacy entity with limited now/next only)
+ *
+ * **Key format:** `<channelWorkKey>:<startMs>` (unique per program)
+ *
+ * **Design decisions:**
+ * - Stores individual program entries (not just now/next) for richer EPG UI
+ * - Links to NX_Work via channelWorkKey (the LIVE work)
+ * - Uses epgChannelId for external EPG provider matching
+ * - Supports full program metadata (title, description, category, icon)
+ *
+ * @property epgEntryKey Unique key: `<channelWorkKey>:<startMs>`
+ * @property channelWorkKey Work key of the LIVE channel (FK to NX_Work)
+ * @property epgChannelId External EPG provider channel ID
+ * @property title Program title
+ * @property startMs Program start time in milliseconds (epoch)
+ * @property endMs Program end time in milliseconds (epoch)
+ * @property description Program description/plot
+ * @property category Program category (e.g., "Movie", "News", "Sports")
+ * @property iconUrl Program icon/poster URL
+ * @property isNow True if this is the currently airing program (computed at query time)
+ */
+@Entity
+data class NX_EpgEntry(
+    @Id var id: Long = 0,
+    // === Identity ===
+    /** Unique EPG entry key: `<channelWorkKey>:<startMs>` */
+    @Unique @Index var epgEntryKey: String = "",
+    /** Work key of the LIVE channel (FK to NX_Work) */
+    @Index var channelWorkKey: String = "",
+    /** External EPG provider channel ID (for matching) */
+    @Index var epgChannelId: String = "",
+    // === Program Metadata ===
+    /** Program title */
+    @Index var title: String = "",
+    /** Lowercase title for search */
+    @Index var titleLower: String = "",
+    /** Program start time in milliseconds (epoch) */
+    @Index var startMs: Long = 0,
+    /** Program end time in milliseconds (epoch) */
+    @Index var endMs: Long = 0,
+    /** Program description/plot */
+    var description: String? = null,
+    /** Program category (Movie, News, Sports, etc.) */
+    var category: String? = null,
+    /** Program icon/poster URL */
+    var iconUrl: String? = null,
+    // === Timestamps ===
+    var createdAt: Long = System.currentTimeMillis(),
+    var updatedAt: Long = System.currentTimeMillis(),
+) {
+    /**
+     * Check if this program is currently airing.
+     * @param nowMs Current time in milliseconds
+     * @return True if program is currently airing
+     */
+    fun isCurrentlyAiring(nowMs: Long = System.currentTimeMillis()): Boolean =
+        nowMs in startMs until endMs
+
+    /**
+     * Check if this is the next upcoming program.
+     * @param nowMs Current time in milliseconds
+     * @return True if program starts after now
+     */
+    fun isUpcoming(nowMs: Long = System.currentTimeMillis()): Boolean =
+        startMs > nowMs
+
+    /**
+     * Calculate program duration in milliseconds.
+     */
+    val durationMs: Long get() = endMs - startMs
+
+    /**
+     * Calculate progress percentage (0.0 - 1.0) if currently airing.
+     * @param nowMs Current time in milliseconds
+     * @return Progress percentage or 0 if not airing
+     */
+    fun progressPercent(nowMs: Long = System.currentTimeMillis()): Float {
+        if (!isCurrentlyAiring(nowMs)) return 0f
+        val elapsed = nowMs - startMs
+        return (elapsed.toFloat() / durationMs).coerceIn(0f, 1f)
+    }
+}

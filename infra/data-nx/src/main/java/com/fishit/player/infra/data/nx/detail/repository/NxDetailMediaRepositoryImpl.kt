@@ -18,6 +18,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.Json
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -359,6 +360,24 @@ class NxDetailMediaRepositoryImpl @Inject constructor(
     }
 
     private fun buildPlaybackHints(
+        sourceRef: NX_WorkSourceRef,
+        variant: NX_WorkVariant?,
+    ): Map<String, String> {
+        // Primary: JSON storage from variant (contains all source-specific hints)
+        if (variant != null && !variant.playbackHintsJson.isNullOrBlank()) {
+            return try {
+                Json.decodeFromString<Map<String, String>>(variant.playbackHintsJson!!)
+            } catch (e: Exception) {
+                // Fallback to legacy on decode error
+                buildLegacyPlaybackHints(sourceRef, variant)
+            }
+        }
+
+        // Fallback: Legacy entity fields (for old data without JSON)
+        return buildLegacyPlaybackHints(sourceRef, variant)
+    }
+
+    private fun buildLegacyPlaybackHints(
         sourceRef: NX_WorkSourceRef,
         variant: NX_WorkVariant?,
     ): Map<String, String> = buildMap {

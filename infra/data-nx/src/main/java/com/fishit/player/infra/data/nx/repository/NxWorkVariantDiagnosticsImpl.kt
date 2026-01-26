@@ -39,12 +39,12 @@ class NxWorkVariantDiagnosticsImpl @Inject constructor(
 
     override suspend fun findVariantsMissingPlaybackHints(limit: Int): List<Variant> = withContext(Dispatchers.IO) {
         box.all
-            .filter { it.playbackUrl.isNullOrBlank() }
+            .filter { it.playbackHintsJson.isNullOrBlank() && it.playbackUrl.isNullOrBlank() }
             .take(limit)
             .map { it.toDomain() }
     }
 
     override suspend fun countVariantsMissingPlaybackHints(): Long = withContext(Dispatchers.IO) {
-        box.all.count { it.playbackUrl.isNullOrBlank() }.toLong()
+        box.all.count { it.playbackHintsJson.isNullOrBlank() && it.playbackUrl.isNullOrBlank() }.toLong()
     }
 }

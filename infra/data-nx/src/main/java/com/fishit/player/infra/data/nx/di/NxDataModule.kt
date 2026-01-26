@@ -7,6 +7,7 @@ import com.fishit.player.core.library.domain.LibraryContentRepository
 import com.fishit.player.core.live.domain.LiveContentRepository
 import com.fishit.player.core.model.repository.CanonicalMediaRepository
 import com.fishit.player.core.model.repository.NxCloudOutboxRepository
+import com.fishit.player.core.model.repository.NxEpgRepository
 import com.fishit.player.core.model.repository.NxIngestLedgerRepository
 import com.fishit.player.core.model.repository.NxProfileRepository
 import com.fishit.player.core.model.repository.NxProfileRuleRepository
@@ -40,6 +41,7 @@ import com.fishit.player.infra.data.nx.repository.NxWorkDiagnosticsImpl
 import com.fishit.player.infra.data.nx.repository.NxWorkEmbeddingRepositoryImpl
 import com.fishit.player.infra.data.nx.detail.repository.NxDetailMediaRepositoryImpl
 import com.fishit.player.infra.data.nx.canonical.NxCanonicalMediaRepositoryImpl
+import com.fishit.player.infra.data.nx.repository.NxEpgRepositoryImpl
 import com.fishit.player.infra.data.nx.repository.NxWorkRedirectRepositoryImpl
 import com.fishit.player.infra.data.nx.repository.NxWorkRelationRepositoryImpl
 import com.fishit.player.infra.data.nx.repository.NxWorkRepositoryImpl
@@ -253,6 +255,22 @@ abstract class NxDataModule {
     abstract fun bindNxWorkAuthorityRepository(
         impl: NxWorkAuthorityRepositoryImpl,
     ): NxWorkAuthorityRepository
+
+    // ────────────────────────────────────────────────────────────────────
+    // Priority 3: EPG (Live TV Program Guide)
+    // ────────────────────────────────────────────────────────────────────
+
+    /**
+     * Binds the NX-based EPG Repository implementation.
+     *
+     * This replaces the legacy ObxEpgNowNext entity with a full program schedule.
+     * NX_EpgEntry stores complete EPG data linked to NX_Work channels via channelWorkKey.
+     */
+    @Binds
+    @Singleton
+    abstract fun bindNxEpgRepository(
+        impl: NxEpgRepositoryImpl,
+    ): NxEpgRepository
 
     // ────────────────────────────────────────────────────────────────────
     // Feature Repositories (NX-based implementations)
