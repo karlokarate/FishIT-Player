@@ -22,9 +22,14 @@
  */
 package com.fishit.player.infra.data.nx.library
 
+import androidx.paging.Pager
+import androidx.paging.PagingConfig
+import androidx.paging.PagingData
+import androidx.paging.map
 import com.fishit.player.core.library.domain.LibraryCategory
 import com.fishit.player.core.library.domain.LibraryContentRepository
 import com.fishit.player.core.library.domain.LibraryMediaItem
+import com.fishit.player.core.library.domain.LibraryPagingConfig
 import com.fishit.player.core.library.domain.LibraryQueryOptions
 import com.fishit.player.core.model.ImageRef
 import com.fishit.player.core.model.MediaType
@@ -249,6 +254,94 @@ class NxLibraryContentRepositoryImpl @Inject constructor(
         } catch (e: Exception) {
             UnifiedLog.e(TAG, e) { "Failed to get year range" }
             null
+        }
+    }
+
+    // ==================== Paging (Infinite Scroll) ====================
+
+    override fun getVodPagingData(
+        options: LibraryQueryOptions,
+        config: LibraryPagingConfig,
+    ): Flow<PagingData<LibraryMediaItem>> {
+        val queryOptions = options.toNxQueryOptions(WorkType.MOVIE)
+        val pagingConfig = PagingConfig(
+            pageSize = config.pageSize,
+            prefetchDistance = config.prefetchDistance,
+            initialLoadSize = config.initialLoadSize,
+            enablePlaceholders = false,
+        )
+        return Pager(
+            config = pagingConfig,
+            pagingSourceFactory = workRepository.pagingSourceFactory(queryOptions),
+        ).flow.map { pagingData ->
+            pagingData.map { work ->
+                work.toLibraryMediaItemSync()
+            }
+        }
+    }
+
+    override fun getSeriesPagingData(
+        options: LibraryQueryOptions,
+        config: LibraryPagingConfig,
+    ): Flow<PagingData<LibraryMediaItem>> {
+        val queryOptions = options.toNxQueryOptions(WorkType.SERIES)
+        val pagingConfig = PagingConfig(
+            pageSize = config.pageSize,
+            prefetchDistance = config.prefetchDistance,
+            initialLoadSize = config.initialLoadSize,
+            enablePlaceholders = false,
+        )
+        return Pager(
+            config = pagingConfig,
+            pagingSourceFactory = workRepository.pagingSourceFactory(queryOptions),
+        ).flow.map { pagingData ->
+            pagingData.map { work ->
+                work.toLibraryMediaItemSync()
+            }
+        }
+    }
+
+    override suspend fun getVodCount(options: LibraryQueryOptions): Int {
+        return try {
+            val queryOptions = options.toNxQueryOptions(WorkType.MOVIE)
+            workRepository.count(queryOptions)
+        } catch (e: Exception) {
+            UnifiedLog.e(TAG, e) { "Failed to get VOD count" }
+            0
+        }
+    }
+
+    override suspend fun getSeriesCount(options: LibraryQueryOptions): Int {
+        return try {
+            val queryOptions = options.toNxQueryOptions(WorkType.SERIES)
+            workRepository.count(queryOptions)
+        } catch (e: Exception) {
+            UnifiedLog.e(TAG, e) { "Failed to get series count" }
+            0
+        }
+    }
+
+    /**
+     * Synchronous mapping for Paging (cannot use suspend in PagingData.map).
+     * Uses cached SourceType determination or defaults to XTREAM.
+     */
+    private fun Work.toLibraryMediaItemSync(): LibraryMediaItem {
+        // For paging performance, we determine source type from workKey prefix
+        // instead of doing a DB lookup for each item
+        val sourceType = workKey.sourceTypeFromPrefix()
+        return toLibraryMediaItem(sourceType = sourceType)
+    }
+
+    /**
+     * Fast source type determination from workKey prefix.
+     * WorkKey format: "{source}_{accountId}_{itemId}" e.g. "xtream_1_12345"
+     */
+    private fun String.sourceTypeFromPrefix(): SourceType {
+        return when {
+            startsWith("xtream_") || startsWith("x_") -> SourceType.XTREAM
+            startsWith("telegram_") || startsWith("tg_") -> SourceType.TELEGRAM
+            startsWith("io_") || startsWith("local_") -> SourceType.IO
+            else -> SourceType.UNKNOWN
         }
     }
 

@@ -42,6 +42,9 @@ dependencies {
     // Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2")
+    
+    // Paging 3 - for PagingData generation
+    implementation("androidx.paging:paging-runtime-ktx:3.3.6")
 
     // Hilt DI
     implementation("com.google.dagger:hilt-android:2.56.2")
@@ -50,6 +53,9 @@ dependencies {
     // ObjectBox - version must match core:persistence (5.0.1)
     // Note: core:persistence provides transitive api() dependency, but explicit for flow() extensions
     implementation("io.objectbox:objectbox-kotlin:5.0.1")
+
+    // Paging 3 - For PagingSource implementation
+    implementation("androidx.paging:paging-runtime-ktx:3.3.6")
 
     // Serialization for JSON storage of playbackHints
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")

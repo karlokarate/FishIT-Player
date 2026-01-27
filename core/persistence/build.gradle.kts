@@ -70,6 +70,9 @@ dependencies {
     api("io.objectbox:objectbox-android:5.0.1")
     api("io.objectbox:objectbox-kotlin:5.0.1")
 
+    // Paging 3 - expose PagingSource for consumers
+    api("androidx.paging:paging-common:3.3.6")
+
     // Serialization
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
 

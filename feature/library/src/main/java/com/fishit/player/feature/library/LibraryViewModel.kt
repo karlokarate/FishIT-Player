@@ -2,9 +2,12 @@ package com.fishit.player.feature.library
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.paging.PagingData
+import androidx.paging.cachedIn
 import com.fishit.player.core.library.domain.LibraryCategory
 import com.fishit.player.core.library.domain.LibraryContentRepository
 import com.fishit.player.core.library.domain.LibraryMediaItem
+import com.fishit.player.core.library.domain.LibraryPagingConfig
 import com.fishit.player.core.library.domain.LibraryQueryOptions
 import com.fishit.player.core.model.filter.FilterConfig
 import com.fishit.player.core.model.filter.FilterCriterion
@@ -14,6 +17,7 @@ import com.fishit.player.core.model.sort.SortOption
 import com.fishit.player.infra.logging.UnifiedLog
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -169,6 +173,46 @@ class LibraryViewModel
                         emit(emptyList())
                     }
             }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+        // ==================== Paging 3 (Infinite Scroll) ====================
+
+        /**
+         * Paginated VOD items for infinite scroll.
+         * Use with collectAsLazyPagingItems() in Compose.
+         *
+         * Automatically re-emits when sort/filter changes.
+         */
+        val vodPagingFlow: Flow<PagingData<LibraryMediaItem>> =
+            combine(
+                _vodSortOption,
+                _vodFilterConfig,
+            ) { sort, filter ->
+                Pair(sort, filter)
+            }.flatMapLatest { (sort, filter) ->
+                val options = LibraryQueryOptions(sort = sort, filter = filter)
+                libraryContentRepository.getVodPagingData(
+                    options = options,
+                    config = LibraryPagingConfig.DEFAULT,
+                )
+            }.cachedIn(viewModelScope)
+
+        /**
+         * Paginated Series items for infinite scroll.
+         * Use with collectAsLazyPagingItems() in Compose.
+         */
+        val seriesPagingFlow: Flow<PagingData<LibraryMediaItem>> =
+            combine(
+                _seriesSortOption,
+                _seriesFilterConfig,
+            ) { sort, filter ->
+                Pair(sort, filter)
+            }.flatMapLatest { (sort, filter) ->
+                val options = LibraryQueryOptions(sort = sort, filter = filter)
+                libraryContentRepository.getSeriesPagingData(
+                    options = options,
+                    config = LibraryPagingConfig.DEFAULT,
+                )
+            }.cachedIn(viewModelScope)
 
         /** VOD categories */
         private val vodCategories =

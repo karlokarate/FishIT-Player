@@ -75,6 +75,52 @@ object ObjectBoxFlow {
         }.flowOn(Dispatchers.IO)
 
     /**
+     * Convert an ObjectBox [Query] to a lifecycle-safe [Flow] with native DB-level limit.
+     *
+     * **CRITICAL PERFORMANCE:** Unlike [asFlow] which loads ALL results and then applies
+     * `take(limit)` in memory, this extension applies the limit at the database level
+     * using ObjectBox's native `find(offset, limit)` API.
+     *
+     * For large catalogs (60K+ items), this is orders of magnitude faster:
+     * - asFlow() + take(200): Loads 60K items, then discards 59,800 → slow
+     * - asFlowWithLimit(200): Loads only 200 items from DB → fast
+     *
+     * **Usage:**
+     * ```kotlin
+     * val query = box.query().orderDesc(MyEntity_.createdAt).build()
+     * query.asFlowWithLimit(limit = 200).collect { results ->
+     *     // results.size <= 200, loaded efficiently from DB
+     * }
+     * ```
+     *
+     * @param limit Maximum number of items to load from DB (default: 200)
+     * @param offset Starting offset for pagination (default: 0)
+     * @return Flow that emits List<T> with at most [limit] items on each data change
+     */
+    fun <T> Query<T>.asFlowWithLimit(limit: Int = 200, offset: Long = 0): Flow<List<T>> =
+        callbackFlow {
+            val query = this@asFlowWithLimit
+
+            // Emit initial result immediately (DB-level limit)
+            val initial = withContext(Dispatchers.IO) { query.find(offset, limit.toLong()) }
+            trySend(initial)
+
+            // Subscribe to changes - observer is a trigger only
+            var subscription: DataSubscription? = null
+            subscription =
+                query.subscribe().observer { _ ->
+                    // Re-query with limit on each change notification
+                    val updated = query.find(offset, limit.toLong())
+                    trySend(updated)
+                }
+
+            // Wait for cancellation and clean up subscription
+            awaitClose {
+                subscription.cancel()
+            }
+        }.flowOn(Dispatchers.IO)
+
+    /**
      * Convert an ObjectBox [Query] to a lifecycle-safe [Flow] of single nullable result.
      *
      * Useful for queries that expect 0 or 1 result.

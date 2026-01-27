@@ -54,6 +54,10 @@ dependencies {
     implementation("androidx.compose.material:material-icons-extended")
     implementation("androidx.compose.ui:ui-tooling-preview")
     debugImplementation("androidx.compose.ui:ui-tooling")
+    
+    // Paging 3 - horizontal row infinite scroll
+    implementation("androidx.paging:paging-runtime-ktx:3.3.6")
+    implementation("androidx.paging:paging-compose:3.3.6")
 
     // Navigation
     implementation("androidx.navigation:navigation-compose:2.8.4")

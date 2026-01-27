@@ -48,6 +48,9 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
+import androidx.paging.LoadState
+import androidx.paging.compose.LazyPagingItems
+import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -94,10 +97,18 @@ fun HomeScreen(
     onLibraryClick: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: HomeViewModel = hiltViewModel(),
+    usePaging: Boolean = true,
 ) {
     // Use filteredState for search/filter support
     val state by viewModel.filteredState.collectAsState()
     val dimens = LocalFishDimens.current
+    
+    // Paging items (always collected - Compose hooks must be unconditional)
+    val moviesPagingItems = viewModel.moviesPagingFlow.collectAsLazyPagingItems()
+    val seriesPagingItems = viewModel.seriesPagingFlow.collectAsLazyPagingItems()
+    val clipsPagingItems = viewModel.clipsPagingFlow.collectAsLazyPagingItems()
+    val livePagingItems = viewModel.livePagingFlow.collectAsLazyPagingItems()
+    val recentlyAddedPagingItems = viewModel.recentlyAddedPagingFlow.collectAsLazyPagingItems()
 
     Box(
         modifier =
@@ -150,6 +161,12 @@ fun HomeScreen(
                         state = state,
                         onItemClick = onItemClick,
                         onAddSourceClick = onSettingsClick,
+                        usePaging = usePaging,
+                        moviesPagingItems = moviesPagingItems,
+                        seriesPagingItems = seriesPagingItems,
+                        clipsPagingItems = clipsPagingItems,
+                        livePagingItems = livePagingItems,
+                        recentlyAddedPagingItems = recentlyAddedPagingItems,
                     )
                 }
             }
@@ -471,6 +488,12 @@ private fun HomeContent(
     state: HomeState,
     onItemClick: (HomeMediaItem) -> Unit,
     onAddSourceClick: () -> Unit,
+    usePaging: Boolean = true,
+    moviesPagingItems: LazyPagingItems<HomeMediaItem>? = null,
+    seriesPagingItems: LazyPagingItems<HomeMediaItem>? = null,
+    clipsPagingItems: LazyPagingItems<HomeMediaItem>? = null,
+    livePagingItems: LazyPagingItems<HomeMediaItem>? = null,
+    recentlyAddedPagingItems: LazyPagingItems<HomeMediaItem>? = null,
 ) {
     val listState = rememberLazyListState()
 
@@ -483,7 +506,16 @@ private fun HomeContent(
         // Recently Added - FIRST ROW (sorted by added timestamp descending)
         // This shows newest content from all sources, enabling users to discover
         // newly added content immediately after incremental sync updates.
-        if (state.recentlyAddedItems.isNotEmpty()) {
+        if (usePaging && recentlyAddedPagingItems != null && recentlyAddedPagingItems.itemCount > 0) {
+            item(key = "recently_added_paging") {
+                PagingMediaRow(
+                    title = "Recently Added",
+                    icon = Icons.Default.Add,
+                    pagingItems = recentlyAddedPagingItems,
+                    onItemClick = onItemClick,
+                )
+            }
+        } else if (state.recentlyAddedItems.isNotEmpty()) {
             item(key = "recently_added") {
                 MediaRow(
                     title = "Recently Added",
@@ -495,6 +527,7 @@ private fun HomeContent(
         }
 
         // Continue Watching - Second row (user's in-progress content)
+        // Note: Continue Watching uses legacy list (limited items, user-specific)
         if (state.continueWatchingItems.isNotEmpty()) {
             item(key = "continue_watching") {
                 MediaRow(
@@ -507,7 +540,17 @@ private fun HomeContent(
         }
 
         // Live TV (Xtream only)
-        if (state.xtreamLiveItems.isNotEmpty()) {
+        if (usePaging && livePagingItems != null && livePagingItems.itemCount > 0) {
+            item(key = "live_tv_paging") {
+                PagingMediaRow(
+                    title = "Live TV",
+                    icon = Icons.Default.LiveTv,
+                    iconTint = FishColors.SourceXtream,
+                    pagingItems = livePagingItems,
+                    onItemClick = onItemClick,
+                )
+            }
+        } else if (state.xtreamLiveItems.isNotEmpty()) {
             item(key = "live_tv") {
                 MediaRow(
                     title = "Live TV",
@@ -520,7 +563,16 @@ private fun HomeContent(
         }
 
         // Movies (cross-pipeline: Xtream + Telegram)
-        if (state.moviesItems.isNotEmpty()) {
+        if (usePaging && moviesPagingItems != null && moviesPagingItems.itemCount > 0) {
+            item(key = "movies_paging") {
+                PagingMediaRow(
+                    title = "Movies",
+                    icon = Icons.Default.Movie,
+                    pagingItems = moviesPagingItems,
+                    onItemClick = onItemClick,
+                )
+            }
+        } else if (state.moviesItems.isNotEmpty()) {
             item(key = "movies") {
                 MediaRow(
                     title = "Movies",
@@ -532,7 +584,16 @@ private fun HomeContent(
         }
 
         // Series (cross-pipeline: Xtream + Telegram)
-        if (state.seriesItems.isNotEmpty()) {
+        if (usePaging && seriesPagingItems != null && seriesPagingItems.itemCount > 0) {
+            item(key = "series_paging") {
+                PagingMediaRow(
+                    title = "Series",
+                    icon = Icons.Default.Tv,
+                    pagingItems = seriesPagingItems,
+                    onItemClick = onItemClick,
+                )
+            }
+        } else if (state.seriesItems.isNotEmpty()) {
             item(key = "series") {
                 MediaRow(
                     title = "Series",
@@ -544,7 +605,17 @@ private fun HomeContent(
         }
 
         // Clips (Telegram only)
-        if (state.clipsItems.isNotEmpty()) {
+        if (usePaging && clipsPagingItems != null && clipsPagingItems.itemCount > 0) {
+            item(key = "clips_paging") {
+                PagingMediaRow(
+                    title = "Clips",
+                    icon = Icons.Default.VideoLibrary,
+                    iconTint = FishColors.SourceTelegram,
+                    pagingItems = clipsPagingItems,
+                    onItemClick = onItemClick,
+                )
+            }
+        } else if (state.clipsItems.isNotEmpty()) {
             item(key = "clips") {
                 MediaRow(
                     title = "Clips",
@@ -556,10 +627,21 @@ private fun HomeContent(
             }
         }
 
+        // Check if there's any content (paging or legacy)
+        val hasPagingContent = usePaging && listOfNotNull(
+            moviesPagingItems?.takeIf { it.itemCount > 0 },
+            seriesPagingItems?.takeIf { it.itemCount > 0 },
+            clipsPagingItems?.takeIf { it.itemCount > 0 },
+            livePagingItems?.takeIf { it.itemCount > 0 },
+            recentlyAddedPagingItems?.takeIf { it.itemCount > 0 },
+        ).isNotEmpty()
+        
+        val hasAnyContent = hasPagingContent || state.hasContent || state.continueWatchingItems.isNotEmpty()
+
         // Empty state if no content at all
         // Contract: STARTUP_TRIGGER_CONTRACT (U-1)
         // - Shows different states based on source activation and sync status
-        if (!state.hasContent) {
+        if (!hasAnyContent) {
             item(key = "empty") {
                 SmartEmptyContent(
                     hasActiveSources = state.sourceActivation.hasActiveSources,
@@ -654,6 +736,116 @@ private fun MediaRow(
                     isNew = item.isNew,
                     onClick = { onItemClick(item) },
                 )
+            }
+        }
+    }
+}
+
+/**
+ * Paging-enabled media row with horizontal infinite scroll.
+ * Loads more items automatically as user scrolls right.
+ */
+@Composable
+private fun PagingMediaRow(
+    title: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    pagingItems: LazyPagingItems<HomeMediaItem>,
+    onItemClick: (HomeMediaItem) -> Unit,
+    modifier: Modifier = Modifier,
+    iconTint: Color = MaterialTheme.colorScheme.onSurfaceVariant,
+) {
+    val dimens = LocalFishDimens.current
+    val listState = rememberLazyListState()
+
+    Column(
+        modifier = modifier.fillMaxWidth(),
+    ) {
+        // Row Header
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier =
+                Modifier.padding(
+                    horizontal = dimens.contentPaddingHorizontal,
+                    vertical = 8.dp,
+                ),
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = iconTint,
+                modifier = Modifier.size(24.dp),
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onBackground,
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            // Item count badge
+            Text(
+                text = "${pagingItems.itemCount}",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            // Loading indicator when appending
+            if (pagingItems.loadState.append is LoadState.Loading) {
+                Spacer(modifier = Modifier.width(8.dp))
+                CircularProgressIndicator(
+                    modifier = Modifier.size(16.dp),
+                    strokeWidth = 2.dp,
+                    color = FishColors.Primary,
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // Tiles Row with paging
+        LazyRow(
+            state = listState,
+            contentPadding =
+                PaddingValues(
+                    horizontal = dimens.contentPaddingHorizontal,
+                    vertical = 8.dp,
+                ),
+            horizontalArrangement = Arrangement.spacedBy(dimens.tileSpacing),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .focusGroup(),
+        ) {
+            items(
+                count = pagingItems.itemCount,
+                key = { index -> pagingItems.peek(index)?.id ?: "placeholder_$index" },
+            ) { index ->
+                pagingItems[index]?.let { item ->
+                    FishTile(
+                        title = item.title,
+                        poster = item.poster,
+                        placeholder = item.placeholderThumbnail,
+                        sourceColors = getSourceColors(item.sourceTypes),
+                        resumeFraction = item.resumeFraction,
+                        isNew = item.isNew,
+                        onClick = { onItemClick(item) },
+                    )
+                }
+            }
+            
+            // Loading indicator at end
+            if (pagingItems.loadState.append is LoadState.Loading) {
+                item {
+                    Box(
+                        modifier = Modifier
+                            .size(dimens.tileWidth, dimens.tileHeight),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(32.dp),
+                            color = FishColors.Primary,
+                        )
+                    }
+                }
             }
         }
     }

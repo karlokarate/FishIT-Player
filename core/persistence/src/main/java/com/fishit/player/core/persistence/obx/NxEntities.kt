@@ -143,8 +143,10 @@ data class NX_Work(
     /** Adult content flag */
     @Index var isAdult: Boolean = false,
     // === Timestamps ===
-    var createdAt: Long = System.currentTimeMillis(),
-    var updatedAt: Long = System.currentTimeMillis(),
+    /** Creation timestamp - indexed for "Recently Added" queries */
+    @Index var createdAt: Long = System.currentTimeMillis(),
+    /** Update timestamp - indexed for "Recently Updated" queries */
+    @Index var updatedAt: Long = System.currentTimeMillis(),
 ) {
     /** All source references for this work */
     @Backlink(to = "work")

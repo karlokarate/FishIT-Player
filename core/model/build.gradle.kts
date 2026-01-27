@@ -25,6 +25,9 @@ android {
 dependencies {
     // Kotlin stdlib only - pure model module
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
+    
+    // Paging 3 (for PagingSource in repository interfaces)
+    api("androidx.paging:paging-common:3.3.6")
 
     // Testing
     testImplementation("junit:junit:4.13.2")

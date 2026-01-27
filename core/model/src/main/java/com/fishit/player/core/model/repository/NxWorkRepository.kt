@@ -166,6 +166,41 @@ interface NxWorkRepository {
     fun observeWithOptions(options: QueryOptions): Flow<List<Work>>
 
     /**
+     * Create a PagingSource for paginated browsing.
+     *
+     * This is the preferred method for large catalog browsing with infinite scroll.
+     * Returns a factory function that creates fresh PagingSource instances for Pager.
+     *
+     * **Performance:**
+     * - O(1) memory per page
+     * - Native database offset/limit (no full-table scan)
+     * - Automatic invalidation on data changes
+     *
+     * **Usage:**
+     * ```kotlin
+     * val pager = Pager(
+     *     config = PagingConfig(pageSize = 50),
+     *     pagingSourceFactory = repository.pagingSourceFactory(options)
+     * )
+     * val flow = pager.flow.cachedIn(viewModelScope)
+     * ```
+     *
+     * @param options Query configuration (type, sort, filter)
+     * @return Factory function for creating PagingSource instances
+     */
+    fun pagingSourceFactory(options: QueryOptions): () -> androidx.paging.PagingSource<Int, Work>
+
+    /**
+     * Get total count of items matching the query options.
+     *
+     * Useful for UI indicators like "Showing 50 of 5,432 movies".
+     *
+     * @param options Query configuration
+     * @return Total count of matching items
+     */
+    suspend fun count(options: QueryOptions): Int
+
+    /**
      * Advanced search across multiple fields.
      *
      * Searches title, plot, cast, and director fields.

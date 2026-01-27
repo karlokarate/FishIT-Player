@@ -1,5 +1,6 @@
 package com.fishit.player.core.library.domain
 
+import androidx.paging.PagingData
 import com.fishit.player.core.model.filter.FilterConfig
 import com.fishit.player.core.model.sort.SortOption
 import kotlinx.coroutines.flow.Flow
@@ -12,7 +13,7 @@ import kotlinx.coroutines.flow.Flow
  *
  * @param sort Unified sort configuration from core/model/sort
  * @param filter Unified filter configuration from core/model/filter
- * @param limit Maximum items to retrieve
+ * @param limit Maximum items to retrieve (used for non-paging methods only)
  */
 data class LibraryQueryOptions(
     val sort: SortOption = SortOption.DEFAULT,
@@ -27,12 +28,40 @@ data class LibraryQueryOptions(
     }
 }
 
+/**
+ * Paging configuration for library content.
+ *
+ * @param pageSize Items per page (default 50)
+ * @param prefetchDistance How far ahead to prefetch (default = pageSize)
+ * @param initialLoadSize Items for first load (default = pageSize * 3)
+ */
+data class LibraryPagingConfig(
+    val pageSize: Int = 50,
+    val prefetchDistance: Int = pageSize,
+    val initialLoadSize: Int = pageSize * 3,
+) {
+    companion object {
+        /** Default config for TV grids (50 items/page, 3-page initial load) */
+        val DEFAULT = LibraryPagingConfig()
+        
+        /** Config for larger grids (30 items/page) */
+        val GRID = LibraryPagingConfig(pageSize = 30)
+        
+        /** Config for compact lists (100 items/page) */
+        val LIST = LibraryPagingConfig(pageSize = 100)
+    }
+}
+
 // Repository interface for Library screen content.
 //
 // Architecture:
 // - Contract lives in core modules
 // - Implementations live in infra modules
 interface LibraryContentRepository {
+    // ──────────────────────────────────────────────────────────────────────
+    // Legacy Flow-based methods (limited results)
+    // ──────────────────────────────────────────────────────────────────────
+    
     fun observeVod(categoryId: String? = null): Flow<List<LibraryMediaItem>>
 
     fun observeSeries(categoryId: String? = null): Flow<List<LibraryMediaItem>>
@@ -47,7 +76,7 @@ interface LibraryContentRepository {
     ): List<LibraryMediaItem>
 
     // ──────────────────────────────────────────────────────────────────────
-    // Advanced Query (Sort/Filter)
+    // Advanced Query (Sort/Filter) - Limited
     // ──────────────────────────────────────────────────────────────────────
 
     /**
@@ -74,6 +103,55 @@ interface LibraryContentRepository {
         options: LibraryQueryOptions = LibraryQueryOptions(),
     ): Flow<List<LibraryMediaItem>>
 
+    // ──────────────────────────────────────────────────────────────────────
+    // Paging 3 (Infinite Scroll)
+    // ──────────────────────────────────────────────────────────────────────
+
+    /**
+     * Get paginated VOD items as a Flow of PagingData.
+     *
+     * This is the preferred method for browsing large catalogs.
+     * Supports infinite scroll with automatic prefetching.
+     *
+     * **Usage in ViewModel:**
+     * ```kotlin
+     * val vodPagingFlow = repository.getVodPagingData(options, config)
+     *     .cachedIn(viewModelScope)
+     * ```
+     *
+     * **Usage in Compose:**
+     * ```kotlin
+     * val lazyPagingItems = viewModel.vodPagingFlow.collectAsLazyPagingItems()
+     * LazyVerticalGrid(...) {
+     *     items(lazyPagingItems.itemCount) { index ->
+     *         lazyPagingItems[index]?.let { MediaTile(it) }
+     *     }
+     * }
+     * ```
+     *
+     * @param options Sort and filter configuration
+     * @param config Paging configuration (page size, prefetch distance)
+     * @return Flow of PagingData for infinite scroll
+     */
+    fun getVodPagingData(
+        options: LibraryQueryOptions = LibraryQueryOptions(),
+        config: LibraryPagingConfig = LibraryPagingConfig.DEFAULT,
+    ): Flow<PagingData<LibraryMediaItem>>
+
+    /**
+     * Get paginated Series items as a Flow of PagingData.
+     *
+     * @see getVodPagingData for usage details
+     */
+    fun getSeriesPagingData(
+        options: LibraryQueryOptions = LibraryQueryOptions(),
+        config: LibraryPagingConfig = LibraryPagingConfig.DEFAULT,
+    ): Flow<PagingData<LibraryMediaItem>>
+
+    // ──────────────────────────────────────────────────────────────────────
+    // Metadata
+    // ──────────────────────────────────────────────────────────────────────
+
     /**
      * Get all unique genres available in the library.
      *
@@ -87,6 +165,16 @@ interface LibraryContentRepository {
      * @return Pair of (minYear, maxYear) or null if no content
      */
     suspend fun getYearRange(): Pair<Int, Int>?
+    
+    /**
+     * Get total count of VOD items (for UI indicators).
+     */
+    suspend fun getVodCount(options: LibraryQueryOptions = LibraryQueryOptions()): Int
+    
+    /**
+     * Get total count of Series items (for UI indicators).
+     */
+    suspend fun getSeriesCount(options: LibraryQueryOptions = LibraryQueryOptions()): Int
 }
 
 data class LibraryCategory(

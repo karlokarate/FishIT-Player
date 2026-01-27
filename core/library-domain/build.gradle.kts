@@ -25,4 +25,7 @@ android {
 dependencies {
     implementation(project(":core:model"))
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
+    
+    // Paging 3 - Common (for PagingSource, PagingData types)
+    api("androidx.paging:paging-common:3.3.6")
 }

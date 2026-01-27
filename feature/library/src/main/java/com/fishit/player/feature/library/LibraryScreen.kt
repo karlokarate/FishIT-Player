@@ -35,6 +35,9 @@ import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.paging.LoadState
+import androidx.paging.compose.LazyPagingItems
+import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -70,11 +73,12 @@ import com.fishit.player.core.ui.layout.UiSortOption
  * - Tab switching between VOD and Series
  * - Category filtering
  * - Search functionality
- * - Grid display of media items
+ * - Grid display of media items with Paging 3 infinite scroll
  *
  * @param onItemClick Callback when a media item is clicked
  * @param onBack Callback when back navigation is requested
  * @param viewModel ViewModel for state management
+ * @param usePaging Whether to use Paging 3 infinite scroll (default: true)
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -83,8 +87,14 @@ fun LibraryScreen(
     onBack: () -> Unit = {},
     modifier: Modifier = Modifier,
     viewModel: LibraryViewModel = hiltViewModel(),
+    usePaging: Boolean = true,
 ) {
     val state by viewModel.state.collectAsState()
+    
+    // Always collect paging items (Compose hooks must be called unconditionally)
+    // They won't load data until used in composition
+    val vodPagingItems = viewModel.vodPagingFlow.collectAsLazyPagingItems()
+    val seriesPagingItems = viewModel.seriesPagingFlow.collectAsLazyPagingItems()
 
     Scaffold(
         topBar = {
@@ -168,30 +178,147 @@ fun LibraryScreen(
                 )
             }
 
-            // Content
-            when {
-                state.isLoading -> {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        CircularProgressIndicator()
-                    }
+            // Content - Use Paging or legacy list based on usePaging parameter
+            if (usePaging && !state.isSearchActive) {
+                // Paging 3 infinite scroll
+                val currentPagingItems = when (state.currentTab) {
+                    LibraryTab.VOD -> vodPagingItems
+                    LibraryTab.SERIES -> seriesPagingItems
                 }
-
-                state.currentItems.isEmpty() -> {
-                    EmptyState(
-                        isSearchActive = state.isSearchActive,
-                        currentTab = state.currentTab,
-                    )
-                }
-
-                else -> {
-                    MediaGrid(
-                        items = state.currentItems,
+                
+                currentPagingItems.let { pagingItems ->
+                    PagingMediaGrid(
+                        pagingItems = pagingItems,
                         onItemClick = onItemClick,
                         modifier = Modifier.fillMaxSize(),
                     )
+                }
+            } else {
+                // Legacy list-based content (for search results or when paging is disabled)
+                when {
+                    state.isLoading -> {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            CircularProgressIndicator()
+                        }
+                    }
+
+                    state.currentItems.isEmpty() -> {
+                        EmptyState(
+                            isSearchActive = state.isSearchActive,
+                            currentTab = state.currentTab,
+                        )
+                    }
+
+                    else -> {
+                        MediaGrid(
+                            items = state.currentItems,
+                            onItemClick = onItemClick,
+                            modifier = Modifier.fillMaxSize(),
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Paging-enabled media grid with infinite scroll.
+ * Handles loading, error, and empty states automatically.
+ */
+@Composable
+private fun PagingMediaGrid(
+    pagingItems: LazyPagingItems<LibraryMediaItem>,
+    onItemClick: (LibraryMediaItem) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val loadState = pagingItems.loadState
+    
+    when {
+        // Initial loading
+        loadState.refresh is LoadState.Loading -> {
+            Box(
+                modifier = modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center,
+            ) {
+                CircularProgressIndicator()
+            }
+        }
+        
+        // Initial error
+        loadState.refresh is LoadState.Error -> {
+            val error = (loadState.refresh as LoadState.Error).error
+            Box(
+                modifier = modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center,
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        text = "Error loading content",
+                        style = MaterialTheme.typography.titleMedium,
+                    )
+                    Text(
+                        text = error.localizedMessage ?: "Unknown error",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                }
+            }
+        }
+        
+        // Empty state
+        loadState.refresh is LoadState.NotLoading && pagingItems.itemCount == 0 -> {
+            Box(
+                modifier = modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text = "No content available",
+                    style = MaterialTheme.typography.titleMedium,
+                )
+            }
+        }
+        
+        // Content loaded
+        else -> {
+            LazyVerticalGrid(
+                columns = GridCells.Adaptive(minSize = 120.dp),
+                modifier = modifier,
+                contentPadding = PaddingValues(16.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                // Content items - use index as key for stability
+                // (Paging handles item identity internally)
+                items(
+                    count = pagingItems.itemCount,
+                    key = { index -> pagingItems.peek(index)?.id ?: "item_$index" },
+                ) { index ->
+                    pagingItems[index]?.let { item ->
+                        MediaCard(
+                            item = item,
+                            onClick = { onItemClick(item) },
+                        )
+                    }
+                }
+                
+                // Append loading indicator
+                if (loadState.append is LoadState.Loading) {
+                    item {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.width(32.dp).height(32.dp),
+                            )
+                        }
+                    }
                 }
             }
         }

@@ -10,6 +10,7 @@ import com.fishit.player.core.model.repository.NxWorkRepository
 import com.fishit.player.core.model.repository.NxWorkRepository.Work
 import com.fishit.player.core.model.repository.NxWorkRepository.WorkType
 import com.fishit.player.core.persistence.ObjectBoxFlow.asFlow
+import com.fishit.player.core.persistence.ObjectBoxFlow.asFlowWithLimit
 import com.fishit.player.core.persistence.obx.NX_Work
 import com.fishit.player.core.persistence.obx.NX_Work_
 import com.fishit.player.infra.data.nx.mapper.toDomain
@@ -56,7 +57,7 @@ class NxWorkRepositoryImpl @Inject constructor(
     }
 
     // ──────────────────────────────────────────────────────────────────────
-    // Lists (UI-critical)
+    // Lists (UI-critical) - Uses asFlowWithLimit for DB-level efficiency
     // ──────────────────────────────────────────────────────────────────────
 
     override fun observeByType(type: WorkType, limit: Int): Flow<List<Work>> {
@@ -64,32 +65,34 @@ class NxWorkRepositoryImpl @Inject constructor(
         return box.query(NX_Work_.workType.equal(typeString, StringOrder.CASE_SENSITIVE))
             .order(NX_Work_.canonicalTitle)
             .build()
-            .asFlow()
-            .map { list -> list.take(limit).map { it.toDomain() } }
+            .asFlowWithLimit(limit)
+            .map { list -> list.map { it.toDomain() } }
     }
 
     override fun observeRecentlyUpdated(limit: Int): Flow<List<Work>> {
+        // Uses @Index on updatedAt for efficient ordering
         return box.query()
             .orderDesc(NX_Work_.updatedAt)
             .build()
-            .asFlow()
-            .map { list -> list.take(limit).map { it.toDomain() } }
+            .asFlowWithLimit(limit)
+            .map { list -> list.map { it.toDomain() } }
     }
 
     override fun observeRecentlyCreated(limit: Int): Flow<List<Work>> {
+        // Uses @Index on createdAt for efficient ordering
         return box.query()
             .orderDesc(NX_Work_.createdAt)
             .build()
-            .asFlow()
-            .map { list -> list.take(limit).map { it.toDomain() } }
+            .asFlowWithLimit(limit)
+            .map { list -> list.map { it.toDomain() } }
     }
 
     override fun observeNeedsReview(limit: Int): Flow<List<Work>> {
         return box.query(NX_Work_.needsReview.equal(true))
             .order(NX_Work_.canonicalTitle)
             .build()
-            .asFlow()
-            .map { list -> list.take(limit).map { it.toDomain() } }
+            .asFlowWithLimit(limit)
+            .map { list -> list.map { it.toDomain() } }
     }
 
     override suspend fun searchByTitle(queryNormalized: String, limit: Int): List<Work> = withContext(Dispatchers.IO) {
@@ -106,8 +109,25 @@ class NxWorkRepositoryImpl @Inject constructor(
 
     override fun observeWithOptions(options: NxWorkRepository.QueryOptions): Flow<List<Work>> {
         return buildQuery(options)
-            .asFlow()
-            .map { list -> list.take(options.limit).map { it.toDomain() } }
+            .asFlowWithLimit(options.limit)
+            .map { list -> list.map { it.toDomain() } }
+    }
+
+    // ──────────────────────────────────────────────────────────────────────
+    // Paging (Jetpack Paging 3 Integration)
+    // ──────────────────────────────────────────────────────────────────────
+
+    override fun pagingSourceFactory(
+        options: NxWorkRepository.QueryOptions,
+    ): () -> androidx.paging.PagingSource<Int, Work> = {
+        com.fishit.player.core.persistence.paging.ObjectBoxPagingSource(
+            queryFactory = { buildQuery(options) },
+            mapper = { it.toDomain() },
+        )
+    }
+
+    override suspend fun count(options: NxWorkRepository.QueryOptions): Int = withContext(Dispatchers.IO) {
+        buildQuery(options).count().toInt()
     }
 
     override suspend fun advancedSearch(
