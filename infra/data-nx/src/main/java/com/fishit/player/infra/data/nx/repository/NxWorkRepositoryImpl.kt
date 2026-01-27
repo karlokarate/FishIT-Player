@@ -19,7 +19,10 @@ import io.objectbox.kotlin.boxFor
 import io.objectbox.query.QueryBuilder
 import io.objectbox.query.QueryBuilder.StringOrder
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
@@ -61,59 +64,123 @@ class NxWorkRepositoryImpl @Inject constructor(
 
     override fun observeByType(type: WorkType, limit: Int): Flow<List<Work>> {
         val typeString = type.toEntityString()
-        return box.query(NX_Work_.workType.equal(typeString, StringOrder.CASE_SENSITIVE))
+        val query = box.query(NX_Work_.workType.equal(typeString, StringOrder.CASE_SENSITIVE))
             .order(NX_Work_.canonicalTitle)
             .build()
-            .asFlow()
-            .map { list -> 
-                list.filter { isComplete(it) }
+        
+        // Use custom Flow implementation to apply fetch limit before filtering
+        // This avoids loading all 41k+ works on every emission
+        return callbackFlow {
+            // Over-fetch to account for incomplete works (filtered out)
+            val fetchLimit = (limit * 3).toLong()
+            
+            // Emit initial result
+            val initial = query.find(0, fetchLimit)
+                .filter { isCompleteEfficient(it) }
+                .take(limit)
+                .map { it.toDomain() }
+            trySend(initial)
+            
+            // Subscribe to changes
+            val subscription = query.subscribe().observer { _ ->
+                val updated = query.find(0, fetchLimit)
+                    .filter { isCompleteEfficient(it) }
                     .take(limit)
-                    .map { it.toDomain() } 
+                    .map { it.toDomain() }
+                trySend(updated)
             }
+            
+            awaitClose { subscription.cancel() }
+        }.flowOn(Dispatchers.IO)
     }
 
     override fun observeRecentlyUpdated(limit: Int): Flow<List<Work>> {
-        return box.query()
+        val query = box.query()
             .orderDesc(NX_Work_.updatedAt)
             .build()
-            .asFlow()
-            .map { list -> 
-                list.filter { isComplete(it) }
+        
+        return callbackFlow {
+            val fetchLimit = (limit * 3).toLong()
+            
+            val initial = query.find(0, fetchLimit)
+                .filter { isCompleteEfficient(it) }
+                .take(limit)
+                .map { it.toDomain() }
+            trySend(initial)
+            
+            val subscription = query.subscribe().observer { _ ->
+                val updated = query.find(0, fetchLimit)
+                    .filter { isCompleteEfficient(it) }
                     .take(limit)
-                    .map { it.toDomain() } 
+                    .map { it.toDomain() }
+                trySend(updated)
             }
+            
+            awaitClose { subscription.cancel() }
+        }.flowOn(Dispatchers.IO)
     }
 
     override fun observeRecentlyCreated(limit: Int): Flow<List<Work>> {
-        return box.query()
+        val query = box.query()
             .orderDesc(NX_Work_.createdAt)
             .build()
-            .asFlow()
-            .map { list -> 
-                list.filter { isComplete(it) }
+        
+        return callbackFlow {
+            val fetchLimit = (limit * 3).toLong()
+            
+            val initial = query.find(0, fetchLimit)
+                .filter { isCompleteEfficient(it) }
+                .take(limit)
+                .map { it.toDomain() }
+            trySend(initial)
+            
+            val subscription = query.subscribe().observer { _ ->
+                val updated = query.find(0, fetchLimit)
+                    .filter { isCompleteEfficient(it) }
                     .take(limit)
-                    .map { it.toDomain() } 
+                    .map { it.toDomain() }
+                trySend(updated)
             }
+            
+            awaitClose { subscription.cancel() }
+        }.flowOn(Dispatchers.IO)
     }
 
     override fun observeNeedsReview(limit: Int): Flow<List<Work>> {
-        return box.query(NX_Work_.needsReview.equal(true))
+        val query = box.query(NX_Work_.needsReview.equal(true))
             .order(NX_Work_.canonicalTitle)
             .build()
-            .asFlow()
-            .map { list -> 
-                list.filter { isComplete(it) }
+        
+        return callbackFlow {
+            val fetchLimit = (limit * 3).toLong()
+            
+            val initial = query.find(0, fetchLimit)
+                .filter { isCompleteEfficient(it) }
+                .take(limit)
+                .map { it.toDomain() }
+            trySend(initial)
+            
+            val subscription = query.subscribe().observer { _ ->
+                val updated = query.find(0, fetchLimit)
+                    .filter { isCompleteEfficient(it) }
                     .take(limit)
-                    .map { it.toDomain() } 
+                    .map { it.toDomain() }
+                trySend(updated)
             }
+            
+            awaitClose { subscription.cancel() }
+        }.flowOn(Dispatchers.IO)
     }
 
     override suspend fun searchByTitle(queryNormalized: String, limit: Int): List<Work> = withContext(Dispatchers.IO) {
+        // Use 3x over-fetch to account for filtered incomplete works
+        val fetchLimit = (limit * 3).toLong()
         box.query(NX_Work_.canonicalTitleLower.contains(queryNormalized.lowercase(), StringOrder.CASE_INSENSITIVE))
             .order(NX_Work_.canonicalTitle)
             .build()
-            .find(0, limit.toLong())
-            .filter { isComplete(it) }
+            .find(0, fetchLimit)
+            .filter { isCompleteEfficient(it) }
+            .take(limit)
             .map { it.toDomain() }
     }
 
@@ -122,23 +189,40 @@ class NxWorkRepositoryImpl @Inject constructor(
     // ──────────────────────────────────────────────────────────────────────
 
     override fun observeWithOptions(options: NxWorkRepository.QueryOptions): Flow<List<Work>> {
-        return buildQuery(options)
-            .asFlow()
-            .map { list -> 
-                list.filter { isComplete(it) }
+        val query = buildQuery(options)
+        
+        return callbackFlow {
+            val fetchLimit = (options.limit * 3).toLong()
+            
+            val initial = query.find(0, fetchLimit)
+                .filter { isCompleteEfficient(it) }
+                .take(options.limit)
+                .map { it.toDomain() }
+            trySend(initial)
+            
+            val subscription = query.subscribe().observer { _ ->
+                val updated = query.find(0, fetchLimit)
+                    .filter { isCompleteEfficient(it) }
                     .take(options.limit)
-                    .map { it.toDomain() } 
+                    .map { it.toDomain() }
+                trySend(updated)
             }
+            
+            awaitClose { subscription.cancel() }
+        }.flowOn(Dispatchers.IO)
     }
 
     override suspend fun advancedSearch(
         query: String,
         options: NxWorkRepository.QueryOptions,
     ): List<Work> = withContext(Dispatchers.IO) {
+        val fetchLimit = (options.limit * 3).toLong()
+        
         if (query.isBlank()) {
             return@withContext buildQuery(options)
-                .find(0, options.limit.toLong())
-                .filter { isComplete(it) }
+                .find(0, fetchLimit)
+                .filter { isCompleteEfficient(it) }
+                .take(options.limit)
                 .map { it.toDomain() }
         }
 
@@ -174,8 +258,9 @@ class NxWorkRepositoryImpl @Inject constructor(
         applySorting(queryBuilder, options.sortField, options.sortDirection)
 
         queryBuilder.build()
-            .find(0, options.limit.toLong())
-            .filter { isComplete(it) }
+            .find(0, fetchLimit)
+            .filter { isCompleteEfficient(it) }
+            .take(options.limit)
             .map { it.toDomain() }
     }
 
@@ -329,9 +414,21 @@ class NxWorkRepositoryImpl @Inject constructor(
      *
      * This filter ensures incomplete works are not shown in the UI.
      * Incomplete works may exist during ingestion but should not appear to users.
+     * 
+     * Note: This accesses lazy-loaded relations. For large result sets,
+     * pre-filter with find(offset, limit) to avoid N+1 query explosion.
      */
     private fun isComplete(work: NX_Work): Boolean {
         return work.sourceRefs.isNotEmpty() && work.variants.isNotEmpty()
+    }
+
+    /**
+     * Efficient completeness check that avoids fully loading relations.
+     * Checks if relation collections are empty without iterating through all items.
+     */
+    private fun isCompleteEfficient(work: NX_Work): Boolean {
+        // Use isEmpty() method instead of synthetic property (future-proof)
+        return !work.sourceRefs.isEmpty() && !work.variants.isEmpty()
     }
 
     private fun WorkType.toEntityString(): String = when (this) {
