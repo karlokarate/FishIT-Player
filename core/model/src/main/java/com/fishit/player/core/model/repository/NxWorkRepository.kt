@@ -69,6 +69,13 @@ interface NxWorkRepository {
          * May be a full URL (https://youtube.com/watch?v=xxx) or just the video ID.
          */
         val trailer: String? = null,
+        // === External Authority IDs ===
+        /** TMDB ID (numeric string for persistence compatibility) */
+        val tmdbId: String? = null,
+        /** IMDB ID (e.g., "tt0133093") */
+        val imdbId: String? = null,
+        /** TVDB ID */
+        val tvdbId: String? = null,
         /**
          * Adult content flag for parental controls.
          */

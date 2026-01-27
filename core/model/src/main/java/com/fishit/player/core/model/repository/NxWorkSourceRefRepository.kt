@@ -71,6 +71,18 @@ interface NxWorkSourceRefRepository {
 
     suspend fun findByWorkKey(workKey: String): List<SourceRef>
 
+    /**
+     * Batch lookup source refs for multiple work keys.
+     *
+     * **Performance Critical:** Use this instead of calling findByWorkKey() in a loop!
+     * Required for efficient Home/Library content loading where thousands of works
+     * need their source types determined.
+     *
+     * @param workKeys List of work keys to lookup
+     * @return Map of workKey → List<SourceRef>. Missing keys will not be in the map.
+     */
+    suspend fun findByWorkKeysBatch(workKeys: List<String>): Map<String, List<SourceRef>>
+
     suspend fun findByAccount(
         sourceType: SourceType,
         accountKey: String,
