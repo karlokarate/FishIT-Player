@@ -31,6 +31,10 @@ fun NX_Work.toDomain(): Work = Work(
     director = director,
     cast = cast,
     trailer = trailer,
+    // External IDs
+    tmdbId = tmdbId,
+    imdbId = imdbId,
+    tvdbId = tvdbId,
     isAdult = isAdult,
     recognitionState = if (needsReview) RecognitionState.NEEDS_REVIEW else RecognitionState.HEURISTIC,
     createdAtMs = createdAt,
@@ -64,6 +68,10 @@ fun Work.toEntity(existingEntity: NX_Work? = null): NX_Work {
         director = director,
         cast = cast,
         trailer = trailer ?: existingEntity?.trailer,
+        // External IDs - preserve existing if new is null
+        tmdbId = tmdbId ?: existingEntity?.tmdbId,
+        imdbId = imdbId ?: existingEntity?.imdbId,
+        tvdbId = tvdbId ?: existingEntity?.tvdbId,
         isAdult = isAdult,
         needsReview = recognitionState == RecognitionState.NEEDS_REVIEW,
         createdAt = if (existingEntity == null) createdAtMs.takeIf { it > 0 } ?: System.currentTimeMillis() else existingEntity.createdAt,
@@ -85,39 +93,13 @@ private fun ImageRef.toUrlString(): String? = when (this) {
 /**
  * Parses a serialized ImageRef string back to ImageRef.
  *
- * Supports formats from NxCatalogWriter.toSerializedString():
- * - "http:<url>" → ImageRef.Http
- * - "tg:<remoteId>" → ImageRef.TelegramThumb
- * - "file:<path>" → ImageRef.LocalFile
- * - "tg://<remoteId>" → ImageRef.TelegramThumb (legacy format)
- * - Plain URL (starts with http/https) → ImageRef.Http (fallback)
+ * **Delegates to canonical parsing function** [ImageRef.fromString] in core/model.
+ *
+ * This private function exists only for backward compatibility and to clarify intent.
+ * All actual parsing logic is centralized in core/model to respect layer boundaries.
  */
-private fun parseSerializedImageRef(serialized: String): ImageRef? {
-    val colonIndex = serialized.indexOf(':')
-    if (colonIndex < 0) return null
-
-    val prefix = serialized.substring(0, colonIndex)
-    val value = serialized.substring(colonIndex + 1)
-
-    return when (prefix) {
-        "http" -> ImageRef.Http(url = value)
-        "https" -> ImageRef.Http(url = "https:$value") // Reconstruct full URL
-        "tg" -> {
-            // Handle both "tg:<remoteId>" and "tg://<remoteId>" formats
-            val remoteId = value.removePrefix("//")
-            ImageRef.TelegramThumb(remoteId = remoteId)
-        }
-        "file" -> ImageRef.LocalFile(path = value)
-        else -> {
-            // Fallback: treat as full URL if it starts with http/https
-            if (serialized.startsWith("http://") || serialized.startsWith("https://")) {
-                ImageRef.Http(url = serialized)
-            } else {
-                null
-            }
-        }
-    }
-}
+private fun parseSerializedImageRef(serialized: String): ImageRef? =
+    ImageRef.fromString(serialized)
 
 /**
  * Maps WorkType enum to entity string.

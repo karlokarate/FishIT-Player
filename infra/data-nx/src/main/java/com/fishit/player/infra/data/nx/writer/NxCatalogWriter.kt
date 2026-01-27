@@ -82,6 +82,10 @@ class NxCatalogWriter @Inject constructor(
                 director = normalized.director,
                 cast = normalized.cast,
                 trailer = normalized.trailer,
+                // External IDs - prefer typed tmdb ref, fall back to externalIds
+                tmdbId = (normalized.tmdb ?: normalized.externalIds.tmdb)?.id?.toString(),
+                imdbId = normalized.externalIds.imdbId,
+                tvdbId = normalized.externalIds.tvdbId,
                 isAdult = normalized.isAdult,
                 recognitionState = if (normalized.tmdb != null) {
                     NxWorkRepository.RecognitionState.CONFIRMED

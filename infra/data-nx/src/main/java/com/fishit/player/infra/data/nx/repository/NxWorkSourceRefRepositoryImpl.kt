@@ -71,6 +71,44 @@ class NxWorkSourceRefRepositoryImpl @Inject constructor(
             .map { it.toDomain() }
     }
 
+    /**
+     * Batch lookup source refs for multiple work keys.
+     *
+     * **Performance Critical:** This is the optimized path for Home/Library loading.
+     * Instead of N queries for N works, this does 2 queries total:
+     * 1. One query to get work IDs from work keys
+     * 2. One query to get all source refs (filtered in memory by work ID set)
+     *
+     * For 40,000 works, this reduces from 80,000+ queries to 2 queries.
+     */
+    override suspend fun findByWorkKeysBatch(workKeys: List<String>): Map<String, List<SourceRef>> = withContext(Dispatchers.IO) {
+        if (workKeys.isEmpty()) return@withContext emptyMap()
+
+        // Step 1: Batch lookup work entities to get their IDs
+        val works = workBox.query(NX_Work_.workKey.oneOf(workKeys.toTypedArray(), StringOrder.CASE_SENSITIVE))
+            .build()
+            .find()
+        val workIdToKey = works.associate { it.id to it.workKey }
+        val workIds = workIdToKey.keys
+
+        if (workIds.isEmpty()) return@withContext emptyMap()
+
+        // Step 2: Get all source refs and filter by work ID set
+        // Using a single pass through all source refs is faster than N individual queries
+        val result = mutableMapOf<String, MutableList<SourceRef>>()
+
+        box.all
+            .filter { it.work.targetId in workIds }
+            .forEach { entity ->
+                val workKey = workIdToKey[entity.work.targetId]
+                if (workKey != null) {
+                    result.getOrPut(workKey) { mutableListOf() }.add(entity.toDomain())
+                }
+            }
+
+        result
+    }
+
     override suspend fun findByAccount(sourceType: SourceType, accountKey: String, limit: Int): List<SourceRef> = withContext(Dispatchers.IO) {
         val typeString = sourceType.toEntityString()
         box.query(

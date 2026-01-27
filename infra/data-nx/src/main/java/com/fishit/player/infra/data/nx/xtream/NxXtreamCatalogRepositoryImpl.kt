@@ -501,6 +501,13 @@ class NxXtreamCatalogRepositoryImpl
             )
         }
 
+        /**
+         * Build ExternalIds from NX_Work entity.
+         *
+         * Note: TMDB-ID is stored as String in NX_Work for persistence compatibility.
+         * The pipeline writes Int via NxCatalogWriter, NX_Work stores as String,
+         * and we convert back to TmdbRef here for domain use. This is intentional.
+         */
         private fun NX_Work.buildExternalIds(tmdbType: TmdbMediaType): ExternalIds {
             val tmdbRef = tmdbId?.toIntOrNull()?.let { TmdbRef(tmdbType, it) }
             return ExternalIds(tmdb = tmdbRef, imdbId = imdbId)
