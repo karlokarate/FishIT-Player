@@ -809,6 +809,257 @@ class DefaultXtreamApiClient(
     }
 
     // =========================================================================
+    // Streaming Batch Methods (Memory-Efficient)
+    // =========================================================================
+
+    override suspend fun streamVodInBatches(
+        batchSize: Int,
+        categoryId: String?,
+        onBatch: suspend (List<XtreamVodStream>) -> Unit,
+    ): Int = withContext(io) {
+        streamContentInBatches(
+            action = "get_${vodKind}_streams",
+            categoryId = categoryId,
+            batchSize = batchSize,
+            aliases = listOf(vodKind) + VOD_ALIAS_CANDIDATES.filter { it != vodKind },
+            mapper = { reader ->
+                XtreamVodStream(
+                    num = reader.getIntOrNull("num"),
+                    name = reader.getStringOrNull("name"),
+                    vodId = reader.getIntOrNull("vod_id"),
+                    movieId = reader.getIntOrNull("movie_id"),
+                    streamId = reader.getIntOrNull("stream_id"),
+                    id = reader.getIntOrNull("id"),
+                    streamIcon = reader.getStringOrNull("stream_icon"),
+                    posterPath = reader.getStringOrNull("poster_path"),
+                    cover = reader.getStringOrNull("cover"),
+                    logo = reader.getStringOrNull("logo"),
+                    categoryId = reader.getStringOrNull("category_id"),
+                    containerExtension = reader.getStringOrNull("container_extension"),
+                    added = reader.getStringOrNull("added"),
+                    rating = reader.getStringOrNull("rating"),
+                    rating5Based = reader.getDoubleOrNull("rating_5based"),
+                    isAdult = reader.getStringOrNull("is_adult"),
+                    year = reader.getStringOrNull("year"),
+                    genre = reader.getStringOrNull("genre"),
+                    plot = reader.getStringOrNull("plot"),
+                    duration = reader.getStringOrNull("duration"),
+                )
+            },
+            onBatch = onBatch,
+        )
+    }
+
+    override suspend fun streamSeriesInBatches(
+        batchSize: Int,
+        categoryId: String?,
+        onBatch: suspend (List<XtreamSeriesStream>) -> Unit,
+    ): Int = withContext(io) {
+        streamContentInBatches(
+            action = "get_series",
+            categoryId = categoryId,
+            batchSize = batchSize,
+            aliases = listOf("series"),
+            mapper = { reader ->
+                XtreamSeriesStream(
+                    num = reader.getIntOrNull("num"),
+                    name = reader.getStringOrNull("name"),
+                    seriesId = reader.getIntOrNull("series_id"),
+                    id = reader.getIntOrNull("id"),
+                    cover = reader.getStringOrNull("cover"),
+                    posterPath = reader.getStringOrNull("poster_path"),
+                    logo = reader.getStringOrNull("logo"),
+                    backdropPath = reader.getStringOrNull("backdrop_path"),
+                    categoryId = reader.getStringOrNull("category_id"),
+                    added = reader.getStringOrNull("added"),
+                    rating = reader.getStringOrNull("rating"),
+                    rating5Based = reader.getDoubleOrNull("rating_5based"),
+                    isAdult = reader.getStringOrNull("is_adult"),
+                    year = reader.getStringOrNull("year"),
+                    genre = reader.getStringOrNull("genre"),
+                    plot = reader.getStringOrNull("plot"),
+                    cast = reader.getStringOrNull("cast"),
+                    episodeRunTime = reader.getStringOrNull("episode_run_time"),
+                    lastModified = reader.getStringOrNull("last_modified"),
+                )
+            },
+            onBatch = onBatch,
+        )
+    }
+
+    override suspend fun streamLiveInBatches(
+        batchSize: Int,
+        categoryId: String?,
+        onBatch: suspend (List<XtreamLiveStream>) -> Unit,
+    ): Int = withContext(io) {
+        streamContentInBatches(
+            action = "get_live_streams",
+            categoryId = categoryId,
+            batchSize = batchSize,
+            aliases = listOf("live"),
+            mapper = { reader ->
+                XtreamLiveStream(
+                    num = reader.getIntOrNull("num"),
+                    name = reader.getStringOrNull("name"),
+                    streamId = reader.getIntOrNull("stream_id"),
+                    id = reader.getIntOrNull("id"),
+                    streamIcon = reader.getStringOrNull("stream_icon"),
+                    epgChannelId = reader.getStringOrNull("epg_channel_id"),
+                    categoryId = reader.getStringOrNull("category_id"),
+                    added = reader.getStringOrNull("added"),
+                    isAdult = reader.getStringOrNull("is_adult"),
+                )
+            },
+            onBatch = onBatch,
+        )
+    }
+
+    /**
+     * Generic streaming batch method with category fallback.
+     *
+     * **Memory Profile:**
+     * - Without batching: O(N) - all items in memory at once
+     * - With batching: O(batchSize) - constant memory regardless of total
+     *
+     * @param action API action name
+     * @param categoryId Optional category filter
+     * @param batchSize Items per batch
+     * @param aliases Alternative action names to try
+     * @param mapper Function to map JSON objects to items
+     * @param onBatch Callback for each batch
+     * @return Total items processed
+     */
+    private suspend fun <T> streamContentInBatches(
+        action: String,
+        categoryId: String?,
+        batchSize: Int,
+        aliases: List<String>,
+        mapper: (JsonObjectReader) -> T?,
+        onBatch: suspend (List<T>) -> Unit,
+    ): Int {
+        // If specific category requested
+        if (categoryId != null) {
+            val url = buildPlayerApiUrl(action, mapOf("category_id" to categoryId))
+            return streamFromUrl(url, batchSize, mapper, onBatch)
+        }
+
+        // Try category fallback order: * → 0 → none
+        suspend fun tryStreamWithParams(params: Map<String, String>?): Int {
+            for (alias in aliases) {
+                val actualAction = if (alias == aliases.first()) action else "get_${alias}_streams"
+                val url = if (params == null) {
+                    buildPlayerApiUrl(actualAction)
+                } else {
+                    buildPlayerApiUrl(actualAction, params)
+                }
+                val count = runCatching {
+                    streamFromUrl(url, batchSize, mapper, onBatch)
+                }.getOrElse { 0 }
+                if (count > 0) {
+                    return count
+                }
+            }
+            return 0
+        }
+
+        // 1) Try category_id=* first
+        var count = tryStreamWithParams(mapOf("category_id" to "*"))
+        if (count > 0) {
+            UnifiedLog.d(TAG) {
+                "streamContentInBatches($action): $count items with category_id=*"
+            }
+            return count
+        }
+
+        // 2) Try category_id=0
+        count = tryStreamWithParams(mapOf("category_id" to "0"))
+        if (count > 0) {
+            UnifiedLog.d(TAG) {
+                "streamContentInBatches($action): $count items with category_id=0"
+            }
+            return count
+        }
+
+        // 3) Try without category_id
+        count = tryStreamWithParams(null)
+        UnifiedLog.d(TAG) {
+            "streamContentInBatches($action): $count items without category_id (fallback)"
+        }
+        return count
+    }
+
+    /**
+     * Stream JSON array from URL in batches.
+     */
+    private suspend fun <T> streamFromUrl(
+        url: String,
+        batchSize: Int,
+        mapper: (JsonObjectReader) -> T?,
+        onBatch: suspend (List<T>) -> Unit,
+    ): Int {
+        return fetchRawAsStream(url).use { streamResp ->
+            if (!streamResp.isSuccessful || streamResp.inputStream == null) {
+                return@use 0
+            }
+
+            val startTime = SystemClock.elapsedRealtime()
+            val stats = StreamingJsonParser.streamInBatches(
+                input = streamResp.inputStream!!,
+                batchSize = batchSize,
+                mapper = mapper,
+                onBatch = onBatch,
+            )
+
+            val elapsed = SystemClock.elapsedRealtime() - startTime
+            UnifiedLog.d(TAG) {
+                "StreamBatch: ${stats.totalCount} items in ${stats.batchCount} batches (${elapsed}ms)"
+            }
+
+            stats.totalCount
+        }
+    }
+
+    // =========================================================================
+    // Efficient Count Methods
+    // =========================================================================
+
+    override suspend fun countVodStreams(categoryId: String?): Int =
+        runCatching {
+            streamVodInBatches(
+                batchSize = 1000, // Larger batches for counting = fewer callbacks
+                categoryId = categoryId,
+                onBatch = { /* Discard items, just count */ },
+            )
+        }.getOrElse {
+            UnifiedLog.w(TAG) { "countVodStreams failed: ${it.message}" }
+            -1
+        }
+
+    override suspend fun countSeries(categoryId: String?): Int =
+        runCatching {
+            streamSeriesInBatches(
+                batchSize = 1000,
+                categoryId = categoryId,
+                onBatch = { /* Discard items, just count */ },
+            )
+        }.getOrElse {
+            UnifiedLog.w(TAG) { "countSeries failed: ${it.message}" }
+            -1
+        }
+
+    override suspend fun countLiveStreams(categoryId: String?): Int =
+        runCatching {
+            streamLiveInBatches(
+                batchSize = 1000,
+                categoryId = categoryId,
+                onBatch = { /* Discard items, just count */ },
+            )
+        }.getOrElse {
+            UnifiedLog.w(TAG) { "countLiveStreams failed: ${it.message}" }
+            -1
+        }
+
+    // =========================================================================
     // Detail Endpoints
     // =========================================================================
 

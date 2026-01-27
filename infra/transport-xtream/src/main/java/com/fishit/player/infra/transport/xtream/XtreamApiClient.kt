@@ -195,6 +195,94 @@ interface XtreamApiClient {
     ): List<XtreamSeriesStream>
 
     // =========================================================================
+    // Streaming Batch Methods (Memory-Efficient)
+    // =========================================================================
+
+    /**
+     * Stream VOD items in batches with constant memory usage.
+     *
+     * Unlike [getVodStreams], this method processes items in batches,
+     * calling [onBatch] for each batch. Memory usage remains constant
+     * regardless of total item count.
+     *
+     * **Usage:**
+     * ```kotlin
+     * client.streamVodInBatches(batchSize = 500) { batch ->
+     *     repository.insertAll(batch)  // Persists batch immediately
+     * }
+     * ```
+     *
+     * @param batchSize Number of items per batch (default: 500)
+     * @param categoryId Optional category filter (null = all)
+     * @param onBatch Callback for each batch of items
+     * @return Total number of items processed
+     */
+    suspend fun streamVodInBatches(
+        batchSize: Int = 500,
+        categoryId: String? = null,
+        onBatch: suspend (List<XtreamVodStream>) -> Unit,
+    ): Int
+
+    /**
+     * Stream series items in batches with constant memory usage.
+     *
+     * @param batchSize Number of items per batch
+     * @param categoryId Optional category filter
+     * @param onBatch Callback for each batch
+     * @return Total number of items processed
+     */
+    suspend fun streamSeriesInBatches(
+        batchSize: Int = 500,
+        categoryId: String? = null,
+        onBatch: suspend (List<XtreamSeriesStream>) -> Unit,
+    ): Int
+
+    /**
+     * Stream live streams in batches with constant memory usage.
+     *
+     * @param batchSize Number of items per batch
+     * @param categoryId Optional category filter
+     * @param onBatch Callback for each batch
+     * @return Total number of items processed
+     */
+    suspend fun streamLiveInBatches(
+        batchSize: Int = 500,
+        categoryId: String? = null,
+        onBatch: suspend (List<XtreamLiveStream>) -> Unit,
+    ): Int
+
+    // =========================================================================
+    // Efficient Count Methods (Streaming without accumulating)
+    // =========================================================================
+
+    /**
+     * Count VOD items efficiently without loading all into memory.
+     *
+     * Uses streaming internally - counts as items flow through.
+     * Memory usage: O(1) regardless of catalog size.
+     *
+     * @param categoryId Optional category filter
+     * @return Total count of VOD items, or -1 on error
+     */
+    suspend fun countVodStreams(categoryId: String? = null): Int
+
+    /**
+     * Count series items efficiently without loading all into memory.
+     *
+     * @param categoryId Optional category filter
+     * @return Total count of series, or -1 on error
+     */
+    suspend fun countSeries(categoryId: String? = null): Int
+
+    /**
+     * Count live streams efficiently without loading all into memory.
+     *
+     * @param categoryId Optional category filter
+     * @return Total count of live streams, or -1 on error
+     */
+    suspend fun countLiveStreams(categoryId: String? = null): Int
+
+    // =========================================================================
     // Detail Endpoints
     // =========================================================================
 

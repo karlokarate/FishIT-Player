@@ -112,6 +112,178 @@ object StreamingJsonParser {
     }
 
     /**
+     * Stream JSON array in batches with constant memory usage.
+     *
+     * **Key Benefit:** Memory stays constant regardless of total array size.
+     * Each batch is processed and can be persisted before the next batch loads.
+     *
+     * **Memory Profile:**
+     * - Without batching: O(N) - all items in memory
+     * - With batching: O(batchSize) - only current batch in memory
+     *
+     * **Usage:**
+     * ```kotlin
+     * responseBody.byteStream().use { input ->
+     *     streamInBatches(input, batchSize = 500) { batch ->
+     *         // Process batch (e.g., write to DB)
+     *         repository.insertAll(batch)
+     *     }
+     * }
+     * ```
+     *
+     * @param input InputStream containing JSON array
+     * @param batchSize Number of items per batch (default: 500)
+     * @param mapper Function to map each JSON object to target type
+     * @param onBatch Callback invoked for each batch (suspendable for DB writes)
+     * @return StreamingStats with total count and batch count
+     */
+    suspend fun <T> streamInBatches(
+        input: InputStream,
+        batchSize: Int = DEFAULT_BATCH_SIZE,
+        mapper: (JsonObjectReader) -> T?,
+        onBatch: suspend (List<T>) -> Unit,
+    ): StreamingStats {
+        var totalCount = 0
+        var batchCount = 0
+        var errorCount = 0
+        val batch = ArrayList<T>(batchSize)
+
+        jsonFactory.createParser(input).use { parser ->
+            // Expect array start
+            val firstToken = parser.nextToken()
+            if (firstToken != JsonToken.START_ARRAY) {
+                if (firstToken == JsonToken.START_OBJECT) {
+                    // Handle wrapped array
+                    return streamWrappedArrayInBatches(parser, batchSize, mapper, onBatch)
+                }
+                UnifiedLog.w(TAG) { "streamInBatches: Expected JSON array, got: $firstToken" }
+                return StreamingStats(0, 0, 0)
+            }
+
+            // Process each object
+            while (parser.nextToken() != JsonToken.END_ARRAY) {
+                if (parser.currentToken == JsonToken.START_OBJECT) {
+                    try {
+                        val reader = JsonObjectReader(parser)
+                        val item = mapper(reader)
+                        reader.skipRemainingFields()
+                        if (item != null) {
+                            batch.add(item)
+                            totalCount++
+
+                            // Flush batch when full
+                            if (batch.size >= batchSize) {
+                                onBatch(batch.toList())
+                                batch.clear()
+                                batchCount++
+                            }
+                        }
+                    } catch (e: Exception) {
+                        errorCount++
+                        if (errorCount <= 3) {
+                            UnifiedLog.w(TAG) { "streamInBatches mapper error #$errorCount: ${e.message}" }
+                        }
+                    }
+                }
+            }
+
+            // Flush remaining items
+            if (batch.isNotEmpty()) {
+                onBatch(batch.toList())
+                batchCount++
+            }
+        }
+
+        if (errorCount > 0) {
+            UnifiedLog.w(TAG) { "streamInBatches: $errorCount errors, $totalCount items in $batchCount batches" }
+        }
+
+        return StreamingStats(totalCount, batchCount, errorCount)
+    }
+
+    /**
+     * Handle wrapped array in batch mode.
+     */
+    private suspend fun <T> streamWrappedArrayInBatches(
+        parser: JsonParser,
+        batchSize: Int,
+        mapper: (JsonObjectReader) -> T?,
+        onBatch: suspend (List<T>) -> Unit,
+    ): StreamingStats {
+        val arrayFieldCandidates = setOf(
+            "vod_streams", "live_streams", "series", "channels",
+            "vod", "live", "movies", "streams", "data", "items", "list", "result", "results",
+        )
+
+        var totalCount = 0
+        var batchCount = 0
+        var errorCount = 0
+        val batch = ArrayList<T>(batchSize)
+
+        while (parser.nextToken() != JsonToken.END_OBJECT) {
+            val fieldName = parser.currentName
+            parser.nextToken()
+
+            if (parser.currentToken == JsonToken.START_ARRAY && fieldName in arrayFieldCandidates) {
+                UnifiedLog.d(TAG) { "streamInBatches: Found array in wrapper field: $fieldName" }
+
+                while (parser.nextToken() != JsonToken.END_ARRAY) {
+                    if (parser.currentToken == JsonToken.START_OBJECT) {
+                        try {
+                            val reader = JsonObjectReader(parser)
+                            val item = mapper(reader)
+                            reader.skipRemainingFields()
+                            if (item != null) {
+                                batch.add(item)
+                                totalCount++
+
+                                if (batch.size >= batchSize) {
+                                    onBatch(batch.toList())
+                                    batch.clear()
+                                    batchCount++
+                                }
+                            }
+                        } catch (e: Exception) {
+                            errorCount++
+                            if (errorCount <= 3) {
+                                UnifiedLog.w(TAG) { "streamInBatches wrapper error: ${e.message}" }
+                            }
+                        }
+                    }
+                }
+
+                // Flush remaining
+                if (batch.isNotEmpty()) {
+                    onBatch(batch.toList())
+                    batchCount++
+                }
+                break
+            } else {
+                parser.skipChildren()
+            }
+        }
+
+        return StreamingStats(totalCount, batchCount, errorCount)
+    }
+
+    /**
+     * Statistics from a streaming parse operation.
+     */
+    data class StreamingStats(
+        /** Total items successfully parsed */
+        val totalCount: Int,
+        /** Number of batches processed */
+        val batchCount: Int,
+        /** Number of parsing errors */
+        val errorCount: Int,
+    ) {
+        val hasErrors: Boolean get() = errorCount > 0
+    }
+
+    /** Default batch size for streaming operations */
+    const val DEFAULT_BATCH_SIZE = 500
+
+    /**
      * Parse JSON array from a String body.
      *
      * Convenience method for when the response body is already in memory.
