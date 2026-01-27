@@ -114,19 +114,22 @@ sealed interface SyncStatus {
 /**
  * Configuration for catalog synchronization.
  *
- * @property batchSize Number of items to batch before persisting
+ * @property batchSize Number of items to batch before persisting to DB
+ * @property jsonStreamingBatchSize Number of items per batch when streaming from network (JSON parsing)
  * @property enableNormalization Whether to normalize metadata before persisting
  * @property enableCanonicalLinking Whether to link items to canonical media (can be decoupled for speed)
  * @property emitProgressEvery Emit progress status every N items
  */
 data class SyncConfig(
     val batchSize: Int = DEFAULT_BATCH_SIZE,
+    val jsonStreamingBatchSize: Int = DEFAULT_JSON_STREAMING_BATCH_SIZE,
     val enableNormalization: Boolean = true,
     val enableCanonicalLinking: Boolean = true,
     val emitProgressEvery: Int = DEFAULT_PROGRESS_INTERVAL,
 ) {
     companion object {
         const val DEFAULT_BATCH_SIZE = 150 // Optimized for ObjectBox speed (Dec 2025)
+        const val DEFAULT_JSON_STREAMING_BATCH_SIZE = 500 // For memory-efficient network streaming
         const val DEFAULT_PROGRESS_INTERVAL = 150
 
         val DEFAULT = SyncConfig()

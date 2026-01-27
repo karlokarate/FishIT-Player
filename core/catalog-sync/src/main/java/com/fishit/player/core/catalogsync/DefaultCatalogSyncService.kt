@@ -367,6 +367,7 @@ class DefaultCatalogSyncService
                         includeLive = includeLive,
                         excludeSeriesIds = excludeSeriesIds,
                         episodeParallelism = episodeParallelism,
+                        batchSize = syncConfig.jsonStreamingBatchSize,
                     )
 
                 try {
@@ -639,6 +640,7 @@ class DefaultCatalogSyncService
                         includeLive = includeLive,
                         excludeSeriesIds = excludeSeriesIds,
                         episodeParallelism = episodeParallelism,
+                        batchSize = config.jsonStreamingBatchSize,
                     )
 
                 // Time-based flush job

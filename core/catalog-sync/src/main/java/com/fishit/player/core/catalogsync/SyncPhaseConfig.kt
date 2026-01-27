@@ -64,6 +64,7 @@ enum class SyncPhase {
  * @property moviesConfig Configuration for VOD/movies sync
  * @property seriesConfig Configuration for series index sync
  * @property episodesConfig Configuration for episodes (lazy loaded)
+ * @property jsonStreamingBatchSize Batch size for network JSON streaming (memory-efficient parsing)
  * @property emitProgressEvery Emit progress status every N items
  * @property enableTimeBasedFlush Enable 1200ms auto-flush for progressive UI
  * @property enableCanonicalLinking Enable canonical media linking (can be decoupled for speed)
@@ -73,11 +74,14 @@ data class EnhancedSyncConfig(
     val moviesConfig: SyncPhaseConfig = SyncPhaseConfig.MOVIES,
     val seriesConfig: SyncPhaseConfig = SyncPhaseConfig.SERIES,
     val episodesConfig: SyncPhaseConfig = SyncPhaseConfig.EPISODES,
+    val jsonStreamingBatchSize: Int = DEFAULT_JSON_STREAMING_BATCH_SIZE,
     val emitProgressEvery: Int = 100,
     val enableTimeBasedFlush: Boolean = true,
     val enableCanonicalLinking: Boolean = true,
 ) {
     companion object {
+        /** Default batch size for JSON streaming from network. */
+        const val DEFAULT_JSON_STREAMING_BATCH_SIZE = 500
         /**
          * Default configuration optimized for perceived speed.
          * - Live first (600 batch) per PLATIN guidelines
@@ -132,6 +136,7 @@ data class EnhancedSyncConfig(
         /**
          * FIRETV_SAFE configuration: Conservative settings for low-RAM devices.
          * - All batches capped at ObxWriteConfig.FIRETV_BATCH_CAP (35 items)
+         * - JSON streaming batch size at 300 (vs 500 default) for memory safety
          * - Canonical linking DISABLED for speed
          * - Time-based flush for progressive UI
          *
@@ -139,12 +144,14 @@ data class EnhancedSyncConfig(
          * to prevent OOM on limited RAM devices.
          *
          * @see com.fishit.player.core.persistence.config.ObxWriteConfig.FIRETV_BATCH_CAP
+         * @see com.fishit.player.core.persistence.config.ObxWriteConfig.JSON_STREAMING_BATCH_SIZE_LOW_RESOURCE
          */
         val FIRETV_SAFE =
             EnhancedSyncConfig(
                 liveConfig = SyncPhaseConfig.LIVE.copy(batchSize = com.fishit.player.core.persistence.config.ObxWriteConfig.FIRETV_BATCH_CAP),
                 moviesConfig = SyncPhaseConfig.MOVIES.copy(batchSize = com.fishit.player.core.persistence.config.ObxWriteConfig.FIRETV_BATCH_CAP),
                 seriesConfig = SyncPhaseConfig.SERIES.copy(batchSize = com.fishit.player.core.persistence.config.ObxWriteConfig.FIRETV_BATCH_CAP),
+                jsonStreamingBatchSize = com.fishit.player.core.persistence.config.ObxWriteConfig.JSON_STREAMING_BATCH_SIZE_LOW_RESOURCE, // 300 for FireTV
                 enableTimeBasedFlush = true,
                 enableCanonicalLinking = false, // Reduce load
             )
@@ -166,6 +173,7 @@ data class EnhancedSyncConfig(
     fun toSyncConfig(): SyncConfig =
         SyncConfig(
             batchSize = moviesConfig.batchSize,
+            jsonStreamingBatchSize = jsonStreamingBatchSize,
             enableNormalization = true,
             enableCanonicalLinking = enableCanonicalLinking,
             emitProgressEvery = emitProgressEvery,
