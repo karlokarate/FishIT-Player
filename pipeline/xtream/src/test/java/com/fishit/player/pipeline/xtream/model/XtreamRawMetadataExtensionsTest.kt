@@ -142,10 +142,10 @@ class XtreamRawMetadataExtensionsTest {
         val channel = XtreamChannel(id = 4, name = "Test")
 
         // Per contract: Xtream list APIs don't provide TMDB IDs
-        assertNull(vod.toRawMediaMetadata().externalIds.tmdbId)
-        assertNull(series.toRawMediaMetadata().externalIds.tmdbId)
-        assertNull(episode.toRawMediaMetadata().externalIds.tmdbId)
-        assertNull(channel.toRawMediaMetadata().externalIds.tmdbId)
+        assertNull(vod.toRawMediaMetadata().externalIds.effectiveTmdbId)
+        assertNull(series.toRawMediaMetadata().externalIds.effectiveTmdbId)
+        assertNull(episode.toRawMediaMetadata().externalIds.effectiveTmdbId)
+        assertNull(channel.toRawMediaMetadata().externalIds.effectiveTmdbId)
     }
 
     // =======================================================================

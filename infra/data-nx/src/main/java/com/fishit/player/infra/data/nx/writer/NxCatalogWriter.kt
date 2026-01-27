@@ -110,6 +110,7 @@ class NxCatalogWriter @Inject constructor(
                 sourceTitle = raw.originalTitle,
                 firstSeenAtMs = now,
                 lastSeenAtMs = now,
+                sourceLastModifiedMs = raw.lastModifiedTimestamp,
                 availability = NxWorkSourceRefRepository.AvailabilityState.ACTIVE,
                 // Live channel specific (EPG/Catchup)
                 epgChannelId = raw.epgChannelId,

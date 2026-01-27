@@ -21,6 +21,12 @@ data class HomeMediaItem(
     val resumePosition: Long = 0L,
     val duration: Long = 0L,
     val isNew: Boolean = false,
+    /**
+     * Indicates this series has new episodes since user's last check.
+     * Only meaningful for [MediaType.SERIES].
+     * Determined by comparing episode [sourceLastModifiedMs] against user's last series check timestamp.
+     */
+    val hasNewEpisodes: Boolean = false,
     val year: Int? = null,
     val rating: Float? = null,
     val genres: String? = null,

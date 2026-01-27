@@ -42,4 +42,28 @@ data class XtreamVodItem(
      * Xtream provides this from API (is_adult field as "1" or "0" string).
      */
     val isAdult: Boolean = false,
+    /**
+     * Video codec name (e.g., "h264", "hevc").
+     *
+     * Extracted from VOD info.video object when detail API is fetched.
+     */
+    val videoCodec: String? = null,
+    /**
+     * Video width in pixels.
+     */
+    val videoWidth: Int? = null,
+    /**
+     * Video height in pixels.
+     */
+    val videoHeight: Int? = null,
+    /**
+     * Audio codec name (e.g., "aac", "ac3").
+     *
+     * Extracted from VOD info.audio object when detail API is fetched.
+     */
+    val audioCodec: String? = null,
+    /**
+     * Audio channel count (e.g., 2 for stereo, 6 for 5.1).
+     */
+    val audioChannels: Int? = null,
 )

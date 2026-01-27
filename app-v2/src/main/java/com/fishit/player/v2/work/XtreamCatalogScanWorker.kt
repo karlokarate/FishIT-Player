@@ -824,7 +824,7 @@ class XtreamCatalogScanWorker
                             cast = info?.resolvedCast,
                             genre = info?.resolvedGenre,
                             rating = info?.rating?.toDoubleOrNull(),
-                            durationSecs = info?.resolvedDurationMins?.let { it * 60 },
+                            durationSecs = info?.durationSecs,
                             trailer = info?.resolvedTrailer,
                             tmdbId = info?.tmdbId?.takeIf { it.isNotBlank() && it != "0" },
                         )
@@ -1061,20 +1061,42 @@ class XtreamCatalogScanWorker
                         "Live: ${if (liveDiff >= 0) "+$liveDiff" else liveDiff}"
                 }
                 
-                // TODO: Implement delta fetch using `added` timestamp filtering
-                // For now, we detect changes but don't fetch the delta items
-                // This will be implemented when CatalogSyncService supports filtered sync
-                //
-                // Future implementation:
-                // val newItems = catalogSyncService.syncXtreamDelta(
-                //     sinceTimestamp = lastSyncTimestamp,
-                //     includeVod = vodDiff != 0,
-                //     includeSeries = seriesDiff != 0,
-                //     includeLive = liveDiff != 0,
-                // )
+                // Delta fetch: only persist items modified since last sync
+                // Note: Xtream API doesn't support server-side filtering,
+                // so we fetch all items but CatalogSyncService filters client-side
+                // and only persists items with lastModifiedTimestamp > lastSyncTimestamp
+                var itemsPersisted = 0
+                var deltaSyncSucceeded = false
+                catalogSyncService.syncXtreamDelta(
+                    sinceTimestampMs = lastSyncTimestamp,
+                    includeVod = vodDiff != 0,
+                    includeSeries = seriesDiff != 0,
+                    includeLive = liveDiff != 0,
+                ).collect { status ->
+                    when (status) {
+                        is SyncStatus.InProgress -> {
+                            UnifiedLog.d(TAG) {
+                                "Delta sync progress: discovered=${status.itemsDiscovered}, " +
+                                    "persisted=${status.itemsPersisted}"
+                            }
+                        }
+                        is SyncStatus.Completed -> {
+                            itemsPersisted = status.totalItems.toInt()
+                            deltaSyncSucceeded = true
+                            UnifiedLog.i(TAG) {
+                                "Delta sync completed: $itemsPersisted items persisted in ${status.durationMs}ms"
+                            }
+                        }
+                        is SyncStatus.Error -> {
+                            UnifiedLog.e(TAG) { "Delta sync failed: ${status.message}" }
+                            // deltaSyncSucceeded stays false - don't update timestamp
+                        }
+                        else -> {} // Started, Cancelled - ignore
+                    }
+                }
                 
-                // For now, just update the counts and timestamp
-                // The next full sync will pick up the new items
+                // Only update counts and timestamp on successful delta sync
+                // This prevents skipping items on next incremental if this one failed
                 val now = System.currentTimeMillis()
                 if (currentVodCount >= 0 && currentSeriesCount >= 0 && currentLiveCount >= 0) {
                     checkpointStore.saveXtreamLastCounts(currentVodCount, currentSeriesCount, currentLiveCount)
@@ -1089,14 +1111,15 @@ class XtreamCatalogScanWorker
                 
                 val durationMs = System.currentTimeMillis() - startTimeMs
                 UnifiedLog.i(TAG) {
-                    "INCREMENTAL_SUCCESS: Changes detected and tracked duration_ms=$durationMs"
+                    "INCREMENTAL_SUCCESS: Delta sync completed, " +
+                        "itemsPersisted=$itemsPersisted, duration_ms=$durationMs"
                 }
                 
                 return Result.success(
                     WorkerOutputData.success(
-                        itemsPersisted = 0, // Delta fetch not yet implemented
+                        itemsPersisted = itemsPersisted.toLong(),
                         durationMs = durationMs,
-                        checkpointCursor = "incremental_changes_detected",
+                        checkpointCursor = "incremental_delta_completed",
                     ),
                 )
             } catch (e: CancellationException) {

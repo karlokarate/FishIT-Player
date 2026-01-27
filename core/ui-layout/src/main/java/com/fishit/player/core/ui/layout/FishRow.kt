@@ -123,6 +123,7 @@ fun <T> FishRowSimple(
     getSourceColors: (T) -> List<Color> = { emptyList() },
     getResumeFraction: (T) -> Float? = { null },
     isNew: (T) -> Boolean = { false },
+    hasNewEpisodes: (T) -> Boolean = { false },
     onItemClick: (T) -> Unit,
 ) {
     FishRow(
@@ -137,6 +138,7 @@ fun <T> FishRowSimple(
             sourceColors = getSourceColors(item),
             resumeFraction = getResumeFraction(item),
             isNew = isNew(item),
+            hasNewEpisodes = hasNewEpisodes(item),
             onClick = { onItemClick(item) },
         )
     }

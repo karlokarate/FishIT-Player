@@ -268,6 +268,39 @@ interface CatalogSyncService {
     ): Flow<SyncStatus>
 
     /**
+     * Synchronize Xtream catalog with delta filtering.
+     *
+     * **Incremental Sync Optimization:**
+     * This method fetches the full catalog from the Xtream API (server doesn't support
+     * timestamp filtering), but only persists items that have been modified since
+     * [sinceTimestampMs]. This significantly reduces DB write load during incremental syncs.
+     *
+     * **How it works:**
+     * 1. Fetches all items from Xtream API (like regular sync)
+     * 2. Filters items where `added` timestamp (mapped to `lastModifiedTimestamp`) > sinceTimestampMs
+     * 3. Only persists filtered items to NX work graph
+     * 4. Returns count of actually modified items
+     *
+     * **Use Case:**
+     * Called by `XtreamCatalogScanWorker.runIncrementalSync()` when count comparison
+     * detects changes but we want to minimize DB writes.
+     *
+     * @param sinceTimestampMs Only persist items modified after this timestamp (epoch ms)
+     * @param includeVod Whether to sync VOD items
+     * @param includeSeries Whether to sync series
+     * @param includeLive Whether to sync live channels
+     * @param config Sync configuration
+     * @return Flow of sync status events (itemCount reflects only modified items)
+     */
+    fun syncXtreamDelta(
+        sinceTimestampMs: Long,
+        includeVod: Boolean = true,
+        includeSeries: Boolean = true,
+        includeLive: Boolean = true,
+        config: EnhancedSyncConfig = EnhancedSyncConfig.DEFAULT,
+    ): Flow<SyncStatus>
+
+    /**
      * Get performance metrics from the last sync.
      *
      * Only available in debug builds. Returns null in release.

@@ -60,6 +60,8 @@ import com.fishit.player.core.ui.theme.LocalFishDimens
  * @param modifier Modifier
  * @param aspectRatio Tile aspect ratio (default 2:3 for movies)
  * @param showTitle Whether to show title on tile
+ * @param isNew Whether to show "NEW" badge (for newly added content)
+ * @param hasNewEpisodes Whether to show "NEW EPISODES" badge (for series with new episodes)
  * @param topStartBadge Optional badge in top-start corner
  * @param topEndBadge Optional badge in top-end corner
  * @param overlay Optional overlay content
@@ -75,6 +77,7 @@ fun FishTile(
     aspectRatio: Float = 2f / 3f,
     showTitle: Boolean = true,
     isNew: Boolean = false,
+    hasNewEpisodes: Boolean = false,
     topStartBadge: (@Composable () -> Unit)? = null,
     topEndBadge: (@Composable () -> Unit)? = null,
     overlay: (@Composable BoxScope.() -> Unit)? = null,
@@ -241,12 +244,22 @@ fun FishTile(
             }
         }
 
-        // "NEW" badge
+        // "NEW" badge (for newly added content)
         if (isNew) {
             NewBadge(
                 modifier =
                     Modifier
                         .align(Alignment.TopEnd)
+                        .padding(6.dp),
+            )
+        }
+
+        // "NEW EPISODES" badge (for series with new episodes - shown in top-start)
+        if (hasNewEpisodes && !isNew) {
+            NewEpisodesBadge(
+                modifier =
+                    Modifier
+                        .align(Alignment.TopStart)
                         .padding(6.dp),
             )
         }
@@ -273,6 +286,30 @@ fun NewBadge(modifier: Modifier = Modifier) {
             text = "NEW",
             style = MaterialTheme.typography.labelSmall,
             color = Color.Black,
+        )
+    }
+}
+
+/**
+ * "NEW EPISODES" badge for series with new/updated episodes.
+ *
+ * Indicates the series has episodes added or modified since the user's last check.
+ * Uses a different color than [NewBadge] to distinguish from "new series" vs "new episodes".
+ */
+@Composable
+fun NewEpisodesBadge(modifier: Modifier = Modifier) {
+    Box(
+        modifier =
+            modifier
+                .background(
+                    color = FishColors.Primary,
+                    shape = FishShapes.ButtonSmall,
+                ).padding(horizontal = 6.dp, vertical = 2.dp),
+    ) {
+        Text(
+            text = "NEW EP",
+            style = MaterialTheme.typography.labelSmall,
+            color = Color.White,
         )
     }
 }

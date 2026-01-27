@@ -579,6 +579,179 @@ class DefaultCatalogSyncService
         }
 
         // ========================================================================
+        // Delta Sync (Incremental with lastModified filtering)
+        // ========================================================================
+
+        /**
+         * Delta sync: fetches all items but only persists those modified since [sinceTimestampMs].
+         *
+         * **Why client-side filtering?**
+         * The Xtream API doesn't support server-side timestamp filtering.
+         * We fetch everything, but filter by `lastModifiedTimestamp` before persisting.
+         * This significantly reduces DB write load during incremental syncs.
+         *
+         * **Performance:**
+         * - Network: Same as full sync (fetches all items)
+         * - CPU: Slightly higher (filtering logic)
+         * - DB I/O: Much lower (only writes changed items)
+         * - Memory: Slightly higher (holds timestamp for comparison)
+         */
+        override fun syncXtreamDelta(
+            sinceTimestampMs: Long,
+            includeVod: Boolean,
+            includeSeries: Boolean,
+            includeLive: Boolean,
+            config: EnhancedSyncConfig,
+        ): Flow<SyncStatus> =
+            flow {
+                UnifiedLog.i(TAG) {
+                    "Starting Xtream DELTA sync: sinceTimestamp=$sinceTimestampMs " +
+                        "(${java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.US).format(java.util.Date(sinceTimestampMs))}), " +
+                        "vod=$includeVod, series=$includeSeries, live=$includeLive"
+                }
+                emit(SyncStatus.Started(SOURCE_XTREAM))
+
+                val startTimeMs = System.currentTimeMillis()
+                var itemsDiscovered = 0L
+                var itemsFiltered = 0L // Items that passed the timestamp filter
+                var itemsPersisted = 0L
+
+                // Broadcast sync active
+                _syncActiveState.value = SyncActiveState(
+                    isActive = true,
+                    source = SOURCE_XTREAM,
+                    currentPhase = "DELTA_SYNC",
+                )
+
+                val pipelineConfig = XtreamCatalogConfig(
+                    includeVod = includeVod,
+                    includeSeries = includeSeries,
+                    includeEpisodes = false, // Delta sync doesn't include episodes
+                    includeLive = includeLive,
+                    batchSize = config.jsonStreamingBatchSize,
+                )
+
+                val syncConfig = config.toSyncConfig()
+
+                // Batch for items that pass the filter
+                val filteredBatch = mutableListOf<RawMediaMetadata>()
+                val batchSize = config.moviesConfig.batchSize
+
+                try {
+                    xtreamPipeline.scanCatalog(pipelineConfig).collect { event ->
+                        when (event) {
+                            is XtreamCatalogEvent.ItemDiscovered -> {
+                                itemsDiscovered++
+                                val raw = event.item.raw
+
+                                // Delta filter: only persist items modified/added after sinceTimestampMs
+                                // Priority: lastModifiedTimestamp (series) > addedTimestamp (vod/live)
+                                // VOD and Live items typically only have addedTimestamp
+                                val itemTimestamp = raw.lastModifiedTimestamp
+                                    ?: raw.addedTimestamp
+                                    ?: 0L
+                                if (itemTimestamp > sinceTimestampMs) {
+                                    itemsFiltered++
+                                    filteredBatch.add(raw)
+
+                                    // Flush batch when full
+                                    if (filteredBatch.size >= batchSize) {
+                                        val toFlush = filteredBatch.toList()
+                                        filteredBatch.clear()
+
+                                        persistXtreamCatalogBatch(toFlush, syncConfig)
+                                        itemsPersisted += toFlush.size
+
+                                        emit(
+                                            SyncStatus.InProgress(
+                                                source = SOURCE_XTREAM,
+                                                itemsDiscovered = itemsDiscovered,
+                                                itemsPersisted = itemsPersisted,
+                                                currentPhase = "DELTA_SYNC",
+                                            ),
+                                        )
+                                    }
+                                }
+                            }
+
+                            is XtreamCatalogEvent.ScanStarted -> {
+                                UnifiedLog.d(TAG) { "Delta scan started" }
+                            }
+
+                            is XtreamCatalogEvent.ScanProgress -> {
+                                // Log progress periodically
+                                if (itemsDiscovered % 1000 == 0L) {
+                                    UnifiedLog.d(TAG) {
+                                        "Delta progress: discovered=$itemsDiscovered, filtered=$itemsFiltered"
+                                    }
+                                }
+                            }
+
+                            is XtreamCatalogEvent.ScanCompleted -> {
+                                // Flush remaining items
+                                if (filteredBatch.isNotEmpty()) {
+                                    val toFlush = filteredBatch.toList()
+                                    filteredBatch.clear()
+                                    persistXtreamCatalogBatch(toFlush, syncConfig)
+                                    itemsPersisted += toFlush.size
+                                }
+
+                                val durationMs = System.currentTimeMillis() - startTimeMs
+                                val filterRatio = if (itemsDiscovered > 0) {
+                                    (itemsFiltered.toFloat() / itemsDiscovered * 100).toInt()
+                                } else 0
+
+                                UnifiedLog.i(TAG) {
+                                    "Xtream DELTA sync completed: " +
+                                        "discovered=$itemsDiscovered, " +
+                                        "filtered=$itemsFiltered ($filterRatio%), " +
+                                        "persisted=$itemsPersisted, " +
+                                        "duration=${durationMs}ms"
+                                }
+                            }
+
+                            is XtreamCatalogEvent.ScanError -> {
+                                throw event.throwable ?: RuntimeException(event.message)
+                            }
+
+                            is XtreamCatalogEvent.ScanCancelled,
+                            is XtreamCatalogEvent.SeriesEpisodeComplete,
+                            is XtreamCatalogEvent.SeriesEpisodeFailed -> {
+                                // These events are not expected during delta sync
+                                UnifiedLog.d(TAG) { "Unexpected event during delta sync: $event" }
+                            }
+                        }
+                    }
+
+                    // Final state update
+                    _syncActiveState.value = SyncActiveState(isActive = false)
+
+                    val durationMs = System.currentTimeMillis() - startTimeMs
+                    emit(
+                        SyncStatus.Completed(
+                            source = SOURCE_XTREAM,
+                            totalItems = itemsPersisted,
+                            durationMs = durationMs,
+                        ),
+                    )
+                } catch (e: CancellationException) {
+                    _syncActiveState.value = SyncActiveState(isActive = false)
+                    throw e
+                } catch (e: Exception) {
+                    _syncActiveState.value = SyncActiveState(isActive = false)
+                    UnifiedLog.e(TAG, e) { "Xtream DELTA sync failed" }
+                    emit(
+                        SyncStatus.Error(
+                            source = SOURCE_XTREAM,
+                            reason = "DELTA_SYNC_FAILED",
+                            message = e.message ?: "Unknown error",
+                            throwable = e,
+                        ),
+                    )
+                }
+            }
+
+        // ========================================================================
         // Enhanced Xtream Sync (Time-Based Batching + Per-Phase Config)
         // ========================================================================
 

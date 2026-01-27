@@ -259,4 +259,95 @@ class NxWorkSourceRefRepositoryImpl @Inject constructor(
         NxWorkSourceRefRepository.SourceItemKind.FILE -> "file"
         NxWorkSourceRefRepository.SourceItemKind.UNKNOWN -> "unknown"
     }
+
+    // ──────────────────────────────────────────────────────────────────────
+    // Incremental Sync & New Episodes Detection
+    // ──────────────────────────────────────────────────────────────────────
+
+    /**
+     * Finds series episodes that were modified after [sinceMs].
+     *
+     * Used for:
+     * - "New Episodes" badge detection
+     * - Incremental sync optimization (only process changed content)
+     *
+     * @param sinceMs Unix timestamp in milliseconds (e.g., user's last check time)
+     * @param sourceType Optional filter by source type
+     * @param limit Maximum results (default 100)
+     * @return Source refs with episodes modified since the given timestamp
+     */
+    override suspend fun findSeriesUpdatedSince(
+        sinceMs: Long,
+        sourceType: SourceType?,
+        limit: Int,
+    ): List<SourceRef> = withContext(Dispatchers.IO) {
+        // Build query with sourceLastModifiedMs filter
+        val baseCondition = NX_WorkSourceRef_.sourceLastModifiedMs.greater(sinceMs)
+        val query = if (sourceType != null) {
+            val typeString = sourceType.toEntityString()
+            box.query(
+                baseCondition.and(
+                    NX_WorkSourceRef_.sourceType.equal(typeString, StringOrder.CASE_SENSITIVE),
+                ),
+            ).build()
+        } else {
+            box.query(baseCondition).build()
+        }
+
+        // Filter for EPISODE kind (series episodes) and order by lastModified desc
+        // Note: We use contains(":episode:") pattern to detect episode refs
+        // This avoids sourceKey split parsing issues when accountKey contains colons
+        query.find()
+            .filter { entity ->
+                // Episode refs identified by ":episode:" pattern in sourceKey
+                // Format: src:xtream:{accountKey}:episode:{id} or xtream:episode:{seriesId}:{s}:{e}
+                entity.sourceKey.contains(":episode:", ignoreCase = true)
+            }
+            .sortedByDescending { it.sourceLastModifiedMs ?: 0L }
+            .take(limit)
+            .map { it.toDomain() }
+    }
+
+    /**
+     * Finds work keys (series) that have episodes with updates since [sinceMs].
+     *
+     * This is the primary method for "New Episodes" badge:
+     * - Gets the set of workKeys (series) that have new/updated episodes
+     * - UI can then show badge on those series cards
+     *
+     * @param sinceMs Unix timestamp in milliseconds
+     * @param sourceType Optional filter by source type
+     * @return Set of workKeys (series globalIds) that have new episodes
+     */
+    override suspend fun findWorkKeysWithSeriesUpdates(
+        sinceMs: Long,
+        sourceType: SourceType?,
+    ): Set<String> = withContext(Dispatchers.IO) {
+        // Build query with sourceLastModifiedMs filter
+        val baseCondition = NX_WorkSourceRef_.sourceLastModifiedMs.greater(sinceMs)
+        val query = if (sourceType != null) {
+            val typeString = sourceType.toEntityString()
+            box.query(
+                baseCondition.and(
+                    NX_WorkSourceRef_.sourceType.equal(typeString, StringOrder.CASE_SENSITIVE),
+                ),
+            ).build()
+        } else {
+            box.query(baseCondition).build()
+        }
+
+        // Collect unique workKeys from episodes (via work ToOne relation)
+        // Note: We use contains(":episode:") pattern to detect episode refs
+        // This avoids sourceKey split parsing issues when accountKey contains colons
+        query.find()
+            .filter { entity ->
+                // Episode refs identified by ":episode:" pattern in sourceKey
+                entity.sourceKey.contains(":episode:", ignoreCase = true)
+            }
+            .mapNotNull { entity ->
+                // Get workKey from the linked work entity
+                entity.work.target?.workKey
+            }
+            .toSet()
+    }
 }

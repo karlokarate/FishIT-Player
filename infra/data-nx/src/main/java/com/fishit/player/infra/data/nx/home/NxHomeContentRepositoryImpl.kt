@@ -50,6 +50,12 @@ class NxHomeContentRepositoryImpl @Inject constructor(
     companion object {
         private const val TAG = "NxHomeContentRepo"
         private const val CONTINUE_WATCHING_LIMIT = 20
+        
+        /**
+         * Cache duration for "New Episodes" badge lookup.
+         * Avoids repeated DB queries on every Flow emission.
+         */
+        private const val NEW_EPISODES_CACHE_MS = 60_000L // 1 minute
         private const val RECENTLY_ADDED_LIMIT = 50
         private const val MOVIES_LIMIT = 200
         private const val SERIES_LIMIT = 200
@@ -62,9 +68,23 @@ class NxHomeContentRepositoryImpl @Inject constructor(
          * All user states (resume marks, favorites, etc.) use this key.
          */
         private const val DEFAULT_PROFILE_KEY = "default"
+        
+        /**
+         * Time window for "New Episodes" badge.
+         * Episodes with sourceLastModifiedMs within this window are considered "new".
+         * TODO: Replace with user preference for "last series check" timestamp.
+         */
+        private const val NEW_EPISODES_WINDOW_MS = 48 * 60 * 60 * 1000L // 48 hours
     }
+    
+    // Cache for new episodes badge (avoids repeated DB queries)
+    // @Volatile ensures visibility across threads since this is a Singleton with Flow emissions
+    @Volatile
+    private var cachedNewEpisodesWorkKeys: Set<String> = emptySet()
+    @Volatile
+    private var newEpisodesCacheTimestamp: Long = 0L
 
-    // ==================== Primary Content Methods ====================
+    // ==================== Primary Content Methods ==
 
     @OptIn(ExperimentalCoroutinesApi::class)
     override fun observeContinueWatching(): Flow<List<HomeMediaItem>> {
@@ -139,7 +159,29 @@ class NxHomeContentRepositoryImpl @Inject constructor(
     @OptIn(ExperimentalCoroutinesApi::class)
     override fun observeSeries(): Flow<List<HomeMediaItem>> {
         return workRepository.observeByType(WorkType.SERIES, limit = SERIES_LIMIT)
-            .mapLatest { works -> batchMapToHomeMediaItems(works) }
+            .mapLatest { works -> 
+                // Use cached lookup to avoid repeated DB queries on every emission
+                val now = System.currentTimeMillis()
+                val seriesWithNewEpisodes = if (now - newEpisodesCacheTimestamp > NEW_EPISODES_CACHE_MS) {
+                    // Cache expired, refresh
+                    val newEpisodesCheckTimestamp = now - NEW_EPISODES_WINDOW_MS
+                    sourceRefRepository.findWorkKeysWithSeriesUpdates(
+                        sinceMs = newEpisodesCheckTimestamp,
+                        sourceType = null, // All sources
+                    ).also {
+                        cachedNewEpisodesWorkKeys = it
+                        newEpisodesCacheTimestamp = now
+                    }
+                } else {
+                    // Use cached value
+                    cachedNewEpisodesWorkKeys
+                }
+                
+                batchMapToHomeMediaItems(
+                    works = works,
+                    hasNewEpisodes = { work -> work.workKey in seriesWithNewEpisodes }
+                )
+            }
             .catch { e ->
                 UnifiedLog.e(TAG, e) { "Failed to observe series" }
                 emit(emptyList())
@@ -211,12 +253,14 @@ class NxHomeContentRepositoryImpl @Inject constructor(
      * 2. In-memory mapping
      *
      * @param works List of works to map
-     * @param isNew Function to determine if a work is "new"
+     * @param isNew Function to determine if a work is "new" (recently added)
+     * @param hasNewEpisodes Function to determine if a series has new episodes
      * @return List of HomeMediaItems
      */
     private suspend fun batchMapToHomeMediaItems(
         works: List<Work>,
         isNew: (Work) -> Boolean = { false },
+        hasNewEpisodes: (Work) -> Boolean = { false },
     ): List<HomeMediaItem> {
         if (works.isEmpty()) return emptyList()
 
@@ -240,6 +284,7 @@ class NxHomeContentRepositoryImpl @Inject constructor(
                 sourceType = primarySourceType,
                 allSourceTypes = allSourceTypes.ifEmpty { listOf(primarySourceType) },
                 isNew = isNew(work),
+                hasNewEpisodes = hasNewEpisodes(work),
             )
         }
     }
@@ -286,6 +331,7 @@ class NxHomeContentRepositoryImpl @Inject constructor(
         resumePosition: Long = 0L,
         duration: Long = runtimeMs ?: 0L,
         isNew: Boolean = false,
+        hasNewEpisodes: Boolean = false,
     ): HomeMediaItem {
         return HomeMediaItem(
             id = workKey,
@@ -299,6 +345,7 @@ class NxHomeContentRepositoryImpl @Inject constructor(
             resumePosition = resumePosition,
             duration = duration,
             isNew = isNew,
+            hasNewEpisodes = hasNewEpisodes,
             year = year,
             rating = rating?.toFloat(),
             genres = genres,

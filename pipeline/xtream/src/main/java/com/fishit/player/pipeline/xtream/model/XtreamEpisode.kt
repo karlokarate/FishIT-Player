@@ -43,4 +43,35 @@ data class XtreamEpisode(
      * TMDB API: GET /tv/{seriesTmdbId}/season/{seasonNumber}/episode/{episodeNumber}
      */
     val seriesTmdbId: Int? = null,
+    /**
+     * Episode-specific TMDB ID from API info block.
+     *
+     * This is the episode's own TMDB ID (different from seriesTmdbId).
+     * Available when Xtream panel has scraped TMDB episode metadata.
+     */
+    val episodeTmdbId: Int? = null,
+    /**
+     * Video codec name (e.g., "h264", "hevc").
+     *
+     * Extracted from API info.video object when available.
+     */
+    val videoCodec: String? = null,
+    /**
+     * Video width in pixels.
+     */
+    val videoWidth: Int? = null,
+    /**
+     * Video height in pixels.
+     */
+    val videoHeight: Int? = null,
+    /**
+     * Audio codec name (e.g., "aac", "ac3").
+     *
+     * Extracted from API info.audio object when available.
+     */
+    val audioCodec: String? = null,
+    /**
+     * Audio channel count (e.g., 2 for stereo, 6 for 5.1).
+     */
+    val audioChannels: Int? = null,
 )

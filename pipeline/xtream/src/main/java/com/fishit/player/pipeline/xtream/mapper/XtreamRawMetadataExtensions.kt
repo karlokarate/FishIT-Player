@@ -199,8 +199,12 @@ fun XtreamSeriesItem.toRawMediaMetadata(authHeaders: Map<String, String> = empty
         sourceId = "xtream:series:$id",
         // === Pipeline Identity (v2) ===
         pipelineIdTag = PipelineIdTag.XTREAM,
-        // === Timing (v2) - for "Recently Updated" sorting ===
+        // === Timing (v2) ===
+        // Note: Series API doesn't provide "added" field, only "last_modified"
+        // Using lastModified for both since it's the best available timestamp
         addedTimestamp = lastModified,
+        // lastModifiedTimestamp enables incremental sync and "new episodes" detection
+        lastModifiedTimestamp = lastModified,
         // === Rating (v2) - TMDB rating from provider ===
         rating = rating,
         // === ImageRef from XtreamImageRefExtensions ===
@@ -246,7 +250,13 @@ fun XtreamEpisode.toRawMediaMetadata(
     // xtream:episode:{seriesId}:{season}:{episode}
     // (episode stream id is stored in provider tables, not in the identity string)
     val sourceIdStable = "xtream:episode:$seriesId:$seasonNumber:$episodeNumber"
-    // Build typed TMDB reference for episodes (uses series TMDB ID with TV type)
+    // Build typed TMDB reference for episodes per Gold Decision (Dec 2025):
+    // Episodes use the SERIES TMDB ID (TV type) combined with season/episode numbers.
+    // This enables lookup via: GET /tv/{seriesTmdbId}/season/{s}/episode/{e}
+    //
+    // Note: episodeTmdbId (when available) is stored in playbackHints for optional
+    // direct episode metadata lookup, but externalIds.tmdb always uses seriesTmdbId
+    // to maintain consistency with the normalizer/resolver which expects series context.
     val externalIds =
         seriesTmdbId?.let { ExternalIds(tmdb = TmdbRef(TmdbMediaType.TV, it)) }
             ?: ExternalIds()
@@ -263,6 +273,19 @@ fun XtreamEpisode.toRawMediaMetadata(
             containerExtension?.takeIf { it.isNotBlank() }?.let {
                 put(PlaybackHintKeys.Xtream.CONTAINER_EXT, it)
             }
+            // Episode-specific TMDB ID (when available) for optional direct metadata lookup
+            // Note: externalIds.tmdb uses seriesTmdbId per Gold Decision; this is supplementary
+            episodeTmdbId?.let { put("xtream.episodeTmdbId", it.toString()) }
+            // Video/Audio codec info from ffprobe (optional, for UI display)
+            videoCodec?.takeIf { it.isNotBlank() }?.let {
+                put(PlaybackHintKeys.VIDEO_CODEC, it)
+            }
+            videoWidth?.let { put(PlaybackHintKeys.VIDEO_WIDTH, it.toString()) }
+            videoHeight?.let { put(PlaybackHintKeys.VIDEO_HEIGHT, it.toString()) }
+            audioCodec?.takeIf { it.isNotBlank() }?.let {
+                put(PlaybackHintKeys.AUDIO_CODEC, it)
+            }
+            audioChannels?.let { put(PlaybackHintKeys.AUDIO_CHANNELS, it.toString()) }
         }
     return RawMediaMetadata(
         originalTitle = rawTitle,
@@ -270,7 +293,7 @@ fun XtreamEpisode.toRawMediaMetadata(
         year = rawYear,
         season = seasonNumber,
         episode = episodeNumber,
-        durationMs = null, // Episode list doesn't include duration
+        durationMs = parseDurationToMs(duration), // Parse duration if available
         externalIds = externalIds,
         sourceType = SourceType.XTREAM,
         sourceLabel = effectiveSeriesName?.let { "Xtream: $it" } ?: "Xtream Series",
@@ -287,6 +310,9 @@ fun XtreamEpisode.toRawMediaMetadata(
         thumbnail = toThumbnailImageRef(authHeaders),
         // === Playback Hints (v2) ===
         playbackHints = hints,
+        // === Rich metadata (v2) ===
+        plot = plot,
+        releaseDate = releaseDate,
     )
 }
 
@@ -426,7 +452,8 @@ fun XtreamVodInfo.toRawMediaMetadata(
         // === Pipeline Identity (v2) ===
         pipelineIdTag = PipelineIdTag.XTREAM,
         // === Timing (v2) ===
-        addedTimestamp = movieData?.added?.toLongOrNull() ?: vodItem.added,
+        // movieData.added is Unix SECONDS string; vodItem.added is already converted to ms
+        addedTimestamp = movieData?.added?.toLongOrNull()?.let { it * 1000L } ?: vodItem.added,
         // === Rating (v2) ===
         rating = rating,
         // === ImageRef ===

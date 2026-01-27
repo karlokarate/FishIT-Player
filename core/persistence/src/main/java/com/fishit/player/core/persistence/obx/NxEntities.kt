@@ -216,6 +216,12 @@ data class NX_WorkSourceRef(
     // === Timestamps ===
     var discoveredAt: Long = System.currentTimeMillis(),
     var lastSeenAt: Long = System.currentTimeMillis(),
+    /**
+     * Source-reported last modification timestamp (ms).
+     * For incremental sync/"new episodes" detection.
+     * Indexed for efficient queries in findSeriesUpdatedSince().
+     */
+    @Index var sourceLastModifiedMs: Long? = null,
 ) {
     /** Parent work */
     lateinit var work: ToOne<NX_Work>

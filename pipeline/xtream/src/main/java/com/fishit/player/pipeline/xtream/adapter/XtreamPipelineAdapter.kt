@@ -211,7 +211,8 @@ private fun XtreamVodStream.toPipelineItem(): XtreamVodItem =
         streamIcon = resolvedPoster,
         categoryId = categoryId,
         containerExtension = containerExtension,
-        added = added?.toLongOrNull(),
+        // API returns Unix epoch SECONDS, convert to milliseconds for addedTimestamp
+        added = added?.toLongOrNull()?.let { it * 1000L },
         rating = rating?.toDoubleOrNull(),
         rating5Based = rating5Based,
         // Quick info fields (some panels include these in list)
@@ -245,7 +246,8 @@ private fun XtreamSeriesStream.toPipelineItem(): XtreamSeriesItem =
         releaseDate = releaseDate,
         youtubeTrailer = youtubeTrailer?.takeIf { it.isNotBlank() },
         episodeRunTime = episodeRunTime,
-        lastModified = lastModified?.toLongOrNull(),
+        // API returns Unix epoch SECONDS, convert to milliseconds for addedTimestamp
+        lastModified = lastModified?.toLongOrNull()?.let { it * 1000L },
         // Adult content flag ("1" = adult, else = not adult)
         isAdult = isAdult == "1",
     )
@@ -259,7 +261,8 @@ private fun XtreamLiveStream.toPipelineItem(): XtreamChannel =
         tvArchive = tvArchive ?: 0,
         tvArchiveDuration = tvArchiveDuration ?: 0,
         categoryId = categoryId,
-        added = added?.toLongOrNull(),
+        // API returns Unix epoch SECONDS, convert to milliseconds for addedTimestamp
+        added = added?.toLongOrNull()?.let { it * 1000L },
         // Adult content flag ("1" = adult, else = not adult)
         isAdult = isAdult == "1",
     )
@@ -290,7 +293,17 @@ private fun XtreamSeriesInfo.toEpisodes(
                     thumbnail =
                         ep.info?.movieImage
                             ?: ep.info?.posterPath ?: ep.info?.thumbnail,
-                    added = ep.added?.toLongOrNull(),
+                    // API returns Unix epoch SECONDS, convert to milliseconds for addedTimestamp
+                    added = ep.added?.toLongOrNull()?.let { it * 1000L },
+                    // Episode-specific TMDB ID from info block
+                    episodeTmdbId = ep.info?.tmdbId,
+                    // Video codec info from ffprobe
+                    videoCodec = ep.info?.video?.codec,
+                    videoWidth = ep.info?.video?.width,
+                    videoHeight = ep.info?.video?.height,
+                    // Audio codec info from ffprobe
+                    audioCodec = ep.info?.audio?.codec,
+                    audioChannels = ep.info?.audio?.channels,
                 ),
             )
         }

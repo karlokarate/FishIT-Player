@@ -22,6 +22,7 @@ fun NX_WorkSourceRef.toDomain(): SourceRef = SourceRef(
     sourceTitle = rawTitle,
     firstSeenAtMs = discoveredAt,
     lastSeenAtMs = lastSeenAt,
+    sourceLastModifiedMs = sourceLastModifiedMs,
     availability = AvailabilityState.ACTIVE, // Entity doesn't track availability yet
     note = null,
     epgChannelId = epgChannelId,
@@ -47,6 +48,7 @@ fun SourceRef.toEntity(existingEntity: NX_WorkSourceRef? = null): NX_WorkSourceR
         tvArchiveDuration = tvArchiveDuration,
         discoveredAt = if (existingEntity == null) firstSeenAtMs.takeIf { it > 0 } ?: System.currentTimeMillis() else existingEntity.discoveredAt,
         lastSeenAt = System.currentTimeMillis(),
+        sourceLastModifiedMs = sourceLastModifiedMs ?: existingEntity?.sourceLastModifiedMs,
     )
 }
 

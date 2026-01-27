@@ -50,6 +50,8 @@ interface NxWorkSourceRefRepository {
         val sourceTitle: String? = null,
         val firstSeenAtMs: Long = 0L,
         val lastSeenAtMs: Long = 0L,
+        /** Source-reported last modification timestamp (ms). For incremental sync. */
+        val sourceLastModifiedMs: Long? = null,
         val availability: AvailabilityState = AvailabilityState.ACTIVE,
         val note: String? = null,
         // === Live Channel Specific (EPG/Catchup) ===
@@ -148,4 +150,46 @@ interface NxWorkSourceRefRepository {
         itemKind: SourceItemKind,
         itemKeyPrefix: String? = null,
     ): List<SourceRef>
+
+    // ──────────────────────────────────────────────────────────────────────
+    // Incremental Sync & New Episodes Detection
+    // ──────────────────────────────────────────────────────────────────────
+
+    /**
+     * Find series that have been updated since a given timestamp.
+     *
+     * **Use Cases:**
+     * - "New Episodes" badge on Series tiles
+     * - Incremental sync optimization (only fetch changed series)
+     * - Notifications for series updates
+     *
+     * **Implementation Notes:**
+     * - Queries `sourceLastModifiedMs > sinceMs`
+     * - Filters by SourceItemKind.SERIES only
+     * - Ordered by `sourceLastModifiedMs DESC` (most recent first)
+     *
+     * @param sinceMs Unix timestamp in milliseconds (typically last sync or last user check)
+     * @param sourceType Optional filter by source type (default: all)
+     * @param limit Max results to return
+     * @return List of SourceRefs for series updated after sinceMs
+     */
+    suspend fun findSeriesUpdatedSince(
+        sinceMs: Long,
+        sourceType: SourceType? = null,
+        limit: Int = 100,
+    ): List<SourceRef>
+
+    /**
+     * Get work keys of series with updates since a given timestamp.
+     *
+     * Convenience method for UI that only needs to check "has new episodes" status.
+     *
+     * @param sinceMs Unix timestamp in milliseconds
+     * @param sourceType Optional filter by source type
+     * @return Set of work keys that have series updates
+     */
+    suspend fun findWorkKeysWithSeriesUpdates(
+        sinceMs: Long,
+        sourceType: SourceType? = null,
+    ): Set<String>
 }

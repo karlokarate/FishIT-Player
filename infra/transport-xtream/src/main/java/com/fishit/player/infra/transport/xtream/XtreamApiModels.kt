@@ -2,6 +2,13 @@ package com.fishit.player.infra.transport.xtream
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.intOrNull
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 
 // =============================================================================
 // XtreamApiClient Models
@@ -435,12 +442,68 @@ data class XtreamVodInfoBlock(
     @SerialName("yt_trailer") val ytTrailer: String? = null,
     val duration: String? = null,
     @SerialName("duration_secs") val durationSecs: Int? = null,
-    val audio: String? = null,
-    val video: String? = null,
+    val audio: JsonElement? = null,
+    val video: JsonElement? = null,
     val bitrate: String? = null,
     @SerialName("mpaa_rating") val mpaaRating: String? = null,
     val age: String? = null,
 ) {
+    // =========================================================================
+    // Video/Audio info extraction (handles both String and Object API responses)
+    // Some panels return: "video": "h264"
+    // Others return: "video": { "codec_name": "hevc", "width": 1920, ... }
+    // =========================================================================
+
+    /** Parsed video info from polymorphic API response */
+    val videoInfo: XtreamVideoInfo?
+        get() = video?.let { parseVideoInfo(it) }
+
+    /** Parsed audio info from polymorphic API response */
+    val audioInfo: XtreamAudioInfo?
+        get() = audio?.let { parseAudioInfo(it) }
+
+    private fun parseVideoInfo(element: JsonElement): XtreamVideoInfo? {
+        return when (element) {
+            is JsonPrimitive -> {
+                // Simple string format: "h264" or "hevc"
+                element.contentOrNull?.takeIf { it.isNotBlank() }?.let {
+                    XtreamVideoInfo(codec = it)
+                }
+            }
+            is JsonObject -> {
+                // Full object format from ffprobe
+                val obj = element.jsonObject
+                XtreamVideoInfo(
+                    codec = obj["codec_name"]?.jsonPrimitive?.contentOrNull,
+                    width = obj["width"]?.jsonPrimitive?.intOrNull,
+                    height = obj["height"]?.jsonPrimitive?.intOrNull,
+                    aspectRatio = obj["display_aspect_ratio"]?.jsonPrimitive?.contentOrNull,
+                )
+            }
+            else -> null
+        }
+    }
+
+    private fun parseAudioInfo(element: JsonElement): XtreamAudioInfo? {
+        return when (element) {
+            is JsonPrimitive -> {
+                // Simple string format: "aac" or "ac3"
+                element.contentOrNull?.takeIf { it.isNotBlank() }?.let {
+                    XtreamAudioInfo(codec = it)
+                }
+            }
+            is JsonObject -> {
+                // Full object format from ffprobe
+                val obj = element.jsonObject
+                XtreamAudioInfo(
+                    codec = obj["codec_name"]?.jsonPrimitive?.contentOrNull,
+                    channels = obj["channels"]?.jsonPrimitive?.intOrNull,
+                    language = obj["tags"]?.jsonObject?.get("language")?.jsonPrimitive?.contentOrNull,
+                )
+            }
+            else -> null
+        }
+    }
     // =========================================================================
     // Resolver properties to handle alternative field names across panels
     // =========================================================================
@@ -473,23 +536,6 @@ data class XtreamVodInfoBlock(
                 ?: youtube?.takeIf { it.isNotBlank() }
                 ?: ytTrailer?.takeIf { it.isNotBlank() }
 
-    /**
-     * Resolved duration in minutes (handles duration string or durationSecs).
-     *
-     * @deprecated Use Pipeline layer [XtreamRawMetadataExtensions.parseDurationToMs] instead.
-     *  Transport layer should not contain business logic per AGENTS.md Section 4.
-     *  This property is kept for backward compatibility but Pipeline is SSOT.
-     */
-    @Deprecated(
-        message = "Use Pipeline XtreamRawMetadataExtensions.parseDurationToMs() instead",
-        level = DeprecationLevel.WARNING,
-    )
-    val resolvedDurationMins: Int?
-        get() =
-            durationSecs?.let { it / 60 }
-                ?: duration?.trim()?.toIntOrNull()
-                ?: duration?.let { parseDurationString(it) }
-
     /** Resolved poster URL (handles movieImage, posterPath, cover, coverBig) */
     val resolvedPoster: String?
         get() =
@@ -497,37 +543,6 @@ data class XtreamVodInfoBlock(
                 ?: posterPath?.takeIf { it.isNotBlank() }
                 ?: coverBig?.takeIf { it.isNotBlank() }
                 ?: cover?.takeIf { it.isNotBlank() }
-
-    private fun parseDurationString(input: String): Int? {
-        // Parse formats like "1h 30m", "90 min", "01:30:00"
-        val cleaned = input.trim().lowercase()
-
-        // Try HH:MM:SS format
-        val colonParts = cleaned.split(":")
-        if (colonParts.size >= 2) {
-            return try {
-                when (colonParts.size) {
-                    3 -> colonParts[0].toInt() * 60 + colonParts[1].toInt()
-                    2 -> colonParts[0].toInt()
-                    else -> null
-                }
-            } catch (_: NumberFormatException) {
-                null
-            }
-        }
-
-        // Try "1h 30m" format
-        val hMatch = Regex("(\\d+)\\s*h").find(cleaned)
-        val mMatch = Regex("(\\d+)\\s*m").find(cleaned)
-        if (hMatch != null || mMatch != null) {
-            val hours = hMatch?.groupValues?.get(1)?.toIntOrNull() ?: 0
-            val mins = mMatch?.groupValues?.get(1)?.toIntOrNull() ?: 0
-            return hours * 60 + mins
-        }
-
-        // Try plain number
-        return cleaned.replace(Regex("[^0-9]"), "").toIntOrNull()
-    }
 }
 
 /** Movie data block with stream info. */
@@ -661,6 +676,8 @@ data class XtreamEpisodeInfoBlock(
     val video: XtreamVideoInfo? = null,
     val audio: XtreamAudioInfo? = null,
     val bitrate: Int? = null,
+    /** Episode-specific TMDB ID (different from series TMDB ID). */
+    @SerialName("tmdb_id") val tmdbId: Int? = null,
 )
 
 /** Video stream info. */

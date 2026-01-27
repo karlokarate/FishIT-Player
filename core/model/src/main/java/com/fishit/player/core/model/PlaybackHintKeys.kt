@@ -16,6 +16,25 @@ package com.fishit.player.core.model
  * - PlaybackHints flow: Pipeline → RawMediaMetadata → MediaSourceRef → PlaybackContext.extras
  */
 object PlaybackHintKeys {
+    // =========================================================================
+    // Common codec/quality hints (source-agnostic, for UI display)
+    // =========================================================================
+
+    /** Video codec name (e.g., "h264", "hevc", "vp9") */
+    const val VIDEO_CODEC = "video.codec"
+
+    /** Video width in pixels */
+    const val VIDEO_WIDTH = "video.width"
+
+    /** Video height in pixels */
+    const val VIDEO_HEIGHT = "video.height"
+
+    /** Audio codec name (e.g., "aac", "ac3", "opus") */
+    const val AUDIO_CODEC = "audio.codec"
+
+    /** Audio channel count (e.g., "2" for stereo, "6" for 5.1) */
+    const val AUDIO_CHANNELS = "audio.channels"
+
     /**
      * Xtream-specific playback hints.
      *

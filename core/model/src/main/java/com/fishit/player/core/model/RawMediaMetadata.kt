@@ -84,6 +84,19 @@ data class RawMediaMetadata(
      * available from source.
      */
     val addedTimestamp: Long? = null,
+    /**
+     * Unix epoch timestamp (milliseconds) when this item was last modified at source.
+     *
+     * Used for:
+     * - Incremental sync (only re-fetch items where lastModified > lastSyncTime)
+     * - "Recently Updated" badges (e.g., "New Episodes" indicator)
+     * - Smart refresh on detail screens
+     * - Cache invalidation strategies
+     *
+     * Pipelines should extract this from source (e.g., Xtream Series "last_modified" field).
+     * Null if not available from source (most VOD/Live items don't have this).
+     */
+    val lastModifiedTimestamp: Long? = null,
     // === Imaging Fields (v2) ===
     val poster: ImageRef? = null,
     val backdrop: ImageRef? = null,
