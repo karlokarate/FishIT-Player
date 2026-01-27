@@ -47,6 +47,7 @@ interface XtreamCatalogPipeline {
  * @property includeLive Include live channels in the scan
  * @property excludeSeriesIds Series IDs to skip during episode loading (for checkpoint resume)
  * @property episodeParallelism Max concurrent series for parallel episode loading (PLATINUM)
+ * @property batchSize Batch size for streaming (memory-efficient loading)
  * @property imageAuthHeaders Optional headers for authenticated image access
  */
 data class XtreamCatalogConfig(
@@ -56,11 +57,15 @@ data class XtreamCatalogConfig(
     val includeLive: Boolean = true,
     val excludeSeriesIds: Set<Int> = emptySet(),
     val episodeParallelism: Int = DEFAULT_EPISODE_PARALLELISM,
+    val batchSize: Int = DEFAULT_BATCH_SIZE,
     val imageAuthHeaders: Map<String, String> = emptyMap(),
 ) {
     companion object {
         /** Default parallelism for episode loading (4 concurrent series). */
         const val DEFAULT_EPISODE_PARALLELISM = 4
+
+        /** Default batch size for streaming (500 items per batch). */
+        const val DEFAULT_BATCH_SIZE = 500
 
         /** Default config including all content types. */
         val DEFAULT = XtreamCatalogConfig()

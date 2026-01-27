@@ -76,30 +76,31 @@ class XtreamCatalogPipelineImpl
                     // ================================================================
                     // Phase 1: LIVE (First for perceived speed)
                     // Smallest items, most frequently accessed, appear within ~1-2s
+                    // Uses streaming for constant memory usage.
                     // ================================================================
                     if (config.includeLive && currentCoroutineContext().isActive) {
-                        UnifiedLog.d(TAG, "[Phase 1/3] Scanning live channels first...")
+                        UnifiedLog.d(TAG, "[Phase 1/3] Scanning live channels first (streaming)...")
 
                         try {
-                            val channels = source.loadLiveChannels()
+                            source.streamLiveChannels(batchSize = config.batchSize) { batch ->
+                                for (channel in batch) {
+                                    if (!currentCoroutineContext().isActive) return@streamLiveChannels
 
-                            for (channel in channels) {
-                                if (!currentCoroutineContext().isActive) break
+                                    val catalogItem = mapper.fromChannel(channel, headers)
+                                    send(XtreamCatalogEvent.ItemDiscovered(catalogItem))
+                                    liveCount++
 
-                                val catalogItem = mapper.fromChannel(channel, headers)
-                                send(XtreamCatalogEvent.ItemDiscovered(catalogItem))
-                                liveCount++
-
-                                if (liveCount % PROGRESS_LOG_INTERVAL == 0) {
-                                    send(
-                                        XtreamCatalogEvent.ScanProgress(
-                                            vodCount = vodCount,
-                                            seriesCount = seriesCount,
-                                            episodeCount = episodeCount,
-                                            liveCount = liveCount,
-                                            currentPhase = XtreamScanPhase.LIVE,
-                                        ),
-                                    )
+                                    if (liveCount % PROGRESS_LOG_INTERVAL == 0) {
+                                        send(
+                                            XtreamCatalogEvent.ScanProgress(
+                                                vodCount = vodCount,
+                                                seriesCount = seriesCount,
+                                                episodeCount = episodeCount,
+                                                liveCount = liveCount,
+                                                currentPhase = XtreamScanPhase.LIVE,
+                                            ),
+                                        )
+                                    }
                                 }
                             }
 
@@ -113,30 +114,31 @@ class XtreamCatalogPipelineImpl
                     // ================================================================
                     // Phase 2: VOD/Movies
                     // Quick browsing, no child items to fetch
+                    // Uses streaming for constant memory usage.
                     // ================================================================
                     if (config.includeVod && currentCoroutineContext().isActive) {
-                        UnifiedLog.d(TAG, "[Phase 2/3] Scanning VOD items...")
+                        UnifiedLog.d(TAG, "[Phase 2/3] Scanning VOD items (streaming)...")
 
                         try {
-                            val vodItems = source.loadVodItems()
+                            source.streamVodItems(batchSize = config.batchSize) { batch ->
+                                for (item in batch) {
+                                    if (!currentCoroutineContext().isActive) return@streamVodItems
 
-                            for (item in vodItems) {
-                                if (!currentCoroutineContext().isActive) break
+                                    val catalogItem = mapper.fromVod(item, headers)
+                                    send(XtreamCatalogEvent.ItemDiscovered(catalogItem))
+                                    vodCount++
 
-                                val catalogItem = mapper.fromVod(item, headers)
-                                send(XtreamCatalogEvent.ItemDiscovered(catalogItem))
-                                vodCount++
-
-                                if (vodCount % PROGRESS_LOG_INTERVAL == 0) {
-                                    send(
-                                        XtreamCatalogEvent.ScanProgress(
-                                            vodCount = vodCount,
-                                            seriesCount = seriesCount,
-                                            episodeCount = episodeCount,
-                                            liveCount = liveCount,
-                                            currentPhase = XtreamScanPhase.VOD,
-                                        ),
-                                    )
+                                    if (vodCount % PROGRESS_LOG_INTERVAL == 0) {
+                                        send(
+                                            XtreamCatalogEvent.ScanProgress(
+                                                vodCount = vodCount,
+                                                seriesCount = seriesCount,
+                                                episodeCount = episodeCount,
+                                                liveCount = liveCount,
+                                                currentPhase = XtreamScanPhase.VOD,
+                                            ),
+                                        )
+                                    }
                                 }
                             }
 
@@ -149,30 +151,31 @@ class XtreamCatalogPipelineImpl
                     // ================================================================
                     // Phase 3: Series (Index Only - Episodes are lazy loaded)
                     // Series containers appear quickly, episodes fetched on-demand
+                    // Uses streaming for constant memory usage.
                     // ================================================================
                     if (config.includeSeries && currentCoroutineContext().isActive) {
-                        UnifiedLog.d(TAG, "[Phase 3/3] Scanning series index (episodes deferred)...")
+                        UnifiedLog.d(TAG, "[Phase 3/3] Scanning series index (streaming, episodes deferred)...")
 
                         try {
-                            val seriesItems = source.loadSeriesItems()
+                            source.streamSeriesItems(batchSize = config.batchSize) { batch ->
+                                for (item in batch) {
+                                    if (!currentCoroutineContext().isActive) return@streamSeriesItems
 
-                            for (item in seriesItems) {
-                                if (!currentCoroutineContext().isActive) break
+                                    val catalogItem = mapper.fromSeries(item, headers)
+                                    send(XtreamCatalogEvent.ItemDiscovered(catalogItem))
+                                    seriesCount++
 
-                                val catalogItem = mapper.fromSeries(item, headers)
-                                send(XtreamCatalogEvent.ItemDiscovered(catalogItem))
-                                seriesCount++
-
-                                if (seriesCount % PROGRESS_LOG_INTERVAL == 0) {
-                                    send(
-                                        XtreamCatalogEvent.ScanProgress(
-                                            vodCount = vodCount,
-                                            seriesCount = seriesCount,
-                                            episodeCount = episodeCount,
-                                            liveCount = liveCount,
-                                            currentPhase = XtreamScanPhase.SERIES,
-                                        ),
-                                    )
+                                    if (seriesCount % PROGRESS_LOG_INTERVAL == 0) {
+                                        send(
+                                            XtreamCatalogEvent.ScanProgress(
+                                                vodCount = vodCount,
+                                                seriesCount = seriesCount,
+                                                episodeCount = episodeCount,
+                                                liveCount = liveCount,
+                                                currentPhase = XtreamScanPhase.SERIES,
+                                            ),
+                                        )
+                                    }
                                 }
                             }
 

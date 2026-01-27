@@ -223,6 +223,40 @@ class DefaultXtreamCatalogSource
                 throw XtreamCatalogSourceException("Failed to load live channels", e)
             }
 
+        // ============================================================================
+        // Batch Streaming Implementations
+        // ============================================================================
+
+        override suspend fun streamVodItems(
+            batchSize: Int,
+            onBatch: suspend (List<XtreamVodItem>) -> Unit,
+        ): Int =
+            try {
+                adapter.streamVodItems(batchSize = batchSize, onBatch = onBatch)
+            } catch (e: Exception) {
+                throw XtreamCatalogSourceException("Failed to stream VOD items", e)
+            }
+
+        override suspend fun streamSeriesItems(
+            batchSize: Int,
+            onBatch: suspend (List<XtreamSeriesItem>) -> Unit,
+        ): Int =
+            try {
+                adapter.streamSeriesItems(batchSize = batchSize, onBatch = onBatch)
+            } catch (e: Exception) {
+                throw XtreamCatalogSourceException("Failed to stream series items", e)
+            }
+
+        override suspend fun streamLiveChannels(
+            batchSize: Int,
+            onBatch: suspend (List<XtreamChannel>) -> Unit,
+        ): Int =
+            try {
+                adapter.streamLiveChannels(batchSize = batchSize, onBatch = onBatch)
+            } catch (e: Exception) {
+                throw XtreamCatalogSourceException("Failed to stream live channels", e)
+            }
+
         companion object {
             private const val TAG = "XtreamCatalogSource"
         }

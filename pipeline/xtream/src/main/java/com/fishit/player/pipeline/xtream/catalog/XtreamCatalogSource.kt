@@ -88,9 +88,58 @@ interface XtreamCatalogSource {
      */
     suspend fun loadLiveChannels(): List<XtreamChannel>
 
+    // ============================================================================
+    // Batch Streaming Methods (Memory-efficient)
+    // ============================================================================
+
+    /**
+     * Stream VOD items in batches with constant memory usage.
+     *
+     * **Memory-efficient:** Only [batchSize] items in memory at a time.
+     * Use this instead of [loadVodItems] for large catalogs (60K+ items).
+     *
+     * @param batchSize Number of items per batch (default: 500)
+     * @param onBatch Callback invoked for each batch of [XtreamVodItem]
+     * @return Total number of items streamed
+     * @throws XtreamCatalogSourceException on non-recoverable errors
+     */
+    suspend fun streamVodItems(
+        batchSize: Int = DEFAULT_BATCH_SIZE,
+        onBatch: suspend (List<XtreamVodItem>) -> Unit,
+    ): Int
+
+    /**
+     * Stream series items in batches with constant memory usage.
+     *
+     * @param batchSize Number of items per batch (default: 500)
+     * @param onBatch Callback invoked for each batch of [XtreamSeriesItem]
+     * @return Total number of items streamed
+     * @throws XtreamCatalogSourceException on non-recoverable errors
+     */
+    suspend fun streamSeriesItems(
+        batchSize: Int = DEFAULT_BATCH_SIZE,
+        onBatch: suspend (List<XtreamSeriesItem>) -> Unit,
+    ): Int
+
+    /**
+     * Stream live channels in batches with constant memory usage.
+     *
+     * @param batchSize Number of items per batch (default: 500)
+     * @param onBatch Callback invoked for each batch of [XtreamChannel]
+     * @return Total number of items streamed
+     * @throws XtreamCatalogSourceException on non-recoverable errors
+     */
+    suspend fun streamLiveChannels(
+        batchSize: Int = DEFAULT_BATCH_SIZE,
+        onBatch: suspend (List<XtreamChannel>) -> Unit,
+    ): Int
+
     companion object {
         /** Default parallelism for episode streaming (4 concurrent series). */
         const val DEFAULT_EPISODE_PARALLELISM = 4
+
+        /** Default batch size for streaming methods. */
+        const val DEFAULT_BATCH_SIZE = 500
     }
 }
 
