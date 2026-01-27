@@ -490,9 +490,9 @@ class XtreamCatalogScanWorker
          * Select EnhancedSyncConfig based on device class and sync mode.
          *
          * Per PLATIN guidelines (app-work.instructions.md):
-         * - FireTV Low-RAM: Use FIRETV_SAFE (35-item cap across all phases)
+         * - FireTV Low-RAM: Use FIRETV_SAFE (35-item cap across all phases, 300 JSON streaming batch)
          * - Normal devices: Use PROGRESSIVE_UI (optimized for UI-first loading)
-         * - Force rescan: Larger batches for throughput (600/400/200)
+         * - Force rescan: Larger batches for throughput (600/400/200, 1000 JSON streaming batch)
          *
          * Precedence when conditions overlap:
          * - FireTV safety ALWAYS takes precedence over sync mode.
@@ -501,7 +501,7 @@ class XtreamCatalogScanWorker
          */
         private fun selectEnhancedConfig(input: WorkerInputData): com.fishit.player.core.catalogsync.EnhancedSyncConfig {
             return when {
-                // FireTV: Use predefined FIRETV_SAFE config (global 35-item cap to prevent OOM)
+                // FireTV: Use predefined FIRETV_SAFE config (global 35-item cap, 300 JSON batch to prevent OOM)
                 input.isFireTvLowRam -> com.fishit.player.core.catalogsync.EnhancedSyncConfig.FIRETV_SAFE
                 // Force rescan: Maximize throughput with larger batches
                 input.syncMode == WorkerConstants.SYNC_MODE_FORCE_RESCAN -> {
@@ -518,6 +518,7 @@ class XtreamCatalogScanWorker
                             com.fishit.player.core.catalogsync.SyncPhaseConfig.SERIES.copy(
                                 batchSize = 200, // Larger than default 150
                             ),
+                        jsonStreamingBatchSize = com.fishit.player.core.persistence.config.ObxWriteConfig.JSON_STREAMING_BATCH_SIZE_NORMAL, // 1000 for throughput
                         enableTimeBasedFlush = false, // Prioritize throughput over UI
                         enableCanonicalLinking = false, // Disable canonical linking for throughput-optimized rescan
                     )
@@ -998,24 +999,25 @@ class XtreamCatalogScanWorker
                 }
                 
                 // Step 1: Quick count comparison
-                UnifiedLog.d(TAG) { "Fetching current counts for comparison..." }
-                
+                // MEMORY-EFFICIENT: Uses streaming count instead of loading all items
+                UnifiedLog.d(TAG) { "Fetching current counts for comparison (streaming)..." }
+
                 val currentVodCount = try {
-                    xtreamApiClient.getVodStreams().size
+                    xtreamApiClient.countVodStreams()
                 } catch (e: Exception) {
                     UnifiedLog.w(TAG) { "Failed to get VOD count: ${e.message}" }
                     -1
                 }
-                
+
                 val currentSeriesCount = try {
-                    xtreamApiClient.getSeries().size
+                    xtreamApiClient.countSeries()
                 } catch (e: Exception) {
                     UnifiedLog.w(TAG) { "Failed to get series count: ${e.message}" }
                     -1
                 }
-                
+
                 val currentLiveCount = try {
-                    xtreamApiClient.getLiveStreams().size
+                    xtreamApiClient.countLiveStreams()
                 } catch (e: Exception) {
                     UnifiedLog.w(TAG) { "Failed to get live count: ${e.message}" }
                     -1
