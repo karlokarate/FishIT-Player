@@ -33,6 +33,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -181,8 +182,12 @@ class InternalPlayerSession(
      *
      * Uses [PlaybackSourceResolver] to resolve the source via factories.
      * For live content, also initializes EPG via [LivePlaybackController].
+     *
+     * **CRITICAL:** This is a suspend function that awaits player creation.
+     * The caller MUST wait for this to complete before setting UI state to Playing,
+     * otherwise getPlayer() will return null.
      */
-    fun initialize(playbackContext: PlaybackContext) {
+    suspend fun initialize(playbackContext: PlaybackContext) {
         release()
 
         currentContext = playbackContext
@@ -190,7 +195,7 @@ class InternalPlayerSession(
 
         UnifiedLog.d(TAG, "Initializing playback: ${playbackContext.canonicalId}")
 
-        // Check if kid mode is active via KidsPlaybackGate
+        // Check if kid mode is active via KidsPlaybackGate (async, doesn't block player)
         scope.launch {
             isKidMode = kidsPlaybackGate.isActive()
             if (isKidMode) {
@@ -198,7 +203,7 @@ class InternalPlayerSession(
             }
         }
 
-        // Initialize Live TV EPG if this is live content
+        // Initialize Live TV EPG if this is live content (async, doesn't block player)
         if (playbackContext.isLive && livePlaybackController != null) {
             scope.launch {
                 try {
@@ -213,8 +218,10 @@ class InternalPlayerSession(
             }
         }
 
-        // Resolve source asynchronously
-        scope.launch {
+        // Resolve source and create player - this is the critical path that must complete
+        // before returning, otherwise getPlayer() will return null
+        // CRITICAL: ExoPlayer MUST be created on Main thread
+        withContext(Dispatchers.Main) {
             try {
                 val source = sourceResolver.resolve(playbackContext)
                 UnifiedLog.d(TAG) {
