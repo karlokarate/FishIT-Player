@@ -104,6 +104,73 @@ class XtreamPipelineAdapter
             return streams.map { it.toPipelineItem() }
         }
 
+        // ============================================================================
+        // Batch Streaming Methods (Memory-efficient)
+        // ============================================================================
+
+        /**
+         * Stream VOD items in batches with constant memory usage.
+         *
+         * **Memory-efficient:** Only [batchSize] items in memory at a time, regardless of
+         * total catalog size (can be 60K+ items).
+         *
+         * @param batchSize Number of items per batch
+         * @param categoryId Optional category filter
+         * @param onBatch Callback invoked for each batch of [XtreamVodItem]
+         * @return Total number of items processed
+         */
+        suspend fun streamVodItems(
+            batchSize: Int,
+            categoryId: String? = null,
+            onBatch: suspend (List<XtreamVodItem>) -> Unit,
+        ): Int =
+            apiClient.streamVodInBatches(
+                batchSize = batchSize,
+                categoryId = categoryId,
+            ) { batch ->
+                onBatch(batch.map { it.toPipelineItem() })
+            }
+
+        /**
+         * Stream series items in batches with constant memory usage.
+         *
+         * @param batchSize Number of items per batch
+         * @param categoryId Optional category filter
+         * @param onBatch Callback invoked for each batch of [XtreamSeriesItem]
+         * @return Total number of items processed
+         */
+        suspend fun streamSeriesItems(
+            batchSize: Int,
+            categoryId: String? = null,
+            onBatch: suspend (List<XtreamSeriesItem>) -> Unit,
+        ): Int =
+            apiClient.streamSeriesInBatches(
+                batchSize = batchSize,
+                categoryId = categoryId,
+            ) { batch ->
+                onBatch(batch.map { it.toPipelineItem() })
+            }
+
+        /**
+         * Stream live channels in batches with constant memory usage.
+         *
+         * @param batchSize Number of items per batch
+         * @param categoryId Optional category filter
+         * @param onBatch Callback invoked for each batch of [XtreamChannel]
+         * @return Total number of items processed
+         */
+        suspend fun streamLiveChannels(
+            batchSize: Int,
+            categoryId: String? = null,
+            onBatch: suspend (List<XtreamChannel>) -> Unit,
+        ): Int =
+            apiClient.streamLiveInBatches(
+                batchSize = batchSize,
+                categoryId = categoryId,
+            ) { batch ->
+                onBatch(batch.map { it.toPipelineItem() })
+            }
+
         /** Build VOD playback URL. */
         fun buildVodUrl(
             vodId: Int,
@@ -169,7 +236,8 @@ private fun XtreamSeriesStream.toPipelineItem(): XtreamSeriesItem =
             },
         categoryId = categoryId,
         year = resolvedYear, // Uses year or extracts from releaseDate
-        rating = rating5Based ?: rating?.toDoubleOrNull(),
+        // Rating: prefer rating (0-10 scale), fall back to rating5Based scaled to 0-10
+        rating = rating?.toDoubleOrNull() ?: rating5Based?.let { it * 2.0 },
         plot = plot,
         cast = cast,
         director = director,
