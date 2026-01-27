@@ -970,6 +970,12 @@ class XtreamCatalogScanWorker
          * - Incremental sync (no changes): ~10-50 KB (just count API calls)
          * - Incremental sync (100 new items): ~100-200 KB
          * 
+         * **Jan 2026 Update:** Now uses `syncXtreamIncremental` with 4-tier optimization:
+         * - Tier 1: ETag/304 (if server supports)
+         * - Tier 2: Item count quick-check
+         * - Tier 3: Timestamp filtering
+         * - Tier 4: Fingerprint comparison (hash-based change detection)
+         * 
          * @param input Worker input data
          * @param startTimeMs Start time for duration tracking
          * @return Worker result
@@ -981,147 +987,104 @@ class XtreamCatalogScanWorker
             UnifiedLog.i(TAG) { "INCREMENTAL sync started: sync_run_id=${input.syncRunId}" }
             
             try {
-                // Get last sync metadata
-                val lastSyncTimestamp = checkpointStore.getXtreamLastSyncTimestamp()
-                val lastCounts = checkpointStore.getXtreamLastCounts()
-                
-                // If never synced before, fall back to full AUTO sync
-                if (lastSyncTimestamp == null || lastCounts == null) {
-                    UnifiedLog.i(TAG) { "No previous sync data - incremental sync not possible, skipping" }
+                // Get account key from capabilities (baseUrl|username)
+                val capabilities = xtreamApiClient.capabilities
+                val accountKey = capabilities?.cacheKey ?: run {
+                    UnifiedLog.w(TAG) { "No capabilities - incremental sync not possible" }
                     val durationMs = System.currentTimeMillis() - startTimeMs
                     return Result.success(
                         WorkerOutputData.success(
                             itemsPersisted = 0,
                             durationMs = durationMs,
-                            checkpointCursor = "incremental_skipped_no_history",
+                            checkpointCursor = "incremental_skipped_no_capabilities",
                         ),
                     )
                 }
                 
-                // Step 1: Quick count comparison
-                // MEMORY-EFFICIENT: Uses streaming count instead of loading all items
-                UnifiedLog.d(TAG) { "Fetching current counts for comparison (streaming)..." }
-
-                val currentVodCount = try {
-                    xtreamApiClient.countVodStreams()
-                } catch (e: Exception) {
-                    UnifiedLog.w(TAG) { "Failed to get VOD count: ${e.message}" }
-                    -1
-                }
-
-                val currentSeriesCount = try {
-                    xtreamApiClient.countSeries()
-                } catch (e: Exception) {
-                    UnifiedLog.w(TAG) { "Failed to get series count: ${e.message}" }
-                    -1
-                }
-
-                val currentLiveCount = try {
-                    xtreamApiClient.countLiveStreams()
-                } catch (e: Exception) {
-                    UnifiedLog.w(TAG) { "Failed to get live count: ${e.message}" }
-                    -1
-                }
+                UnifiedLog.d(TAG) { "Using accountKey=$accountKey for incremental sync" }
                 
-                val (lastVodCount, lastSeriesCount, lastLiveCount) = lastCounts
+                // Determine which content types to sync
+                val scope = input.xtreamSyncScope.orEmpty()
+                val includeVod = scope.contains("VOD") || scope.isEmpty()
+                val includeSeries = scope.contains("SERIES") || scope.isEmpty()
+                val includeLive = scope.contains("LIVE") || scope.isEmpty()
                 
-                UnifiedLog.d(TAG) {
-                    "Count comparison: VOD $lastVodCount→$currentVodCount, " +
-                        "Series $lastSeriesCount→$currentSeriesCount, " +
-                        "Live $lastLiveCount→$currentLiveCount"
-                }
+                var itemsPersisted = 0L
+                var syncSucceeded = false
+                var skippedSync = false
                 
-                // If counts match, no new content
-                if (currentVodCount == lastVodCount &&
-                    currentSeriesCount == lastSeriesCount &&
-                    currentLiveCount == lastLiveCount
-                ) {
-                    val durationMs = System.currentTimeMillis() - startTimeMs
-                    UnifiedLog.i(TAG) {
-                        "INCREMENTAL_SKIP: No changes detected (counts match) duration_ms=$durationMs"
-                    }
-                    return Result.success(
-                        WorkerOutputData.success(
-                            itemsPersisted = 0,
-                            durationMs = durationMs,
-                            checkpointCursor = "incremental_no_changes",
-                        ),
-                    )
-                }
-                
-                // Step 2: Counts changed - fetch only new items
-                val vodDiff = currentVodCount - lastVodCount
-                val seriesDiff = currentSeriesCount - lastSeriesCount
-                val liveDiff = currentLiveCount - lastLiveCount
-                
-                UnifiedLog.i(TAG) {
-                    "INCREMENTAL_DELTA: Changes detected! " +
-                        "VOD: ${if (vodDiff >= 0) "+$vodDiff" else vodDiff}, " +
-                        "Series: ${if (seriesDiff >= 0) "+$seriesDiff" else seriesDiff}, " +
-                        "Live: ${if (liveDiff >= 0) "+$liveDiff" else liveDiff}"
-                }
-                
-                // Delta fetch: only persist items modified since last sync
-                // Note: Xtream API doesn't support server-side filtering,
-                // so we fetch all items but CatalogSyncService filters client-side
-                // and only persists items with lastModifiedTimestamp > lastSyncTimestamp
-                var itemsPersisted = 0
-                var deltaSyncSucceeded = false
-                catalogSyncService.syncXtreamDelta(
-                    sinceTimestampMs = lastSyncTimestamp,
-                    includeVod = vodDiff != 0,
-                    includeSeries = seriesDiff != 0,
-                    includeLive = liveDiff != 0,
+                // Use new 4-tier incremental sync with fingerprint comparison
+                catalogSyncService.syncXtreamIncremental(
+                    accountKey = accountKey,
+                    includeVod = includeVod,
+                    includeSeries = includeSeries,
+                    includeLive = includeLive,
+                    forceFullSync = false,
+                    syncConfig = SyncConfig(
+                        batchSize = input.batchSize,
+                        enableNormalization = true,
+                        emitProgressEvery = input.batchSize,
+                    ),
                 ).collect { status ->
                     when (status) {
+                        is SyncStatus.Started -> {
+                            UnifiedLog.d(TAG) { "Incremental sync started" }
+                        }
                         is SyncStatus.InProgress -> {
                             UnifiedLog.d(TAG) {
-                                "Delta sync progress: discovered=${status.itemsDiscovered}, " +
+                                "Incremental sync progress: discovered=${status.itemsDiscovered}, " +
                                     "persisted=${status.itemsPersisted}"
                             }
                         }
                         is SyncStatus.Completed -> {
-                            itemsPersisted = status.totalItems.toInt()
-                            deltaSyncSucceeded = true
+                            itemsPersisted = status.totalItems
+                            syncSucceeded = true
+                            // Check if this was a skip (0 items means likely all unchanged)
+                            if (status.totalItems == 0L && status.durationMs < 1000) {
+                                skippedSync = true
+                            }
                             UnifiedLog.i(TAG) {
-                                "Delta sync completed: $itemsPersisted items persisted in ${status.durationMs}ms"
+                                "Incremental sync completed: $itemsPersisted items persisted in ${status.durationMs}ms"
                             }
                         }
                         is SyncStatus.Error -> {
-                            UnifiedLog.e(TAG) { "Delta sync failed: ${status.message}" }
-                            // deltaSyncSucceeded stays false - don't update timestamp
+                            UnifiedLog.e(TAG) { "Incremental sync failed: ${status.message}" }
                         }
-                        else -> {} // Started, Cancelled - ignore
+                        is SyncStatus.Cancelled -> {
+                            itemsPersisted = status.itemsPersisted
+                            UnifiedLog.w(TAG) { "Incremental sync cancelled" }
+                        }
+                        else -> {} // SeriesEpisodeComplete, TelegramChatComplete - ignore
                     }
                 }
                 
-                // Only update counts and timestamp on successful delta sync
-                // This prevents skipping items on next incremental if this one failed
-                val now = System.currentTimeMillis()
-                if (currentVodCount >= 0 && currentSeriesCount >= 0 && currentLiveCount >= 0) {
-                    checkpointStore.saveXtreamLastCounts(currentVodCount, currentSeriesCount, currentLiveCount)
-                    checkpointStore.saveXtreamLastSyncTimestamp(now)
+                // Invalidate home cache if items were persisted
+                if (itemsPersisted > 0) {
+                    homeCacheInvalidator.invalidateAllAfterSync(
+                        source = "XTREAM_INCREMENTAL",
+                        syncRunId = input.syncRunId,
+                    )
                 }
-                
-                // Invalidate home cache since we detected changes
-                homeCacheInvalidator.invalidateAllAfterSync(
-                    source = "XTREAM_INCREMENTAL",
-                    syncRunId = input.syncRunId,
-                )
                 
                 val durationMs = System.currentTimeMillis() - startTimeMs
-                UnifiedLog.i(TAG) {
-                    "INCREMENTAL_SUCCESS: Delta sync completed, " +
-                        "itemsPersisted=$itemsPersisted, duration_ms=$durationMs"
-                }
                 
-                return Result.success(
-                    WorkerOutputData.success(
-                        itemsPersisted = itemsPersisted.toLong(),
-                        durationMs = durationMs,
-                        checkpointCursor = "incremental_delta_completed",
-                    ),
-                )
+                return if (syncSucceeded) {
+                    val cursor = if (skippedSync) "incremental_skipped_no_changes" else "incremental_completed"
+                    UnifiedLog.i(TAG) {
+                        "INCREMENTAL_SUCCESS: sync completed, " +
+                            "itemsPersisted=$itemsPersisted, duration_ms=$durationMs, skipped=$skippedSync"
+                    }
+                    Result.success(
+                        WorkerOutputData.success(
+                            itemsPersisted = itemsPersisted,
+                            durationMs = durationMs,
+                            checkpointCursor = cursor,
+                        ),
+                    )
+                } else {
+                    UnifiedLog.w(TAG) { "INCREMENTAL_RETRY: sync did not complete successfully" }
+                    Result.retry()
+                }
             } catch (e: CancellationException) {
                 val durationMs = System.currentTimeMillis() - startTimeMs
                 UnifiedLog.w(TAG) { "INCREMENTAL cancelled after ${durationMs}ms" }
@@ -1129,7 +1092,6 @@ class XtreamCatalogScanWorker
             } catch (e: Exception) {
                 val durationMs = System.currentTimeMillis() - startTimeMs
                 UnifiedLog.e(TAG, e) { "INCREMENTAL failed after ${durationMs}ms: ${e.message}" }
-                // Incremental failures are not critical - just retry later
                 return Result.retry()
             }
         }

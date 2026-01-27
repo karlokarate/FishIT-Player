@@ -4,6 +4,8 @@ import com.fishit.player.core.feature.auth.TelegramAuthRepository
 import com.fishit.player.core.metadata.MediaMetadataNormalizer
 import com.fishit.player.core.model.PlaybackHintKeys
 import com.fishit.player.core.model.RawMediaMetadata
+import com.fishit.player.core.persistence.repository.FingerprintRepository
+import com.fishit.player.core.persistence.repository.SyncCheckpointRepository
 import com.fishit.player.infra.data.nx.writer.NxCatalogWriter
 import com.fishit.player.infra.logging.UnifiedLog
 import com.fishit.player.pipeline.telegram.catalog.TelegramCatalogConfig
@@ -72,6 +74,10 @@ class DefaultCatalogSyncService
         private val nxCatalogWriter: NxCatalogWriter,
         private val checkpointStore: SyncCheckpointStore,
         private val telegramAuthRepository: TelegramAuthRepository,
+        // Incremental sync components (Jan 2026)
+        private val incrementalSyncDecider: IncrementalSyncDecider,
+        private val syncCheckpointRepository: SyncCheckpointRepository,
+        private val fingerprintRepository: FingerprintRepository,
     ) : CatalogSyncService {
         companion object {
             private const val TAG = "CatalogSyncService"
@@ -576,6 +582,385 @@ class DefaultCatalogSyncService
                 }
                 else -> UnifiedLog.w(TAG, "Unknown source: $source")
             }
+        }
+
+        // ========================================================================
+        // Incremental Sync (4-Tier with Fingerprint Comparison)
+        // ========================================================================
+
+        /**
+         * Incremental Xtream sync with 4-tier optimization.
+         *
+         * **Tier Strategy:**
+         * - SkipSync: No changes detected → emit Completed immediately
+         * - FullSync: First sync or too old → process everything
+         * - IncrementalSync: Compare fingerprints → only process new/changed
+         *
+         * **Design:** docs/v2/INCREMENTAL_SYNC_DESIGN.md
+         */
+        override fun syncXtreamIncremental(
+            accountKey: String,
+            includeVod: Boolean,
+            includeSeries: Boolean,
+            includeLive: Boolean,
+            forceFullSync: Boolean,
+            syncConfig: SyncConfig,
+        ): Flow<SyncStatus> = flow {
+            UnifiedLog.i(TAG, "Starting Xtream INCREMENTAL sync: account=$accountKey, forceFullSync=$forceFullSync")
+            emit(SyncStatus.Started(SOURCE_XTREAM))
+
+            val startTimeMs = System.currentTimeMillis()
+            
+            // Determine which content types to sync
+            val contentTypes = buildList {
+                if (includeVod) add("vod")
+                if (includeSeries) add("series")
+                if (includeLive) add("live")
+            }
+
+            // Decide sync strategy for each content type
+            val strategies = mutableMapOf<String, SyncStrategy>()
+            for (contentType in contentTypes) {
+                val strategy = incrementalSyncDecider.decideSyncStrategy(
+                    sourceType = SOURCE_XTREAM,
+                    accountId = accountKey,
+                    contentType = contentType,
+                    forceFullSync = forceFullSync,
+                )
+                strategies[contentType] = strategy
+                UnifiedLog.i(TAG, "[$contentType] Strategy: $strategy")
+            }
+
+            // Check if all content types can skip
+            val allSkip = strategies.values.all { it is SyncStrategy.SkipSync }
+            if (allSkip && !forceFullSync) {
+                val lastSyncMs = (strategies.values.first() as SyncStrategy.SkipSync).lastSyncMs
+                val durationMs = System.currentTimeMillis() - startTimeMs
+                UnifiedLog.i(TAG, "All content types unchanged - skipping sync (lastSync=${lastSyncMs})")
+                emit(SyncStatus.Completed(
+                    source = SOURCE_XTREAM,
+                    totalItems = 0,
+                    durationMs = durationMs,
+                ))
+                return@flow
+            }
+
+            // Record sync start for non-SkipSync content types
+            for (contentType in contentTypes) {
+                if (strategies[contentType] is SyncStrategy.SkipSync) continue
+                syncCheckpointRepository.recordSyncStart(SOURCE_XTREAM, accountKey, contentType)
+            }
+
+            // Load fingerprints for incremental comparison
+            val fingerprintsMap = mutableMapOf<String, Map<String, Int>>()
+            val incrementalGenerations = mutableMapOf<String, Long>()
+            
+            for ((contentType, strategy) in strategies) {
+                if (strategy is SyncStrategy.IncrementalSync) {
+                    fingerprintsMap[contentType] = incrementalSyncDecider.getFingerprints(
+                        SOURCE_XTREAM, accountKey, contentType
+                    )
+                    incrementalGenerations[contentType] = strategy.syncGeneration
+                    UnifiedLog.d(TAG, "[$contentType] Loaded ${fingerprintsMap[contentType]?.size ?: 0} fingerprints")
+                } else if (strategy is SyncStrategy.FullSync) {
+                    // For full sync, use generation 1 (or increment from existing)
+                    val existingGen = syncCheckpointRepository.getSyncGeneration(SOURCE_XTREAM, accountKey, contentType)
+                    incrementalGenerations[contentType] = existingGen + 1
+                }
+            }
+
+            // Tracking variables
+            val catalogBatch = mutableListOf<RawMediaMetadata>()
+            val seriesBatch = mutableListOf<RawMediaMetadata>()
+            val liveBatch = mutableListOf<RawMediaMetadata>()
+            
+            // Fingerprints to store after sync
+            val newFingerprints = mutableMapOf<String, MutableMap<String, Int>>()
+            contentTypes.forEach { newFingerprints[it] = mutableMapOf() }
+            
+            // Counters per content type
+            val itemCounts = mutableMapOf<String, Int>()
+            val newItemCounts = mutableMapOf<String, Int>()
+            val updatedItemCounts = mutableMapOf<String, Int>()
+            val unchangedItemCounts = mutableMapOf<String, Int>()
+            val deletedItemCounts = mutableMapOf<String, Int>()  // BUG FIX: Track per content type
+            contentTypes.forEach { 
+                itemCounts[it] = 0
+                newItemCounts[it] = 0
+                updatedItemCounts[it] = 0
+                unchangedItemCounts[it] = 0
+                deletedItemCounts[it] = 0
+            }
+            
+            var itemsDiscovered = 0L
+            var itemsPersisted = 0L
+
+            // BUG FIX: Honor SkipSync strategies - don't fetch content types that are skipped
+            val actuallyIncludeVod = includeVod && strategies["vod"] !is SyncStrategy.SkipSync
+            val actuallyIncludeSeries = includeSeries && strategies["series"] !is SyncStrategy.SkipSync
+            val actuallyIncludeLive = includeLive && strategies["live"] !is SyncStrategy.SkipSync
+
+            val pipelineConfig = XtreamCatalogConfig(
+                includeVod = actuallyIncludeVod,
+                includeSeries = actuallyIncludeSeries,
+                includeEpisodes = false, // Episodes handled separately
+                includeLive = actuallyIncludeLive,
+                batchSize = syncConfig.jsonStreamingBatchSize,
+            )
+
+            try {
+                xtreamPipeline.scanCatalog(pipelineConfig).collect { event ->
+                    when (event) {
+                        is XtreamCatalogEvent.ItemDiscovered -> {
+                            itemsDiscovered++
+                            val raw = event.item.raw
+                            val itemKind = event.item.kind
+                            
+                            // Determine content type and fingerprint
+                            val (contentType, itemId, fingerprint) = when (itemKind) {
+                                XtreamItemKind.LIVE -> {
+                                    val id = raw.playbackHints["stream_id"] ?: raw.sourceId
+                                    Triple("live", id, computeFingerprint(raw))
+                                }
+                                XtreamItemKind.SERIES -> {
+                                    val id = raw.playbackHints["series_id"] ?: raw.sourceId
+                                    Triple("series", id, computeFingerprint(raw))
+                                }
+                                else -> { // VOD
+                                    val id = raw.playbackHints["stream_id"] ?: raw.sourceId
+                                    Triple("vod", id, computeFingerprint(raw))
+                                }
+                            }
+
+                            // Track total count
+                            itemCounts[contentType] = (itemCounts[contentType] ?: 0) + 1
+
+                            // Check if item needs processing (incremental mode)
+                            val existingFingerprints = fingerprintsMap[contentType] ?: emptyMap()
+                            val existingFp = existingFingerprints[itemId]
+                            
+                            val shouldProcess = when {
+                                existingFp == null -> {
+                                    // New item
+                                    newItemCounts[contentType] = (newItemCounts[contentType] ?: 0) + 1
+                                    true
+                                }
+                                existingFp != fingerprint -> {
+                                    // Changed item
+                                    updatedItemCounts[contentType] = (updatedItemCounts[contentType] ?: 0) + 1
+                                    true
+                                }
+                                else -> {
+                                    // Unchanged
+                                    unchangedItemCounts[contentType] = (unchangedItemCounts[contentType] ?: 0) + 1
+                                    false
+                                }
+                            }
+
+                            // Store fingerprint for later persistence
+                            newFingerprints[contentType]?.put(itemId, fingerprint)
+
+                            // Only add to batch if should process
+                            if (shouldProcess) {
+                                when (itemKind) {
+                                    XtreamItemKind.LIVE -> liveBatch.add(raw)
+                                    XtreamItemKind.SERIES -> seriesBatch.add(raw)
+                                    else -> catalogBatch.add(raw)
+                                }
+                            }
+
+                            // Persist batches when full
+                            if (catalogBatch.size >= syncConfig.batchSize) {
+                                persistXtreamCatalogBatch(catalogBatch, syncConfig)
+                                itemsPersisted += catalogBatch.size
+                                catalogBatch.clear()
+                            }
+                            if (seriesBatch.size >= minOf(100, syncConfig.batchSize)) {
+                                persistXtreamCatalogBatch(seriesBatch, syncConfig)
+                                itemsPersisted += seriesBatch.size
+                                seriesBatch.clear()
+                            }
+                            if (liveBatch.size >= minOf(100, syncConfig.batchSize)) {
+                                persistXtreamLiveBatch(liveBatch)
+                                itemsPersisted += liveBatch.size
+                                liveBatch.clear()
+                            }
+
+                            if (itemsDiscovered % syncConfig.emitProgressEvery == 0L) {
+                                emit(SyncStatus.InProgress(
+                                    source = SOURCE_XTREAM,
+                                    itemsDiscovered = itemsDiscovered,
+                                    itemsPersisted = itemsPersisted,
+                                ))
+                            }
+                        }
+                        is XtreamCatalogEvent.ScanCompleted -> {
+                            // Flush remaining batches
+                            if (catalogBatch.isNotEmpty()) {
+                                persistXtreamCatalogBatch(catalogBatch, syncConfig)
+                                itemsPersisted += catalogBatch.size
+                            }
+                            if (seriesBatch.isNotEmpty()) {
+                                persistXtreamCatalogBatch(seriesBatch, syncConfig)
+                                itemsPersisted += seriesBatch.size
+                            }
+                            if (liveBatch.isNotEmpty()) {
+                                persistXtreamLiveBatch(liveBatch)
+                                itemsPersisted += liveBatch.size
+                            }
+
+                            // Store fingerprints for each content type
+                            for ((contentType, fps) in newFingerprints) {
+                                if (fps.isNotEmpty()) {
+                                    val generation = incrementalGenerations[contentType] ?: 1L
+                                    fingerprintRepository.putFingerprints(
+                                        SOURCE_XTREAM, accountKey, contentType, fps, generation
+                                    )
+                                }
+                            }
+
+                            // Detect and handle deletions (only for non-SkipSync content types)
+                            for (contentType in contentTypes) {
+                                // BUG FIX: Skip deletion detection for SkipSync types
+                                if (strategies[contentType] is SyncStrategy.SkipSync) continue
+                                
+                                val generation = incrementalGenerations[contentType] ?: continue
+                                val staleItems = fingerprintRepository.findStaleItems(
+                                    SOURCE_XTREAM, accountKey, contentType, generation
+                                )
+                                if (staleItems.isNotEmpty()) {
+                                    UnifiedLog.i(TAG, "[$contentType] Detected ${staleItems.size} deleted items")
+                                    // Delete stale fingerprints (items no longer in catalog)
+                                    fingerprintRepository.deleteFingerprints(
+                                        SOURCE_XTREAM, accountKey, contentType, staleItems
+                                    )
+                                    deletedItemCounts[contentType] = staleItems.size
+                                    // Note: Actual NX_Work deletion would go here if needed
+                                }
+                            }
+
+                            // Record checkpoints (only for non-SkipSync content types)
+                            for (contentType in contentTypes) {
+                                // BUG FIX: Skip checkpoint for SkipSync - previous checkpoint is still valid
+                                if (strategies[contentType] is SyncStrategy.SkipSync) continue
+                                
+                                val isIncremental = strategies[contentType] is SyncStrategy.IncrementalSync
+                                syncCheckpointRepository.recordSyncComplete(
+                                    sourceType = SOURCE_XTREAM,
+                                    accountId = accountKey,
+                                    contentType = contentType,
+                                    itemCount = itemCounts[contentType] ?: 0,
+                                    newItemCount = newItemCounts[contentType] ?: 0,
+                                    updatedItemCount = updatedItemCounts[contentType] ?: 0,
+                                    deletedItemCount = deletedItemCounts[contentType] ?: 0,  // BUG FIX: Per-type count
+                                    wasIncremental = isIncremental,
+                                )
+                            }
+
+                            val durationMs = System.currentTimeMillis() - startTimeMs
+                            val totalNew = newItemCounts.values.sum()
+                            val totalUpdated = updatedItemCounts.values.sum()
+                            val totalUnchanged = unchangedItemCounts.values.sum()
+                            val totalDeleted = deletedItemCounts.values.sum()
+                            
+                            UnifiedLog.i(TAG) {
+                                "Incremental sync complete: discovered=$itemsDiscovered, " +
+                                    "persisted=$itemsPersisted, new=$totalNew, updated=$totalUpdated, " +
+                                    "unchanged=$totalUnchanged, deleted=$totalDeleted, " +
+                                    "savings=${if (itemsDiscovered > 0) (totalUnchanged * 100 / itemsDiscovered) else 0}%, " +
+                                    "duration=${durationMs}ms"
+                            }
+
+                            emit(SyncStatus.Completed(
+                                source = SOURCE_XTREAM,
+                                totalItems = itemsPersisted,
+                                durationMs = durationMs,
+                            ))
+                        }
+                        is XtreamCatalogEvent.ScanCancelled -> {
+                            // Flush remaining
+                            if (catalogBatch.isNotEmpty()) {
+                                persistXtreamCatalogBatch(catalogBatch, syncConfig)
+                                itemsPersisted += catalogBatch.size
+                            }
+                            if (seriesBatch.isNotEmpty()) {
+                                persistXtreamCatalogBatch(seriesBatch, syncConfig)
+                                itemsPersisted += seriesBatch.size
+                            }
+                            if (liveBatch.isNotEmpty()) {
+                                persistXtreamLiveBatch(liveBatch)
+                                itemsPersisted += liveBatch.size
+                            }
+                            emit(SyncStatus.Cancelled(SOURCE_XTREAM, itemsPersisted))
+                        }
+                        is XtreamCatalogEvent.ScanError -> {
+                            // Record failure for all content types
+                            for (contentType in contentTypes) {
+                                syncCheckpointRepository.recordSyncFailure(
+                                    SOURCE_XTREAM, accountKey, contentType, event.message
+                                )
+                            }
+                            emit(SyncStatus.Error(
+                                source = SOURCE_XTREAM,
+                                reason = event.reason,
+                                message = event.message,
+                                throwable = event.throwable,
+                            ))
+                        }
+                        is XtreamCatalogEvent.ScanStarted -> {
+                            UnifiedLog.d(TAG, "Incremental scan started")
+                        }
+                        is XtreamCatalogEvent.ScanProgress -> {
+                            emit(SyncStatus.InProgress(
+                                source = SOURCE_XTREAM,
+                                itemsDiscovered = (event.vodCount + event.seriesCount + event.liveCount).toLong(),
+                                itemsPersisted = itemsPersisted,
+                                currentPhase = event.currentPhase.name,
+                            ))
+                        }
+                        is XtreamCatalogEvent.SeriesEpisodeComplete,
+                        is XtreamCatalogEvent.SeriesEpisodeFailed -> {
+                            // Not applicable for non-episode sync
+                        }
+                    }
+                }
+            } catch (e: CancellationException) {
+                if (catalogBatch.isNotEmpty()) persistXtreamCatalogBatch(catalogBatch, syncConfig)
+                if (seriesBatch.isNotEmpty()) persistXtreamCatalogBatch(seriesBatch, syncConfig)
+                if (liveBatch.isNotEmpty()) persistXtreamLiveBatch(liveBatch)
+                emit(SyncStatus.Cancelled(SOURCE_XTREAM, itemsPersisted))
+                throw e
+            } catch (e: Exception) {
+                for (contentType in contentTypes) {
+                    syncCheckpointRepository.recordSyncFailure(
+                        SOURCE_XTREAM, accountKey, contentType, e.message ?: "Unknown error"
+                    )
+                }
+                UnifiedLog.e(TAG, "Incremental sync failed", e)
+                emit(SyncStatus.Error(
+                    source = SOURCE_XTREAM,
+                    reason = "exception",
+                    message = e.message ?: "Unknown error",
+                    throwable = e,
+                ))
+            }
+        }
+
+        /**
+         * Compute fingerprint for a RawMediaMetadata item.
+         *
+         * Uses key fields that indicate content changes:
+         * - sourceId, originalTitle, addedTimestamp, categoryId, poster, rating
+         */
+        private fun computeFingerprint(raw: RawMediaMetadata): Int {
+            return java.util.Objects.hash(
+                raw.sourceId,
+                raw.originalTitle,
+                raw.addedTimestamp,
+                raw.categoryId,
+                raw.poster?.hashCode(),
+                raw.rating,
+            )
         }
 
         // ========================================================================
