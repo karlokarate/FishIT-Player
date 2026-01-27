@@ -1,6 +1,7 @@
 package com.fishit.player.core.library.domain
 
 import androidx.paging.PagingData
+import com.fishit.player.core.model.ContentDisplayLimits
 import com.fishit.player.core.model.filter.FilterConfig
 import com.fishit.player.core.model.sort.SortOption
 import kotlinx.coroutines.flow.Flow
@@ -31,24 +32,27 @@ data class LibraryQueryOptions(
 /**
  * Paging configuration for library content.
  *
- * @param pageSize Items per page (default 50)
+ * Uses values from [ContentDisplayLimits.LibraryPaging] as the centralized SSOT
+ * for paging parameters across the entire app.
+ *
+ * @param pageSize Items per page (default from ContentDisplayLimits)
  * @param prefetchDistance How far ahead to prefetch (default = pageSize)
- * @param initialLoadSize Items for first load (default = pageSize * 3)
+ * @param initialLoadSize Items for first load (default from ContentDisplayLimits)
  */
 data class LibraryPagingConfig(
-    val pageSize: Int = 50,
-    val prefetchDistance: Int = pageSize,
-    val initialLoadSize: Int = pageSize * 3,
+    val pageSize: Int = ContentDisplayLimits.LibraryPaging.PAGE_SIZE,
+    val prefetchDistance: Int = ContentDisplayLimits.LibraryPaging.PREFETCH_DISTANCE,
+    val initialLoadSize: Int = ContentDisplayLimits.LibraryPaging.INITIAL_LOAD_SIZE,
 ) {
     companion object {
-        /** Default config for TV grids (50 items/page, 3-page initial load) */
+        /** Default config for TV grids - uses centralized ContentDisplayLimits values */
         val DEFAULT = LibraryPagingConfig()
-        
+
         /** Config for larger grids (30 items/page) */
-        val GRID = LibraryPagingConfig(pageSize = 30)
-        
+        val GRID = LibraryPagingConfig(pageSize = 30, prefetchDistance = 30, initialLoadSize = 90)
+
         /** Config for compact lists (100 items/page) */
-        val LIST = LibraryPagingConfig(pageSize = 100)
+        val LIST = LibraryPagingConfig(pageSize = 100, prefetchDistance = 100, initialLoadSize = 300)
     }
 }
 

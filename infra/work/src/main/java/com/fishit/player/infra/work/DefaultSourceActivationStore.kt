@@ -13,11 +13,15 @@ import com.fishit.player.core.sourceactivation.SourceErrorReason
 import com.fishit.player.core.sourceactivation.SourceId
 import com.fishit.player.infra.logging.UnifiedLog
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.flow.onEach
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -36,6 +40,11 @@ private val Context.sourceActivationDataStore: DataStore<Preferences> by prefere
  * - Sources are independent: Xtream, Telegram, IO can be ACTIVE/INACTIVE separately
  * - No source is ever required
  * - States survive process restart
+ *
+ * **Architecture Note:**
+ * - Uses non-blocking lazy initialization to avoid main thread blocking
+ * - Starts with EMPTY snapshot, loads persisted state asynchronously
+ * - All consumers observe the flow, so they get updates when data is ready
  */
 @Singleton
 class DefaultSourceActivationStore
@@ -45,20 +54,26 @@ class DefaultSourceActivationStore
     ) : SourceActivationStore {
         private val dataStore: DataStore<Preferences> = context.sourceActivationDataStore
 
-        // In-memory cache updated from DataStore
+        // Scope for background initialization
+        private val initScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+
+        // In-memory cache - starts with EMPTY, populated asynchronously
         private val _snapshot = MutableStateFlow(SourceActivationSnapshot.EMPTY)
 
         init {
-            // Initialize from persisted state
-            runBlocking {
-                try {
-                    val preferences = dataStore.data.first()
-                    _snapshot.value = preferencesToSnapshot(preferences)
-                    UnifiedLog.i(TAG) { "Initialized from persisted state: ${_snapshot.value}" }
-                } catch (e: Exception) {
-                    UnifiedLog.e(TAG, e) { "Failed to load persisted state, using defaults" }
+            // Non-blocking initialization from persisted state
+            // Uses launchIn to avoid blocking the constructor
+            dataStore.data
+                .catch { e ->
+                    UnifiedLog.e(TAG, e) { "Failed to read persisted state, using defaults" }
+                    // Don't emit - just log and let snapshot remain at EMPTY default
                 }
-            }
+                .onEach { preferences ->
+                    val snapshot = preferencesToSnapshot(preferences)
+                    _snapshot.value = snapshot
+                    UnifiedLog.d(TAG) { "Loaded state from DataStore: $snapshot" }
+                }
+                .launchIn(initScope)
         }
 
         // =========================================================================

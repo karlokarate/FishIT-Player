@@ -31,6 +31,7 @@ import androidx.paging.PagingState
 import androidx.paging.map
 import com.fishit.player.core.home.domain.HomeContentRepository
 import com.fishit.player.core.home.domain.HomeMediaItem
+import com.fishit.player.core.model.ContentDisplayLimits
 import com.fishit.player.core.model.ImageRef
 import com.fishit.player.core.model.MediaType
 import com.fishit.player.core.model.SourceType
@@ -61,54 +62,12 @@ class NxHomeContentRepositoryImpl @Inject constructor(
 
     companion object {
         private const val TAG = "NxHomeContentRepo"
-        private const val CONTINUE_WATCHING_LIMIT = 30
         
-        /**
-         * Cache duration for "New Episodes" badge lookup.
-         * Avoids repeated DB queries on every Flow emission.
-         */
-        private const val NEW_EPISODES_CACHE_MS = 60_000L // 1 minute
-        private const val RECENTLY_ADDED_LIMIT = 100
-        
-        /**
-         * Content limits for Home screen.
-         * 
-         * **Design rationale:**
-         * - Using asFlowWithLimit() these are now DB-level limits (efficient!)
-         * - Limits are high enough to show meaningful content
-         * - TV rows typically show 5-7 items visible, user scrolls for more
-         * - If user has 60K movies, showing 2000 is reasonable for home browsing
-         */
-        private const val MOVIES_LIMIT = 2000
-        private const val SERIES_LIMIT = 2000
-        private const val CLIPS_LIMIT = 500
-        private const val LIVE_LIMIT = 500
-        private const val SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000L
-        
-        /**
-         * Default profile key until ProfileManager is implemented in v2.
-         * All user states (resume marks, favorites, etc.) use this key.
-         */
-        private const val DEFAULT_PROFILE_KEY = "default"
-        
-        /**
-         * Time window for "New Episodes" badge.
-         * Episodes with sourceLastModifiedMs within this window are considered "new".
-         * TODO: Replace with user preference for "last series check" timestamp.
-         */
-        private const val NEW_EPISODES_WINDOW_MS = 48 * 60 * 60 * 1000L // 48 hours
-        
-        /**
-         * Paging configuration for horizontal rows.
-         * 
-         * **Design rationale:**
-         * - PAGE_SIZE = 20: One "screenful" of tiles (TV shows ~5-7, phone ~3-4)
-         * - INITIAL_LOAD = 40: Load 2 pages initially for smooth scroll start
-         * - PREFETCH = 10: Start loading next page when 10 items from end
-         */
-        private const val HOME_PAGE_SIZE = 20
-        private const val HOME_INITIAL_LOAD_SIZE = 40
-        private const val HOME_PREFETCH_DISTANCE = 10
+        // ==================== Shared Limits from core/model ====================
+        // Large catalog limits REMOVED - use Paging for 40K+ catalogs.
+        // This small limit is only for deprecated Flow-based methods that still exist
+        // for backward compatibility but should NOT be used in production.
+        private const val DEPRECATED_FALLBACK_LIMIT = 50
     }
     
     // Cache for new episodes badge (avoids repeated DB queries)
@@ -123,8 +82,8 @@ class NxHomeContentRepositoryImpl @Inject constructor(
     @OptIn(ExperimentalCoroutinesApi::class)
     override fun observeContinueWatching(): Flow<List<HomeMediaItem>> {
         return userStateRepository.observeContinueWatching(
-            profileKey = DEFAULT_PROFILE_KEY,
-            limit = CONTINUE_WATCHING_LIMIT,
+            profileKey = ContentDisplayLimits.DEFAULT_PROFILE_KEY,
+            limit = ContentDisplayLimits.CONTINUE_WATCHING,
         ).mapLatest { userStates ->
             if (userStates.isEmpty()) return@mapLatest emptyList()
             
@@ -164,13 +123,13 @@ class NxHomeContentRepositoryImpl @Inject constructor(
     @OptIn(ExperimentalCoroutinesApi::class)
     override fun observeRecentlyAdded(): Flow<List<HomeMediaItem>> {
         // Use createdAt sort for "Recently Added" - shows newly ingested content
-        return workRepository.observeRecentlyCreated(limit = RECENTLY_ADDED_LIMIT)
+        return workRepository.observeRecentlyCreated(limit = ContentDisplayLimits.RECENTLY_ADDED)
             .mapLatest { works ->
                 batchMapToHomeMediaItems(
                     works = works.filter { it.type != WorkType.EPISODE },
                     isNew = { work -> 
                         val now = System.currentTimeMillis()
-                        (now - work.createdAtMs) < SEVEN_DAYS_MS
+                        (now - work.createdAtMs) < ContentDisplayLimits.NEW_BADGE_WINDOW_MS
                     }
                 )
             }
@@ -180,9 +139,16 @@ class NxHomeContentRepositoryImpl @Inject constructor(
             }
     }
 
+    // ==================== DEPRECATED Methods (use Paging instead) ====================
+    // These methods are kept for backward compatibility but should NOT be used.
+    // For large catalogs (40K+ items), use getMoviesPagingData() etc.
+
+    @Suppress("DEPRECATION")
     @OptIn(ExperimentalCoroutinesApi::class)
+    @Deprecated("Use getMoviesPagingData() instead")
     override fun observeMovies(): Flow<List<HomeMediaItem>> {
-        return workRepository.observeByType(WorkType.MOVIE, limit = MOVIES_LIMIT)
+        UnifiedLog.w(TAG, "observeMovies() is deprecated - use getMoviesPagingData() for large catalogs")
+        return workRepository.observeByType(WorkType.MOVIE, limit = DEPRECATED_FALLBACK_LIMIT)
             .mapLatest { works -> batchMapToHomeMediaItems(works) }
             .catch { e ->
                 UnifiedLog.e(TAG, e) { "Failed to observe movies" }
@@ -190,15 +156,18 @@ class NxHomeContentRepositoryImpl @Inject constructor(
             }
     }
 
+    @Suppress("DEPRECATION")
     @OptIn(ExperimentalCoroutinesApi::class)
+    @Deprecated("Use getSeriesPagingData() instead")
     override fun observeSeries(): Flow<List<HomeMediaItem>> {
-        return workRepository.observeByType(WorkType.SERIES, limit = SERIES_LIMIT)
+        UnifiedLog.w(TAG, "observeSeries() is deprecated - use getSeriesPagingData() for large catalogs")
+        return workRepository.observeByType(WorkType.SERIES, limit = DEPRECATED_FALLBACK_LIMIT)
             .mapLatest { works -> 
                 // Use cached lookup to avoid repeated DB queries on every emission
                 val now = System.currentTimeMillis()
-                val seriesWithNewEpisodes = if (now - newEpisodesCacheTimestamp > NEW_EPISODES_CACHE_MS) {
+                val seriesWithNewEpisodes = if (now - newEpisodesCacheTimestamp > ContentDisplayLimits.NEW_EPISODES_CACHE_MS) {
                     // Cache expired, refresh
-                    val newEpisodesCheckTimestamp = now - NEW_EPISODES_WINDOW_MS
+                    val newEpisodesCheckTimestamp = now - ContentDisplayLimits.NEW_EPISODES_WINDOW_MS
                     sourceRefRepository.findWorkKeysWithSeriesUpdates(
                         sinceMs = newEpisodesCheckTimestamp,
                         sourceType = null, // All sources
@@ -222,9 +191,12 @@ class NxHomeContentRepositoryImpl @Inject constructor(
             }
     }
 
+    @Suppress("DEPRECATION")
     @OptIn(ExperimentalCoroutinesApi::class)
+    @Deprecated("Use getClipsPagingData() instead")
     override fun observeClips(): Flow<List<HomeMediaItem>> {
-        return workRepository.observeByType(WorkType.CLIP, limit = CLIPS_LIMIT)
+        UnifiedLog.w(TAG, "observeClips() is deprecated - use getClipsPagingData() for large catalogs")
+        return workRepository.observeByType(WorkType.CLIP, limit = DEPRECATED_FALLBACK_LIMIT)
             .mapLatest { works -> batchMapToHomeMediaItems(works) }
             .catch { e ->
                 UnifiedLog.e(TAG, e) { "Failed to observe clips" }
@@ -232,9 +204,12 @@ class NxHomeContentRepositoryImpl @Inject constructor(
             }
     }
 
+    @Suppress("DEPRECATION")
     @OptIn(ExperimentalCoroutinesApi::class)
+    @Deprecated("Use getLivePagingData() instead")
     override fun observeXtreamLive(): Flow<List<HomeMediaItem>> {
-        return workRepository.observeByType(WorkType.LIVE_CHANNEL, limit = LIVE_LIMIT)
+        UnifiedLog.w(TAG, "observeXtreamLive() is deprecated - use getLivePagingData() for large catalogs")
+        return workRepository.observeByType(WorkType.LIVE_CHANNEL, limit = DEPRECATED_FALLBACK_LIMIT)
             .mapLatest { works ->
                 // Live channels default to Xtream source
                 works.map { work ->
@@ -252,14 +227,16 @@ class NxHomeContentRepositoryImpl @Inject constructor(
     
     // ==================== Paging Methods (Infinite Horizontal Scroll) ====================
     
+    private val homePagingConfig = PagingConfig(
+        pageSize = ContentDisplayLimits.HomePaging.PAGE_SIZE,
+        initialLoadSize = ContentDisplayLimits.HomePaging.INITIAL_LOAD_SIZE,
+        prefetchDistance = ContentDisplayLimits.HomePaging.PREFETCH_DISTANCE,
+        enablePlaceholders = false,
+    )
+    
     override fun getMoviesPagingData(): Flow<PagingData<HomeMediaItem>> {
         return Pager(
-            config = PagingConfig(
-                pageSize = HOME_PAGE_SIZE,
-                initialLoadSize = HOME_INITIAL_LOAD_SIZE,
-                prefetchDistance = HOME_PREFETCH_DISTANCE,
-                enablePlaceholders = false,
-            ),
+            config = homePagingConfig,
             pagingSourceFactory = {
                 HomePagingSource(
                     workRepository = workRepository,
@@ -273,12 +250,7 @@ class NxHomeContentRepositoryImpl @Inject constructor(
     
     override fun getSeriesPagingData(): Flow<PagingData<HomeMediaItem>> {
         return Pager(
-            config = PagingConfig(
-                pageSize = HOME_PAGE_SIZE,
-                initialLoadSize = HOME_INITIAL_LOAD_SIZE,
-                prefetchDistance = HOME_PREFETCH_DISTANCE,
-                enablePlaceholders = false,
-            ),
+            config = homePagingConfig,
             pagingSourceFactory = {
                 HomePagingSource(
                     workRepository = workRepository,
@@ -292,12 +264,7 @@ class NxHomeContentRepositoryImpl @Inject constructor(
     
     override fun getClipsPagingData(): Flow<PagingData<HomeMediaItem>> {
         return Pager(
-            config = PagingConfig(
-                pageSize = HOME_PAGE_SIZE,
-                initialLoadSize = HOME_INITIAL_LOAD_SIZE,
-                prefetchDistance = HOME_PREFETCH_DISTANCE,
-                enablePlaceholders = false,
-            ),
+            config = homePagingConfig,
             pagingSourceFactory = {
                 HomePagingSource(
                     workRepository = workRepository,
@@ -311,12 +278,7 @@ class NxHomeContentRepositoryImpl @Inject constructor(
     
     override fun getLivePagingData(): Flow<PagingData<HomeMediaItem>> {
         return Pager(
-            config = PagingConfig(
-                pageSize = HOME_PAGE_SIZE,
-                initialLoadSize = HOME_INITIAL_LOAD_SIZE,
-                prefetchDistance = HOME_PREFETCH_DISTANCE,
-                enablePlaceholders = false,
-            ),
+            config = homePagingConfig,
             pagingSourceFactory = {
                 HomePagingSource(
                     workRepository = workRepository,
@@ -330,12 +292,7 @@ class NxHomeContentRepositoryImpl @Inject constructor(
     
     override fun getRecentlyAddedPagingData(): Flow<PagingData<HomeMediaItem>> {
         return Pager(
-            config = PagingConfig(
-                pageSize = HOME_PAGE_SIZE,
-                initialLoadSize = HOME_INITIAL_LOAD_SIZE,
-                prefetchDistance = HOME_PREFETCH_DISTANCE,
-                enablePlaceholders = false,
-            ),
+            config = homePagingConfig,
             pagingSourceFactory = {
                 HomePagingSource(
                     workRepository = workRepository,

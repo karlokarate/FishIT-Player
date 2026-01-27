@@ -45,13 +45,9 @@ data class HomeState(
     val isLoading: Boolean = true,
     val continueWatchingItems: List<HomeMediaItem> = emptyList(),
     val recentlyAddedItems: List<HomeMediaItem> = emptyList(),
-    // Cross-pipeline unified rows (canonical system)
-    val moviesItems: List<HomeMediaItem> = emptyList(),
-    val seriesItems: List<HomeMediaItem> = emptyList(),
-    val clipsItems: List<HomeMediaItem> = emptyList(),
-    // Source-specific rows (Live is intentionally outside canonical - ephemeral streams,
-    // EPG-based)
-    val xtreamLiveItems: List<HomeMediaItem> = emptyList(),
+    // NOTE: Movies, Series, Clips, Live use PAGING (not Flow-based lists)
+    // Large catalogs (40K+ items) require PagingData for memory efficiency.
+    // Use the *PagingFlow properties in HomeViewModel instead of state fields.
     val error: String? = null,
     val hasTelegramSource: Boolean = false,
     val hasXtreamSource: Boolean = false,
@@ -68,38 +64,24 @@ data class HomeState(
     val isSearchVisible: Boolean = false,
     /** All available genres extracted from content (for dynamic filtering) */
     val availableGenres: List<String> = emptyList(),
-    // === Row-level loading states (Progressive Loading) ===
+    // === Row-level loading states (for special rows only) ===
     /** True while continue watching row is still loading */
     val isContinueWatchingLoading: Boolean = true,
     /** True while recently added row is still loading */
     val isRecentlyAddedLoading: Boolean = true,
-    /** True while movies row is still loading */
-    val isMoviesLoading: Boolean = true,
-    /** True while series row is still loading */
-    val isSeriesLoading: Boolean = true,
-    /** True while clips row is still loading */
-    val isClipsLoading: Boolean = true,
-    /** True while live row is still loading */
-    val isLiveLoading: Boolean = true,
+    // NOTE: Movies/Series/Clips/Live use Paging - loading state is in LazyPagingItems
 ) {
-    /** True if there is any content to display */
-    val hasContent: Boolean
-        get() =
-            continueWatchingItems.isNotEmpty() ||
-                recentlyAddedItems.isNotEmpty() ||
-                moviesItems.isNotEmpty() ||
-                seriesItems.isNotEmpty() ||
-                clipsItems.isNotEmpty() ||
-                xtreamLiveItems.isNotEmpty()
+    /** True if special rows have content (paging rows always considered "has content") */
+    val hasSpecialRowContent: Boolean
+        get() = continueWatchingItems.isNotEmpty() || recentlyAddedItems.isNotEmpty()
 
     /** True if search or filter is active */
     val isFilterActive: Boolean
         get() = searchQuery.isNotBlank() || selectedGenre != PresetGenreFilter.ALL
     
-    /** True if any row is still loading (for global skeleton) */
-    val isAnyRowLoading: Boolean
-        get() = isContinueWatchingLoading || isRecentlyAddedLoading || isMoviesLoading ||
-                isSeriesLoading || isClipsLoading || isLiveLoading
+    /** True if special rows are still loading */
+    val isSpecialRowsLoading: Boolean
+        get() = isContinueWatchingLoading || isRecentlyAddedLoading
 }
 
 /**
@@ -206,8 +188,9 @@ class HomeViewModel
                 )
 
         init {
-            // ==================== Progressive Content Loading ====================
-            // Each flow updates state independently - no combine() blocking
+            // ==================== Special Rows (Flow-based, small limits) ====================
+            // Continue Watching and Recently Added use Flow-based loading with limits.
+            // They are small, bounded rows (max 30 and 100 items respectively).
             
             homeContentRepository.observeContinueWatching()
                 .catch { e ->
@@ -235,67 +218,10 @@ class HomeViewModel
                 }
                 .launchIn(viewModelScope)
             
-            homeContentRepository.observeMovies()
-                .catch { e ->
-                    UnifiedLog.e(TAG, e) { "Error loading movies" }
-                }
-                .onEach { items ->
-                    _state.update { it.copy(
-                        moviesItems = items,
-                        isMoviesLoading = false,
-                        isLoading = false,
-                        hasXtreamSource = it.hasXtreamSource || items.any { item ->
-                            item.sourceTypes.contains(SourceType.XTREAM)
-                        },
-                        hasTelegramSource = it.hasTelegramSource || items.any { item ->
-                            item.sourceTypes.contains(SourceType.TELEGRAM)
-                        },
-                    ) }
-                    updateAvailableGenres()
-                }
-                .launchIn(viewModelScope)
-            
-            homeContentRepository.observeSeries()
-                .catch { e ->
-                    UnifiedLog.e(TAG, e) { "Error loading series" }
-                }
-                .onEach { items ->
-                    _state.update { it.copy(
-                        seriesItems = items,
-                        isSeriesLoading = false,
-                        isLoading = false,
-                    ) }
-                    updateAvailableGenres()
-                }
-                .launchIn(viewModelScope)
-            
-            homeContentRepository.observeClips()
-                .catch { e ->
-                    UnifiedLog.e(TAG, e) { "Error loading clips" }
-                }
-                .onEach { items ->
-                    _state.update { it.copy(
-                        clipsItems = items,
-                        isClipsLoading = false,
-                        isLoading = false,
-                        hasTelegramSource = it.hasTelegramSource || items.isNotEmpty(),
-                    ) }
-                }
-                .launchIn(viewModelScope)
-            
-            homeContentRepository.observeXtreamLive()
-                .catch { e ->
-                    UnifiedLog.e(TAG, e) { "Error loading live channels" }
-                }
-                .onEach { items ->
-                    _state.update { it.copy(
-                        xtreamLiveItems = items,
-                        isLiveLoading = false,
-                        isLoading = false,
-                        hasXtreamSource = it.hasXtreamSource || items.isNotEmpty(),
-                    ) }
-                }
-                .launchIn(viewModelScope)
+            // ==================== Large Catalog Rows use PAGING ====================
+            // Movies, Series, Clips, Live are loaded via PagingData flows.
+            // See: moviesPagingFlow, seriesPagingFlow, clipsPagingFlow, livePagingFlow
+            // Paging handles memory efficiently for catalogs with 40K+ items.
             
             // ==================== Metadata Flows ====================
             
@@ -344,19 +270,17 @@ class HomeViewModel
                 _selectedGenre,
                 _isSearchVisible,
             ) { currentState, query, genre, isSearchVisible ->
-                val baseState =
-                    if (query.isBlank() && genre == PresetGenreFilter.ALL) {
-                        currentState
-                    } else {
-                        currentState.copy(
-                            continueWatchingItems = filterItems(currentState.continueWatchingItems, query, genre),
-                            recentlyAddedItems = filterItems(currentState.recentlyAddedItems, query, genre),
-                            moviesItems = filterItems(currentState.moviesItems, query, genre),
-                            seriesItems = filterItems(currentState.seriesItems, query, genre),
-                            clipsItems = filterItems(currentState.clipsItems, query, genre),
-                            xtreamLiveItems = filterItems(currentState.xtreamLiveItems, query, genre),
-                        )
-                    }
+                // NOTE: Filtering for Movies/Series/Clips/Live is NOT done here anymore.
+                // Large catalog filtering should be done at the DB/Paging level for efficiency.
+                // Only special rows (Continue Watching, Recently Added) can be filtered in-memory.
+                val baseState = if (query.isBlank() && genre == PresetGenreFilter.ALL) {
+                    currentState
+                } else {
+                    currentState.copy(
+                        continueWatchingItems = filterItems(currentState.continueWatchingItems, query, genre),
+                        recentlyAddedItems = filterItems(currentState.recentlyAddedItems, query, genre),
+                    )
+                }
                 baseState.copy(
                     searchQuery = query,
                     selectedGenre = genre,
@@ -372,14 +296,11 @@ class HomeViewModel
         // ==================== Public Actions ====================
 
         fun refresh() {
-            // Reset loading states to trigger refresh
+            // Reset loading states for special rows
+            // Paging rows (Movies/Series/Clips/Live) refresh automatically via their PagingSource
             _state.update { it.copy(
                 isContinueWatchingLoading = true,
                 isRecentlyAddedLoading = true,
-                isMoviesLoading = true,
-                isSeriesLoading = true,
-                isClipsLoading = true,
-                isLiveLoading = true,
                 error = null,
             ) }
             // Note: Data reload is handled by background CatalogSync, not by Home.
@@ -452,16 +373,14 @@ class HomeViewModel
 
         /**
          * Update available genres from current state.
-         * Called when movies or series data changes.
+         * NOTE: Only uses special rows. Large catalog genres should be queried from DB.
          */
         private fun updateAvailableGenres() {
             val currentState = _state.value
+            // Only use special rows that are in-memory
+            // TODO: For full genre list, query DB directly
             val allItems = currentState.continueWatchingItems +
-                currentState.recentlyAddedItems +
-                currentState.moviesItems +
-                currentState.seriesItems +
-                currentState.clipsItems +
-                currentState.xtreamLiveItems
+                currentState.recentlyAddedItems
             
             val genres = allItems
                 .mapNotNull { it.genres }

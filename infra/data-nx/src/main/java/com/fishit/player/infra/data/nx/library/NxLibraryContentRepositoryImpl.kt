@@ -31,6 +31,7 @@ import com.fishit.player.core.library.domain.LibraryContentRepository
 import com.fishit.player.core.library.domain.LibraryMediaItem
 import com.fishit.player.core.library.domain.LibraryPagingConfig
 import com.fishit.player.core.library.domain.LibraryQueryOptions
+import com.fishit.player.core.model.ContentDisplayLimits
 import com.fishit.player.core.model.ImageRef
 import com.fishit.player.core.model.MediaType
 import com.fishit.player.core.model.SourceType
@@ -58,15 +59,20 @@ class NxLibraryContentRepositoryImpl @Inject constructor(
 
     companion object {
         private const val TAG = "NxLibraryContentRepo"
-        private const val VOD_LIMIT = 500
-        private const val SERIES_LIMIT = 500
-        private const val SEARCH_LIMIT = 100
+        // ==================== Shared Limits from core/model ====================
+        // Large catalog limits are REMOVED - use Paging for 40K+ catalogs.
+        // This small limit is only for deprecated Flow-based methods.
+        private const val DEPRECATED_FALLBACK_LIMIT = 50
     }
 
     // ==================== VOD Content ====================
+    // NOTE: Flow-based methods are DEPRECATED for large catalogs.
+    // Use getVodPagingData() instead for infinite scroll support.
 
+    @Deprecated("Use getVodPagingData() for large catalogs with Paging support")
     override fun observeVod(categoryId: String?): Flow<List<LibraryMediaItem>> {
-        return workRepository.observeByType(WorkType.MOVIE, limit = VOD_LIMIT)
+        UnifiedLog.w(TAG, "observeVod() is deprecated - use getVodPagingData() for large catalogs")
+        return workRepository.observeByType(WorkType.MOVIE, limit = DEPRECATED_FALLBACK_LIMIT)
             .map { works ->
                 works.mapNotNull { work ->
                     val sourceType = determineSourceType(work.workKey)
@@ -79,10 +85,12 @@ class NxLibraryContentRepositoryImpl @Inject constructor(
             }
     }
 
+    @Deprecated("Use getVodPagingData() for large catalogs with Paging support")
     override fun observeVodCategories(): Flow<List<LibraryCategory>> {
         // For MVP: return a single "All Movies" category
         // TODO: Implement category grouping when NX_Category entity is added
-        return workRepository.observeByType(WorkType.MOVIE, limit = VOD_LIMIT)
+        UnifiedLog.w(TAG, "observeVodCategories() is deprecated - use getVodPagingData() for large catalogs")
+        return workRepository.observeByType(WorkType.MOVIE, limit = DEPRECATED_FALLBACK_LIMIT)
             .map { works ->
                 listOf(
                     LibraryCategory(
@@ -99,9 +107,13 @@ class NxLibraryContentRepositoryImpl @Inject constructor(
     }
 
     // ==================== Series Content ====================
+    // NOTE: Flow-based methods are DEPRECATED for large catalogs.
+    // Use getSeriesPagingData() instead for infinite scroll support.
 
+    @Deprecated("Use getSeriesPagingData() for large catalogs with Paging support")
     override fun observeSeries(categoryId: String?): Flow<List<LibraryMediaItem>> {
-        return workRepository.observeByType(WorkType.SERIES, limit = SERIES_LIMIT)
+        UnifiedLog.w(TAG, "observeSeries() is deprecated - use getSeriesPagingData() for large catalogs")
+        return workRepository.observeByType(WorkType.SERIES, limit = DEPRECATED_FALLBACK_LIMIT)
             .map { works ->
                 works.mapNotNull { work ->
                     val sourceType = determineSourceType(work.workKey)
@@ -114,10 +126,12 @@ class NxLibraryContentRepositoryImpl @Inject constructor(
             }
     }
 
+    @Deprecated("Use getSeriesPagingData() for large catalogs with Paging support")
     override fun observeSeriesCategories(): Flow<List<LibraryCategory>> {
         // For MVP: return a single "All Series" category
         // TODO: Implement category grouping when NX_Category entity is added
-        return workRepository.observeByType(WorkType.SERIES, limit = SERIES_LIMIT)
+        UnifiedLog.w(TAG, "observeSeriesCategories() is deprecated - use getSeriesPagingData() for large catalogs")
+        return workRepository.observeByType(WorkType.SERIES, limit = DEPRECATED_FALLBACK_LIMIT)
             .map { works ->
                 listOf(
                     LibraryCategory(
@@ -140,7 +154,7 @@ class NxLibraryContentRepositoryImpl @Inject constructor(
             val normalizedQuery = query.trim().lowercase()
             if (normalizedQuery.isBlank()) return emptyList()
 
-            workRepository.searchByTitle(normalizedQuery, limit.coerceAtMost(SEARCH_LIMIT))
+            workRepository.searchByTitle(normalizedQuery, limit.coerceAtMost(ContentDisplayLimits.SEARCH))
                 .filter { it.type == WorkType.MOVIE || it.type == WorkType.SERIES }
                 .mapNotNull { work ->
                     val sourceType = determineSourceType(work.workKey)

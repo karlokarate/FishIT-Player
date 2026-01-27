@@ -539,7 +539,7 @@ private fun HomeContent(
             }
         }
 
-        // Live TV (Xtream only)
+        // Live TV (Xtream only) - PAGING ONLY
         if (usePaging && livePagingItems != null && livePagingItems.itemCount > 0) {
             item(key = "live_tv_paging") {
                 PagingMediaRow(
@@ -550,19 +550,9 @@ private fun HomeContent(
                     onItemClick = onItemClick,
                 )
             }
-        } else if (state.xtreamLiveItems.isNotEmpty()) {
-            item(key = "live_tv") {
-                MediaRow(
-                    title = "Live TV",
-                    icon = Icons.Default.LiveTv,
-                    iconTint = FishColors.SourceXtream,
-                    items = state.xtreamLiveItems,
-                    onItemClick = onItemClick,
-                )
-            }
         }
 
-        // Movies (cross-pipeline: Xtream + Telegram)
+        // Movies (cross-pipeline: Xtream + Telegram) - PAGING ONLY
         if (usePaging && moviesPagingItems != null && moviesPagingItems.itemCount > 0) {
             item(key = "movies_paging") {
                 PagingMediaRow(
@@ -572,18 +562,9 @@ private fun HomeContent(
                     onItemClick = onItemClick,
                 )
             }
-        } else if (state.moviesItems.isNotEmpty()) {
-            item(key = "movies") {
-                MediaRow(
-                    title = "Movies",
-                    icon = Icons.Default.Movie,
-                    items = state.moviesItems,
-                    onItemClick = onItemClick,
-                )
-            }
         }
 
-        // Series (cross-pipeline: Xtream + Telegram)
+        // Series (cross-pipeline: Xtream + Telegram) - PAGING ONLY
         if (usePaging && seriesPagingItems != null && seriesPagingItems.itemCount > 0) {
             item(key = "series_paging") {
                 PagingMediaRow(
@@ -593,18 +574,9 @@ private fun HomeContent(
                     onItemClick = onItemClick,
                 )
             }
-        } else if (state.seriesItems.isNotEmpty()) {
-            item(key = "series") {
-                MediaRow(
-                    title = "Series",
-                    icon = Icons.Default.Tv,
-                    items = state.seriesItems,
-                    onItemClick = onItemClick,
-                )
-            }
         }
 
-        // Clips (Telegram only)
+        // Clips (Telegram only) - PAGING ONLY
         if (usePaging && clipsPagingItems != null && clipsPagingItems.itemCount > 0) {
             item(key = "clips_paging") {
                 PagingMediaRow(
@@ -615,19 +587,9 @@ private fun HomeContent(
                     onItemClick = onItemClick,
                 )
             }
-        } else if (state.clipsItems.isNotEmpty()) {
-            item(key = "clips") {
-                MediaRow(
-                    title = "Clips",
-                    icon = Icons.Default.VideoLibrary,
-                    iconTint = FishColors.SourceTelegram,
-                    items = state.clipsItems,
-                    onItemClick = onItemClick,
-                )
-            }
         }
 
-        // Check if there's any content (paging or legacy)
+        // Check if there's any content (paging or special rows)
         val hasPagingContent = usePaging && listOfNotNull(
             moviesPagingItems?.takeIf { it.itemCount > 0 },
             seriesPagingItems?.takeIf { it.itemCount > 0 },
@@ -636,7 +598,9 @@ private fun HomeContent(
             recentlyAddedPagingItems?.takeIf { it.itemCount > 0 },
         ).isNotEmpty()
         
-        val hasAnyContent = hasPagingContent || state.hasContent || state.continueWatchingItems.isNotEmpty()
+        val hasAnyContent = hasPagingContent || 
+            state.continueWatchingItems.isNotEmpty() ||
+            state.recentlyAddedItems.isNotEmpty()
 
         // Empty state if no content at all
         // Contract: STARTUP_TRIGGER_CONTRACT (U-1)

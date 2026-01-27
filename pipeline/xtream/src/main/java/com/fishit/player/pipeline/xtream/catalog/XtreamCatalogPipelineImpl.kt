@@ -12,6 +12,10 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import java.util.concurrent.atomic.AtomicInteger
 import javax.inject.Inject
 
 /**
@@ -27,35 +31,25 @@ import javax.inject.Inject
  * - Respects cancellation via coroutine context
  * - Logs progress via UnifiedLog
  *
- * **Scan Order (Optimized for Perceived Speed - Dec 2025):**
+ * **Scan Order (Optimized for Perceived Speed):**
  * 1. LIVE channels first (smallest items, most frequently accessed)
  * 2. VOD/Movies next (quick browsing, no child items)
  * 3. Series containers last (index only, episodes loaded lazily)
- * 4. Episodes are NOT synced during initial scan - loaded on-demand via EnsureEpisodePlaybackReadyUseCase
+ * 4. Episodes are NOT synced during initial scan - loaded on-demand
  *
- * **"Newest First" Ordering (Incremental Sync Optimization - Dec 2025):**
- * Each content type is sorted by timestamp DESCENDING before emission:
- * - Live/VOD: `added` field (Unix timestamp when added to provider)
- * - Series: `lastModified` field (Unix timestamp of last update)
+ * **Streaming-First Emit (Jan 2026 - Performance Fix):**
+ * Items are emitted immediately as they are parsed from JSON, WITHOUT
+ * waiting for accumulation or sorting. This ensures:
+ * - UI updates progressively (not blocked until all items parsed)
+ * - All phases can start without waiting for previous phase to complete
+ * - Memory stays low (no large in-memory lists)
  *
- * This accumulate-sort-emit strategy ensures:
- * - Newest content appears first in UI (most relevant to users)
- * - Incremental sync can detect "new since last scan" by comparing timestamps
- *
- * **Memory Tradeoff (Accepted):**
- * - Peak RAM: ~50MB for 43K VOD items (benchmarked Jan 2026)
- * - Sort time: ~10ms on desktop, ~40-65ms on FireTV (negligible)
- * - This is acceptable because:
- *   1. Android devices have 2-4GB+ RAM; 50MB is <2% headroom
- *   2. Sorting happens once per sync, not continuously
- *   3. GC can reclaim memory immediately after emission
- *   4. Alternative (streaming sort) would require external merge-sort with disk I/O
- *
- * **Rationale:**
- * - Live tiles appear within ~1-2 seconds
- * - Movies appear progressively (not all at end)
- * - Series shows immediately without waiting for 100k+ episodes
- * - Episode fetching happens when user opens a series (lazy loading)
+ * **Sorting moved to Repository:**
+ * The NxWorkRepository sorts by canonicalTitle (indexed in ObjectBox).
+ * This is more efficient than in-memory sort because:
+ * - ObjectBox uses B-tree indexes for O(log n) ordering
+ * - Sort happens at query time, not at sync time
+ * - Incremental updates don't require re-sorting everything
  *
  * @param source Data source for Xtream catalog items
  * @param mapper Mapper for converting models to catalog items
@@ -87,157 +81,136 @@ class XtreamCatalogPipelineImpl
                         ),
                     )
 
-                    var vodCount = 0
-                    var seriesCount = 0
-                    var episodeCount = 0
-                    var liveCount = 0
+                    // Thread-safe counters for parallel phases
+                    val vodCounter = AtomicInteger(0)
+                    val seriesCounter = AtomicInteger(0)
+                    val episodeCounter = AtomicInteger(0)
+                    val liveCounter = AtomicInteger(0)
+                    
+                    // Mutex for progress emissions to avoid interleaving
+                    val progressMutex = Mutex()
 
                     val headers = XtreamHttpHeaders.withDefaults(config.imageAuthHeaders)
 
                     // ================================================================
-                    // Phase 1: LIVE (First for perceived speed)
-                    // Smallest items, most frequently accessed, appear within ~1-2s
-                    // Uses accumulate-sort-emit for "newest first" ordering.
+                    // PARALLEL PHASE EXECUTION
+                    // Live, VOD, and Series scan in parallel for maximum speed.
+                    // Each phase streams items immediately as parsed.
+                    // UI sees content from ALL types within seconds, not minutes.
                     // ================================================================
-                    if (config.includeLive && currentCoroutineContext().isActive) {
-                        UnifiedLog.d(TAG, "[Phase 1/3] Scanning live channels (accumulate-sort-emit)...")
+                    
+                    val liveJob = if (config.includeLive) {
+                        launch {
+                            UnifiedLog.d(TAG, "[LIVE] Starting parallel scan (streaming-first)...")
+                            try {
+                                source.streamLiveChannels(batchSize = config.batchSize) { batch ->
+                                    for (channel in batch) {
+                                        if (!currentCoroutineContext().isActive) return@streamLiveChannels
 
-                        try {
-                            // Accumulate all live channels
-                            val liveItems = mutableListOf<XtreamChannel>()
-                            source.streamLiveChannels(batchSize = config.batchSize) { batch ->
-                                liveItems.addAll(batch)
-                            }
+                                        val catalogItem = mapper.fromChannel(channel, headers)
+                                        send(XtreamCatalogEvent.ItemDiscovered(catalogItem))
+                                        val count = liveCounter.incrementAndGet()
 
-                            // Sort by added DESC (newest first), null timestamps at end
-                            val sortStart = System.currentTimeMillis()
-                            liveItems.sortByDescending { it.added ?: 0L }
-                            val sortMs = System.currentTimeMillis() - sortStart
-                            UnifiedLog.d(TAG, "[Phase 1/3] Sorted ${liveItems.size} live channels in ${sortMs}ms")
-
-                            // Emit sorted items
-                            for (channel in liveItems) {
-                                if (!currentCoroutineContext().isActive) break
-
-                                val catalogItem = mapper.fromChannel(channel, headers)
-                                send(XtreamCatalogEvent.ItemDiscovered(catalogItem))
-                                liveCount++
-
-                                if (liveCount % PROGRESS_LOG_INTERVAL == 0) {
-                                    send(
-                                        XtreamCatalogEvent.ScanProgress(
-                                            vodCount = vodCount,
-                                            seriesCount = seriesCount,
-                                            episodeCount = episodeCount,
-                                            liveCount = liveCount,
-                                            currentPhase = XtreamScanPhase.LIVE,
-                                        ),
-                                    )
+                                        if (count % PROGRESS_LOG_INTERVAL == 0) {
+                                            progressMutex.withLock {
+                                                send(
+                                                    XtreamCatalogEvent.ScanProgress(
+                                                        vodCount = vodCounter.get(),
+                                                        seriesCount = seriesCounter.get(),
+                                                        episodeCount = episodeCounter.get(),
+                                                        liveCount = count,
+                                                        currentPhase = XtreamScanPhase.LIVE,
+                                                    ),
+                                                )
+                                            }
+                                        }
+                                    }
                                 }
+                                UnifiedLog.d(TAG, "[LIVE] Scan complete: ${liveCounter.get()} channels")
+                            } catch (e: XtreamCatalogSourceException) {
+                                UnifiedLog.w(TAG, "[LIVE] Scan failed: ${e.message}")
                             }
-
-                            UnifiedLog.d(TAG, "[Phase 1/3] Live scan complete: $liveCount channels")
-                        } catch (e: XtreamCatalogSourceException) {
-                            UnifiedLog.w(TAG, "[Phase 1/3] Live scan failed: ${e.message}")
-                            // Continue with other phases
                         }
-                    }
+                    } else null
 
-                    // ================================================================
-                    // Phase 2: VOD/Movies
-                    // Quick browsing, no child items to fetch
-                    // Uses accumulate-sort-emit for "newest first" ordering.
-                    // ================================================================
-                    if (config.includeVod && currentCoroutineContext().isActive) {
-                        UnifiedLog.d(TAG, "[Phase 2/3] Scanning VOD items (accumulate-sort-emit)...")
+                    val vodJob = if (config.includeVod) {
+                        launch {
+                            UnifiedLog.d(TAG, "[VOD] Starting parallel scan (streaming-first)...")
+                            try {
+                                source.streamVodItems(batchSize = config.batchSize) { batch ->
+                                    for (item in batch) {
+                                        if (!currentCoroutineContext().isActive) return@streamVodItems
 
-                        try {
-                            // Accumulate all VOD items
-                            val vodItems = mutableListOf<XtreamVodItem>()
-                            source.streamVodItems(batchSize = config.batchSize) { batch ->
-                                vodItems.addAll(batch)
-                            }
+                                        val catalogItem = mapper.fromVod(item, headers)
+                                        send(XtreamCatalogEvent.ItemDiscovered(catalogItem))
+                                        val count = vodCounter.incrementAndGet()
 
-                            // Sort by added DESC (newest first), null timestamps at end
-                            val sortStart = System.currentTimeMillis()
-                            vodItems.sortByDescending { it.added ?: 0L }
-                            val sortMs = System.currentTimeMillis() - sortStart
-                            UnifiedLog.d(TAG, "[Phase 2/3] Sorted ${vodItems.size} VOD items in ${sortMs}ms")
-
-                            // Emit sorted items
-                            for (item in vodItems) {
-                                if (!currentCoroutineContext().isActive) break
-
-                                val catalogItem = mapper.fromVod(item, headers)
-                                send(XtreamCatalogEvent.ItemDiscovered(catalogItem))
-                                vodCount++
-
-                                if (vodCount % PROGRESS_LOG_INTERVAL == 0) {
-                                    send(
-                                        XtreamCatalogEvent.ScanProgress(
-                                            vodCount = vodCount,
-                                            seriesCount = seriesCount,
-                                            episodeCount = episodeCount,
-                                            liveCount = liveCount,
-                                            currentPhase = XtreamScanPhase.VOD,
-                                        ),
-                                    )
+                                        if (count % PROGRESS_LOG_INTERVAL == 0) {
+                                            progressMutex.withLock {
+                                                send(
+                                                    XtreamCatalogEvent.ScanProgress(
+                                                        vodCount = count,
+                                                        seriesCount = seriesCounter.get(),
+                                                        episodeCount = episodeCounter.get(),
+                                                        liveCount = liveCounter.get(),
+                                                        currentPhase = XtreamScanPhase.VOD,
+                                                    ),
+                                                )
+                                            }
+                                        }
+                                    }
                                 }
+                                UnifiedLog.d(TAG, "[VOD] Scan complete: ${vodCounter.get()} items")
+                            } catch (e: XtreamCatalogSourceException) {
+                                UnifiedLog.w(TAG, "[VOD] Scan failed: ${e.message}")
                             }
-
-                            UnifiedLog.d(TAG, "[Phase 2/3] VOD scan complete: $vodCount items")
-                        } catch (e: XtreamCatalogSourceException) {
-                            UnifiedLog.w(TAG, "[Phase 2/3] VOD scan failed: ${e.message}")
                         }
-                    }
+                    } else null
 
-                    // ================================================================
-                    // Phase 3: Series (Index Only - Episodes are lazy loaded)
-                    // Series containers appear quickly, episodes fetched on-demand
-                    // Uses accumulate-sort-emit for "newest first" ordering.
-                    // ================================================================
-                    if (config.includeSeries && currentCoroutineContext().isActive) {
-                        UnifiedLog.d(TAG, "[Phase 3/3] Scanning series index (accumulate-sort-emit, episodes deferred)...")
+                    val seriesJob = if (config.includeSeries) {
+                        launch {
+                            UnifiedLog.d(TAG, "[SERIES] Starting parallel scan (streaming-first, episodes deferred)...")
+                            try {
+                                source.streamSeriesItems(batchSize = config.batchSize) { batch ->
+                                    for (item in batch) {
+                                        if (!currentCoroutineContext().isActive) return@streamSeriesItems
 
-                        try {
-                            // Accumulate all series items
-                            val seriesItems = mutableListOf<XtreamSeriesItem>()
-                            source.streamSeriesItems(batchSize = config.batchSize) { batch ->
-                                seriesItems.addAll(batch)
-                            }
+                                        val catalogItem = mapper.fromSeries(item, headers)
+                                        send(XtreamCatalogEvent.ItemDiscovered(catalogItem))
+                                        val count = seriesCounter.incrementAndGet()
 
-                            // Sort by lastModified DESC (newest first), null timestamps at end
-                            val sortStart = System.currentTimeMillis()
-                            seriesItems.sortByDescending { it.lastModified ?: 0L }
-                            val sortMs = System.currentTimeMillis() - sortStart
-                            UnifiedLog.d(TAG, "[Phase 3/3] Sorted ${seriesItems.size} series in ${sortMs}ms")
-
-                            // Emit sorted items
-                            for (item in seriesItems) {
-                                if (!currentCoroutineContext().isActive) break
-
-                                val catalogItem = mapper.fromSeries(item, headers)
-                                send(XtreamCatalogEvent.ItemDiscovered(catalogItem))
-                                seriesCount++
-
-                                if (seriesCount % PROGRESS_LOG_INTERVAL == 0) {
-                                    send(
-                                        XtreamCatalogEvent.ScanProgress(
-                                            vodCount = vodCount,
-                                            seriesCount = seriesCount,
-                                            episodeCount = episodeCount,
-                                            liveCount = liveCount,
-                                            currentPhase = XtreamScanPhase.SERIES,
-                                        ),
-                                    )
+                                        if (count % PROGRESS_LOG_INTERVAL == 0) {
+                                            progressMutex.withLock {
+                                                send(
+                                                    XtreamCatalogEvent.ScanProgress(
+                                                        vodCount = vodCounter.get(),
+                                                        seriesCount = count,
+                                                        episodeCount = episodeCounter.get(),
+                                                        liveCount = liveCounter.get(),
+                                                        currentPhase = XtreamScanPhase.SERIES,
+                                                    ),
+                                                )
+                                            }
+                                        }
+                                    }
                                 }
+                                UnifiedLog.d(TAG, "[SERIES] Scan complete: ${seriesCounter.get()} items")
+                            } catch (e: XtreamCatalogSourceException) {
+                                UnifiedLog.w(TAG, "[SERIES] Scan failed: ${e.message}")
                             }
-
-                            UnifiedLog.d(TAG, "[Phase 3/3] Series scan complete: $seriesCount items")
-                        } catch (e: XtreamCatalogSourceException) {
-                            UnifiedLog.w(TAG, "[Phase 3/3] Series scan failed: ${e.message}")
                         }
-                    }
+                    } else null
+
+                    // Wait for all parallel phases to complete
+                    liveJob?.join()
+                    vodJob?.join()
+                    seriesJob?.join()
+                    
+                    // Copy final counts from atomic counters
+                    val liveCount = liveCounter.get()
+                    val vodCount = vodCounter.get()
+                    val seriesCount = seriesCounter.get()
+                    var episodeCount = episodeCounter.get()
 
                     // ================================================================
                     // Phase 4: Episodes (PLATINUM: Parallel streaming)
