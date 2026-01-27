@@ -156,7 +156,7 @@ class PlayMediaUseCase
 
                         // Parse sourceId for backwards compatibility and fill in missing data
                         when {
-                            sourceIdValue.startsWith("xtream:vod:") -> {
+                            sourceIdValue.contains(":vod:") -> {
                                 putIfAbsent(PlaybackHintKeys.Xtream.CONTENT_TYPE, PlaybackHintKeys.Xtream.CONTENT_VOD)
                                 // Accept legacy format: xtream:vod:{id}:{ext}
                                 val vodId =
@@ -167,11 +167,11 @@ class PlayMediaUseCase
                                         .orEmpty()
                                 putIfAbsent(PlaybackHintKeys.Xtream.VOD_ID, vodId)
                             }
-                            sourceIdValue.startsWith("xtream:series:") -> {
+                            sourceIdValue.contains(":series:") -> {
                                 putIfAbsent(PlaybackHintKeys.Xtream.CONTENT_TYPE, PlaybackHintKeys.Xtream.CONTENT_SERIES)
                                 putIfAbsent(PlaybackHintKeys.Xtream.SERIES_ID, sourceIdValue.removePrefix("xtream:series:"))
                             }
-                            sourceIdValue.startsWith("xtream:episode:") -> {
+                            sourceIdValue.contains(":episode:") -> {
                                 // Format: xtream:episode:seriesId:season:episode
                                 val parts = sourceIdValue.removePrefix("xtream:episode:").split(":")
                                 if (parts.size >= 3) {
@@ -182,7 +182,7 @@ class PlayMediaUseCase
                                     // NOTE: episodeId is NOT in sourceId - it MUST come from playbackHints
                                 }
                             }
-                            sourceIdValue.startsWith("xtream:live:") -> {
+                            sourceIdValue.contains(":live:") -> {
                                 putIfAbsent(PlaybackHintKeys.Xtream.CONTENT_TYPE, PlaybackHintKeys.Xtream.CONTENT_LIVE)
                                 putIfAbsent(PlaybackHintKeys.Xtream.STREAM_ID, sourceIdValue.removePrefix("xtream:live:"))
                             }
@@ -257,7 +257,8 @@ class PlayMediaUseCase
         /** Checks if source represents live content (non-seekable stream). */
         private fun isLiveContent(source: MediaSourceRef): Boolean {
             val sourceId = source.sourceId.value
-            return sourceId.startsWith("xtream:live:")
+            // NX format: src:xtream:<account>:live:<id> or legacy: xtream:live:<id>
+            return sourceId.contains(":live:")
         }
 
         /**

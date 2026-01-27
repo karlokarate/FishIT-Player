@@ -96,9 +96,14 @@ class PlayerNavViewModel
 
                 when (source.sourceType) {
                     com.fishit.player.core.model.SourceType.XTREAM -> {
+                        // Detect content type from sourceKey.
+                        // Supports both legacy format (xtream:vod:123) and
+                        // NX format (src:xtream:account:vod:123)
+                        val contentType = extractXtreamContentType(sourceIdValue)
+
                         // Only fill missing values via fallback parsing
-                        when {
-                            sourceIdValue.startsWith("xtream:vod:") -> {
+                        when (contentType) {
+                            XtreamContentType.VOD -> {
                                 putIfAbsent(
                                     XtreamPlaybackSourceFactoryImpl.EXTRA_CONTENT_TYPE,
                                     XtreamPlaybackSourceFactoryImpl.CONTENT_TYPE_VOD,
@@ -107,17 +112,12 @@ class PlayerNavViewModel
                                 if (!containsKey(PlaybackHintKeys.Xtream.VOD_ID) &&
                                     !containsKey(XtreamPlaybackSourceFactoryImpl.EXTRA_VOD_ID)
                                 ) {
-                                    put(
-                                        XtreamPlaybackSourceFactoryImpl.EXTRA_VOD_ID,
-                                        sourceIdValue
-                                            .removePrefix("xtream:vod:")
-                                            .split(":")
-                                            .firstOrNull()
-                                            .orEmpty(),
-                                    )
+                                    extractXtreamItemId(sourceIdValue, XtreamContentType.VOD)?.let {
+                                        put(XtreamPlaybackSourceFactoryImpl.EXTRA_VOD_ID, it)
+                                    }
                                 }
                             }
-                            sourceIdValue.startsWith("xtream:series:") -> {
+                            XtreamContentType.SERIES -> {
                                 putIfAbsent(
                                     XtreamPlaybackSourceFactoryImpl.EXTRA_CONTENT_TYPE,
                                     XtreamPlaybackSourceFactoryImpl.CONTENT_TYPE_SERIES,
@@ -125,25 +125,30 @@ class PlayerNavViewModel
                                 if (!containsKey(PlaybackHintKeys.Xtream.SERIES_ID) &&
                                     !containsKey(XtreamPlaybackSourceFactoryImpl.EXTRA_SERIES_ID)
                                 ) {
-                                    put(
-                                        XtreamPlaybackSourceFactoryImpl.EXTRA_SERIES_ID,
-                                        sourceIdValue.removePrefix("xtream:series:"),
-                                    )
+                                    extractXtreamItemId(sourceIdValue, XtreamContentType.SERIES)?.let {
+                                        put(XtreamPlaybackSourceFactoryImpl.EXTRA_SERIES_ID, it)
+                                    }
                                 }
                             }
-                            sourceIdValue.startsWith("xtream:episode:") -> {
+                            XtreamContentType.EPISODE -> {
                                 putIfAbsent(
                                     XtreamPlaybackSourceFactoryImpl.EXTRA_CONTENT_TYPE,
                                     XtreamPlaybackSourceFactoryImpl.CONTENT_TYPE_SERIES,
                                 )
-                                val parts = sourceIdValue.removePrefix("xtream:episode:").split(":")
-                                if (parts.size >= 3) {
-                                    putIfAbsent(XtreamPlaybackSourceFactoryImpl.EXTRA_SERIES_ID, parts[0])
-                                    putIfAbsent(XtreamPlaybackSourceFactoryImpl.EXTRA_SEASON_NUMBER, parts[1])
-                                    putIfAbsent(XtreamPlaybackSourceFactoryImpl.EXTRA_EPISODE_NUMBER, parts[2])
+                                // Episode ID extraction: format is :episode:<episodeId> or :episode:<seriesId>:<season>:<episode>
+                                extractXtreamItemId(sourceIdValue, XtreamContentType.EPISODE)?.let { episodePart ->
+                                    val parts = episodePart.split(":")
+                                    if (parts.size >= 3) {
+                                        putIfAbsent(XtreamPlaybackSourceFactoryImpl.EXTRA_SERIES_ID, parts[0])
+                                        putIfAbsent(XtreamPlaybackSourceFactoryImpl.EXTRA_SEASON_NUMBER, parts[1])
+                                        putIfAbsent(XtreamPlaybackSourceFactoryImpl.EXTRA_EPISODE_NUMBER, parts[2])
+                                    } else if (parts.isNotEmpty()) {
+                                        // Just episode ID
+                                        putIfAbsent(XtreamPlaybackSourceFactoryImpl.EXTRA_EPISODE_ID, parts[0])
+                                    }
                                 }
                             }
-                            sourceIdValue.startsWith("xtream:live:") -> {
+                            XtreamContentType.LIVE -> {
                                 putIfAbsent(
                                     XtreamPlaybackSourceFactoryImpl.EXTRA_CONTENT_TYPE,
                                     XtreamPlaybackSourceFactoryImpl.CONTENT_TYPE_LIVE,
@@ -151,11 +156,13 @@ class PlayerNavViewModel
                                 if (!containsKey(PlaybackHintKeys.Xtream.STREAM_ID) &&
                                     !containsKey(XtreamPlaybackSourceFactoryImpl.EXTRA_STREAM_ID)
                                 ) {
-                                    put(
-                                        XtreamPlaybackSourceFactoryImpl.EXTRA_STREAM_ID,
-                                        sourceIdValue.removePrefix("xtream:live:"),
-                                    )
+                                    extractXtreamItemId(sourceIdValue, XtreamContentType.LIVE)?.let {
+                                        put(XtreamPlaybackSourceFactoryImpl.EXTRA_STREAM_ID, it)
+                                    }
                                 }
+                            }
+                            XtreamContentType.UNKNOWN -> {
+                                // Unknown content type, can't provide fallbacks
                             }
                         }
                         // Legacy fallback: container from MediaFormat if not in playbackHints
@@ -198,7 +205,8 @@ class PlayerNavViewModel
                 -> SourceType.UNKNOWN
             }
 
-        private fun isLiveContent(source: MediaSourceRef): Boolean = source.sourceId.value.startsWith("xtream:live:")
+        private fun isLiveContent(source: MediaSourceRef): Boolean =
+            source.sourceId.value.contains(":live:")
 
         private suspend fun loadTelegramContext(sourceId: String) {
             // TODO: Implement Telegram context loading from repository
@@ -208,7 +216,7 @@ class PlayerNavViewModel
         private suspend fun loadXtreamContext(sourceId: String) {
             val raw =
                 when {
-                    sourceId.startsWith("xtream:live:") ->
+                    sourceId.contains(":live:") ->
                         xtreamLiveRepository.getBySourceId(sourceId)
                     else -> xtreamCatalogRepository.getBySourceId(sourceId)
                 }
@@ -237,7 +245,8 @@ class PlayerNavViewModel
             sourceId: String,
             title: String,
         ): PlaybackContext? {
-            val streamId = sourceId.removePrefix("xtream:live:").toIntOrNull() ?: return null
+            val streamIdStr = extractXtreamItemId(sourceId, XtreamContentType.LIVE) ?: return null
+            val streamId = streamIdStr.toIntOrNull() ?: return null
             return PlaybackContext(
                 canonicalId = "xtream:live:$streamId",
                 sourceType = SourceType.XTREAM,
@@ -280,15 +289,20 @@ class PlayerNavViewModel
         }
 
         /**
-         * Parses Xtream VOD sourceId format: xtream:vod:{id} or xtream:vod:{id}:{ext}
+         * Parses Xtream VOD sourceId format.
+         *
+         * Supports both:
+         * - Legacy: xtream:vod:{id} or xtream:vod:{id}:{ext}
+         * - NX: src:xtream:account:vod:{id}
+         *
          * @return Parsed ID and optional extension, or null if invalid format
          */
         private fun parseXtreamVodSourceId(sourceId: String): XtreamSourceIdParts? {
-            val prefix = "xtream:vod:"
-            if (!sourceId.startsWith(prefix)) return null
+            if (!sourceId.contains(":vod:")) return null
 
-            val remainder = sourceId.removePrefix(prefix)
-            val parts = remainder.split(":")
+            val idStr = extractXtreamItemId(sourceId, XtreamContentType.VOD) ?: return null
+            // ID might contain extension suffix like "123:mp4"
+            val parts = idStr.split(":")
             val id = parts.getOrNull(0)?.toIntOrNull() ?: return null
             val extension = parts.getOrNull(1)?.takeIf { it.isNotBlank() }
             return XtreamSourceIdParts(id, extension)
@@ -299,6 +313,53 @@ class PlayerNavViewModel
             val id: Int,
             val extension: String?,
         )
+
+        // =========================================================================
+        // Xtream Content Type Detection (shared with SourceSelection)
+        // =========================================================================
+
+        /**
+         * Xtream content types for sourceKey pattern matching.
+         */
+        private enum class XtreamContentType {
+            VOD, LIVE, SERIES, EPISODE, UNKNOWN
+        }
+
+        /**
+         * Extract Xtream content type from sourceKey.
+         *
+         * Supports both formats:
+         * - Legacy: `xtream:vod:123`, `xtream:live:456`
+         * - NX: `src:xtream:account:vod:123`, `src:xtream:account:live:456`
+         */
+        private fun extractXtreamContentType(sourceKey: String): XtreamContentType = when {
+            sourceKey.contains(":vod:") -> XtreamContentType.VOD
+            sourceKey.contains(":live:") -> XtreamContentType.LIVE
+            sourceKey.contains(":episode:") -> XtreamContentType.EPISODE
+            sourceKey.contains(":series:") -> XtreamContentType.SERIES
+            else -> XtreamContentType.UNKNOWN
+        }
+
+        /**
+         * Extract the item-specific ID from an Xtream sourceKey.
+         *
+         * Works for both formats:
+         * - Legacy `xtream:vod:123` → `123`
+         * - NX `src:xtream:account:vod:123` → `123`
+         */
+        private fun extractXtreamItemId(sourceKey: String, contentType: XtreamContentType): String? {
+            val marker = when (contentType) {
+                XtreamContentType.VOD -> ":vod:"
+                XtreamContentType.LIVE -> ":live:"
+                XtreamContentType.SERIES -> ":series:"
+                XtreamContentType.EPISODE -> ":episode:"
+                XtreamContentType.UNKNOWN -> return null
+            }
+            val idx = sourceKey.indexOf(marker)
+            if (idx < 0) return null
+            // Return everything after the marker (may contain additional parts separated by :)
+            return sourceKey.substring(idx + marker.length).ifEmpty { null }
+        }
 
         private companion object {
             const val TAG = "PlayerNavViewModel"

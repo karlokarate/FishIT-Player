@@ -235,9 +235,10 @@ class NxXtreamCatalogRepositoryImpl
                 val work = sourceRef.work.target ?: return@withContext null
 
                 when {
-                    sourceId.startsWith("xtream:vod:") -> work.toRawMediaMetadataVod(sourceRef)
-                    sourceId.startsWith("xtream:series:") -> work.toRawMediaMetadataSeries(sourceRef)
-                    sourceId.startsWith("xtream:episode:") -> work.toRawMediaMetadataEpisode(sourceRef)
+                    // NX format: src:xtream:<account>:vod:<id> or legacy: xtream:vod:<id>
+            sourceId.contains(":vod:") -> work.toRawMediaMetadataVod(sourceRef)
+                    sourceId.contains(":series:") -> work.toRawMediaMetadataSeries(sourceRef)
+                    sourceId.contains(":episode:") -> work.toRawMediaMetadataEpisode(sourceRef)
                     else -> null
                 }
             }

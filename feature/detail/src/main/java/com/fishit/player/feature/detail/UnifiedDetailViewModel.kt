@@ -521,12 +521,14 @@ class UnifiedDetailViewModel
             }
 
             // Fallback: try to parse from canonical key if it follows Xtream pattern
-            if (key.startsWith("xtream:series:")) {
-                return key
-                    .removePrefix("xtream:series:")
-                    .split(":")
-                    .firstOrNull()
-                    ?.toIntOrNull()
+            // NX format: src:xtream:<account>:series:<id> or legacy: xtream:series:<id>
+            if (key.contains(":series:")) {
+                // Extract series ID from pattern: ...series:<id>...
+                val seriesIndex = key.indexOf(":series:")
+                if (seriesIndex >= 0) {
+                    val afterSeries = key.substring(seriesIndex + ":series:".length)
+                    return afterSeries.split(":").firstOrNull()?.toIntOrNull()
+                }
             }
 
             return null
