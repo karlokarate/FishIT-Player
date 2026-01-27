@@ -1,5 +1,7 @@
 package com.fishit.player.pipeline.xtream.model
 
+import java.util.Objects
+
 /**
  * Represents a Video-on-Demand item in the Xtream pipeline.
  *
@@ -66,4 +68,28 @@ data class XtreamVodItem(
      * Audio channel count (e.g., 2 for stereo, 6 for 5.1).
      */
     val audioChannels: Int? = null,
-)
+) {
+    /**
+     * Compute fingerprint hash for incremental sync change detection.
+     *
+     * **Fields included:**
+     * - id: Primary key (shouldn't change)
+     * - name: Title changes
+     * - added: Timestamp (usually stable)
+     * - categoryId: Category reassignment
+     * - containerExtension: Format changes
+     * - streamIcon: Artwork changes
+     * - rating: Metadata updates
+     *
+     * **Design:** docs/v2/INCREMENTAL_SYNC_DESIGN.md Section 7
+     */
+    fun fingerprint(): Int = Objects.hash(
+        id,
+        name,
+        added,
+        categoryId,
+        containerExtension,
+        streamIcon,
+        rating,
+    )
+}

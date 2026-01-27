@@ -1,5 +1,7 @@
 package com.fishit.player.pipeline.xtream.model
 
+import java.util.Objects
+
 /**
  * Represents a live TV channel in the Xtream pipeline.
  *
@@ -29,4 +31,24 @@ data class XtreamChannel(
      * Xtream provides this from API (is_adult field as "1" or "0" string).
      */
     val isAdult: Boolean = false,
-)
+) {
+    /**
+     * Compute fingerprint hash for incremental sync change detection.
+     *
+     * **Fields included:**
+     * - id: Primary key
+     * - name: Channel name changes
+     * - categoryId: Category reassignment
+     * - streamIcon: Logo changes
+     * - epgChannelId: EPG mapping changes
+     *
+     * **Design:** docs/v2/INCREMENTAL_SYNC_DESIGN.md Section 7
+     */
+    fun fingerprint(): Int = Objects.hash(
+        id,
+        name,
+        categoryId,
+        streamIcon,
+        epgChannelId,
+    )
+}

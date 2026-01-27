@@ -1,5 +1,7 @@
 package com.fishit.player.pipeline.xtream.model
 
+import java.util.Objects
+
 /**
  * Represents a TV series in the Xtream pipeline.
  *
@@ -60,4 +62,29 @@ data class XtreamSeriesItem(
      */
     val isValidId: Boolean
         get() = id != 0
+
+    /**
+     * Compute fingerprint hash for incremental sync change detection.
+     *
+     * **Fields included:**
+     * - id: Primary key
+     * - name: Title changes
+     * - lastModified: Modification timestamp
+     * - categoryId: Category reassignment
+     * - cover: Artwork changes
+     * - rating: Metadata updates
+     *
+     * Note: Does NOT include episode count (not available in list response).
+     * Episode count changes are detected when episodes are synced separately.
+     *
+     * **Design:** docs/v2/INCREMENTAL_SYNC_DESIGN.md Section 7
+     */
+    fun fingerprint(): Int = Objects.hash(
+        id,
+        name,
+        lastModified,
+        categoryId,
+        cover,
+        rating,
+    )
 }
