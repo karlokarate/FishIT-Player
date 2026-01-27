@@ -93,7 +93,33 @@ class XtreamCatalogScanWorker
                     XtreamSyncCheckpoint.INITIAL
                 } else {
                     val saved = checkpointStore.getXtreamCheckpoint()
-                    XtreamSyncCheckpoint.decode(saved)
+                    val decoded = XtreamSyncCheckpoint.decode(saved)
+                    
+                    // BUG FIX (Jan 2026): Reset checkpoint if not at VOD_LIST or SERIES_LIST.
+                    // For AUTO sync at app start, we want to re-scan all list phases (VOD, Series, Live)
+                    // to pick up new content. The pipeline runs VOD/Series/Live in PARALLEL, so we only
+                    // need to start from VOD_LIST - the pipeline will scan all enabled phases.
+                    // 
+                    // Phases that require reset to VOD_LIST:
+                    // - LIVE_LIST: Would skip VOD and Series (only Live scanned)
+                    // - SERIES_EPISODES: Legacy phase, now lazy-loaded
+                    // - VOD_INFO, SERIES_INFO: Backfill phases, not list phases
+                    // - COMPLETED: Sync finished, need fresh scan
+                    //
+                    // Without this fix: if checkpoint was on LIVE_LIST, includeVod=false → no movies!
+                    if (decoded.phase !in listOf(
+                            XtreamSyncPhase.VOD_LIST,
+                            XtreamSyncPhase.SERIES_LIST,
+                        )
+                    ) {
+                        UnifiedLog.i(TAG) {
+                            "Resetting checkpoint from ${decoded.phase} to VOD_LIST for fresh catalog scan"
+                        }
+                        checkpointStore.clearXtreamCheckpoint()
+                        XtreamSyncCheckpoint.INITIAL
+                    } else {
+                        decoded
+                    }
                 }
             var currentCheckpoint = initialCheckpoint
 
