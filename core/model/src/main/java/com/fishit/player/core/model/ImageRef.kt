@@ -145,13 +145,26 @@ sealed interface ImageRef {
         /**
          * Create an ImageRef from a URL string.
          *
+         * **CANONICAL PARSING FUNCTION** - This is the ONLY place where string → ImageRef
+         * parsing should happen outside of persistence layer converters.
+         *
          * Intelligently determines the appropriate variant:
          * - `tg://thumb/...` → TelegramThumb (parsed from URI)
+         * - `tg://...` → TelegramThumb (legacy format)
+         * - `tg:<remoteId>` → TelegramThumb (NxCatalogWriter format)
          * - `file://...` → LocalFile
+         * - `file:<path>` → LocalFile (NxCatalogWriter format)
          * - `http://...` or `https://...` → Http
+         * - `http:<url>` → Http (NxCatalogWriter format without scheme)
+         * - `Http(url=...)` → Http (Kotlin data class toString() fallback)
+         * - `TelegramThumb(remoteId=...)` → TelegramThumb (Kotlin data class toString() fallback)
+         * - `LocalFile(path=...)` → LocalFile (Kotlin data class toString() fallback)
          *
          * ## URI Format (v2 remoteId-first):
          * `tg://thumb/<remoteId>?chatId=123&messageId=456`
+         *
+         * ## NxCatalogWriter Format:
+         * `http:<url>`, `tg:<remoteId>`, `file:<path>`
          *
          * @param urlOrPath URL or path string
          * @return Appropriate ImageRef variant, or null if invalid
@@ -159,14 +172,90 @@ sealed interface ImageRef {
         fun fromString(urlOrPath: String?): ImageRef? {
             if (urlOrPath.isNullOrBlank()) return null
 
+            // === Handle Kotlin data class toString() format (from corrupt data or logging) ===
+            // Pattern: Http(url=https://..., headers={}, ...)
+            if (urlOrPath.startsWith("Http(")) {
+                return parseHttpToString(urlOrPath)
+            }
+            // Pattern: TelegramThumb(remoteId=..., chatId=..., ...)
+            if (urlOrPath.startsWith("TelegramThumb(")) {
+                return parseTelegramThumbToString(urlOrPath)
+            }
+            // Pattern: LocalFile(path=..., ...)
+            if (urlOrPath.startsWith("LocalFile(")) {
+                return parseLocalFileToString(urlOrPath)
+            }
+
+            // === Handle standard URL formats ===
             return when {
+                // v2 Telegram URI format: tg://thumb/<remoteId>?chatId=123&messageId=456
                 urlOrPath.startsWith("tg://thumb/") -> parseTelegramThumbUri(urlOrPath)
+                // Legacy Telegram format: tg://<remoteId>
+                urlOrPath.startsWith("tg://") -> TelegramThumb(remoteId = urlOrPath.removePrefix("tg://"))
+                // Standard file URI
                 urlOrPath.startsWith("file://") -> LocalFile(urlOrPath.removePrefix("file://"))
+                // Local absolute path
                 urlOrPath.startsWith("/") -> LocalFile(urlOrPath)
+                // Standard HTTP/HTTPS URLs
                 urlOrPath.startsWith("http://") || urlOrPath.startsWith("https://") ->
                     Http(urlOrPath)
+                // NxCatalogWriter prefixed format: "type:value"
+                else -> parsePrefixedFormat(urlOrPath)
+            }
+        }
+
+        /**
+         * Parse NxCatalogWriter prefixed format: "http:<url>", "tg:<remoteId>", "file:<path>"
+         */
+        private fun parsePrefixedFormat(s: String): ImageRef? {
+            val colonIndex = s.indexOf(':')
+            if (colonIndex < 0) return null
+
+            val prefix = s.substring(0, colonIndex)
+            val value = s.substring(colonIndex + 1)
+
+            return when (prefix) {
+                "http" -> Http(url = value)
+                "https" -> Http(url = "https:$value") // Reconstruct full URL
+                "tg" -> TelegramThumb(remoteId = value.removePrefix("//"))
+                "file" -> LocalFile(path = value)
                 else -> null
             }
+        }
+
+        /**
+         * Parse Http data class toString() format: "Http(url=https://..., headers={}, ...)"
+         */
+        private fun parseHttpToString(s: String): Http? {
+            val urlMatch = Regex("""url=([^,)]+)""").find(s)
+            val url = urlMatch?.groupValues?.get(1)?.trim() ?: return null
+            return Http(url = url)
+        }
+
+        /**
+         * Parse TelegramThumb data class toString() format: "TelegramThumb(remoteId=..., chatId=..., ...)"
+         */
+        private fun parseTelegramThumbToString(s: String): TelegramThumb? {
+            val remoteIdMatch = Regex("""remoteId=([^,)]+)""").find(s)
+            val remoteId = remoteIdMatch?.groupValues?.get(1)?.trim() ?: return null
+            val chatIdMatch = Regex("""chatId=([^,)]+)""").find(s)
+            val chatId = chatIdMatch?.groupValues?.get(1)?.trim()?.toLongOrNull()
+            val messageIdMatch = Regex("""messageId=([^,)]+)""").find(s)
+            val messageId = messageIdMatch?.groupValues?.get(1)?.trim()?.toLongOrNull()
+            return TelegramThumb(
+                remoteId = remoteId,
+                chatId = chatId,
+                messageId = messageId,
+            )
+        }
+
+        /**
+         * Parse LocalFile data class toString() format: "LocalFile(path=..., ...)"
+         */
+        private fun parseLocalFileToString(s: String): LocalFile? {
+            val pathMatch = Regex("""path=([^,)]+)""").find(s)
+            val path = pathMatch?.groupValues?.get(1)?.trim() ?: return null
+            return LocalFile(path = path)
         }
 
         /**
