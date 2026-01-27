@@ -279,6 +279,41 @@ object ObxWriteConfig {
         }
     }
 
+    /**
+     * Get the appropriate batch size for JSON streaming operations.
+     *
+     * This controls how many items are loaded into memory at once when
+     * streaming large JSON arrays from Xtream API endpoints (VOD, Live, Series).
+     *
+     * **Memory Impact:**
+     * - Each VOD item ≈ 500 bytes in memory
+     * - 500 items = ~250 KB
+     * - 2000 items = ~1 MB
+     *
+     * @param deviceClassProvider Provider for device classification
+     * @param context Android context for device detection
+     * @return Batch size for JSON streaming (items per batch)
+     */
+    fun getJsonStreamingBatchSize(
+        deviceClassProvider: DeviceClassProvider,
+        context: Context,
+    ): Int {
+        val deviceClass = deviceClassProvider.getDeviceClass(context)
+        return if (deviceClass.isLowResource) {
+            // FireTV Stick/Lite: Conservative batches
+            JSON_STREAMING_BATCH_SIZE_LOW_RESOURCE
+        } else {
+            // Phone/Tablet/High-end TV: Larger batches for throughput
+            JSON_STREAMING_BATCH_SIZE_NORMAL
+        }
+    }
+
+    /** JSON streaming batch size for low-resource devices (FireTV Stick) */
+    const val JSON_STREAMING_BATCH_SIZE_LOW_RESOURCE = 300
+
+    /** JSON streaming batch size for normal devices */
+    const val JSON_STREAMING_BATCH_SIZE_NORMAL = 1000
+
     // =========================================================================
     // Box Extension Functions
     // =========================================================================
