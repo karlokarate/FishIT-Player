@@ -57,6 +57,9 @@ private fun cleanLiveChannelName(name: String): String = name.replace(UNICODE_DE
 /**
  * Parse duration string to milliseconds.
  *
+ * **SSOT (Single Source of Truth)** für Duration-Parsing im Xtream-Flow.
+ * [XtreamVodInfoBlock.resolvedDurationMins] ist @Deprecated und verweist hierher.
+ *
  * Handles various formats from Xtream panels:
  * - "01:30:00" → 5400000 (HH:MM:SS)
  * - "90:00" → 5400000 (MM:SS)
@@ -387,6 +390,8 @@ fun XtreamVodInfo.toRawMediaMetadata(
     val sourceIdStable = "xtream:vod:$streamId"
 
     // Build TMDB reference - prefer info block, fall back to vodItem
+    // Note: TMDB-ID is written as Int here, stored as String in NX_Work for persistence.
+    // The NxCatalogWriter handles the Int→String conversion via ExternalIds.
     val tmdbId = infoBlock?.tmdbId?.toIntOrNull() ?: vodItem.tmdbId
     val externalIds =
         tmdbId?.let { ExternalIds(tmdb = TmdbRef(TmdbMediaType.MOVIE, it)) }

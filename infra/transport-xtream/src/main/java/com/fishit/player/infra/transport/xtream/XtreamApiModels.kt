@@ -473,7 +473,17 @@ data class XtreamVodInfoBlock(
                 ?: youtube?.takeIf { it.isNotBlank() }
                 ?: ytTrailer?.takeIf { it.isNotBlank() }
 
-    /** Resolved duration in minutes (handles duration string or durationSecs) */
+    /**
+     * Resolved duration in minutes (handles duration string or durationSecs).
+     *
+     * @deprecated Use Pipeline layer [XtreamRawMetadataExtensions.parseDurationToMs] instead.
+     *  Transport layer should not contain business logic per AGENTS.md Section 4.
+     *  This property is kept for backward compatibility but Pipeline is SSOT.
+     */
+    @Deprecated(
+        message = "Use Pipeline XtreamRawMetadataExtensions.parseDurationToMs() instead",
+        level = DeprecationLevel.WARNING,
+    )
     val resolvedDurationMins: Int?
         get() =
             durationSecs?.let { it / 60 }
