@@ -227,7 +227,7 @@ class NxLiveContentRepositoryImpl @Inject constructor(
             id = workKey,
             name = displayTitle,
             channelNumber = null, // TODO: Add to NX_Work or metadata
-            logo = posterRef?.let { parseImageRef(it) },
+            logo = ImageRef.fromString(posterRef),
             categoryId = null, // TODO: Add category support
             categoryName = null,
             // EPG Now/Next: null here, fetched on-demand by player
@@ -258,21 +258,6 @@ class NxLiveContentRepositoryImpl @Inject constructor(
             sourceRefs.any { it.sourceType == NxWorkSourceRefRepository.SourceType.IO } ->
                 SourceType.IO
             else -> SourceType.UNKNOWN
-        }
-    }
-
-    private fun parseImageRef(serialized: String): ImageRef? {
-        val colonIndex = serialized.indexOf(':')
-        if (colonIndex < 0) return null
-
-        val type = serialized.substring(0, colonIndex)
-        val value = serialized.substring(colonIndex + 1)
-
-        return when (type) {
-            "http" -> ImageRef.Http(url = value)
-            "tg" -> ImageRef.TelegramThumb(remoteId = value)
-            "file" -> ImageRef.LocalFile(path = value)
-            else -> null
         }
     }
 }

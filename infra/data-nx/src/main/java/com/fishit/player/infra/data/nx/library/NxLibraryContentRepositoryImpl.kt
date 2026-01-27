@@ -153,8 +153,8 @@ class NxLibraryContentRepositoryImpl @Inject constructor(
         return LibraryMediaItem(
             id = workKey,
             title = displayTitle,
-            poster = posterRef?.let { parseImageRef(it) },
-            backdrop = backdropRef?.let { parseImageRef(it) },
+            poster = ImageRef.fromString(posterRef),
+            backdrop = ImageRef.fromString(backdropRef),
             mediaType = mapWorkTypeToMediaType(type),
             sourceType = sourceType,
             year = year,
@@ -193,21 +193,6 @@ class NxLibraryContentRepositoryImpl @Inject constructor(
             WorkType.AUDIOBOOK -> MediaType.AUDIOBOOK
             WorkType.MUSIC_TRACK -> MediaType.MUSIC
             WorkType.UNKNOWN -> MediaType.UNKNOWN
-        }
-    }
-
-    private fun parseImageRef(serialized: String): ImageRef? {
-        val colonIndex = serialized.indexOf(':')
-        if (colonIndex < 0) return null
-
-        val type = serialized.substring(0, colonIndex)
-        val value = serialized.substring(colonIndex + 1)
-
-        return when (type) {
-            "http" -> ImageRef.Http(url = value)
-            "tg" -> ImageRef.TelegramThumb(remoteId = value)
-            "file" -> ImageRef.LocalFile(path = value)
-            else -> null
         }
     }
 

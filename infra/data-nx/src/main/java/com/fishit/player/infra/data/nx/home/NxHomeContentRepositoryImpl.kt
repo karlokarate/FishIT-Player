@@ -72,11 +72,31 @@ class NxHomeContentRepositoryImpl @Inject constructor(
             profileKey = DEFAULT_PROFILE_KEY,
             limit = CONTINUE_WATCHING_LIMIT,
         ).mapLatest { userStates ->
+            if (userStates.isEmpty()) return@mapLatest emptyList()
+            
+            // Batch load works
+            val workKeys = userStates.map { it.workKey }
+            val worksMap = workKeys.mapNotNull { workRepository.get(it) }.associateBy { it.workKey }
+            
+            // Batch load source refs for all works
+            val sourceRefsMap = sourceRefRepository.findByWorkKeysBatch(workKeys)
+            
             userStates.mapNotNull { state ->
-                val work = workRepository.get(state.workKey) ?: return@mapNotNull null
-                val sourceType = determineSourceType(state.workKey)
-                work.toHomeMediaItem(
+                val work = worksMap[state.workKey] ?: return@mapNotNull null
+                val refs = sourceRefsMap[state.workKey] ?: emptyList()
+                val allSourceTypes = refs.mapNotNull { ref ->
+                    when (ref.sourceType) {
+                        NxWorkSourceRefRepository.SourceType.XTREAM -> SourceType.XTREAM
+                        NxWorkSourceRefRepository.SourceType.TELEGRAM -> SourceType.TELEGRAM
+                        NxWorkSourceRefRepository.SourceType.IO -> SourceType.IO
+                        else -> null
+                    }
+                }.distinct()
+                val sourceType = determineSourceTypeFromRefs(refs)
+                
+                work.toHomeMediaItemFast(
                     sourceType = sourceType,
+                    allSourceTypes = allSourceTypes.ifEmpty { listOf(sourceType) },
                     resumePosition = state.resumePositionMs,
                     duration = state.totalDurationMs.takeIf { it > 0 } ?: work.runtimeMs ?: 0L,
                 )
@@ -92,16 +112,13 @@ class NxHomeContentRepositoryImpl @Inject constructor(
         // Use createdAt sort for "Recently Added" - shows newly ingested content
         return workRepository.observeRecentlyCreated(limit = RECENTLY_ADDED_LIMIT)
             .mapLatest { works ->
-                val now = System.currentTimeMillis()
-                works
-                    .filter { it.type != WorkType.EPISODE } // Episodes don't show as standalone tiles
-                    .mapNotNull { work ->
-                        val sourceType = determineSourceType(work.workKey)
-                        work.toHomeMediaItem(
-                            sourceType = sourceType,
-                            isNew = (now - work.createdAtMs) < SEVEN_DAYS_MS,
-                        )
+                batchMapToHomeMediaItems(
+                    works = works.filter { it.type != WorkType.EPISODE },
+                    isNew = { work -> 
+                        val now = System.currentTimeMillis()
+                        (now - work.createdAtMs) < SEVEN_DAYS_MS
                     }
+                )
             }
             .catch { e ->
                 UnifiedLog.e(TAG, e) { "Failed to observe recently added" }
@@ -112,12 +129,7 @@ class NxHomeContentRepositoryImpl @Inject constructor(
     @OptIn(ExperimentalCoroutinesApi::class)
     override fun observeMovies(): Flow<List<HomeMediaItem>> {
         return workRepository.observeByType(WorkType.MOVIE, limit = MOVIES_LIMIT)
-            .mapLatest { works ->
-                works.mapNotNull { work ->
-                    val sourceType = determineSourceType(work.workKey)
-                    work.toHomeMediaItem(sourceType = sourceType)
-                }
-            }
+            .mapLatest { works -> batchMapToHomeMediaItems(works) }
             .catch { e ->
                 UnifiedLog.e(TAG, e) { "Failed to observe movies" }
                 emit(emptyList())
@@ -127,12 +139,7 @@ class NxHomeContentRepositoryImpl @Inject constructor(
     @OptIn(ExperimentalCoroutinesApi::class)
     override fun observeSeries(): Flow<List<HomeMediaItem>> {
         return workRepository.observeByType(WorkType.SERIES, limit = SERIES_LIMIT)
-            .mapLatest { works ->
-                works.mapNotNull { work ->
-                    val sourceType = determineSourceType(work.workKey)
-                    work.toHomeMediaItem(sourceType = sourceType)
-                }
-            }
+            .mapLatest { works -> batchMapToHomeMediaItems(works) }
             .catch { e ->
                 UnifiedLog.e(TAG, e) { "Failed to observe series" }
                 emit(emptyList())
@@ -142,12 +149,7 @@ class NxHomeContentRepositoryImpl @Inject constructor(
     @OptIn(ExperimentalCoroutinesApi::class)
     override fun observeClips(): Flow<List<HomeMediaItem>> {
         return workRepository.observeByType(WorkType.CLIP, limit = CLIPS_LIMIT)
-            .mapLatest { works ->
-                works.mapNotNull { work ->
-                    val sourceType = determineSourceType(work.workKey)
-                    work.toHomeMediaItem(sourceType = sourceType)
-                }
-            }
+            .mapLatest { works -> batchMapToHomeMediaItems(works) }
             .catch { e ->
                 UnifiedLog.e(TAG, e) { "Failed to observe clips" }
                 emit(emptyList())
@@ -158,8 +160,12 @@ class NxHomeContentRepositoryImpl @Inject constructor(
     override fun observeXtreamLive(): Flow<List<HomeMediaItem>> {
         return workRepository.observeByType(WorkType.LIVE_CHANNEL, limit = LIVE_LIMIT)
             .mapLatest { works ->
-                works.mapNotNull { work ->
-                    work.toHomeMediaItem(sourceType = SourceType.XTREAM)
+                // Live channels default to Xtream source
+                works.map { work ->
+                    work.toHomeMediaItemFast(
+                        sourceType = SourceType.XTREAM,
+                        allSourceTypes = listOf(SourceType.XTREAM),
+                    )
                 }
             }
             .catch { e ->
@@ -198,35 +204,98 @@ class NxHomeContentRepositoryImpl @Inject constructor(
     // ==================== Mapping Helpers ====================
 
     /**
-     * Map NX_Work to HomeMediaItem.
-     * Loads all source types from NX_WorkSourceRef to populate sourceTypes list.
+     * Batch map works to HomeMediaItems with a single batch source lookup.
+     *
+     * **Performance:** Reduces N+1 queries to 2 queries total:
+     * 1. One batch query for all source refs
+     * 2. In-memory mapping
+     *
+     * @param works List of works to map
+     * @param isNew Function to determine if a work is "new"
+     * @return List of HomeMediaItems
      */
-    private suspend fun Work.toHomeMediaItem(
+    private suspend fun batchMapToHomeMediaItems(
+        works: List<Work>,
+        isNew: (Work) -> Boolean = { false },
+    ): List<HomeMediaItem> {
+        if (works.isEmpty()) return emptyList()
+
+        // Single batch lookup for all source refs
+        val workKeys = works.map { it.workKey }
+        val sourceRefsMap = sourceRefRepository.findByWorkKeysBatch(workKeys)
+
+        return works.map { work ->
+            val refs = sourceRefsMap[work.workKey] ?: emptyList()
+            val allSourceTypes = refs.mapNotNull { ref ->
+                when (ref.sourceType) {
+                    NxWorkSourceRefRepository.SourceType.XTREAM -> SourceType.XTREAM
+                    NxWorkSourceRefRepository.SourceType.TELEGRAM -> SourceType.TELEGRAM
+                    NxWorkSourceRefRepository.SourceType.IO -> SourceType.IO
+                    else -> null
+                }
+            }.distinct()
+            val primarySourceType = determineSourceTypeFromRefs(refs)
+
+            work.toHomeMediaItemFast(
+                sourceType = primarySourceType,
+                allSourceTypes = allSourceTypes.ifEmpty { listOf(primarySourceType) },
+                isNew = isNew(work),
+            )
+        }
+    }
+
+    /**
+     * Batch determine source types for multiple work keys.
+     * Returns a map of workKey → primary SourceType.
+     */
+    private suspend fun batchDetermineSourceTypes(workKeys: List<String>): Map<String, SourceType> {
+        if (workKeys.isEmpty()) return emptyMap()
+
+        val sourceRefsMap = sourceRefRepository.findByWorkKeysBatch(workKeys)
+
+        return workKeys.associateWith { workKey ->
+            val refs = sourceRefsMap[workKey] ?: emptyList()
+            determineSourceTypeFromRefs(refs)
+        }
+    }
+
+    /**
+     * Determine source type from pre-loaded source refs (no DB query).
+     */
+    private fun determineSourceTypeFromRefs(refs: List<NxWorkSourceRefRepository.SourceRef>): SourceType {
+        if (refs.isEmpty()) return SourceType.UNKNOWN
+
+        return when {
+            refs.any { it.sourceType == NxWorkSourceRefRepository.SourceType.XTREAM } ->
+                SourceType.XTREAM
+            refs.any { it.sourceType == NxWorkSourceRefRepository.SourceType.TELEGRAM } ->
+                SourceType.TELEGRAM
+            refs.any { it.sourceType == NxWorkSourceRefRepository.SourceType.IO } ->
+                SourceType.IO
+            else -> SourceType.UNKNOWN
+        }
+    }
+
+    /**
+     * Fast mapping without additional DB queries.
+     * Uses pre-loaded source type information.
+     */
+    private fun Work.toHomeMediaItemFast(
         sourceType: SourceType,
+        allSourceTypes: List<SourceType>,
         resumePosition: Long = 0L,
         duration: Long = runtimeMs ?: 0L,
         isNew: Boolean = false,
     ): HomeMediaItem {
-        // Load all source types for this work
-        val sourceRefs = sourceRefRepository.findByWorkKey(workKey)
-        val allSourceTypes = sourceRefs.mapNotNull { ref ->
-            when (ref.sourceType) {
-                NxWorkSourceRefRepository.SourceType.XTREAM -> SourceType.XTREAM
-                NxWorkSourceRefRepository.SourceType.TELEGRAM -> SourceType.TELEGRAM
-                NxWorkSourceRefRepository.SourceType.IO -> SourceType.IO
-                else -> null
-            }
-        }.distinct().ifEmpty { listOf(sourceType) }
-
         return HomeMediaItem(
             id = workKey,
             title = displayTitle,
-            poster = posterRef?.let { parseImageRef(it) },
-            placeholderThumbnail = null, // TODO: Add to NX_Work if needed
-            backdrop = backdropRef?.let { parseImageRef(it) },
+            poster = ImageRef.fromString(posterRef),
+            placeholderThumbnail = null,
+            backdrop = ImageRef.fromString(backdropRef),
             mediaType = mapWorkTypeToMediaType(type),
             sourceType = sourceType,
-            sourceTypes = allSourceTypes, // All sources for this work (multi-source variants)
+            sourceTypes = allSourceTypes,
             resumePosition = resumePosition,
             duration = duration,
             isNew = isNew,
@@ -236,26 +305,6 @@ class NxHomeContentRepositoryImpl @Inject constructor(
             navigationId = workKey,
             navigationSource = sourceType,
         )
-    }
-
-    /**
-     * Determine the best source type for a work by checking its source refs.
-     * Priority: XTREAM > TELEGRAM > IO > UNKNOWN
-     */
-    private suspend fun determineSourceType(workKey: String): SourceType {
-        val sourceRefs = sourceRefRepository.findByWorkKey(workKey)
-        if (sourceRefs.isEmpty()) return SourceType.UNKNOWN
-
-        // Priority order
-        return when {
-            sourceRefs.any { it.sourceType == NxWorkSourceRefRepository.SourceType.XTREAM } ->
-                SourceType.XTREAM
-            sourceRefs.any { it.sourceType == NxWorkSourceRefRepository.SourceType.TELEGRAM } ->
-                SourceType.TELEGRAM
-            sourceRefs.any { it.sourceType == NxWorkSourceRefRepository.SourceType.IO } ->
-                SourceType.IO
-            else -> SourceType.UNKNOWN
-        }
     }
 
     private fun mapWorkTypeToMediaType(type: WorkType): MediaType {
@@ -268,41 +317,6 @@ class NxHomeContentRepositoryImpl @Inject constructor(
             WorkType.AUDIOBOOK -> MediaType.AUDIOBOOK
             WorkType.MUSIC_TRACK -> MediaType.MUSIC
             WorkType.UNKNOWN -> MediaType.UNKNOWN
-        }
-    }
-
-    /**
-     * Parse serialized ImageRef string back to ImageRef.
-     *
-     * Supports multiple formats:
-     * - Prefixed: "http:<url>", "tg:<remoteId>", "file:<path>"
-     * - Plain URLs: "https://..." or "http://..." (from toDomain().toUrlString())
-     * - Legacy Telegram: "tg://<remoteId>"
-     */
-    private fun parseImageRef(serialized: String): ImageRef? {
-        // Handle plain URLs first (most common case from Xtream)
-        if (serialized.startsWith("https://") || serialized.startsWith("http://")) {
-            return ImageRef.Http(url = serialized)
-        }
-
-        // Handle legacy Telegram format "tg://<remoteId>"
-        if (serialized.startsWith("tg://")) {
-            return ImageRef.TelegramThumb(remoteId = serialized.removePrefix("tg://"))
-        }
-
-        // Handle prefixed format "type:value"
-        val colonIndex = serialized.indexOf(':')
-        if (colonIndex < 0) return null
-
-        val type = serialized.substring(0, colonIndex)
-        val value = serialized.substring(colonIndex + 1)
-
-        return when (type) {
-            "http" -> ImageRef.Http(url = value)
-            "https" -> ImageRef.Http(url = "https:$value") // Reconstruct full URL
-            "tg" -> ImageRef.TelegramThumb(remoteId = value.removePrefix("//"))
-            "file" -> ImageRef.LocalFile(path = value)
-            else -> null
         }
     }
 }
