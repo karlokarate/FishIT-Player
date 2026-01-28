@@ -619,11 +619,12 @@ class NxCanonicalMediaRepositoryImpl @Inject constructor(
         variant: NX_WorkVariant?,
     ): String = buildString {
         append(
-            when (sourceRef.sourceType) {
-                "XTREAM" -> "Xtream"
-                "TELEGRAM" -> "Telegram"
-                "LOCAL" -> "Local"
-                else -> sourceRef.sourceType
+            // FIX: DB stores lowercase sourceType via toEntityString()
+            when (sourceRef.sourceType.lowercase()) {
+                "xtream" -> "Xtream"
+                "telegram" -> "Telegram"
+                "local" -> "Local"
+                else -> sourceRef.sourceType.replaceFirstChar { it.uppercase() }
             }
         )
 
@@ -675,10 +676,11 @@ class NxCanonicalMediaRepositoryImpl @Inject constructor(
     ): Int {
         var priority = 0
 
-        priority += when (sourceRef.sourceType) {
-            "XTREAM" -> 100
-            "TELEGRAM" -> 80
-            "LOCAL" -> 60
+        // FIX: DB stores lowercase sourceType via toEntityString()
+        priority += when (sourceRef.sourceType.lowercase()) {
+            "xtream" -> 100
+            "telegram" -> 80
+            "local" -> 60
             else -> 50
         }
 

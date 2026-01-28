@@ -78,11 +78,13 @@ data class DetailSourceInfo(
 
     /** True if this is a Telegram source */
     val isTelegram: Boolean
-        get() = sourceType == "TELEGRAM"
+        // FIX: Case-insensitive comparison - DB stores lowercase, some legacy may be uppercase
+        get() = sourceType.equals("telegram", ignoreCase = true)
 
     /** True if this is an Xtream source */
     val isXtream: Boolean
-        get() = sourceType == "XTREAM"
+        // FIX: Case-insensitive comparison - DB stores lowercase, some legacy may be uppercase
+        get() = sourceType.equals("xtream", ignoreCase = true)
 }
 
 /**

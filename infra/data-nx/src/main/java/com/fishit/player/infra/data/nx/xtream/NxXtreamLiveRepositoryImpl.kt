@@ -67,7 +67,9 @@ class NxXtreamLiveRepositoryImpl
     ) : XtreamLiveRepository {
         companion object {
             private const val TAG = "NxXtreamLiveRepo"
-            private const val SOURCE_TYPE = "XTREAM"
+            // FIX: Match DB storage format - toEntityString() writes lowercase
+            // See WorkSourceRefMapper.toEntityString() and NxWorkSourceRefRepositoryImpl.toEntityString()
+            private const val SOURCE_TYPE = "xtream"
         }
 
         private val workBox by lazy { boxStore.boxFor<NX_Work>() }
