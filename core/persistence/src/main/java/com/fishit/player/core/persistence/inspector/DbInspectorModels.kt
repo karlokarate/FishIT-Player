@@ -65,3 +65,52 @@ data class DbUpdateResult(
 ) {
     val isSuccess: Boolean get() = errors.isEmpty()
 }
+
+// =============================================================================
+// Work Graph Export Models
+// =============================================================================
+
+/**
+ * Complete export of an NX_Work and all related entities.
+ *
+ * This provides a machine-readable JSON dump of the entire "Work Graph"
+ * for debugging, diagnostics, and data analysis.
+ *
+ * @property exportedAt ISO 8601 timestamp of export
+ * @property workKey The canonical work key
+ * @property work The main NX_Work entity fields
+ * @property sourceRefs All NX_WorkSourceRef entities linked to this work
+ * @property variants All NX_WorkVariant entities linked to this work
+ * @property relations All NX_WorkRelation entries (both as parent and child)
+ * @property userStates All NX_WorkUserState entries for this work
+ * @property categories All NX_WorkCategoryRef entries for this work
+ * @property ingestLedger All NX_IngestLedger entries referencing this work
+ * @property embedding NX_WorkEmbedding if present
+ * @property runtimeStates All NX_WorkRuntimeState entries
+ */
+data class DbWorkGraphExport(
+    val exportedAt: String,
+    val workKey: String,
+    val work: DbEntityDump,
+    val sourceRefs: List<DbEntityDump>,
+    val variants: List<DbEntityDump>,
+    val relations: List<DbWorkRelationExport>,
+    val userStates: List<DbEntityDump>,
+    val categories: List<DbEntityDump>,
+    val ingestLedger: List<DbEntityDump>,
+    val embedding: DbEntityDump?,
+    val runtimeStates: List<DbEntityDump>,
+)
+
+/**
+ * Wrapper for NX_WorkRelation with direction context.
+ *
+ * @property relation The relation entity dump
+ * @property direction "PARENT" if this work is the parent, "CHILD" if this work is the child
+ * @property relatedWorkKey The workKey of the other work in the relation
+ */
+data class DbWorkRelationExport(
+    val relation: DbEntityDump,
+    val direction: String,
+    val relatedWorkKey: String?,
+)

@@ -1,6 +1,7 @@
 package com.fishit.player.core.persistence.inspector
 
 import android.content.Context
+import android.net.Uri
 import com.fishit.player.infra.logging.UnifiedLog
 import io.objectbox.BoxStore
 import io.objectbox.relation.ToMany
@@ -139,6 +140,62 @@ object ObjectBoxIntrospectionDump {
             }
 
             UnifiedLog.i(TAG) { "=== ObjectBox Schema Dump END ===" }
+        }
+
+    /**
+     * Write schema dump to a user-selected URI via SAF (Storage Access Framework).
+     *
+     * This allows users to save the export to any location they choose
+     * (Downloads, Google Drive, etc.) without needing root access.
+     *
+     * @param context Android context for content resolver access
+     * @param uri User-selected destination URI from CreateDocument intent
+     * @param dump Schema dump to write
+     * @return Number of bytes written
+     */
+    suspend fun dumpToUri(
+        context: Context,
+        uri: Uri,
+        dump: ObjectBoxSchemaDump,
+    ): Long =
+        withContext(Dispatchers.IO) {
+            val jsonString = json.encodeToString(dump)
+            val bytes = jsonString.toByteArray(Charsets.UTF_8)
+
+            context.contentResolver.openOutputStream(uri)?.use { outputStream ->
+                outputStream.write(bytes)
+                outputStream.flush()
+            } ?: throw IllegalStateException("Failed to open output stream for URI: $uri")
+
+            UnifiedLog.i(TAG) { "Schema dump written to URI: $uri (${bytes.size} bytes)" }
+            bytes.size.toLong()
+        }
+
+    /**
+     * Write any JSON string to a user-selected URI via SAF.
+     *
+     * Generic helper for Work Graph exports and other JSON data.
+     *
+     * @param context Android context for content resolver access
+     * @param uri User-selected destination URI
+     * @param jsonContent JSON string to write
+     * @return Number of bytes written
+     */
+    suspend fun writeJsonToUri(
+        context: Context,
+        uri: Uri,
+        jsonContent: String,
+    ): Long =
+        withContext(Dispatchers.IO) {
+            val bytes = jsonContent.toByteArray(Charsets.UTF_8)
+
+            context.contentResolver.openOutputStream(uri)?.use { outputStream ->
+                outputStream.write(bytes)
+                outputStream.flush()
+            } ?: throw IllegalStateException("Failed to open output stream for URI: $uri")
+
+            UnifiedLog.i(TAG) { "JSON written to URI: $uri (${bytes.size} bytes)" }
+            bytes.size.toLong()
         }
 
     // =========================================================================

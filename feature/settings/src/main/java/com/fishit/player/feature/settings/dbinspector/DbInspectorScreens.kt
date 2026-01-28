@@ -1,5 +1,8 @@
 package com.fishit.player.feature.settings.dbinspector
 
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -22,8 +25,10 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.FileDownload
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Storage
@@ -56,6 +61,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
@@ -76,6 +83,9 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import javax.inject.Inject
 
 // =============================================================================
@@ -125,6 +135,20 @@ class DbInspectorEntityTypesViewModel
                     inspector.exportSchema(context, toLogcat)
                 }.onSuccess { path ->
                     _state.update { it.copy(exportState = ExportState.Success(path)) }
+                }.onFailure { e ->
+                    _state.update { it.copy(exportState = ExportState.Error(e.message ?: "Export failed")) }
+                }
+            }
+        }
+
+        fun exportSchemaToUri(context: android.content.Context, uri: Uri) {
+            viewModelScope.launch {
+                _state.update { it.copy(exportState = ExportState.Exporting) }
+                runCatching {
+                    val bytes = inspector.exportSchemaToUri(context, uri)
+                    "Exported $bytes bytes"
+                }.onSuccess { msg ->
+                    _state.update { it.copy(exportState = ExportState.Success(msg)) }
                 }.onFailure { e ->
                     _state.update { it.copy(exportState = ExportState.Error(e.message ?: "Export failed")) }
                 }
@@ -202,7 +226,16 @@ class DbInspectorDetailViewModel
             val error: String? = null,
             val snackbar: String? = null,
             val deleted: Boolean = false,
+            val workGraphExportState: WorkGraphExportState = WorkGraphExportState.Idle,
         )
+
+        sealed class WorkGraphExportState {
+            object Idle : WorkGraphExportState()
+            object Exporting : WorkGraphExportState()
+            data class Success(val message: String) : WorkGraphExportState()
+            data class Error(val message: String) : WorkGraphExportState()
+            data class JsonReady(val json: String) : WorkGraphExportState()
+        }
 
         private val _state = MutableStateFlow(State())
         val state: StateFlow<State> = _state.asStateFlow()
@@ -254,6 +287,66 @@ class DbInspectorDetailViewModel
         fun clearSnackbar() {
             _state.update { it.copy(snackbar = null) }
         }
+
+        /**
+         * Check if this entity is an NX_Work and can export a Work Graph.
+         */
+        fun canExportWorkGraph(): Boolean = entityTypeId == "NX_Work"
+
+        /**
+         * Get the workKey from the current dump (for NX_Work entities).
+         */
+        fun getWorkKey(): String? {
+            val dump = _state.value.dump ?: return null
+            return dump.fields.find { it.name == "workKey" }?.value
+        }
+
+        /**
+         * Export Work Graph to a user-selected URI via SAF.
+         */
+        fun exportWorkGraphToUri(context: android.content.Context, uri: Uri) {
+            val workKey = getWorkKey() ?: run {
+                _state.update { it.copy(workGraphExportState = WorkGraphExportState.Error("No workKey found")) }
+                return
+            }
+            viewModelScope.launch {
+                _state.update { it.copy(workGraphExportState = WorkGraphExportState.Exporting) }
+                runCatching {
+                    val bytes = inspector.exportWorkGraphToUri(context, uri, workKey)
+                    if (bytes < 0) throw IllegalStateException("Work not found")
+                    "Exported $bytes bytes"
+                }.onSuccess { msg ->
+                    _state.update { it.copy(workGraphExportState = WorkGraphExportState.Success(msg)) }
+                }.onFailure { e ->
+                    _state.update { it.copy(workGraphExportState = WorkGraphExportState.Error(e.message ?: "Export failed")) }
+                }
+            }
+        }
+
+        /**
+         * Export Work Graph to JSON string (for clipboard).
+         */
+        fun exportWorkGraphToClipboard() {
+            val workKey = getWorkKey() ?: run {
+                _state.update { it.copy(workGraphExportState = WorkGraphExportState.Error("No workKey found")) }
+                return
+            }
+            viewModelScope.launch {
+                _state.update { it.copy(workGraphExportState = WorkGraphExportState.Exporting) }
+                runCatching {
+                    inspector.exportWorkGraphToJson(workKey)
+                        ?: throw IllegalStateException("Work not found")
+                }.onSuccess { json ->
+                    _state.update { it.copy(workGraphExportState = WorkGraphExportState.JsonReady(json)) }
+                }.onFailure { e ->
+                    _state.update { it.copy(workGraphExportState = WorkGraphExportState.Error(e.message ?: "Export failed")) }
+                }
+            }
+        }
+
+        fun clearWorkGraphExportState() {
+            _state.update { it.copy(workGraphExportState = WorkGraphExportState.Idle) }
+        }
     }
 
 // =============================================================================
@@ -270,6 +363,13 @@ fun DbInspectorEntityTypesScreen(
     val context = androidx.compose.ui.platform.LocalContext.current
     var showExportDialog by remember { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
+    
+    // SAF launcher for user-selected export location
+    val schemaExportLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CreateDocument("application/json")
+    ) { uri: Uri? ->
+        uri?.let { viewModel.exportSchemaToUri(context, it) }
+    }
 
     // Handle export state snackbar
     LaunchedEffect(state.exportState) {
@@ -370,6 +470,12 @@ fun DbInspectorEntityTypesScreen(
     
     // Export dialog
     if (showExportDialog) {
+        val timestamp = remember {
+            java.time.LocalDateTime.now().format(
+                java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss")
+            )
+        }
+        
         AlertDialog(
             onDismissRequest = { showExportDialog = false },
             title = { Text("Export ObjectBox Schema") },
@@ -378,7 +484,11 @@ fun DbInspectorEntityTypesScreen(
                     Text("Choose export method:")
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        "• File: Saves JSON to app files directory",
+                        "• Save to...: Choose location (recommended)",
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                    Text(
+                        "• App files: Saves to internal storage (requires root)",
                         style = MaterialTheme.typography.bodySmall,
                     )
                     Text(
@@ -391,10 +501,12 @@ fun DbInspectorEntityTypesScreen(
                 TextButton(
                     onClick = {
                         showExportDialog = false
-                        viewModel.exportSchema(context, toLogcat = false)
+                        schemaExportLauncher.launch("obx_schema_$timestamp.json")
                     },
                 ) {
-                    Text("Export to File")
+                    Icon(Icons.Default.FileDownload, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("Save to...")
                 }
             },
             dismissButton = {
@@ -402,10 +514,18 @@ fun DbInspectorEntityTypesScreen(
                     TextButton(
                         onClick = {
                             showExportDialog = false
+                            viewModel.exportSchema(context, toLogcat = false)
+                        },
+                    ) {
+                        Text("App files")
+                    }
+                    TextButton(
+                        onClick = {
+                            showExportDialog = false
                             viewModel.exportSchema(context, toLogcat = true)
                         },
                     ) {
-                        Text("Export to Logcat")
+                        Text("Logcat")
                     }
                     TextButton(onClick = { showExportDialog = false }) {
                         Text("Cancel")
@@ -490,11 +610,43 @@ fun DbInspectorDetailScreen(
     viewModel: DbInspectorDetailViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsState()
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val clipboardManager = LocalClipboardManager.current
+    val snackbarHostState = remember { SnackbarHostState() }
 
     // Local edits: fieldName -> edited value
     val edits = remember { mutableStateMapOf<String, String?>() }
     var editMode by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
+    var showWorkGraphExportDialog by remember { mutableStateOf(false) }
+    
+    // SAF launcher for Work Graph export
+    val workGraphExportLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CreateDocument("application/json")
+    ) { uri: Uri? ->
+        uri?.let { viewModel.exportWorkGraphToUri(context, it) }
+    }
+    
+    // Handle Work Graph export state
+    LaunchedEffect(state.workGraphExportState) {
+        when (val exportState = state.workGraphExportState) {
+            is DbInspectorDetailViewModel.WorkGraphExportState.Success -> {
+                snackbarHostState.showSnackbar(exportState.message)
+                viewModel.clearWorkGraphExportState()
+            }
+            is DbInspectorDetailViewModel.WorkGraphExportState.Error -> {
+                snackbarHostState.showSnackbar("Export failed: ${exportState.message}")
+                viewModel.clearWorkGraphExportState()
+            }
+            is DbInspectorDetailViewModel.WorkGraphExportState.JsonReady -> {
+                // Copy to clipboard
+                clipboardManager.setText(AnnotatedString(exportState.json))
+                snackbarHostState.showSnackbar("Work Graph JSON copied to clipboard")
+                viewModel.clearWorkGraphExportState()
+            }
+            else -> {}
+        }
+    }
 
     // When dump changes, reset edits
     LaunchedEffect(state.dump) {
@@ -509,6 +661,7 @@ fun DbInspectorDetailScreen(
                 onRefresh = viewModel::load,
             )
         },
+        snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { padding ->
         Box(
             modifier =
@@ -537,6 +690,51 @@ fun DbInspectorDetailScreen(
                                 .verticalScroll(rememberScrollState())
                                 .padding(16.dp),
                     ) {
+                        // Work Graph Export Card (only for NX_Work entities)
+                        if (viewModel.canExportWorkGraph()) {
+                            Card(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(bottom = 16.dp),
+                                colors = CardDefaults.cardColors(
+                                    containerColor = MaterialTheme.colorScheme.secondaryContainer
+                                ),
+                            ) {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable { showWorkGraphExportDialog = true }
+                                        .padding(16.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                ) {
+                                    Icon(
+                                        Icons.Default.FileDownload,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                                    )
+                                    Spacer(modifier = Modifier.width(12.dp))
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(
+                                            text = "Export Work Graph",
+                                            style = MaterialTheme.typography.titleMedium,
+                                            color = MaterialTheme.colorScheme.onSecondaryContainer,
+                                        )
+                                        Text(
+                                            text = "Export all related entities as JSON",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f),
+                                        )
+                                    }
+                                    if (state.workGraphExportState is DbInspectorDetailViewModel.WorkGraphExportState.Exporting) {
+                                        CircularProgressIndicator(
+                                            modifier = Modifier.size(24.dp),
+                                            strokeWidth = 2.dp,
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                        
                         // Action buttons
                         Row(
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -635,6 +833,75 @@ fun DbInspectorDetailScreen(
                 }
             },
         )
+    }
+    
+    // Work Graph Export dialog
+    if (showWorkGraphExportDialog) {
+        // Remember both workKey and timestamp to ensure consistency
+        val workKey = remember { viewModel.getWorkKey() }
+        val timestamp = remember {
+            java.time.LocalDateTime.now().format(
+                java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss")
+            )
+        }
+        
+        // If workKey is null, close dialog and show error
+        if (workKey == null) {
+            LaunchedEffect(Unit) {
+                snackbarHostState.showSnackbar("Cannot export: workKey not found")
+                showWorkGraphExportDialog = false
+            }
+        } else {
+            AlertDialog(
+                onDismissRequest = { showWorkGraphExportDialog = false },
+                title = { Text("Export Work Graph") },
+                text = {
+                Column {
+                    Text("Export all related entities for this work as JSON.")
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "Work Key: $workKey",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        "Includes: SourceRefs, Variants, Relations, UserState, Categories, Embeddings, RuntimeState",
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showWorkGraphExportDialog = false
+                        workGraphExportLauncher.launch("work_${workKey}_$timestamp.json")
+                    },
+                ) {
+                    Icon(Icons.Default.FileDownload, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("Save to...")
+                }
+            },
+            dismissButton = {
+                Row {
+                    TextButton(
+                        onClick = {
+                            showWorkGraphExportDialog = false
+                            viewModel.exportWorkGraphToClipboard()
+                        },
+                    ) {
+                        Icon(Icons.Default.ContentCopy, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Copy")
+                    }
+                    TextButton(onClick = { showWorkGraphExportDialog = false }) {
+                        Text("Cancel")
+                    }
+                }
+            },
+        )
+        } // End of else block for workKey != null
     }
 }
 
