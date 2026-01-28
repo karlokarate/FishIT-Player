@@ -523,22 +523,32 @@ private class HomePagingSource(
             }
             
             // Map to HomeMediaItem
-            val items = works.map { work ->
-                val refs = sourceRefsMap[work.workKey] ?: emptyList()
-                val allSourceTypes = refs.mapNotNull { ref ->
-                    when (ref.sourceType) {
-                        NxWorkSourceRefRepository.SourceType.XTREAM -> SourceType.XTREAM
-                        NxWorkSourceRefRepository.SourceType.TELEGRAM -> SourceType.TELEGRAM
-                        NxWorkSourceRefRepository.SourceType.IO -> SourceType.IO
-                        else -> null
+            // Filter out items that fail mapping (e.g., corrupted data)
+            val items = works.mapNotNull { work ->
+                try {
+                    val refs = sourceRefsMap[work.workKey] ?: emptyList()
+                    val allSourceTypes = refs.mapNotNull { ref ->
+                        when (ref.sourceType) {
+                            NxWorkSourceRefRepository.SourceType.XTREAM -> SourceType.XTREAM
+                            NxWorkSourceRefRepository.SourceType.TELEGRAM -> SourceType.TELEGRAM
+                            NxWorkSourceRefRepository.SourceType.IO -> SourceType.IO
+                            else -> null
+                        }
+                    }.distinct()
+                    val primarySourceType = determineSourceTypeFromRefs(refs)
+                    
+                    work.toHomeMediaItem(
+                        sourceType = primarySourceType,
+                        allSourceTypes = allSourceTypes.ifEmpty { listOf(primarySourceType) },
+                    )
+                } catch (e: Exception) {
+                    // Log and skip corrupted entries to prevent blocking pagination
+                    UnifiedLog.w("HomePagingSource") {
+                        "Failed to map work to HomeMediaItem: workKey=${work.workKey}, " +
+                        "title=${work.displayTitle}, error=${e.message}"
                     }
-                }.distinct()
-                val primarySourceType = determineSourceTypeFromRefs(refs)
-                
-                work.toHomeMediaItem(
-                    sourceType = primarySourceType,
-                    allSourceTypes = allSourceTypes.ifEmpty { listOf(primarySourceType) },
-                )
+                    null
+                }
             }
             
             val prevKey = if (offset > 0) maxOf(0, offset - loadSize) else null

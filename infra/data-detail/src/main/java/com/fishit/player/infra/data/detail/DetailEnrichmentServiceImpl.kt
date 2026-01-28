@@ -228,17 +228,56 @@ class DetailEnrichmentServiceImpl
             }
         }
 
+        /**
+         * Parse VOD ID from sourceKey.
+         *
+         * Supported formats:
+         * - New format: `src:xtream:{accountKey}:vod:{id}` (from NxCatalogWriter)
+         * - Legacy format: `xtream:vod:{id}` or `xtream:vod:{id}:{ext}`
+         */
         private fun parseXtreamVodId(sourceId: String): Int? {
-            // Expected: xtream:vod:{id} or xtream:vod:{id}:{ext}
             val parts = sourceId.split(":")
-            if (parts.size < 3) return null
-            if (parts[0] != "xtream" || parts[1] != "vod") return null
-            return parts[2].toIntOrNull()
+
+            // New format: src:xtream:{accountKey}:vod:{id}
+            // parts[0] = "src", parts[1] = "xtream", parts[2] = accountKey,
+            // parts[3] = "vod", parts[4] = id
+            if (parts.size >= 5 &&
+                parts[0] == "src" &&
+                parts[1] == "xtream" &&
+                parts[3] == "vod"
+            ) {
+                return parts[4].toIntOrNull()
+            }
+
+            // Legacy format: xtream:vod:{id} or xtream:vod:{id}:{ext}
+            if (parts.size >= 3 && parts[0] == "xtream" && parts[1] == "vod") {
+                return parts[2].toIntOrNull()
+            }
+
+            UnifiedLog.d(TAG) { "parseXtreamVodId: unrecognized format sourceId=$sourceId" }
+            return null
         }
 
+        /**
+         * Parse container extension from sourceKey (if present).
+         *
+         * Supported formats:
+         * - New format: `src:xtream:{accountKey}:vod:{id}` → no ext in key
+         * - Legacy format: `xtream:vod:{id}:{ext}` → returns ext
+         */
         private fun parseXtreamContainerExt(sourceId: String): String? {
             val parts = sourceId.split(":")
-            if (parts.size < 4) return null
-            return parts[3].takeIf { it.isNotBlank() }
+
+            // New format doesn't include container ext in the key
+            if (parts.size >= 5 && parts[0] == "src") {
+                return null
+            }
+
+            // Legacy format: xtream:vod:{id}:{ext}
+            if (parts.size >= 4 && parts[0] == "xtream" && parts[1] == "vod") {
+                return parts[3].takeIf { it.isNotBlank() }
+            }
+
+            return null
         }
     }
