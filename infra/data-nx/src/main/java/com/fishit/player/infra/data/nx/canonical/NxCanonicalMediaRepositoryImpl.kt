@@ -125,7 +125,7 @@ class NxCanonicalMediaRepositoryImpl @Inject constructor(
         val sourceRef = existing ?: NX_WorkSourceRef()
         sourceRef.apply {
             this.sourceKey = source.sourceId.value
-            this.sourceType = source.sourceType.name
+            this.sourceType = source.sourceType.name.lowercase()  // ← FIX: lowercase!
             this.accountKey = "" // Not available in new MediaSourceRef
             this.sourceId = extractSourceSpecificId(source.sourceId.value)
             // File metadata from playbackHints if available
@@ -597,7 +597,7 @@ class NxCanonicalMediaRepositoryImpl @Inject constructor(
 
         return MediaSourceRef(
             sourceType = try {
-                SourceType.valueOf(sourceRef.sourceType)
+                SourceType.valueOf(sourceRef.sourceType.uppercase())  // ← FIX: uppercase!
             } catch (e: IllegalArgumentException) {
                 SourceType.UNKNOWN
             },

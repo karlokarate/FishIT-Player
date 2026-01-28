@@ -1548,10 +1548,14 @@ class DefaultXtreamApiClient(
                         (bodyBytes[1].toInt() and 0xFF) == 0x8B
                     ) {
                         try {
+                            // FIX: Use 'use' block to ensure GZIPInputStream is properly closed
+                            // This prevents "A resource failed to call end/release" warnings
                             val decompressed =
-                                GZIPInputStream(bodyBytes.inputStream())
-                                    .bufferedReader()
-                                    .readText()
+                                GZIPInputStream(bodyBytes.inputStream()).use { gzipStream ->
+                                    gzipStream.bufferedReader().use { reader ->
+                                        reader.readText()
+                                    }
+                                }
                             UnifiedLog.d(TAG) {
                                 "NetworkProbe: Manually decompressed gzip body for $safeUrl | original=${bodyBytes.size} decompressed=${decompressed.length}"
                             }

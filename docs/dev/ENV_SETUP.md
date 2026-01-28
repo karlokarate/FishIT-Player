@@ -1,5 +1,7 @@
 # Android Environment Setup
 
+> **Für vollständige lokale Entwicklungsumgebung:** Siehe [LOCAL_SETUP.md](./LOCAL_SETUP.md)
+
 This repository includes an idempotent helper to provision the Android SDK without depending on Codespaces-specific paths. Use `$HOME` or explicitly set `ANDROID_SDK_ROOT`/`ANDROID_HOME`; the script will reuse a repo-local cache in `.cache/android-sdk` for downloads.
 
 ## Prerequisites

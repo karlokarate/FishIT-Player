@@ -106,9 +106,20 @@ class PlayMediaUseCase
             // Build extras map with non-secret identifiers
             val extras = buildExtrasForSource(source)
 
+            // CRITICAL FIX: Extract sourceType from sourceKey as fallback when UNKNOWN
+            // This fixes the bug where legacy repositories don't convert String→Enum correctly
+            val sourceType = mapToPlayerSourceType(source.sourceType).let { mappedType ->
+                if (mappedType == com.fishit.player.core.playermodel.SourceType.UNKNOWN) {
+                    // Fallback: Extract from sourceKey format (src:xtream:... or xtream:vod:...)
+                    extractSourceTypeFromKey(source.sourceId.value) ?: mappedType
+                } else {
+                    mappedType
+                }
+            }
+
             return PlaybackContext(
                 canonicalId = canonicalId.key.value,
-                sourceType = mapToPlayerSourceType(source.sourceType),
+                sourceType = sourceType,
                 sourceKey = source.sourceId.value,
                 title = title,
                 subtitle = source.sourceLabel,
@@ -276,6 +287,44 @@ class PlayMediaUseCase
                 is com.fishit.player.core.model.ImageRef.LocalFile -> null // Local path, not URL
                 is com.fishit.player.core.model.ImageRef.InlineBytes -> null // Bytes, not URL
             }
+
+        /**
+         * Extracts sourceType from sourceKey as fallback when MediaSourceRef.sourceType is UNKNOWN.
+         *
+         * **CRITICAL FIX:** This is a safety fallback for the bug where legacy repositories
+         * don't convert String sourceType to Enum correctly.
+         *
+         * **Supported formats:**
+         * - NX format: `src:xtream:account:category:id` → XTREAM
+         * - Legacy format: `xtream:vod:123` → XTREAM
+         * - Telegram: `telegram:chatId:messageId` → TELEGRAM
+         *
+         * @param sourceKey The sourceKey to parse
+         * @return Mapped PlayerModel SourceType or null if cannot determine
+         */
+        private fun extractSourceTypeFromKey(sourceKey: String): com.fishit.player.core.playermodel.SourceType? {
+            // Split by colon
+            val parts = sourceKey.split(":")
+            if (parts.isEmpty()) return null
+
+            // Check first two segments for sourceType
+            // NX format: src:xtream:... → index 1
+            // Legacy format: xtream:vod:... → index 0
+            val sourceTypeCandidate = when {
+                parts.size >= 2 && parts[0] == "src" -> parts[1] // NX format
+                parts.isNotEmpty() -> parts[0] // Legacy format
+                else -> return null
+            }
+
+            // Map to PlayerModel SourceType
+            return when (sourceTypeCandidate.lowercase()) {
+                "telegram", "tg" -> com.fishit.player.core.playermodel.SourceType.TELEGRAM
+                "xtream", "xc" -> com.fishit.player.core.playermodel.SourceType.XTREAM
+                "io", "file", "local" -> com.fishit.player.core.playermodel.SourceType.FILE
+                "audiobook" -> com.fishit.player.core.playermodel.SourceType.AUDIOBOOK
+                else -> null // Unknown - let caller handle
+            }
+        }
 
         companion object {
             private const val TAG = "PlayMediaUseCase"

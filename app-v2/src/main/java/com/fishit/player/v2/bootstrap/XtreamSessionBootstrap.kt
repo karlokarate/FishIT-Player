@@ -8,6 +8,7 @@ import com.fishit.player.infra.transport.xtream.XtreamCredentialsStore
 import com.fishit.player.v2.di.AppScopeModule
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
@@ -41,6 +42,13 @@ class XtreamSessionBootstrap
 
             appScope.launch(Dispatchers.IO) {
                 try {
+                    // FIX: Delay session initialization to prevent frame drops during UI startup
+                    // Frame-Drop Analysis (STARTUP_LOG_ANALYSIS.md):
+                    // - UI initialization completes ~1-2 seconds after app start
+                    // - Heavy API calls (3.2 MB + 6.2 MB JSON) cause 85 frame drops
+                    // - Delaying by 2 seconds allows UI to fully initialize first
+                    delay(SESSION_INIT_DELAY_MS)
+
                     val storedConfig = xtreamCredentialsStore.read()
                     if (storedConfig != null) {
                         UnifiedLog.i(TAG) {
@@ -72,5 +80,17 @@ class XtreamSessionBootstrap
 
         private companion object {
             private const val TAG = "XtreamSessionBootstrap"
+
+            /**
+             * Delay before session initialization to prevent UI frame drops.
+             *
+             * Rationale (see STARTUP_LOG_ANALYSIS.md):
+             * - UI needs 1-2 seconds to fully initialize after app start
+             * - Heavy API calls (9.4 MB JSON) during UI init cause 85 frame drops
+             * - 2-second delay allows UI to complete first, then loads data
+             *
+             * Impact: Reduces frame drops from 85 → <10 (expected)
+             */
+            private const val SESSION_INIT_DELAY_MS = 2_000L
         }
     }

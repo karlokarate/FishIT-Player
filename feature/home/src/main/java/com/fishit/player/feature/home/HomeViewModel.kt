@@ -188,6 +188,8 @@ class HomeViewModel
                 )
 
         init {
+            UnifiedLog.i(TAG) { "🏠 HomeViewModel INIT - Creating content flows and paging sources" }
+
             // ==================== Special Rows (Flow-based, small limits) ====================
             // Continue Watching and Recently Added use Flow-based loading with limits.
             // They are small, bounded rows (max 30 and 100 items respectively).

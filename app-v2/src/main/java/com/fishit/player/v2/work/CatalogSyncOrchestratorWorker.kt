@@ -68,6 +68,11 @@ class CatalogSyncOrchestratorWorker
                 return Result.retry()
             }
 
+            // WorkManager initialization for chain enqueuing
+            // Note: ExistingWorkPolicy.KEEP automatically prevents prerequisite race conditions
+            // by not enqueuing if work with same name already exists
+            val workManager = WorkManager.getInstance(applicationContext)
+
             // W-8: Check for active sources
             val activeSources = sourceActivationStore.getActiveSources()
 
@@ -95,7 +100,6 @@ class CatalogSyncOrchestratorWorker
             // Build PARALLEL chains per source (not sequential)
             // Each source gets its own unique work name and can run independently
             // This prevents one source's preflight retries from blocking another source
-            val workManager = WorkManager.getInstance(applicationContext)
             val childInputData = buildChildInputData(input, activeSources)
 
             // Track enqueued chains for logging
@@ -112,8 +116,8 @@ class CatalogSyncOrchestratorWorker
 
             // 1. Xtream (if active) - independent chain
             if (SourceId.XTREAM in activeSources) {
-                val xtreamChain = buildXtreamChain(childInputData)
                 val xtreamWorkName = getSourceWorkName(SourceId.XTREAM)
+                val xtreamChain = buildXtreamChain(childInputData)
 
                 workManager
                     .beginUniqueWork(
@@ -132,8 +136,8 @@ class CatalogSyncOrchestratorWorker
             // 2. Telegram (if active) - independent chain
             if (SourceId.TELEGRAM in activeSources) {
                 UnifiedLog.i(TAG) { "✅ Telegram is ACTIVE - building Telegram worker chain" }
-                val telegramChain = buildTelegramChain(childInputData, input)
                 val telegramWorkName = getSourceWorkName(SourceId.TELEGRAM)
+                val telegramChain = buildTelegramChain(childInputData, input)
 
                 workManager
                     .beginUniqueWork(
@@ -154,8 +158,8 @@ class CatalogSyncOrchestratorWorker
 
             // 3. IO (if active) - independent chain
             if (SourceId.IO in activeSources) {
-                val ioWorker = buildIoWorker(childInputData)
                 val ioWorkName = getSourceWorkName(SourceId.IO)
+                val ioWorker = buildIoWorker(childInputData)
 
                 workManager
                     .beginUniqueWork(
@@ -298,6 +302,7 @@ class CatalogSyncOrchestratorWorker
 
         /** Get unique work name for a source chain. Pattern: catalog_sync_global_{source_lowercase} */
         private fun getSourceWorkName(sourceId: SourceId): String = "${WorkerConstants.WORK_NAME_CATALOG_SYNC}_${sourceId.name.lowercase()}"
+
 
         /**
          * PLATINUM: Log WorkInfo states for debug visibility.

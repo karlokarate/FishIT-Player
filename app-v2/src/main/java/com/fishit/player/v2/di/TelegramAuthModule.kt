@@ -43,19 +43,18 @@ object TelegramAuthModule {
         val databaseDir = File(sessionRoot, "db").apply { mkdirs() }
         val filesDir = File(sessionRoot, "files").apply { mkdirs() }
 
-        if (BuildConfig.TG_API_ID == 0 || BuildConfig.TG_API_HASH.isBlank()) {
-            val message = "Telegram API credentials are missing. Set TG_API_ID and TG_API_HASH."
-            if (BuildConfig.DEBUG) {
-                UnifiedLog.e(TAG) { message }
-                throw IllegalStateException(message)
-            } else {
-                UnifiedLog.w(TAG) { message }
-            }
+        val hasTelegramCredentials = BuildConfig.TG_API_ID != 0 && BuildConfig.TG_API_HASH.isNotBlank()
+
+        if (!hasTelegramCredentials) {
+            val message = "Telegram API credentials are missing. Set TG_API_ID and TG_API_HASH " +
+                "environment variables before building. Telegram features will be disabled."
+            UnifiedLog.w(TAG) { message }
+            // Return config with dummy values - Telegram features won't work but app will start
         }
 
         return TelegramSessionConfig(
-            apiId = BuildConfig.TG_API_ID,
-            apiHash = BuildConfig.TG_API_HASH,
+            apiId = if (hasTelegramCredentials) BuildConfig.TG_API_ID else 1,
+            apiHash = if (hasTelegramCredentials) BuildConfig.TG_API_HASH else "dummy",
             databaseDir = databaseDir.absolutePath,
             filesDir = filesDir.absolutePath,
             deviceModel = Build.MODEL ?: "Android",

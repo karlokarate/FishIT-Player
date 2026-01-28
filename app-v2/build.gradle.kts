@@ -295,20 +295,58 @@ dependencies {
  *
  * Run after assembling to validate the manifest merge rules are correct.
  * CI should run this as a post-build verification step.
+ *
+ * Note: This task is implemented in pure Kotlin/Gradle to work cross-platform (Windows/Linux/macOS).
  */
-tasks.register<Exec>("checkNoWorkManagerInitializer") {
+tasks.register("checkNoWorkManagerInitializer") {
     group = "verification"
     description = "Verify WorkManagerInitializer is not in merged manifests (on-demand init only)"
 
-    commandLine("${rootProject.projectDir}/scripts/check_no_workmanager_initializer.sh")
+    doLast {
+        val mergedManifestsDir = file("${layout.buildDirectory.get()}/intermediates/merged_manifests")
 
-    // Only run if build has produced at least one merged manifest (any variant)
-    val mergedManifestsDir = file("${layout.buildDirectory.get()}/intermediates/merged_manifests")
-    onlyIf {
-        mergedManifestsDir.exists() &&
-            fileTree(mergedManifestsDir) {
-                include("**/AndroidManifest.xml")
-            }.files.isNotEmpty()
+        if (!mergedManifestsDir.exists()) {
+            logger.warn("⚠️  WARNING: No merged manifests found. This is expected if build hasn't run yet.")
+            return@doLast
+        }
+
+        val manifestFiles = fileTree(mergedManifestsDir) {
+            include("**/AndroidManifest.xml")
+        }.files
+
+        if (manifestFiles.isEmpty()) {
+            logger.warn("⚠️  WARNING: No merged manifests found. Run ':app-v2:assembleDebug' first.")
+            return@doLast
+        }
+
+        var violations = 0
+        val forbiddenPattern = "androidx.work.impl.WorkManagerInitializer"
+
+        manifestFiles.forEach { manifest ->
+            val content = manifest.readText()
+            if (content.contains(forbiddenPattern)) {
+                violations++
+                logger.error("❌ VIOLATION: WorkManagerInitializer found in ${manifest.relativeTo(rootProject.projectDir)}")
+            } else {
+                logger.lifecycle("✅ OK: ${manifest.relativeTo(rootProject.projectDir)}")
+            }
+        }
+
+        if (violations > 0) {
+            throw GradleException(
+                """
+                |
+                |❌ GUARDRAIL FAILED: WorkManagerInitializer found in $violations merged manifest(s)!
+                |
+                |This project uses on-demand WorkManager initialization.
+                |The auto-initialization must be removed via tools:node="remove" in AndroidManifest.xml.
+                |
+                |Check app-v2/src/main/AndroidManifest.xml for the correct removal declaration.
+                """.trimMargin()
+            )
+        }
+
+        logger.lifecycle("✅ SUCCESS: No WorkManagerInitializer found in ${manifestFiles.size} manifest(s)")
     }
 
     // Make this task run after manifest processing

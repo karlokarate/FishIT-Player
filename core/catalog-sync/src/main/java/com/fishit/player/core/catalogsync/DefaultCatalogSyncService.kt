@@ -374,6 +374,7 @@ class DefaultCatalogSyncService
                         excludeSeriesIds = excludeSeriesIds,
                         episodeParallelism = episodeParallelism,
                         batchSize = syncConfig.jsonStreamingBatchSize,
+                        // accountName defaults to "xtream" - good enough for single-account setup
                     )
 
                 try {

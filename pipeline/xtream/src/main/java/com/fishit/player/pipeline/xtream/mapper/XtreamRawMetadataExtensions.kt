@@ -9,6 +9,7 @@ import com.fishit.player.core.model.SourceType
 import com.fishit.player.core.model.TmdbMediaType
 import com.fishit.player.core.model.TmdbRef
 import com.fishit.player.infra.transport.xtream.XtreamVodInfo
+import com.fishit.player.pipeline.xtream.debug.XtcLogger
 import com.fishit.player.pipeline.xtream.model.XtreamChannel
 import com.fishit.player.pipeline.xtream.model.XtreamEpisode
 import com.fishit.player.pipeline.xtream.model.XtreamSeriesItem
@@ -111,12 +112,26 @@ private fun parseDurationToMs(duration: String?): Long? {
  * - VOD items map to TmdbRef(MOVIE, tmdbId) when tmdbId is available
  *
  * @param authHeaders Optional headers for image URL authentication
+ * @param accountName Xtream account identifier (e.g., "konigtv") for sourceLabel
  * @return RawMediaMetadata with VOD-specific fields
  */
-fun XtreamVodItem.toRawMediaMetadata(authHeaders: Map<String, String> = emptyMap()): RawMediaMetadata {
+fun XtreamVodItem.toRawMetadata(
+    authHeaders: Map<String, String> = emptyMap(),
+    accountName: String = "xtream",
+): RawMediaMetadata {
     val rawTitle = name
-    // Parse year from quick info field if available
-    val rawYear: Int? = year?.toIntOrNull()
+
+    // BUG FIX: Extract year from multiple sources with validation
+    // Priority 1: year field (but only if valid: not empty, not "0", not "N/A")
+    // Priority 2: Extract from title (e.g., "Movie | 2025 | 6.5")
+    val yearFromField = year
+        ?.takeIf { it.isNotBlank() && it != "0" && it != "N/A" }
+        ?.toIntOrNull()
+        ?.takeIf { it in 1900..2100 }
+
+    val yearFromTitle = extractYearFromVodTitle(rawTitle)
+
+    val rawYear: Int? = yearFromField ?: yearFromTitle
     // Parse duration - format varies: "01:30:00", "90", "90 min", etc.
     val durationMs: Long? = parseDurationToMs(duration)
     // Stable source ID format (contract): xtream:vod:{id}
@@ -136,7 +151,8 @@ fun XtreamVodItem.toRawMediaMetadata(authHeaders: Map<String, String> = emptyMap
                 put(PlaybackHintKeys.Xtream.CONTAINER_EXT, it)
             }
         }
-    return RawMediaMetadata(
+
+    val raw = RawMediaMetadata(
         originalTitle = rawTitle,
         mediaType = MediaType.MOVIE,
         year = rawYear,
@@ -145,7 +161,7 @@ fun XtreamVodItem.toRawMediaMetadata(authHeaders: Map<String, String> = emptyMap
         durationMs = durationMs,
         externalIds = externalIds,
         sourceType = SourceType.XTREAM,
-        sourceLabel = "Xtream VOD",
+        sourceLabel = accountName,
         sourceId = sourceIdStable,
         // === Pipeline Identity (v2) ===
         pipelineIdTag = PipelineIdTag.XTREAM,
@@ -166,6 +182,11 @@ fun XtreamVodItem.toRawMediaMetadata(authHeaders: Map<String, String> = emptyMap
         isAdult = isAdult,
         categoryId = categoryId,
     )
+
+    // XTC: Track DTO → RawMetadata mapping
+    XtcLogger.logDtoToRaw("VOD", sourceIdStable, rawTitle, raw)
+
+    return raw
 }
 
 /**
@@ -178,15 +199,38 @@ fun XtreamVodItem.toRawMediaMetadata(authHeaders: Map<String, String> = emptyMap
  * - Series map to TmdbRef(TV, tmdbId) when tmdbId is available
  *
  * @param authHeaders Optional headers for image URL authentication
+ * @param accountName Xtream account identifier (e.g., "konigtv") for sourceLabel
  * @return RawMediaMetadata with series-specific fields
  */
-fun XtreamSeriesItem.toRawMediaMetadata(authHeaders: Map<String, String> = emptyMap()): RawMediaMetadata {
+fun XtreamSeriesItem.toRawMetadata(
+    authHeaders: Map<String, String> = emptyMap(),
+    accountName: String = "xtream",
+): RawMediaMetadata {
     val rawTitle = name
-    val rawYear = year?.toIntOrNull()
+
+    // BUG FIX: Extract year from multiple sources with priority
+    // Priority 1: year field (but only if valid: not empty, not "0", not "N/A")
+    // Priority 2: releaseDate field (extract first 4 digits)
+    // Priority 3: Extract from title (e.g., "Show Name (2023)")
+    val yearFromField = year
+        ?.takeIf { it.isNotBlank() && it != "0" && it != "N/A" }
+        ?.toIntOrNull()
+        ?.takeIf { it in 1900..2100 }
+
+    val yearFromReleaseDate = releaseDate
+        ?.take(4)
+        ?.toIntOrNull()
+        ?.takeIf { it in 1900..2100 }
+
+    val yearFromTitle = extractYearFromSeriesTitle(rawTitle)
+
+    val rawYear = yearFromField ?: yearFromReleaseDate ?: yearFromTitle
+
     // Build typed TMDB reference for TV shows
     val externalIds =
         tmdbId?.let { ExternalIds(tmdb = TmdbRef(TmdbMediaType.TV, it)) } ?: ExternalIds()
-    return RawMediaMetadata(
+
+    val raw = RawMediaMetadata(
         originalTitle = rawTitle,
         mediaType = MediaType.SERIES, // Series container, not episode
         year = rawYear,
@@ -195,7 +239,7 @@ fun XtreamSeriesItem.toRawMediaMetadata(authHeaders: Map<String, String> = empty
         durationMs = null, // Series list doesn't include duration
         externalIds = externalIds,
         sourceType = SourceType.XTREAM,
-        sourceLabel = "Xtream Series",
+        sourceLabel = accountName,
         sourceId = "xtream:series:$id",
         // === Pipeline Identity (v2) ===
         pipelineIdTag = PipelineIdTag.XTREAM,
@@ -222,6 +266,11 @@ fun XtreamSeriesItem.toRawMediaMetadata(authHeaders: Map<String, String> = empty
         isAdult = isAdult,
         categoryId = categoryId,
     )
+
+    // XTC: Track DTO → RawMetadata mapping
+    XtcLogger.logDtoToRaw("SERIES", "xtream:series:$id", rawTitle, raw)
+
+    return raw
 }
 
 /**
@@ -287,7 +336,8 @@ fun XtreamEpisode.toRawMediaMetadata(
             }
             audioChannels?.let { put(PlaybackHintKeys.AUDIO_CHANNELS, it.toString()) }
         }
-    return RawMediaMetadata(
+
+    val raw = RawMediaMetadata(
         originalTitle = rawTitle,
         mediaType = MediaType.SERIES_EPISODE,
         year = rawYear,
@@ -314,6 +364,11 @@ fun XtreamEpisode.toRawMediaMetadata(
         plot = plot,
         releaseDate = releaseDate,
     )
+
+    // XTC: Track DTO → RawMetadata mapping
+    XtcLogger.logDtoToRaw("EPISODE", sourceIdStable, rawTitle, raw)
+
+    return raw
 }
 
 /**
@@ -325,9 +380,13 @@ fun XtreamEpisode.toRawMediaMetadata(
  * - Country prefix (DE:, US:) preserved
  *
  * @param authHeaders Optional headers for image URL authentication
+ * @param accountName Xtream account identifier (e.g., "konigtv") for sourceLabel
  * @return RawMediaMetadata with live channel fields
  */
-fun XtreamChannel.toRawMediaMetadata(authHeaders: Map<String, String> = emptyMap()): RawMediaMetadata {
+fun XtreamChannel.toRawMediaMetadata(
+    authHeaders: Map<String, String> = emptyMap(),
+    accountName: String = "xtream",
+): RawMediaMetadata {
     // Clean Unicode decorators from live channel names
     val rawTitle = cleanLiveChannelName(name)
     // Build playback hints for live stream URL construction
@@ -337,7 +396,8 @@ fun XtreamChannel.toRawMediaMetadata(authHeaders: Map<String, String> = emptyMap
             put(PlaybackHintKeys.Xtream.CONTENT_TYPE, PlaybackHintKeys.Xtream.CONTENT_LIVE)
             put(PlaybackHintKeys.Xtream.STREAM_ID, id.toString())
         }
-    return RawMediaMetadata(
+
+    val raw = RawMediaMetadata(
         originalTitle = rawTitle,
         mediaType = MediaType.LIVE, // Live channels - NO year/scene parsing needed
         year = null,
@@ -346,7 +406,7 @@ fun XtreamChannel.toRawMediaMetadata(authHeaders: Map<String, String> = emptyMap
         durationMs = null, // Live channels don't have duration
         externalIds = ExternalIds(),
         sourceType = SourceType.XTREAM,
-        sourceLabel = "Xtream Live",
+        sourceLabel = accountName,
         sourceId = "xtream:live:$id",
         // === Pipeline Identity (v2) ===
         pipelineIdTag = PipelineIdTag.XTREAM,
@@ -366,6 +426,11 @@ fun XtreamChannel.toRawMediaMetadata(authHeaders: Map<String, String> = emptyMap
         tvArchive = tvArchive,
         tvArchiveDuration = tvArchiveDuration,
     )
+
+    // XTC: Track DTO → RawMetadata mapping
+    XtcLogger.logDtoToRaw("LIVE", "xtream:live:$id", rawTitle, raw)
+
+    return raw
 }
 
 // =============================================================================
@@ -498,3 +563,74 @@ private fun createImageRef(
         headers = authHeaders.takeIf { it.isNotEmpty() } ?: emptyMap(),
     )
 }
+
+/**
+ * Extracts year from VOD title.
+ *
+ * Many Xtream providers format VOD titles as: "Title | Year | Rating"
+ * Examples:
+ * - "Ella McCay | 2025 | 5.2"
+ * - "The Killer | 2024 | 6.4 |"
+ * - "Cat Person | 2023 | 6.2 |"
+ *
+ * Returns null if no valid year (1900-2100) is found.
+ *
+ * @param title The VOD title to parse
+ * @return Extracted year or null
+ */
+private fun extractYearFromVodTitle(title: String): Int? {
+    // Split by pipe and look for year in second position
+    val parts = title.split("|").map { it.trim() }
+
+    // Check if second part is a year
+    if (parts.size >= 2) {
+        val potentialYear = parts[1].toIntOrNull()
+        if (potentialYear != null && potentialYear in 1900..2100) {
+            return potentialYear
+        }
+    }
+
+    // Fallback: Use series year extraction (handles parentheses, brackets, etc.)
+    return extractYearFromSeriesTitle(title)
+}
+
+/**
+ * Extracts year from series title.
+ *
+ * Many Xtream providers include year in series name when the API doesn't provide it separately.
+ * Common patterns:
+ * - "Show Name (2023)"
+ * - "Show Name [2023]"
+ * - "Show Name 2023"
+ * - "Show Name S01 (2023)"
+ *
+ * Returns null if no valid year (1900-2100) is found.
+ *
+ * @param title The series title to parse
+ * @return Extracted year or null
+ */
+private fun extractYearFromSeriesTitle(title: String): Int? {
+    // Pattern 1: Year in parentheses at end: "Show Name (2023)"
+    val parenPattern = """\((\d{4})\)""".toRegex()
+    parenPattern.findAll(title).lastOrNull()?.let { match ->
+        val year = match.groupValues[1].toInt()
+        if (year in 1900..2100) return year
+    }
+
+    // Pattern 2: Year in brackets at end: "Show Name [2023]"
+    val bracketPattern = """\[(\d{4})\]""".toRegex()
+    bracketPattern.findAll(title).lastOrNull()?.let { match ->
+        val year = match.groupValues[1].toInt()
+        if (year in 1900..2100) return year
+    }
+
+    // Pattern 3: Standalone year at end: "Show Name 2023"
+    val standalone = """\b(\d{4})$""".toRegex()
+    standalone.find(title)?.let { match ->
+        val year = match.groupValues[1].toInt()
+        if (year in 1900..2100) return year
+    }
+
+    return null
+}
+

@@ -54,7 +54,23 @@ Both scripts require:
 ## Other Scripts
 
 This directory also contains:
+- `check-dev-env.ps1` - Check development environment (Windows PowerShell)
 - `check_dependencies.sh` - Check project dependencies
 - `setup-wsl-*.sh` - WSL environment setup scripts
 - `sync-ext4.sh` - File synchronization scripts
 - Various Python scripts for M3U processing and validation
+
+### check-dev-env.ps1
+
+**Zweck:** Prüft die Entwicklungsumgebung auf Vollständigkeit (Windows).
+
+**Verwendung:**
+```powershell
+.\scripts\check-dev-env.ps1
+```
+
+**Prüft:**
+- JDK 21, Android SDK, Gradle, Node.js, MCP Server, IDE Config
+
+**Siehe:** [docs/dev/LOCAL_SETUP.md](../docs/dev/LOCAL_SETUP.md) für vollständiges Setup
+

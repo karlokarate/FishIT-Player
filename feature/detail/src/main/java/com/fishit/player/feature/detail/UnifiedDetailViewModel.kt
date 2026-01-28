@@ -498,12 +498,16 @@ class UnifiedDetailViewModel
         /**
          * Extract Xtream series ID from canonical media ID.
          *
+         * BUG FIX: Series canonical IDs may not contain numeric IDs (e.g., "series:title:unknown")
+         * So we MUST extract from Xtream source IDs first, not from canonical key.
+         *
          * Format: "xtream:series:12345"
          */
         private fun extractSeriesId(canonicalId: CanonicalMediaId): Int? {
             val key = canonicalId.key.value
-            // For Xtream series, check sources for series ID
             val media = _state.value.media
+
+            // PRIORITY 1: Extract from Xtream source ID (most reliable)
             if (media != null) {
                 // Try to extract from first Xtream source
                 val xtreamSource = media.sources.find { it.sourceId.value.startsWith("xtream:") }
@@ -512,23 +516,32 @@ class UnifiedDetailViewModel
                     // - Series: "xtream:series:12345"
                     // - Episode: "xtream:series:12345:episode:54321"
                     val parts = xtreamSource.sourceId.value.split(":")
-                    return when {
+                    val seriesId = when {
                         parts.size == 3 && parts[1] == "series" -> parts[2].toIntOrNull()
                         parts.size >= 5 && parts[1] == "series" && parts[3] == "episode" -> parts[2].toIntOrNull()
                         else -> null
                     }
+                    if (seriesId != null) return seriesId
                 }
             }
 
-            // Fallback: try to parse from canonical key if it follows Xtream pattern
+            // PRIORITY 2: Try to parse from canonical key if it follows Xtream pattern
             // NX format: src:xtream:<account>:series:<id> or legacy: xtream:series:<id>
             if (key.contains(":series:")) {
                 // Extract series ID from pattern: ...series:<id>...
                 val seriesIndex = key.indexOf(":series:")
                 if (seriesIndex >= 0) {
                     val afterSeries = key.substring(seriesIndex + ":series:".length)
-                    return afterSeries.split(":").firstOrNull()?.toIntOrNull()
+                    val potentialId = afterSeries.split(":").firstOrNull()?.toIntOrNull()
+                    if (potentialId != null) return potentialId
                 }
+            }
+
+            // PRIORITY 3: Canonical key format "series:<slug>:<year>" - no numeric ID
+            // This is normal for normalized series without Xtream source
+            // Log this case for debugging but don't spam warnings
+            if (key.startsWith("series:") && !key.contains(":series:")) {
+                UnifiedLog.d(TAG) { "Series canonical ID has no numeric ID: $key (expected when no Xtream source exists)" }
             }
 
             return null

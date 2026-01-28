@@ -2,7 +2,7 @@ package com.fishit.player.pipeline.xtream.debug
 
 import com.fishit.player.infra.transport.xtream.XtreamAuthState
 import com.fishit.player.pipeline.xtream.adapter.XtreamPipelineAdapter
-import com.fishit.player.pipeline.xtream.mapper.toRawMediaMetadata
+import com.fishit.player.pipeline.xtream.mapper.toRawMetadata
 
 /**
  * Default implementation of [XtreamDebugService].
@@ -60,11 +60,11 @@ class XtreamDebugServiceImpl(
     override suspend fun listVod(limit: Int): List<XtreamVodSummary> {
         val items = adapter.loadVodItems()
         return items.take(limit).map { item ->
-            val rawMeta = item.toRawMediaMetadata()
+            val rawMeta = item.toRawMetadata()
             XtreamVodSummary(
                 streamId = item.id,
                 title = item.name,
-                year = null, // VOD list doesn't include year
+                year = rawMeta.year, // Now populated from year extraction fixes
                 categoryName = item.categoryId,
                 extension = item.containerExtension,
                 normalizedMediaType = rawMeta.mediaType,
@@ -103,7 +103,7 @@ class XtreamDebugServiceImpl(
 
         return XtreamVodDetails(
             raw = item,
-            rawMedia = item.toRawMediaMetadata(),
+            rawMedia = item.toRawMetadata(),
         )
     }
 }

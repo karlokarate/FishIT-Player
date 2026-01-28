@@ -147,6 +147,7 @@ class NxHomeContentRepositoryImpl @Inject constructor(
     @OptIn(ExperimentalCoroutinesApi::class)
     @Deprecated("Use getMoviesPagingData() instead")
     override fun observeMovies(): Flow<List<HomeMediaItem>> {
+        UnifiedLog.i(TAG) { "observeMovies() CALLED - THIS SHOULD APPEAR IN LOGCAT!" }
         UnifiedLog.w(TAG, "observeMovies() is deprecated - use getMoviesPagingData() for large catalogs")
         return workRepository.observeByType(WorkType.MOVIE, limit = DEPRECATED_FALLBACK_LIMIT)
             .mapLatest { works -> batchMapToHomeMediaItems(works) }
@@ -160,6 +161,7 @@ class NxHomeContentRepositoryImpl @Inject constructor(
     @OptIn(ExperimentalCoroutinesApi::class)
     @Deprecated("Use getSeriesPagingData() instead")
     override fun observeSeries(): Flow<List<HomeMediaItem>> {
+        UnifiedLog.i(TAG) { "observeSeries() CALLED - THIS SHOULD APPEAR IN LOGCAT!" }
         UnifiedLog.w(TAG, "observeSeries() is deprecated - use getSeriesPagingData() for large catalogs")
         return workRepository.observeByType(WorkType.SERIES, limit = DEPRECATED_FALLBACK_LIMIT)
             .mapLatest { works -> 
@@ -235,9 +237,11 @@ class NxHomeContentRepositoryImpl @Inject constructor(
     )
     
     override fun getMoviesPagingData(): Flow<PagingData<HomeMediaItem>> {
+        UnifiedLog.i(TAG) { "🎬 getMoviesPagingData() CALLED - Creating Movies PagingSource" }
         return Pager(
             config = homePagingConfig,
             pagingSourceFactory = {
+                UnifiedLog.d(TAG) { "🎬 Movies PagingSource FACTORY invoked" }
                 HomePagingSource(
                     workRepository = workRepository,
                     sourceRefRepository = sourceRefRepository,
@@ -249,9 +253,11 @@ class NxHomeContentRepositoryImpl @Inject constructor(
     }
     
     override fun getSeriesPagingData(): Flow<PagingData<HomeMediaItem>> {
+        UnifiedLog.i(TAG) { "📺 getSeriesPagingData() CALLED - Creating Series PagingSource" }
         return Pager(
             config = homePagingConfig,
             pagingSourceFactory = {
+                UnifiedLog.d(TAG) { "📺 Series PagingSource FACTORY invoked" }
                 HomePagingSource(
                     workRepository = workRepository,
                     sourceRefRepository = sourceRefRepository,

@@ -46,20 +46,20 @@ object SourceSelection {
         // Priority 1: Explicit user selection (by key)
         if (selectedSourceKey != null) {
             val selected = sources.find { it.sourceId == selectedSourceKey }
-            if (selected != null) return selected
+            if (selected != null) return fixSourceTypeIfUnknown(selected)
             // User selection is stale (source no longer exists), fall through to auto-selection
         }
 
         // Priority 2: Last resumed source (if still available)
         resume?.lastSourceId?.let { lastId ->
             val lastSource = sources.find { it.sourceId == lastId }
-            if (lastSource != null) return lastSource
+            if (lastSource != null) return fixSourceTypeIfUnknown(lastSource)
         }
 
         // Priority 3: By priority value (higher = better)
         val byPriority = sources.maxByOrNull { it.priority }
         if (byPriority != null && byPriority.priority > 0) {
-            return byPriority
+            return fixSourceTypeIfUnknown(byPriority)
         }
 
         // Priority 4: By quality (resolution)
@@ -67,10 +67,86 @@ object SourceSelection {
             sources
                 .filter { it.quality?.resolution != null }
                 .maxByOrNull { it.quality!!.resolution!! }
-        if (byQuality != null) return byQuality
+        if (byQuality != null) return fixSourceTypeIfUnknown(byQuality)
 
         // Priority 5: First source (stable order)
-        return sources.first()
+        return fixSourceTypeIfUnknown(sources.first())
+    }
+
+    /**
+     * CRITICAL FIX: Corrects sourceType when it's UNKNOWN due to legacy mapper bug.
+     *
+     * **Root Cause:** Legacy repository doesn't convert String sourceType to Enum correctly.
+     * The bug is in ObxCanonicalMedia → MediaSourceRef mapping where sourceType becomes UNKNOWN.
+     *
+     * **This fix:** Extracts sourceType from sourceKey as fallback when UNKNOWN.
+     *
+     * **sourceKey formats:**
+     * - NX: `src:xtream:account:category:id` → XTREAM
+     * - Legacy: `xtream:vod:123` → XTREAM
+     * - Telegram: `telegram:chatId:messageId` → TELEGRAM
+     *
+     * @param source The source with potentially UNKNOWN sourceType
+     * @return Same source with corrected sourceType, or original if cannot fix
+     */
+    private fun fixSourceTypeIfUnknown(source: MediaSourceRef): MediaSourceRef {
+        // Fast path: sourceType is already known
+        if (source.sourceType != SourceType.UNKNOWN) {
+            return source
+        }
+
+        // Slow path: Extract from sourceKey
+        val correctedType = extractSourceTypeFromKey(source.sourceId.value)
+
+        return if (correctedType != null && correctedType != SourceType.UNKNOWN) {
+            // Create new MediaSourceRef with corrected sourceType
+            MediaSourceRef(
+                sourceType = correctedType,  // ← FIXED!
+                sourceId = source.sourceId,
+                sourceLabel = source.sourceLabel,
+                quality = source.quality,
+                languages = source.languages,
+                format = source.format,
+                sizeBytes = source.sizeBytes,
+                durationMs = source.durationMs,
+                addedAt = source.addedAt,
+                priority = source.priority,
+                playbackHints = source.playbackHints,
+            )
+        } else {
+            // Cannot fix - return original
+            source
+        }
+    }
+
+    /**
+     * Extracts SourceType from sourceKey string.
+     *
+     * @param sourceKey The sourceKey to parse
+     * @return Extracted SourceType or null if cannot determine
+     */
+    private fun extractSourceTypeFromKey(sourceKey: String): SourceType? {
+        val parts = sourceKey.split(":")
+        if (parts.isEmpty()) return null
+
+        // Determine format and extract sourceType candidate
+        val sourceTypeCandidate = when {
+            // NX format: src:xtream:account:... → index 1
+            parts.size >= 2 && parts[0] == "src" -> parts[1]
+            // Legacy format: xtream:vod:... → index 0
+            parts.isNotEmpty() -> parts[0]
+            else -> return null
+        }
+
+        // Map to SourceType enum
+        return when (sourceTypeCandidate.lowercase()) {
+            "telegram", "tg" -> SourceType.TELEGRAM
+            "xtream", "xc" -> SourceType.XTREAM
+            "io", "file", "local" -> SourceType.IO
+            "audiobook" -> SourceType.AUDIOBOOK
+            "plex" -> SourceType.PLEX
+            else -> null
+        }
     }
 
     /**

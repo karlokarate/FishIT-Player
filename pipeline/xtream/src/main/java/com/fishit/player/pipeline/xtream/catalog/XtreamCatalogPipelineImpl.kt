@@ -2,6 +2,7 @@ package com.fishit.player.pipeline.xtream.catalog
 
 import com.fishit.player.infra.logging.UnifiedLog
 import com.fishit.player.infra.transport.xtream.XtreamHttpHeaders
+import com.fishit.player.pipeline.xtream.debug.XtcLogger
 import com.fishit.player.pipeline.xtream.mapper.XtreamCatalogMapper
 import com.fishit.player.pipeline.xtream.model.XtreamChannel
 import com.fishit.player.pipeline.xtream.model.XtreamSeriesItem
@@ -64,6 +65,9 @@ class XtreamCatalogPipelineImpl
             channelFlow {
                 val startTime = System.currentTimeMillis()
 
+                // XTC: Reset counters for new sync run
+                XtcLogger.reset()
+
                 try {
                     UnifiedLog.i(
                         TAG,
@@ -101,13 +105,14 @@ class XtreamCatalogPipelineImpl
                     
                     val liveJob = if (config.includeLive) {
                         launch {
+                            val phaseStart = System.currentTimeMillis()
                             UnifiedLog.d(TAG, "[LIVE] Starting parallel scan (streaming-first)...")
                             try {
                                 source.streamLiveChannels(batchSize = config.batchSize) { batch ->
-                                    for (channel in batch) {
+                                for (channel in batch) {
                                         if (!currentCoroutineContext().isActive) return@streamLiveChannels
 
-                                        val catalogItem = mapper.fromChannel(channel, headers)
+                                        val catalogItem = mapper.fromChannel(channel, headers, config.accountName)
                                         send(XtreamCatalogEvent.ItemDiscovered(catalogItem))
                                         val count = liveCounter.incrementAndGet()
 
@@ -126,7 +131,9 @@ class XtreamCatalogPipelineImpl
                                         }
                                     }
                                 }
+                                val phaseDuration = System.currentTimeMillis() - phaseStart
                                 UnifiedLog.d(TAG, "[LIVE] Scan complete: ${liveCounter.get()} channels")
+                                XtcLogger.logPhaseComplete("LIVE", liveCounter.get(), phaseDuration)
                             } catch (e: XtreamCatalogSourceException) {
                                 UnifiedLog.w(TAG, "[LIVE] Scan failed: ${e.message}")
                             }
@@ -135,13 +142,14 @@ class XtreamCatalogPipelineImpl
 
                     val vodJob = if (config.includeVod) {
                         launch {
+                            val phaseStart = System.currentTimeMillis()
                             UnifiedLog.d(TAG, "[VOD] Starting parallel scan (streaming-first)...")
                             try {
                                 source.streamVodItems(batchSize = config.batchSize) { batch ->
                                     for (item in batch) {
                                         if (!currentCoroutineContext().isActive) return@streamVodItems
 
-                                        val catalogItem = mapper.fromVod(item, headers)
+                                        val catalogItem = mapper.fromVod(item, headers, config.accountName)
                                         send(XtreamCatalogEvent.ItemDiscovered(catalogItem))
                                         val count = vodCounter.incrementAndGet()
 
@@ -160,7 +168,9 @@ class XtreamCatalogPipelineImpl
                                         }
                                     }
                                 }
+                                val phaseDuration = System.currentTimeMillis() - phaseStart
                                 UnifiedLog.d(TAG, "[VOD] Scan complete: ${vodCounter.get()} items")
+                                XtcLogger.logPhaseComplete("VOD", vodCounter.get(), phaseDuration)
                             } catch (e: XtreamCatalogSourceException) {
                                 UnifiedLog.w(TAG, "[VOD] Scan failed: ${e.message}")
                             }
@@ -169,13 +179,14 @@ class XtreamCatalogPipelineImpl
 
                     val seriesJob = if (config.includeSeries) {
                         launch {
+                            val phaseStart = System.currentTimeMillis()
                             UnifiedLog.d(TAG, "[SERIES] Starting parallel scan (streaming-first, episodes deferred)...")
                             try {
                                 source.streamSeriesItems(batchSize = config.batchSize) { batch ->
                                     for (item in batch) {
                                         if (!currentCoroutineContext().isActive) return@streamSeriesItems
 
-                                        val catalogItem = mapper.fromSeries(item, headers)
+                                        val catalogItem = mapper.fromSeries(item, headers, config.accountName)
                                         send(XtreamCatalogEvent.ItemDiscovered(catalogItem))
                                         val count = seriesCounter.incrementAndGet()
 
@@ -194,7 +205,9 @@ class XtreamCatalogPipelineImpl
                                         }
                                     }
                                 }
+                                val phaseDuration = System.currentTimeMillis() - phaseStart
                                 UnifiedLog.d(TAG, "[SERIES] Scan complete: ${seriesCounter.get()} items")
+                                XtcLogger.logPhaseComplete("SERIES", seriesCounter.get(), phaseDuration)
                             } catch (e: XtreamCatalogSourceException) {
                                 UnifiedLog.w(TAG, "[SERIES] Scan failed: ${e.message}")
                             }
@@ -236,7 +249,7 @@ class XtreamCatalogPipelineImpl
                                         is EpisodeBatchResult.Batch -> {
                                             // Emit each episode immediately
                                             for (episode in result.episodes) {
-                                                val catalogItem = mapper.fromEpisode(episode, result.seriesName, headers)
+                                                val catalogItem = mapper.fromEpisode(episode, result.seriesName, headers, config.accountName)
                                                 send(XtreamCatalogEvent.ItemDiscovered(catalogItem))
                                                 episodeCount++
 

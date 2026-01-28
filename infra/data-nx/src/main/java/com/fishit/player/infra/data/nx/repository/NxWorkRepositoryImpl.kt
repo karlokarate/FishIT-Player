@@ -15,6 +15,7 @@ import com.fishit.player.core.persistence.obx.NX_Work
 import com.fishit.player.core.persistence.obx.NX_Work_
 import com.fishit.player.infra.data.nx.mapper.toDomain
 import com.fishit.player.infra.data.nx.mapper.toEntity
+import com.fishit.player.infra.logging.UnifiedLog
 import io.objectbox.BoxStore
 import io.objectbox.kotlin.boxFor
 import io.objectbox.query.QueryBuilder
@@ -37,6 +38,10 @@ class NxWorkRepositoryImpl @Inject constructor(
     private val boxStore: BoxStore,
 ) : NxWorkRepository {
     private val box by lazy { boxStore.boxFor<NX_Work>() }
+
+    companion object {
+        private const val TAG = "NxWorkRepository"
+    }
 
     // ──────────────────────────────────────────────────────────────────────
     // Single item
@@ -62,11 +67,16 @@ class NxWorkRepositoryImpl @Inject constructor(
 
     override fun observeByType(type: WorkType, limit: Int): Flow<List<Work>> {
         val typeString = type.toEntityString()
+        UnifiedLog.i(TAG) { "observeByType CALLED: type=$type (entity=$typeString), limit=$limit" }
+
         return box.query(NX_Work_.workType.equal(typeString, StringOrder.CASE_SENSITIVE))
             .order(NX_Work_.canonicalTitle)
             .build()
             .asFlowWithLimit(limit)
-            .map { list -> list.map { it.toDomain() } }
+            .map { list ->
+                UnifiedLog.i(TAG) { "observeByType EMITTING: type=$type, count=${list.size}" }
+                list.map { it.toDomain() }
+            }
     }
 
     override fun observeRecentlyUpdated(limit: Int): Flow<List<Work>> {

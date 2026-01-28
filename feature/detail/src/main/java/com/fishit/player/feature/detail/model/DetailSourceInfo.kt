@@ -1,5 +1,9 @@
 package com.fishit.player.feature.detail.model
 
+import com.fishit.player.core.model.MediaSourceRef
+import com.fishit.player.core.model.SourceType
+import com.fishit.player.core.model.ids.PipelineItemId
+
 /**
  * UI model for a playback source in detail screen.
  *
@@ -80,3 +84,41 @@ data class DetailSourceInfo(
     val isXtream: Boolean
         get() = sourceType == "XTREAM"
 }
+
+/**
+ * Convert DetailSourceInfo to MediaSourceRef for playback.
+ *
+ * **CRITICAL FIX:** Maps sourceType String to SourceType enum correctly.
+ * This fixes the bug where sourceType was UNKNOWN during playback.
+ */
+fun DetailSourceInfo.toMediaSourceRef(): MediaSourceRef {
+    return MediaSourceRef(
+        sourceType = mapSourceTypeStringToEnum(sourceType),
+        sourceId = PipelineItemId(sourceKey),
+        sourceLabel = sourceLabel,
+        quality = null, // TODO: Build from qualityTag/width/height if needed
+        languages = null, // TODO: Build from language if needed
+        format = null, // TODO: Build from containerFormat if needed
+        sizeBytes = fileSizeBytes,
+        durationMs = null, // Not available in DetailSourceInfo
+        priority = priority,
+        playbackHints = playbackHints,
+    )
+}
+
+/**
+ * Maps sourceType String to SourceType enum.
+ *
+ * **FIX:** This is the missing piece that caused sourceType=UNKNOWN bug!
+ */
+private fun mapSourceTypeStringToEnum(sourceTypeString: String): SourceType {
+    return when (sourceTypeString.lowercase()) {
+        "telegram" -> SourceType.TELEGRAM
+        "xtream" -> SourceType.XTREAM
+        "io", "local" -> SourceType.IO
+        "audiobook" -> SourceType.AUDIOBOOK
+        "plex" -> SourceType.PLEX
+        else -> SourceType.UNKNOWN
+    }
+}
+

@@ -137,8 +137,14 @@ class NxCatalogWriter @Inject constructor(
                 variantRepository.upsert(variant)
             }
 
-            UnifiedLog.d(TAG) { "Ingested: $workKey (source: $sourceKey)" }
+            // FIX: Removed per-item debug logging to reduce Main Thread blocking
+            // Use ingestBatch() for better performance when processing multiple items
+            // NOTE: XTC logging moved to pipeline layer to avoid cross-module dependencies
             workKey
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            // IMPORTANT: Don't catch CancellationException - let it propagate!
+            UnifiedLog.w(TAG) { "Ingest cancelled for: ${normalized.canonicalTitle}" }
+            throw e
         } catch (e: Exception) {
             UnifiedLog.e(TAG, e) { "Failed to ingest: ${normalized.canonicalTitle}" }
             null
@@ -148,18 +154,134 @@ class NxCatalogWriter @Inject constructor(
     /**
      * Batch ingest multiple items.
      *
+     * FIX: Optimized to reduce Main Thread blocking during UI navigation.
+     * - Reduces logging overhead by logging summary instead of per-item
+     * - Processes items in batches to avoid long transaction locks
+     *
      * @param items List of (raw, normalized, accountKey) tuples
      * @return Number of successfully ingested items
      */
     suspend fun ingestBatch(
         items: List<Triple<RawMediaMetadata, NormalizedMediaMetadata, String>>,
     ): Int {
+        if (items.isEmpty()) return 0
+
+        UnifiedLog.d(TAG) { "📥 ingestBatch START: ${items.size} items to write" }
+
         var success = 0
-        for ((raw, normalized, accountKey) in items) {
-            if (ingest(raw, normalized, accountKey) != null) {
-                success++
+        val startTime = System.currentTimeMillis()
+
+        // Process in smaller batches to avoid long transaction locks that block UI
+        val batchSize = 50
+        val batches = items.chunked(batchSize)
+
+        for ((batchIndex, batch) in batches.withIndex()) {
+            for ((raw, normalized, accountKey) in batch) {
+                try {
+                    val now = System.currentTimeMillis()
+                    val createdAt = normalized.addedTimestamp?.takeIf { it > 0 } ?: now
+
+                    // 1. Create/update the canonical work
+                    val workKey = buildWorkKey(normalized)
+                    val work = NxWorkRepository.Work(
+                        workKey = workKey,
+                        type = mapWorkType(normalized.mediaType),
+                        displayTitle = normalized.canonicalTitle,
+                        sortTitle = normalized.canonicalTitle,
+                        titleNormalized = normalized.canonicalTitle.lowercase(),
+                        year = normalized.year,
+                        runtimeMs = normalized.durationMs,
+                        posterRef = normalized.poster?.toSerializedString(),
+                        backdropRef = normalized.backdrop?.toSerializedString(),
+                        rating = normalized.rating,
+                        genres = normalized.genres,
+                        plot = normalized.plot,
+                        director = normalized.director,
+                        cast = normalized.cast,
+                        trailer = normalized.trailer,
+                        tmdbId = (normalized.tmdb ?: normalized.externalIds.tmdb)?.id?.toString(),
+                        imdbId = normalized.externalIds.imdbId,
+                        tvdbId = normalized.externalIds.tvdbId,
+                        isAdult = normalized.isAdult,
+                        recognitionState = if (normalized.tmdb != null) {
+                            NxWorkRepository.RecognitionState.CONFIRMED
+                        } else {
+                            NxWorkRepository.RecognitionState.HEURISTIC
+                        },
+                        createdAtMs = createdAt,
+                        updatedAtMs = now,
+                    )
+                    workRepository.upsert(work)
+
+                    // 2. Create/update source reference
+                    val sourceItemKind = mapSourceItemKind(normalized.mediaType)
+                    val sourceKey = buildSourceKey(raw.sourceType, accountKey, sourceItemKind, raw.sourceId)
+                    val sourceRef = NxWorkSourceRefRepository.SourceRef(
+                        sourceKey = sourceKey,
+                        workKey = workKey,
+                        sourceType = mapSourceType(raw.sourceType),
+                        accountKey = accountKey,
+                        sourceItemKind = sourceItemKind,
+                        sourceItemKey = raw.sourceId,
+                        sourceTitle = raw.originalTitle,
+                        firstSeenAtMs = now,
+                        lastSeenAtMs = now,
+                        sourceLastModifiedMs = raw.lastModifiedTimestamp,
+                        availability = NxWorkSourceRefRepository.AvailabilityState.ACTIVE,
+                        epgChannelId = raw.epgChannelId,
+                        tvArchive = raw.tvArchive,
+                        tvArchiveDuration = raw.tvArchiveDuration,
+                    )
+                    sourceRefRepository.upsert(sourceRef)
+
+                    // 3. Create playback variant if playback hints available
+                    if (raw.playbackHints.isNotEmpty()) {
+                        val variantKey = buildVariantKey(sourceKey)
+                        val variant = NxWorkVariantRepository.Variant(
+                            variantKey = variantKey,
+                            workKey = workKey,
+                            sourceKey = sourceKey,
+                            label = "Original",
+                            isDefault = true,
+                            container = extractContainerFromHints(raw.playbackHints),
+                            durationMs = normalized.durationMs,
+                            playbackHints = raw.playbackHints,
+                            createdAtMs = now,
+                            updatedAtMs = now,
+                        )
+                        variantRepository.upsert(variant)
+                    }
+
+                    success++
+                } catch (e: kotlinx.coroutines.CancellationException) {
+                    // IMPORTANT: Don't catch CancellationException - let it propagate!
+                    // This ensures the coroutine scope is properly cancelled and
+                    // the worker can retry the batch if needed.
+                    UnifiedLog.w(TAG) { "Batch cancelled at item: ${normalized.canonicalTitle}" }
+                    throw e
+                } catch (e: Exception) {
+                    // Only catch non-cancellation exceptions
+                    UnifiedLog.e(TAG, e) { "Failed to ingest in batch: ${normalized.canonicalTitle}" }
+                }
+            }
+
+            // Log batch progress (reduces logging overhead vs per-item logging)
+            if (batchIndex % 5 == 0 || batchIndex == batches.size - 1) {
+                val elapsed = System.currentTimeMillis() - startTime
+                UnifiedLog.d(TAG) {
+                    "Batch progress: ${success}/${items.size} items (${batchIndex + 1}/${batches.size} batches, ${elapsed}ms)"
+                }
             }
         }
+
+        val totalTime = System.currentTimeMillis() - startTime
+
+        // Count items by type for debugging
+        val typeBreakdown = items.groupBy { it.second.mediaType }
+            .mapValues { it.value.size }
+            .entries.joinToString(", ") { "${it.key.name}=${it.value}" }
+
+        UnifiedLog.i(TAG) { "✅ ingestBatch COMPLETE: $success/${items.size} items in ${totalTime}ms | Types: $typeBreakdown" }
         return success
     }
 

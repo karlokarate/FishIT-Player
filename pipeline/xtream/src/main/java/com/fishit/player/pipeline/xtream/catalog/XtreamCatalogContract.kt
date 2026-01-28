@@ -49,6 +49,7 @@ interface XtreamCatalogPipeline {
  * @property episodeParallelism Max concurrent series for parallel episode loading (PLATINUM)
  * @property batchSize Batch size for streaming (memory-efficient loading)
  * @property imageAuthHeaders Optional headers for authenticated image access
+ * @property accountName Xtream account identifier (e.g., "konigtv") used for sourceLabel in RawMediaMetadata
  */
 data class XtreamCatalogConfig(
     val includeVod: Boolean = true,
@@ -59,6 +60,7 @@ data class XtreamCatalogConfig(
     val episodeParallelism: Int = DEFAULT_EPISODE_PARALLELISM,
     val batchSize: Int = DEFAULT_BATCH_SIZE,
     val imageAuthHeaders: Map<String, String> = emptyMap(),
+    val accountName: String = "xtream",
 ) {
     companion object {
         /** Default parallelism for episode loading (4 concurrent series). */

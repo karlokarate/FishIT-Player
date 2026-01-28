@@ -1,0 +1,213 @@
+---------------------------- PROCESS STARTED (5062) for package com.fishit.player.v2 ----------------------------
+2026-01-28 12:55:36.247  5062-5062  ziparchive              com.fishit.player.v2                 W  Unable to open '/data/app/~~WeXSzHAR_PUHHjwYMD4rkg==/com.fishit.player.v2-DYW8ouH9FaJKTOvI_AB55g==/base.dm': No such file or directory
+2026-01-28 12:55:36.247  5062-5062  ziparchive              com.fishit.player.v2                 W  Unable to open '/data/app/~~WeXSzHAR_PUHHjwYMD4rkg==/com.fishit.player.v2-DYW8ouH9FaJKTOvI_AB55g==/base.dm': No such file or directory
+2026-01-28 12:55:36.753  5062-5062  nativeloader            com.fishit.player.v2                 D  Configuring clns-4 for other apk /data/app/~~WeXSzHAR_PUHHjwYMD4rkg==/com.fishit.player.v2-DYW8ouH9FaJKTOvI_AB55g==/base.apk. target_sdk_version=35, uses_libraries=, library_path=/data/app/~~WeXSzHAR_PUHHjwYMD4rkg==/com.fishit.player.v2-DYW8ouH9FaJKTOvI_AB55g==/lib/arm64:/data/app/~~WeXSzHAR_PUHHjwYMD4rkg==/com.fishit.player.v2-DYW8ouH9FaJKTOvI_AB55g==/base.apk!/lib/arm64-v8a, permitted_path=/data:/mnt/expand:/data/user/0/com.fishit.player.v2
+2026-01-28 12:55:36.765  5062-5062  GraphicsEnvironment     com.fishit.player.v2                 V  Currently set values for:
+2026-01-28 12:55:36.765  5062-5062  GraphicsEnvironment     com.fishit.player.v2                 V    angle_gl_driver_selection_pkgs=[]
+2026-01-28 12:55:36.765  5062-5062  GraphicsEnvironment     com.fishit.player.v2                 V    angle_gl_driver_selection_values=[]
+2026-01-28 12:55:36.766  5062-5062  GraphicsEnvironment     com.fishit.player.v2                 V  ANGLE GameManagerService for com.fishit.player.v2: false
+2026-01-28 12:55:36.766  5062-5062  GraphicsEnvironment     com.fishit.player.v2                 V  com.fishit.player.v2 is not listed in per-application setting
+2026-01-28 12:55:36.766  5062-5062  GraphicsEnvironment     com.fishit.player.v2                 V  App is not on the allowlist for updatable production driver.
+2026-01-28 12:55:36.768  5062-5062  ActivityThread          com.fishit.player.v2                 W  Application com.fishit.player.v2 is suspending. Debugger needs to resume to continue.
+2026-01-28 12:55:36.768  5062-5062  System.out              com.fishit.player.v2                 I  Sending WAIT chunk
+2026-01-28 12:55:36.768  5062-5062  System.out              com.fishit.player.v2                 I  Waiting for debugger first packet
+2026-01-28 12:55:36.868  5062-5062  System.out              com.fishit.player.v2                 I  Debug.suspendAllAndSentVmStart
+2026-01-28 12:55:37.066  5062-5062  System.out              com.fishit.player.v2                 I  Debug.suspendAllAndSendVmStart, resumed
+2026-01-28 12:55:37.119  5062-5062  FirebaseApp             com.fishit.player.v2                 W  Default FirebaseApp failed to initialize because no default options were found. This usually means that com.google.gms:google-services was not applied to your gradle project.
+2026-01-28 12:55:37.119  5062-5062  FirebaseInitProvider    com.fishit.player.v2                 I  FirebaseApp initialization unsuccessful
+2026-01-28 12:55:37.202  5062-5062  ishit.player.v2         com.fishit.player.v2                 W  Accessing hidden method Landroid/view/WindowManagerGlobal;->getInstance()Landroid/view/WindowManagerGlobal; (unsupported, reflection, allowed)
+2026-01-28 12:55:37.202  5062-5062  ishit.player.v2         com.fishit.player.v2                 W  Accessing hidden field Landroid/view/WindowManagerGlobal;->mViews:Ljava/util/ArrayList; (unsupported, reflection, allowed)
+2026-01-28 12:55:37.202  5062-5062  ishit.player.v2         com.fishit.player.v2                 W  Accessing hidden field Landroid/app/ActivityThread;->mH:Landroid/app/ActivityThread$H; (unsupported, reflection, allowed)
+2026-01-28 12:55:37.202  5062-5062  ishit.player.v2         com.fishit.player.v2                 W  Accessing hidden method Landroid/app/ActivityThread;->currentActivityThread()Landroid/app/ActivityThread; (unsupported, reflection, allowed)
+2026-01-28 12:55:37.202  5062-5062  ishit.player.v2         com.fishit.player.v2                 W  Accessing hidden field Landroid/os/Handler;->mCallback:Landroid/os/Handler$Callback; (unsupported, reflection, allowed)
+2026-01-28 12:55:37.202  5062-5062  ishit.player.v2         com.fishit.player.v2                 W  Accessing hidden field Landroid/util/Singleton;->mInstance:Ljava/lang/Object; (unsupported, reflection, allowed)
+2026-01-28 12:55:37.202  5062-5062  ishit.player.v2         com.fishit.player.v2                 W  Accessing hidden method Landroid/util/Singleton;->get()Ljava/lang/Object; (unsupported, reflection, allowed)
+2026-01-28 12:55:37.203  5062-5062  ishit.player.v2         com.fishit.player.v2                 W  Accessing hidden field Landroid/app/ActivityManager;->IActivityManagerSingleton:Landroid/util/Singleton; (unsupported, reflection, allowed)
+2026-01-28 12:55:37.582  5062-5062  AndroidRuntime          com.fishit.player.v2                 D  Shutting down VM
+2026-01-28 12:55:37.586  5062-5062  AndroidRuntime          com.fishit.player.v2                 E  FATAL EXCEPTION: main
+                                                                                                    Process: com.fishit.player.v2, PID: 5062
+                                                                                                    java.lang.RuntimeException: Unable to create application com.fishit.player.v2.FishItV2Application: java.lang.IllegalStateException: Telegram API credentials are missing. Set TG_API_ID and TG_API_HASH.
+                                                                                                    	at android.app.ActivityThread.handleBindApplication(ActivityThread.java:7716)
+                                                                                                    	at android.app.ActivityThread.-$$Nest$mhandleBindApplication(Unknown Source:0)
+                                                                                                    	at android.app.ActivityThread$H.handleMessage(ActivityThread.java:2478)
+                                                                                                    	at android.os.Handler.dispatchMessage(Handler.java:106)
+                                                                                                    	at android.os.Looper.loopOnce(Looper.java:230)
+                                                                                                    	at android.os.Looper.loop(Looper.java:319)
+                                                                                                    	at android.app.ActivityThread.main(ActivityThread.java:8919)
+                                                                                                    	at java.lang.reflect.Method.invoke(Native Method)
+                                                                                                    	at com.android.internal.os.RuntimeInit$MethodAndArgsCaller.run(RuntimeInit.java:578)
+                                                                                                    	at com.android.internal.os.ZygoteInit.main(ZygoteInit.java:1103)
+                                                                                                    Caused by: java.lang.IllegalStateException: Telegram API credentials are missing. Set TG_API_ID and TG_API_HASH.
+                                                                                                    	at com.fishit.player.v2.di.TelegramAuthModule.provideTelegramSessionConfig(TelegramAuthModule.kt:50)
+                                                                                                    	at com.fishit.player.v2.di.TelegramAuthModule_ProvideTelegramSessionConfigFactory.provideTelegramSessionConfig(TelegramAuthModule_ProvideTelegramSessionConfigFactory.java:47)
+                                                                                                    	at com.fishit.player.v2.DaggerFishItV2Application_HiltComponents_SingletonC$SingletonCImpl$SwitchingProvider.get0(DaggerFishItV2Application_HiltComponents_SingletonC.java:1293)
+                                                                                                    	at com.fishit.player.v2.DaggerFishItV2Application_HiltComponents_SingletonC$SingletonCImpl$SwitchingProvider.get(DaggerFishItV2Application_HiltComponents_SingletonC.java:1689)
+                                                                                                    	at dagger.internal.DoubleCheck.getSynchronized(DoubleCheck.java:54)
+                                                                                                    	at dagger.internal.DoubleCheck.get(DoubleCheck.java:45)
+                                                                                                    	at com.fishit.player.v2.DaggerFishItV2Application_HiltComponents_SingletonC$SingletonCImpl$SwitchingProvider.get0(DaggerFishItV2Application_HiltComponents_SingletonC.java:1287)
+                                                                                                    	at com.fishit.player.v2.DaggerFishItV2Application_HiltComponents_SingletonC$SingletonCImpl$SwitchingProvider.get(DaggerFishItV2Application_HiltComponents_SingletonC.java:1689)
+                                                                                                    	at dagger.internal.DoubleCheck.getSynchronized(DoubleCheck.java:54)
+                                                                                                    	at dagger.internal.DoubleCheck.get(DoubleCheck.java:45)
+                                                                                                    	at com.fishit.player.v2.DaggerFishItV2Application_HiltComponents_SingletonC$SingletonCImpl$SwitchingProvider.get0(DaggerFishItV2Application_HiltComponents_SingletonC.java:1370)
+                                                                                                    	at com.fishit.player.v2.DaggerFishItV2Application_HiltComponents_SingletonC$SingletonCImpl$SwitchingProvider.get(DaggerFishItV2Application_HiltComponents_SingletonC.java:1689)
+                                                                                                    	at dagger.internal.DoubleCheck.getSynchronized(DoubleCheck.java:54)
+                                                                                                    	at dagger.internal.DoubleCheck.get(DoubleCheck.java:45)
+                                                                                                    	at com.fishit.player.v2.DaggerFishItV2Application_HiltComponents_SingletonC$SingletonCImpl$SwitchingProvider.get0(DaggerFishItV2Application_HiltComponents_SingletonC.java:1367)
+                                                                                                    	at com.fishit.player.v2.DaggerFishItV2Application_HiltComponents_SingletonC$SingletonCImpl$SwitchingProvider.get(DaggerFishItV2Application_HiltComponents_SingletonC.java:1689)
+                                                                                                    	at dagger.internal.DoubleCheck.getSynchronized(DoubleCheck.java:54)
+                                                                                                    	at dagger.internal.DoubleCheck.get(DoubleCheck.java:45)
+                                                                                                    	at com.fishit.player.v2.DaggerFishItV2Application_HiltComponents_SingletonC$SingletonCImpl$SwitchingProvider.get0(DaggerFishItV2Application_HiltComponents_SingletonC.java:1538)
+                                                                                                    	at com.fishit.player.v2.DaggerFishItV2Application_HiltComponents_SingletonC$SingletonCImpl$SwitchingProvider.get(DaggerFishItV2Application_HiltComponents_SingletonC.java:1689)
+                                                                                                    	at dagger.internal.DoubleCheck.getSynchronized(DoubleCheck.java:54)
+                                                                                                    	at dagger.internal.DoubleCheck.get(DoubleCheck.java:45)
+                                                                                                    	at com.fishit.player.v2.DaggerFishItV2Application_HiltComponents_SingletonC$SingletonCImpl.injectFishItV2Application2(DaggerFishItV2Application_HiltComponents_SingletonC.java:1254)
+2026-01-28 12:55:37.587  5062-5062  AndroidRuntime          com.fishit.player.v2                 E  	at com.fishit.player.v2.DaggerFishItV2Application_HiltComponents_SingletonC$SingletonCImpl.injectFishItV2Application(DaggerFishItV2Application_HiltComponents_SingletonC.java:1230)
+                                                                                                    	at com.fishit.player.v2.Hilt_FishItV2Application.hiltInternalInject(Hilt_FishItV2Application.java:52)
+                                                                                                    	at com.fishit.player.v2.Hilt_FishItV2Application.onCreate(Hilt_FishItV2Application.java:43)
+                                                                                                    	at com.fishit.player.v2.FishItV2Application.onCreate(FishItV2Application.kt:77)
+                                                                                                    	at android.app.Instrumentation.callApplicationOnCreate(Instrumentation.java:1316)
+                                                                                                    	at android.app.ActivityThread.handleBindApplication(ActivityThread.java:7711)
+                                                                                                    	... 9 more
+---------------------------- PROCESS ENDED (5062) for package com.fishit.player.v2 ----------------------------
+---------------------------- PROCESS STARTED (5160) for package com.fishit.player.v2 ----------------------------
+2026-01-28 12:55:44.201  5160-5160  ActivityThread          com.fishit.player.v2                 I  Relaunch all activities: onCoreSettingsChange
+2026-01-28 12:55:44.202  5160-5160  Compatibil...geReporter com.fishit.player.v2                 D  Compat change id reported: 171979766; UID 10457; state: ENABLED
+2026-01-28 12:55:44.202  5160-5160  Compatibil...geReporter com.fishit.player.v2                 D  Compat change id reported: 242716250; UID 10457; state: ENABLED
+2026-01-28 12:55:44.210  5160-5160  ziparchive              com.fishit.player.v2                 W  Unable to open '/data/app/~~WeXSzHAR_PUHHjwYMD4rkg==/com.fishit.player.v2-DYW8ouH9FaJKTOvI_AB55g==/base.dm': No such file or directory
+2026-01-28 12:55:44.210  5160-5160  ziparchive              com.fishit.player.v2                 W  Unable to open '/data/app/~~WeXSzHAR_PUHHjwYMD4rkg==/com.fishit.player.v2-DYW8ouH9FaJKTOvI_AB55g==/base.dm': No such file or directory
+2026-01-28 12:55:44.721  5160-5160  nativeloader            com.fishit.player.v2                 D  Configuring clns-4 for other apk /data/app/~~WeXSzHAR_PUHHjwYMD4rkg==/com.fishit.player.v2-DYW8ouH9FaJKTOvI_AB55g==/base.apk. target_sdk_version=35, uses_libraries=, library_path=/data/app/~~WeXSzHAR_PUHHjwYMD4rkg==/com.fishit.player.v2-DYW8ouH9FaJKTOvI_AB55g==/lib/arm64:/data/app/~~WeXSzHAR_PUHHjwYMD4rkg==/com.fishit.player.v2-DYW8ouH9FaJKTOvI_AB55g==/base.apk!/lib/arm64-v8a, permitted_path=/data:/mnt/expand:/data/user/0/com.fishit.player.v2
+2026-01-28 12:55:44.731  5160-5160  GraphicsEnvironment     com.fishit.player.v2                 V  Currently set values for:
+2026-01-28 12:55:44.731  5160-5160  GraphicsEnvironment     com.fishit.player.v2                 V    angle_gl_driver_selection_pkgs=[]
+2026-01-28 12:55:44.731  5160-5160  GraphicsEnvironment     com.fishit.player.v2                 V    angle_gl_driver_selection_values=[]
+2026-01-28 12:55:44.732  5160-5160  GraphicsEnvironment     com.fishit.player.v2                 V  ANGLE GameManagerService for com.fishit.player.v2: false
+2026-01-28 12:55:44.732  5160-5160  GraphicsEnvironment     com.fishit.player.v2                 V  com.fishit.player.v2 is not listed in per-application setting
+2026-01-28 12:55:44.732  5160-5160  GraphicsEnvironment     com.fishit.player.v2                 V  App is not on the allowlist for updatable production driver.
+2026-01-28 12:55:44.767  5160-5160  FirebaseApp             com.fishit.player.v2                 W  Default FirebaseApp failed to initialize because no default options were found. This usually means that com.google.gms:google-services was not applied to your gradle project.
+2026-01-28 12:55:44.767  5160-5160  FirebaseInitProvider    com.fishit.player.v2                 I  FirebaseApp initialization unsuccessful
+2026-01-28 12:55:44.832  5160-5160  ishit.player.v2         com.fishit.player.v2                 W  Accessing hidden method Landroid/view/WindowManagerGlobal;->getInstance()Landroid/view/WindowManagerGlobal; (unsupported, reflection, allowed)
+2026-01-28 12:55:44.833  5160-5160  ishit.player.v2         com.fishit.player.v2                 W  Accessing hidden field Landroid/view/WindowManagerGlobal;->mViews:Ljava/util/ArrayList; (unsupported, reflection, allowed)
+2026-01-28 12:55:44.833  5160-5160  ishit.player.v2         com.fishit.player.v2                 W  Accessing hidden field Landroid/app/ActivityThread;->mH:Landroid/app/ActivityThread$H; (unsupported, reflection, allowed)
+2026-01-28 12:55:44.833  5160-5160  ishit.player.v2         com.fishit.player.v2                 W  Accessing hidden method Landroid/app/ActivityThread;->currentActivityThread()Landroid/app/ActivityThread; (unsupported, reflection, allowed)
+2026-01-28 12:55:44.833  5160-5160  ishit.player.v2         com.fishit.player.v2                 W  Accessing hidden field Landroid/os/Handler;->mCallback:Landroid/os/Handler$Callback; (unsupported, reflection, allowed)
+2026-01-28 12:55:44.833  5160-5160  ishit.player.v2         com.fishit.player.v2                 W  Accessing hidden field Landroid/util/Singleton;->mInstance:Ljava/lang/Object; (unsupported, reflection, allowed)
+2026-01-28 12:55:44.833  5160-5160  ishit.player.v2         com.fishit.player.v2                 W  Accessing hidden method Landroid/util/Singleton;->get()Ljava/lang/Object; (unsupported, reflection, allowed)
+2026-01-28 12:55:44.833  5160-5160  ishit.player.v2         com.fishit.player.v2                 W  Accessing hidden field Landroid/app/ActivityManager;->IActivityManagerSingleton:Landroid/util/Singleton; (unsupported, reflection, allowed)
+2026-01-28 12:55:45.066  5160-5160  AndroidRuntime          com.fishit.player.v2                 D  Shutting down VM
+2026-01-28 12:55:45.068  5160-5160  AndroidRuntime          com.fishit.player.v2                 E  FATAL EXCEPTION: main
+                                                                                                    Process: com.fishit.player.v2, PID: 5160
+                                                                                                    java.lang.RuntimeException: Unable to create application com.fishit.player.v2.FishItV2Application: java.lang.IllegalStateException: Telegram API credentials are missing. Set TG_API_ID and TG_API_HASH.
+                                                                                                    	at android.app.ActivityThread.handleBindApplication(ActivityThread.java:7716)
+                                                                                                    	at android.app.ActivityThread.-$$Nest$mhandleBindApplication(Unknown Source:0)
+                                                                                                    	at android.app.ActivityThread$H.handleMessage(ActivityThread.java:2478)
+                                                                                                    	at android.os.Handler.dispatchMessage(Handler.java:106)
+                                                                                                    	at android.os.Looper.loopOnce(Looper.java:230)
+                                                                                                    	at android.os.Looper.loop(Looper.java:319)
+                                                                                                    	at android.app.ActivityThread.main(ActivityThread.java:8919)
+                                                                                                    	at java.lang.reflect.Method.invoke(Native Method)
+                                                                                                    	at com.android.internal.os.RuntimeInit$MethodAndArgsCaller.run(RuntimeInit.java:578)
+                                                                                                    	at com.android.internal.os.ZygoteInit.main(ZygoteInit.java:1103)
+                                                                                                    Caused by: java.lang.IllegalStateException: Telegram API credentials are missing. Set TG_API_ID and TG_API_HASH.
+                                                                                                    	at com.fishit.player.v2.di.TelegramAuthModule.provideTelegramSessionConfig(TelegramAuthModule.kt:50)
+                                                                                                    	at com.fishit.player.v2.di.TelegramAuthModule_ProvideTelegramSessionConfigFactory.provideTelegramSessionConfig(TelegramAuthModule_ProvideTelegramSessionConfigFactory.java:47)
+                                                                                                    	at com.fishit.player.v2.DaggerFishItV2Application_HiltComponents_SingletonC$SingletonCImpl$SwitchingProvider.get0(DaggerFishItV2Application_HiltComponents_SingletonC.java:1293)
+                                                                                                    	at com.fishit.player.v2.DaggerFishItV2Application_HiltComponents_SingletonC$SingletonCImpl$SwitchingProvider.get(DaggerFishItV2Application_HiltComponents_SingletonC.java:1689)
+                                                                                                    	at dagger.internal.DoubleCheck.getSynchronized(DoubleCheck.java:54)
+                                                                                                    	at dagger.internal.DoubleCheck.get(DoubleCheck.java:45)
+                                                                                                    	at com.fishit.player.v2.DaggerFishItV2Application_HiltComponents_SingletonC$SingletonCImpl$SwitchingProvider.get0(DaggerFishItV2Application_HiltComponents_SingletonC.java:1287)
+                                                                                                    	at com.fishit.player.v2.DaggerFishItV2Application_HiltComponents_SingletonC$SingletonCImpl$SwitchingProvider.get(DaggerFishItV2Application_HiltComponents_SingletonC.java:1689)
+                                                                                                    	at dagger.internal.DoubleCheck.getSynchronized(DoubleCheck.java:54)
+                                                                                                    	at dagger.internal.DoubleCheck.get(DoubleCheck.java:45)
+                                                                                                    	at com.fishit.player.v2.DaggerFishItV2Application_HiltComponents_SingletonC$SingletonCImpl$SwitchingProvider.get0(DaggerFishItV2Application_HiltComponents_SingletonC.java:1370)
+                                                                                                    	at com.fishit.player.v2.DaggerFishItV2Application_HiltComponents_SingletonC$SingletonCImpl$SwitchingProvider.get(DaggerFishItV2Application_HiltComponents_SingletonC.java:1689)
+                                                                                                    	at dagger.internal.DoubleCheck.getSynchronized(DoubleCheck.java:54)
+                                                                                                    	at dagger.internal.DoubleCheck.get(DoubleCheck.java:45)
+                                                                                                    	at com.fishit.player.v2.DaggerFishItV2Application_HiltComponents_SingletonC$SingletonCImpl$SwitchingProvider.get0(DaggerFishItV2Application_HiltComponents_SingletonC.java:1367)
+                                                                                                    	at com.fishit.player.v2.DaggerFishItV2Application_HiltComponents_SingletonC$SingletonCImpl$SwitchingProvider.get(DaggerFishItV2Application_HiltComponents_SingletonC.java:1689)
+                                                                                                    	at dagger.internal.DoubleCheck.getSynchronized(DoubleCheck.java:54)
+                                                                                                    	at dagger.internal.DoubleCheck.get(DoubleCheck.java:45)
+                                                                                                    	at com.fishit.player.v2.DaggerFishItV2Application_HiltComponents_SingletonC$SingletonCImpl$SwitchingProvider.get0(DaggerFishItV2Application_HiltComponents_SingletonC.java:1538)
+                                                                                                    	at com.fishit.player.v2.DaggerFishItV2Application_HiltComponents_SingletonC$SingletonCImpl$SwitchingProvider.get(DaggerFishItV2Application_HiltComponents_SingletonC.java:1689)
+                                                                                                    	at dagger.internal.DoubleCheck.getSynchronized(DoubleCheck.java:54)
+                                                                                                    	at dagger.internal.DoubleCheck.get(DoubleCheck.java:45)
+                                                                                                    	at com.fishit.player.v2.DaggerFishItV2Application_HiltComponents_SingletonC$SingletonCImpl.injectFishItV2Application2(DaggerFishItV2Application_HiltComponents_SingletonC.java:1254)
+2026-01-28 12:55:45.069  5160-5160  AndroidRuntime          com.fishit.player.v2                 E  	at com.fishit.player.v2.DaggerFishItV2Application_HiltComponents_SingletonC$SingletonCImpl.injectFishItV2Application(DaggerFishItV2Application_HiltComponents_SingletonC.java:1230)
+                                                                                                    	at com.fishit.player.v2.Hilt_FishItV2Application.hiltInternalInject(Hilt_FishItV2Application.java:52)
+                                                                                                    	at com.fishit.player.v2.Hilt_FishItV2Application.onCreate(Hilt_FishItV2Application.java:43)
+                                                                                                    	at com.fishit.player.v2.FishItV2Application.onCreate(FishItV2Application.kt:77)
+                                                                                                    	at android.app.Instrumentation.callApplicationOnCreate(Instrumentation.java:1316)
+                                                                                                    	at android.app.ActivityThread.handleBindApplication(ActivityThread.java:7711)
+                                                                                                    	... 9 more
+2026-01-28 12:55:45.079  5160-5160  Process                 com.fishit.player.v2                 I  Sending signal. PID: 5160 SIG: 9
+---------------------------- PROCESS ENDED (5160) for package com.fishit.player.v2 ----------------------------
+---------------------------- PROCESS STARTED (5555) for package com.fishit.player.v2 ----------------------------
+2026-01-28 12:56:04.814  5555-5555  ishit.player.v2         com.fishit.player.v2                 I  Using CollectorTypeCC GC.
+2026-01-28 12:56:04.835  5555-5555  ActivityThread          com.fishit.player.v2                 D  setConscryptValidator
+2026-01-28 12:56:04.836  5555-5555  ActivityThread          com.fishit.player.v2                 D  setConscryptValidator - put
+2026-01-28 12:56:04.861  5555-5555  ActivityThread          com.fishit.player.v2                 I  Relaunch all activities: onCoreSettingsChange
+2026-01-28 12:56:04.861  5555-5555  Compatibil...geReporter com.fishit.player.v2                 D  Compat change id reported: 171979766; UID 10457; state: ENABLED
+2026-01-28 12:56:04.862  5555-5555  Compatibil...geReporter com.fishit.player.v2                 D  Compat change id reported: 242716250; UID 10457; state: ENABLED
+2026-01-28 12:56:04.873  5555-5555  ziparchive              com.fishit.player.v2                 W  Unable to open '/data/app/~~nPeeO6IppzO9CD77_oZsBA==/com.fishit.player.v2-p9JlNXSemqGVdDLKyYUzgw==/base.dm': No such file or directory
+2026-01-28 12:56:04.873  5555-5555  ziparchive              com.fishit.player.v2                 W  Unable to open '/data/app/~~nPeeO6IppzO9CD77_oZsBA==/com.fishit.player.v2-p9JlNXSemqGVdDLKyYUzgw==/base.dm': No such file or directory
+2026-01-28 12:56:05.454  5555-5555  nativeloader            com.fishit.player.v2                 D  Configuring clns-4 for other apk /data/app/~~nPeeO6IppzO9CD77_oZsBA==/com.fishit.player.v2-p9JlNXSemqGVdDLKyYUzgw==/base.apk. target_sdk_version=35, uses_libraries=, library_path=/data/app/~~nPeeO6IppzO9CD77_oZsBA==/com.fishit.player.v2-p9JlNXSemqGVdDLKyYUzgw==/lib/arm64:/data/app/~~nPeeO6IppzO9CD77_oZsBA==/com.fishit.player.v2-p9JlNXSemqGVdDLKyYUzgw==/base.apk!/lib/arm64-v8a, permitted_path=/data:/mnt/expand:/data/user/0/com.fishit.player.v2
+2026-01-28 12:56:05.466  5555-5555  GraphicsEnvironment     com.fishit.player.v2                 V  Currently set values for:
+2026-01-28 12:56:05.467  5555-5555  GraphicsEnvironment     com.fishit.player.v2                 V    angle_gl_driver_selection_pkgs=[]
+2026-01-28 12:56:05.467  5555-5555  GraphicsEnvironment     com.fishit.player.v2                 V    angle_gl_driver_selection_values=[]
+2026-01-28 12:56:05.467  5555-5555  GraphicsEnvironment     com.fishit.player.v2                 V  ANGLE GameManagerService for com.fishit.player.v2: false
+2026-01-28 12:56:05.467  5555-5555  GraphicsEnvironment     com.fishit.player.v2                 V  com.fishit.player.v2 is not listed in per-application setting
+2026-01-28 12:56:05.467  5555-5555  GraphicsEnvironment     com.fishit.player.v2                 V  App is not on the allowlist for updatable production driver.
+2026-01-28 12:56:05.516  5555-5555  FirebaseApp             com.fishit.player.v2                 W  Default FirebaseApp failed to initialize because no default options were found. This usually means that com.google.gms:google-services was not applied to your gradle project.
+2026-01-28 12:56:05.516  5555-5555  FirebaseInitProvider    com.fishit.player.v2                 I  FirebaseApp initialization unsuccessful
+2026-01-28 12:56:05.596  5555-5555  ishit.player.v2         com.fishit.player.v2                 W  Accessing hidden method Landroid/view/WindowManagerGlobal;->getInstance()Landroid/view/WindowManagerGlobal; (unsupported, reflection, allowed)
+2026-01-28 12:56:05.596  5555-5555  ishit.player.v2         com.fishit.player.v2                 W  Accessing hidden field Landroid/view/WindowManagerGlobal;->mViews:Ljava/util/ArrayList; (unsupported, reflection, allowed)
+2026-01-28 12:56:05.596  5555-5555  ishit.player.v2         com.fishit.player.v2                 W  Accessing hidden field Landroid/app/ActivityThread;->mH:Landroid/app/ActivityThread$H; (unsupported, reflection, allowed)
+2026-01-28 12:56:05.596  5555-5555  ishit.player.v2         com.fishit.player.v2                 W  Accessing hidden method Landroid/app/ActivityThread;->currentActivityThread()Landroid/app/ActivityThread; (unsupported, reflection, allowed)
+2026-01-28 12:56:05.596  5555-5555  ishit.player.v2         com.fishit.player.v2                 W  Accessing hidden field Landroid/os/Handler;->mCallback:Landroid/os/Handler$Callback; (unsupported, reflection, allowed)
+2026-01-28 12:56:05.596  5555-5555  ishit.player.v2         com.fishit.player.v2                 W  Accessing hidden field Landroid/util/Singleton;->mInstance:Ljava/lang/Object; (unsupported, reflection, allowed)
+2026-01-28 12:56:05.596  5555-5555  ishit.player.v2         com.fishit.player.v2                 W  Accessing hidden method Landroid/util/Singleton;->get()Ljava/lang/Object; (unsupported, reflection, allowed)
+2026-01-28 12:56:05.597  5555-5555  ishit.player.v2         com.fishit.player.v2                 W  Accessing hidden field Landroid/app/ActivityManager;->IActivityManagerSingleton:Landroid/util/Singleton; (unsupported, reflection, allowed)
+2026-01-28 12:56:05.876  5555-5555  AndroidRuntime          com.fishit.player.v2                 D  Shutting down VM
+2026-01-28 12:56:05.878  5555-5555  AndroidRuntime          com.fishit.player.v2                 E  FATAL EXCEPTION: main
+                                                                                                    Process: com.fishit.player.v2, PID: 5555
+                                                                                                    java.lang.RuntimeException: Unable to create application com.fishit.player.v2.FishItV2Application: java.lang.IllegalStateException: Telegram API credentials are missing. Set TG_API_ID and TG_API_HASH.
+                                                                                                    	at android.app.ActivityThread.handleBindApplication(ActivityThread.java:7716)
+                                                                                                    	at android.app.ActivityThread.-$$Nest$mhandleBindApplication(Unknown Source:0)
+                                                                                                    	at android.app.ActivityThread$H.handleMessage(ActivityThread.java:2478)
+                                                                                                    	at android.os.Handler.dispatchMessage(Handler.java:106)
+                                                                                                    	at android.os.Looper.loopOnce(Looper.java:230)
+                                                                                                    	at android.os.Looper.loop(Looper.java:319)
+                                                                                                    	at android.app.ActivityThread.main(ActivityThread.java:8919)
+                                                                                                    	at java.lang.reflect.Method.invoke(Native Method)
+                                                                                                    	at com.android.internal.os.RuntimeInit$MethodAndArgsCaller.run(RuntimeInit.java:578)
+                                                                                                    	at com.android.internal.os.ZygoteInit.main(ZygoteInit.java:1103)
+                                                                                                    Caused by: java.lang.IllegalStateException: Telegram API credentials are missing. Set TG_API_ID and TG_API_HASH.
+                                                                                                    	at com.fishit.player.v2.di.TelegramAuthModule.provideTelegramSessionConfig(TelegramAuthModule.kt:50)
+                                                                                                    	at com.fishit.player.v2.di.TelegramAuthModule_ProvideTelegramSessionConfigFactory.provideTelegramSessionConfig(TelegramAuthModule_ProvideTelegramSessionConfigFactory.java:47)
+                                                                                                    	at com.fishit.player.v2.DaggerFishItV2Application_HiltComponents_SingletonC$SingletonCImpl$SwitchingProvider.get0(DaggerFishItV2Application_HiltComponents_SingletonC.java:1293)
+                                                                                                    	at com.fishit.player.v2.DaggerFishItV2Application_HiltComponents_SingletonC$SingletonCImpl$SwitchingProvider.get(DaggerFishItV2Application_HiltComponents_SingletonC.java:1689)
+                                                                                                    	at dagger.internal.DoubleCheck.getSynchronized(DoubleCheck.java:54)
+                                                                                                    	at dagger.internal.DoubleCheck.get(DoubleCheck.java:45)
+                                                                                                    	at com.fishit.player.v2.DaggerFishItV2Application_HiltComponents_SingletonC$SingletonCImpl$SwitchingProvider.get0(DaggerFishItV2Application_HiltComponents_SingletonC.java:1287)
+                                                                                                    	at com.fishit.player.v2.DaggerFishItV2Application_HiltComponents_SingletonC$SingletonCImpl$SwitchingProvider.get(DaggerFishItV2Application_HiltComponents_SingletonC.java:1689)
+                                                                                                    	at dagger.internal.DoubleCheck.getSynchronized(DoubleCheck.java:54)
+                                                                                                    	at dagger.internal.DoubleCheck.get(DoubleCheck.java:45)
+                                                                                                    	at com.fishit.player.v2.DaggerFishItV2Application_HiltComponents_SingletonC$SingletonCImpl$SwitchingProvider.get0(DaggerFishItV2Application_HiltComponents_SingletonC.java:1370)
+                                                                                                    	at com.fishit.player.v2.DaggerFishItV2Application_HiltComponents_SingletonC$SingletonCImpl$SwitchingProvider.get(DaggerFishItV2Application_HiltComponents_SingletonC.java:1689)
+                                                                                                    	at dagger.internal.DoubleCheck.getSynchronized(DoubleCheck.java:54)
+                                                                                                    	at dagger.internal.DoubleCheck.get(DoubleCheck.java:45)
+                                                                                                    	at com.fishit.player.v2.DaggerFishItV2Application_HiltComponents_SingletonC$SingletonCImpl$SwitchingProvider.get0(DaggerFishItV2Application_HiltComponents_SingletonC.java:1367)
+                                                                                                    	at com.fishit.player.v2.DaggerFishItV2Application_HiltComponents_SingletonC$SingletonCImpl$SwitchingProvider.get(DaggerFishItV2Application_HiltComponents_SingletonC.java:1689)
+                                                                                                    	at dagger.internal.DoubleCheck.getSynchronized(DoubleCheck.java:54)
+                                                                                                    	at dagger.internal.DoubleCheck.get(DoubleCheck.java:45)
+                                                                                                    	at com.fishit.player.v2.DaggerFishItV2Application_HiltComponents_SingletonC$SingletonCImpl$SwitchingProvider.get0(DaggerFishItV2Application_HiltComponents_SingletonC.java:1538)
+                                                                                                    	at com.fishit.player.v2.DaggerFishItV2Application_HiltComponents_SingletonC$SingletonCImpl$SwitchingProvider.get(DaggerFishItV2Application_HiltComponents_SingletonC.java:1689)
+                                                                                                    	at dagger.internal.DoubleCheck.getSynchronized(DoubleCheck.java:54)
+                                                                                                    	at dagger.internal.DoubleCheck.get(DoubleCheck.java:45)
+                                                                                                    	at com.fishit.player.v2.DaggerFishItV2Application_HiltComponents_SingletonC$SingletonCImpl.injectFishItV2Application2(DaggerFishItV2Application_HiltComponents_SingletonC.java:1254)
+2026-01-28 12:56:05.878  5555-5555  AndroidRuntime          com.fishit.player.v2                 E  	at com.fishit.player.v2.DaggerFishItV2Application_HiltComponents_SingletonC$SingletonCImpl.injectFishItV2Application(DaggerFishItV2Application_HiltComponents_SingletonC.java:1230)
+                                                                                                    	at com.fishit.player.v2.Hilt_FishItV2Application.hiltInternalInject(Hilt_FishItV2Application.java:52)
+                                                                                                    	at com.fishit.player.v2.Hilt_FishItV2Application.onCreate(Hilt_FishItV2Application.java:43)
+                                                                                                    	at com.fishit.player.v2.FishItV2Application.onCreate(FishItV2Application.kt:77)
+                                                                                                    	at android.app.Instrumentation.callApplicationOnCreate(Instrumentation.java:1316)
+                                                                                                    	at android.app.ActivityThread.handleBindApplication(ActivityThread.java:7711)
+                                                                                                    	... 9 more
+2026-01-28 12:56:05.893  5555-5555  Process                 com.fishit.player.v2                 I  Sending signal. PID: 5555 SIG: 9

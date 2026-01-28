@@ -27,7 +27,13 @@ object FallbackCanonicalKeyGenerator {
                 CanonicalId(
                     "episode:$slug:S${season.toString().padStart(2, '0')}E${episode.toString().padStart(2, '0')}",
                 )
-            mediaType == MediaType.MOVIE -> CanonicalId("movie:$slug${year?.let { ":$it" } ?: ""}")
+            mediaType == MediaType.MOVIE ->
+                CanonicalId("movie:$slug${year?.let { ":$it" } ?: ":unknown"}")
+            mediaType == MediaType.SERIES ->
+                // BUG FIX: Add fallback for series (was missing, returned null)
+                // Format: "series:<slug>:<year>" or "series:<slug>:unknown"
+                // This allows series detail screens to work even without year
+                CanonicalId("series:$slug${year?.let { ":$it" } ?: ":unknown"}")
             else -> null
         }
     }
