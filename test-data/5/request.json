@@ -1,0 +1,18 @@
+{
+  "app": "com.fishit.player.v2",
+  "duration": "292ms",
+  "headers": {
+    "Accept": "application/json",
+    "Accept-Encoding": "gzip",
+    "User-Agent": "FishIT-Player/2.x (Android)",
+    "Host": "konigtv.com:8080",
+    "Connection": "Keep-Alive"
+  },
+  "method": "GET",
+  "protocol": "HTTP/1.1",
+  "remoteIp": "45.12.32.214",
+  "remotePort": 8080,
+  "sessionId": "223741ed-bb4e-4ed8-b567-836340ddf5f6",
+  "time": "2026-01-26 17:20:29",
+  "url": "http://konigtv.com:8080/player_api.php?action\u003dget_series\u0026username\u003dChristoph10\u0026password\u003dJQ2rKsQ744"
+}
