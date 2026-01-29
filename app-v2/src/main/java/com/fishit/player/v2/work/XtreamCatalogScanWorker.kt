@@ -95,21 +95,25 @@ class XtreamCatalogScanWorker
                     val saved = checkpointStore.getXtreamCheckpoint()
                     val decoded = XtreamSyncCheckpoint.decode(saved)
                     
-                    // BUG FIX (Jan 2026): Reset checkpoint if not at VOD_LIST or SERIES_LIST.
+                    // BUG FIX (Jan 2026): Reset checkpoint if not at VOD_LIST, SERIES_LIST, or SERIES_EPISODES.
                     // For AUTO sync at app start, we want to re-scan all list phases (VOD, Series, Live)
                     // to pick up new content. The pipeline runs VOD/Series/Live in PARALLEL, so we only
                     // need to start from VOD_LIST - the pipeline will scan all enabled phases.
                     // 
                     // Phases that require reset to VOD_LIST:
                     // - LIVE_LIST: Would skip VOD and Series (only Live scanned)
-                    // - SERIES_EPISODES: Legacy phase, now lazy-loaded
                     // - VOD_INFO, SERIES_INFO: Backfill phases, not list phases
                     // - COMPLETED: Sync finished, need fresh scan
+                    //
+                    // Phases that are preserved:
+                    // - SERIES_EPISODES: Preserve processedSeriesIds for incremental episode resume
+                    //   (skip logic handles advancement to LIVE_LIST if appropriate)
                     //
                     // Without this fix: if checkpoint was on LIVE_LIST, includeVod=false → no movies!
                     if (decoded.phase !in listOf(
                             XtreamSyncPhase.VOD_LIST,
                             XtreamSyncPhase.SERIES_LIST,
+                            XtreamSyncPhase.SERIES_EPISODES,
                         )
                     ) {
                         UnifiedLog.i(TAG) {
@@ -283,20 +287,17 @@ class XtreamCatalogScanWorker
             var itemsPersisted = 0L
             var budgetExceeded = false
 
-            // EPISODE LAZY-LOADING (Jan 2026):
-            // Episodes are NOT synced during background catalog sync.
-            // They are loaded on-demand via LoadSeasonEpisodesUseCase when user opens a series.
+            // EPISODE SYNC BEHAVIOR (Jan 2026):
+            // With includeEpisodes=true, episodes ARE fetched during SERIES_LIST phase
+            // (via get_series_info calls), not in the separate SERIES_EPISODES phase.
             //
-            // Rationale:
-            // - Large catalogs have 100k+ episodes → slow initial sync
-            // - Users only watch a fraction of series → most episode data is never used
-            // - On-demand loading provides instant series browsing + fast initial sync
-            //
-            // If checkpoint is at SERIES_EPISODES phase, skip directly to LIVE_LIST
+            // The SERIES_EPISODES phase is legacy from when episodes were fetched separately.
+            // If checkpoint is at SERIES_EPISODES phase, we skip it and advance to LIVE_LIST
+            // while preserving processedSeriesIds for incremental resume.
             var currentCheckpoint =
                 if (checkpoint.phase == XtreamSyncPhase.SERIES_EPISODES) {
                     UnifiedLog.i(TAG) {
-                        "LAZY_LOADING: Skipping SERIES_EPISODES phase - episodes loaded on-demand"
+                        "Skipping legacy SERIES_EPISODES phase (episodes now fetched during SERIES_LIST)"
                     }
                     checkpoint.advancePhase() // Jump to LIVE_LIST
                 } else {
