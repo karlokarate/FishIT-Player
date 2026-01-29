@@ -131,9 +131,9 @@ class NxCatalogWriterVodE2ETest {
         val sourceRefSlot = slot<NxWorkSourceRefRepository.SourceRef>()
         val variantSlot = slot<NxWorkVariantRepository.Variant>()
 
-        coEvery { workRepository.upsert(capture(workSlot)) } returns Unit
-        coEvery { sourceRefRepository.upsert(capture(sourceRefSlot)) } returns Unit
-        coEvery { variantRepository.upsert(capture(variantSlot)) } returns mockk()
+        coEvery { workRepository.upsert(capture(workSlot)) } answers { firstArg() }
+        coEvery { sourceRefRepository.upsert(capture(sourceRefSlot)) } answers { firstArg() }
+        coEvery { variantRepository.upsert(capture(variantSlot)) } answers { firstArg() }
 
         // WHEN: Ingest via NxCatalogWriter
         val workKey = writer.ingest(raw, normalized, "xtream:test-server")
@@ -189,7 +189,7 @@ class NxCatalogWriterVodE2ETest {
             trailer = "https://youtube.com/watch?v=YoHD9XEInc0",
             durationMs = 8880000L, // 148 minutes
             externalIds = ExternalIds(
-                tmdb = ExternalIds.TmdbRef(id = 27205, mediaType = "movie"),
+                tmdb = TmdbRef(TmdbMediaType.MOVIE, 27205),
                 imdbId = "tt1375666",
             ),
             playbackHints = mapOf(
@@ -219,9 +219,9 @@ class NxCatalogWriterVodE2ETest {
 
         // Capture what gets written
         val workSlot = slot<NxWorkRepository.Work>()
-        coEvery { workRepository.upsert(capture(workSlot)) } returns Unit
-        coEvery { sourceRefRepository.upsert(any()) } returns Unit
-        coEvery { variantRepository.upsert(any()) } returns mockk()
+        coEvery { workRepository.upsert(capture(workSlot)) } answers { firstArg() }
+        coEvery { sourceRefRepository.upsert(any()) } answers { firstArg() }
+        coEvery { variantRepository.upsert(any()) } answers { firstArg() }
 
         // WHEN: Ingest
         writer.ingest(raw, normalized, "xtream:test-server")
@@ -274,9 +274,9 @@ class NxCatalogWriterVodE2ETest {
 
         val workSlot = slot<NxWorkRepository.Work>()
         val sourceRefSlot = slot<NxWorkSourceRefRepository.SourceRef>()
-        coEvery { workRepository.upsert(capture(workSlot)) } returns Unit
-        coEvery { sourceRefRepository.upsert(capture(sourceRefSlot)) } returns Unit
-        coEvery { variantRepository.upsert(any()) } returns mockk()
+        coEvery { workRepository.upsert(capture(workSlot)) } answers { firstArg() }
+        coEvery { sourceRefRepository.upsert(capture(sourceRefSlot)) } answers { firstArg() }
+        coEvery { variantRepository.upsert(any()) } answers { firstArg() }
 
         writer.ingest(raw, normalized, "xtream:test")
 
@@ -323,7 +323,7 @@ class NxCatalogWriterSeriesE2ETest {
             cast = "Bryan Cranston, Aaron Paul, Anna Gunn",
             genres = "Drama, Crime, Thriller",
             externalIds = ExternalIds(
-                tmdb = ExternalIds.TmdbRef(id = 1396, mediaType = "tv"),
+                tmdb = TmdbRef(TmdbMediaType.TV, 1396),
             ),
         )
 
@@ -343,9 +343,9 @@ class NxCatalogWriterSeriesE2ETest {
 
         val workSlot = slot<NxWorkRepository.Work>()
         val sourceRefSlot = slot<NxWorkSourceRefRepository.SourceRef>()
-        coEvery { workRepository.upsert(capture(workSlot)) } returns Unit
-        coEvery { sourceRefRepository.upsert(capture(sourceRefSlot)) } returns Unit
-        coEvery { variantRepository.upsert(any()) } returns mockk()
+        coEvery { workRepository.upsert(capture(workSlot)) } answers { firstArg() }
+        coEvery { sourceRefRepository.upsert(capture(sourceRefSlot)) } answers { firstArg() }
+        coEvery { variantRepository.upsert(any()) } answers { firstArg() }
 
         writer.ingest(raw, normalized, "xtream:test-server")
 
@@ -379,8 +379,8 @@ class NxCatalogWriterSeriesE2ETest {
             lastModifiedTimestamp = 1609459200000L,
             plot = "Walt and Skyler attend a party...",
             durationMs = 2880000L, // 48 minutes
-            seasonNumber = 1,
-            episodeNumber = 5,
+            season = 1,
+            episode = 5,
             playbackHints = mapOf(
                 "xtream.containerExtension" to "mkv",
                 "xtream.seriesId" to "5001",
@@ -396,15 +396,15 @@ class NxCatalogWriterSeriesE2ETest {
             plot = raw.plot,
             durationMs = raw.durationMs,
             addedTimestamp = raw.addedTimestamp,
-            seasonNumber = raw.seasonNumber,
-            episodeNumber = raw.episodeNumber,
+            season = raw.season,
+            episode = raw.episode,
         )
 
         val workSlot = slot<NxWorkRepository.Work>()
         val variantSlot = slot<NxWorkVariantRepository.Variant>()
-        coEvery { workRepository.upsert(capture(workSlot)) } returns Unit
-        coEvery { sourceRefRepository.upsert(any()) } returns Unit
-        coEvery { variantRepository.upsert(capture(variantSlot)) } returns mockk()
+        coEvery { workRepository.upsert(capture(workSlot)) } answers { firstArg() }
+        coEvery { sourceRefRepository.upsert(any()) } answers { firstArg() }
+        coEvery { variantRepository.upsert(capture(variantSlot)) } answers { firstArg() }
 
         writer.ingest(raw, normalized, "xtream:test-server")
 
@@ -469,9 +469,9 @@ class NxCatalogWriterLiveE2ETest {
 
         val workSlot = slot<NxWorkRepository.Work>()
         val sourceRefSlot = slot<NxWorkSourceRefRepository.SourceRef>()
-        coEvery { workRepository.upsert(capture(workSlot)) } returns Unit
-        coEvery { sourceRefRepository.upsert(capture(sourceRefSlot)) } returns Unit
-        coEvery { variantRepository.upsert(any()) } returns mockk()
+        coEvery { workRepository.upsert(capture(workSlot)) } answers { firstArg() }
+        coEvery { sourceRefRepository.upsert(capture(sourceRefSlot)) } answers { firstArg() }
+        coEvery { variantRepository.upsert(any()) } answers { firstArg() }
 
         writer.ingest(raw, normalized, "xtream:test-server")
 
@@ -512,9 +512,9 @@ class NxCatalogWriterLiveE2ETest {
         )
 
         val sourceRefSlot = slot<NxWorkSourceRefRepository.SourceRef>()
-        coEvery { workRepository.upsert(any()) } returns Unit
-        coEvery { sourceRefRepository.upsert(capture(sourceRefSlot)) } returns Unit
-        coEvery { variantRepository.upsert(any()) } returns mockk()
+        coEvery { workRepository.upsert(any()) } answers { firstArg() }
+        coEvery { sourceRefRepository.upsert(capture(sourceRefSlot)) } answers { firstArg() }
+        coEvery { variantRepository.upsert(any()) } answers { firstArg() }
 
         writer.ingest(raw, normalized, "xtream:test-server")
 
@@ -566,9 +566,9 @@ class NxCatalogWriterPlaybackHintsE2ETest {
         )
 
         val variantSlot = slot<NxWorkVariantRepository.Variant>()
-        coEvery { workRepository.upsert(any()) } returns Unit
-        coEvery { sourceRefRepository.upsert(any()) } returns Unit
-        coEvery { variantRepository.upsert(capture(variantSlot)) } returns mockk()
+        coEvery { workRepository.upsert(any()) } answers { firstArg() }
+        coEvery { sourceRefRepository.upsert(any()) } answers { firstArg() }
+        coEvery { variantRepository.upsert(capture(variantSlot)) } answers { firstArg() }
 
         writer.ingest(raw, normalized, "xtream:test")
 
@@ -594,8 +594,8 @@ class NxCatalogWriterPlaybackHintsE2ETest {
             mediaType = MediaType.MOVIE,
         )
 
-        coEvery { workRepository.upsert(any()) } returns Unit
-        coEvery { sourceRefRepository.upsert(any()) } returns Unit
+        coEvery { workRepository.upsert(any()) } answers { firstArg() }
+        coEvery { sourceRefRepository.upsert(any()) } answers { firstArg() }
 
         writer.ingest(raw, normalized, "xtream:test")
 
