@@ -311,20 +311,21 @@ class XtreamCatalogScanWorker
                         XtreamSyncPhase.VOD_LIST,
                         XtreamSyncPhase.SERIES_LIST,
                     )
-            // Episodes are NEVER included in background sync (lazy loading)
-            val includeEpisodes = false
+            // Episodes ARE included in initial sync (matches other Xtream apps - better UX)
+            // Season/episode metadata is immediately available in detail screens
+            val includeEpisodes = true
             val includeLive = true // Always include live in list phases
 
             UnifiedLog.d(TAG) {
-                "Catalog sync: includeVod=$includeVod includeSeries=$includeSeries includeEpisodes=$includeEpisodes (lazy) includeLive=$includeLive scope=${input.xtreamSyncScope} enhanced=${input.xtreamUseEnhancedSync}"
+                "Catalog sync: includeVod=$includeVod includeSeries=$includeSeries includeEpisodes=$includeEpisodes includeLive=$includeLive scope=${input.xtreamSyncScope} enhanced=${input.xtreamUseEnhancedSync}"
             }
 
-            // PLATINUM: Pass already-processed series IDs (kept for future episode pre-fetch feature)
+            // Checkpoint tracking: Already-processed series IDs for episode resume
             val excludeSeriesIds = currentCheckpoint.processedSeriesIds
 
             if (excludeSeriesIds.isNotEmpty()) {
                 UnifiedLog.d(TAG) {
-                    "Note: ${excludeSeriesIds.size} processed series IDs in checkpoint (unused with lazy loading)"
+                    "Resuming episode sync: ${excludeSeriesIds.size} series already processed, skipping them"
                 }
             }
 
