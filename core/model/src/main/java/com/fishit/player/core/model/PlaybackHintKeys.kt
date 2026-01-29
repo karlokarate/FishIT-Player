@@ -93,6 +93,23 @@ object PlaybackHintKeys {
          * Policy priority: m3u8 > ts > mp4 (unless server restricts)
          */
         const val ALLOWED_OUTPUT_FORMATS = "xtream.allowedOutputFormats"
+
+        /**
+         * Video bitrate in kbps from API ffprobe data.
+         *
+         * Useful for quality selection in player and UI display.
+         * Source: XtreamEpisodeInfoBlock.bitrate from get_series_info response.
+         */
+        const val BITRATE = "xtream.bitrate"
+
+        /**
+         * Direct source URL (typically HLS) for live channels.
+         *
+         * Some panels provide a direct HLS URL that bypasses stream ID resolution.
+         * When available, can optimize playback by skipping URL construction.
+         * Source: XtreamLiveStream.directSource from get_live_streams response.
+         */
+        const val DIRECT_SOURCE = "xtream.directSource"
     }
 
     /** Telegram-specific playback hints. */

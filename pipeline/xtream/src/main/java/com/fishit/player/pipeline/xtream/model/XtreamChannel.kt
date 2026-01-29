@@ -31,6 +31,15 @@ data class XtreamChannel(
      * Xtream provides this from API (is_adult field as "1" or "0" string).
      */
     val isAdult: Boolean = false,
+    /**
+     * Direct HLS source URL when available.
+     *
+     * Some panels provide a direct streaming URL that bypasses the standard
+     * stream ID → URL construction. When present, can optimize playback.
+     *
+     * API field: direct_source (typically an HLS URL like "http://.../live/...m3u8")
+     */
+    val directSource: String? = null,
 ) {
     /**
      * Compute fingerprint hash for incremental sync change detection.

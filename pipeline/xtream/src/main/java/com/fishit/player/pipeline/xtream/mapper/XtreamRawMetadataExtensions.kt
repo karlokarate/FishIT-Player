@@ -240,13 +240,20 @@ fun XtreamSeriesItem.toRawMetadata(
     val externalIds =
         tmdbId?.let { ExternalIds(tmdb = TmdbRef(TmdbMediaType.TV, it)) } ?: ExternalIds()
 
+    // Series "episode_run_time" is average episode runtime in MINUTES → convert to ms
+    // BUG FIX (Jan 2026): episodeRunTime was present in DTO but not mapped to durationMs
+    val durationMs = episodeRunTime
+        ?.toIntOrNull()
+        ?.takeIf { it > 0 }
+        ?.let { it * 60 * 1000L }  // minutes → milliseconds
+
     val raw = RawMediaMetadata(
         originalTitle = rawTitle,
         mediaType = MediaType.SERIES, // Series container, not episode
         year = rawYear,
         season = null,
         episode = null,
-        durationMs = null, // Series list doesn't include duration
+        durationMs = durationMs, // Average episode runtime (from episode_run_time API field)
         externalIds = externalIds,
         sourceType = SourceType.XTREAM,
         sourceLabel = accountName,
@@ -351,7 +358,15 @@ fun XtreamEpisode.toRawMediaMetadata(
                 put(PlaybackHintKeys.AUDIO_CODEC, it)
             }
             audioChannels?.let { put(PlaybackHintKeys.AUDIO_CHANNELS, it.toString()) }
+            // BUG FIX (Jan 2026): Add bitrate for quality info in player
+            bitrate?.takeIf { it > 0 }?.let {
+                put(PlaybackHintKeys.Xtream.BITRATE, it.toString())
+            }
         }
+
+    // BUG FIX (Jan 2026): Prefer durationSecs (from API, more accurate) over parsing duration string
+    val resolvedDurationMs = durationSecs?.takeIf { it > 0 }?.let { it * 1000L }
+        ?: parseDurationToMs(duration)
 
     val raw = RawMediaMetadata(
         originalTitle = rawTitle,
@@ -359,7 +374,7 @@ fun XtreamEpisode.toRawMediaMetadata(
         year = rawYear,
         season = seasonNumber,
         episode = episodeNumber,
-        durationMs = parseDurationToMs(duration), // Parse duration if available
+        durationMs = resolvedDurationMs, // Prefer durationSecs, fallback to parsed duration
         externalIds = externalIds,
         sourceType = SourceType.XTREAM,
         sourceLabel = effectiveSeriesName?.let { "Xtream: $it" } ?: "Xtream Series",
@@ -414,6 +429,10 @@ fun XtreamChannel.toRawMediaMetadata(
         buildMap {
             put(PlaybackHintKeys.Xtream.CONTENT_TYPE, PlaybackHintKeys.Xtream.CONTENT_LIVE)
             put(PlaybackHintKeys.Xtream.STREAM_ID, id.toString())
+            // BUG FIX (Jan 2026): Add direct HLS source URL for potential playback optimization
+            directSource?.takeIf { it.isNotBlank() }?.let {
+                put(PlaybackHintKeys.Xtream.DIRECT_SOURCE, it)
+            }
         }
 
     val raw = RawMediaMetadata(

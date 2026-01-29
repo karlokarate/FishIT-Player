@@ -7,13 +7,18 @@ import com.fishit.player.core.live.domain.LiveChannel
 import com.fishit.player.core.live.domain.LiveContentRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -26,14 +31,20 @@ import javax.inject.Inject
  * - Category list for filtering
  * - Recent channels section
  * - Favorite channels section
- * - Search functionality
+ * - Search functionality with debouncing
  */
+@OptIn(FlowPreview::class)
 @HiltViewModel
 class LiveViewModel
     @Inject
     constructor(
         private val repository: LiveContentRepository,
     ) : ViewModel() {
+        companion object {
+            /** Debounce delay for search input (ms) - consistent with HomeViewModel */
+            private const val SEARCH_DEBOUNCE_MS = 300L
+        }
+
         /** Selected category filter (null = all) */
         private val _selectedCategoryId = MutableStateFlow<String?>(null)
         val selectedCategoryId: StateFlow<String?> = _selectedCategoryId.asStateFlow()
@@ -41,6 +52,15 @@ class LiveViewModel
         /** Search query */
         private val _searchQuery = MutableStateFlow("")
         val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
+
+        /**
+         * Debounced search query - waits 300ms after typing stops.
+         * Prevents UI blocking by not triggering search on every keystroke.
+         */
+        private val debouncedSearchQuery =
+            _searchQuery
+                .debounce(SEARCH_DEBOUNCE_MS)
+                .distinctUntilChanged()
 
         /** Search results */
         private val _searchResults = MutableStateFlow<List<LiveChannel>>(emptyList())
@@ -92,6 +112,8 @@ class LiveViewModel
 
         init {
             loadRecentChannels()
+            // Start collecting debounced search queries
+            collectDebouncedSearchQuery()
         }
 
         private fun loadRecentChannels() {
@@ -121,21 +143,31 @@ class LiveViewModel
         }
 
         /**
-         * Update search query and perform search.
+         * Update search query (debounced).
+         * The actual search is triggered by [debouncedSearchQuery] after 300ms of inactivity.
          */
         fun search(query: String) {
             _searchQuery.value = query
-            if (query.isBlank()) {
-                _searchResults.value = emptyList()
-                return
-            }
-            viewModelScope.launch {
-                try {
-                    _searchResults.value = repository.search(query)
-                } catch (e: Exception) {
-                    _searchResults.value = emptyList()
+        }
+
+        /**
+         * Collect debounced search queries and perform search.
+         * Prevents UI blocking by waiting 300ms after user stops typing.
+         */
+        private fun collectDebouncedSearchQuery() {
+            debouncedSearchQuery
+                .onEach { query ->
+                    if (query.isBlank()) {
+                        _searchResults.value = emptyList()
+                    } else {
+                        try {
+                            _searchResults.value = repository.search(query)
+                        } catch (e: Exception) {
+                            _searchResults.value = emptyList()
+                        }
+                    }
                 }
-            }
+                .launchIn(viewModelScope)
         }
 
         /**

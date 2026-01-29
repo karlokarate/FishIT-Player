@@ -265,6 +265,8 @@ private fun XtreamLiveStream.toPipelineItem(): XtreamChannel =
         added = added?.toLongOrNull()?.let { it * 1000L },
         // Adult content flag ("1" = adult, else = not adult)
         isAdult = isAdult == "1",
+        // BUG FIX (Jan 2026): Direct HLS source URL for potential playback optimization
+        directSource = directSource?.takeIf { it.isNotBlank() },
     )
 
 private fun XtreamSeriesInfo.toEpisodes(
@@ -288,6 +290,8 @@ private fun XtreamSeriesInfo.toEpisodes(
                     containerExtension = ep.containerExtension,
                     plot = ep.info?.plot,
                     duration = ep.info?.duration,
+                    // BUG FIX (Jan 2026): durationSecs from API is more accurate than parsing duration string
+                    durationSecs = ep.info?.durationSecs,
                     releaseDate = ep.info?.releaseDate ?: ep.info?.airDate,
                     rating = ep.info?.rating?.toDoubleOrNull(),
                     thumbnail =
@@ -295,6 +299,8 @@ private fun XtreamSeriesInfo.toEpisodes(
                             ?: ep.info?.posterPath ?: ep.info?.thumbnail,
                     // API returns Unix epoch SECONDS, convert to milliseconds for addedTimestamp
                     added = ep.added?.toLongOrNull()?.let { it * 1000L },
+                    // BUG FIX (Jan 2026): bitrate from API for quality info in player
+                    bitrate = ep.info?.bitrate,
                     // Episode-specific TMDB ID from info block
                     episodeTmdbId = ep.info?.tmdbId,
                     // Video codec info from ffprobe

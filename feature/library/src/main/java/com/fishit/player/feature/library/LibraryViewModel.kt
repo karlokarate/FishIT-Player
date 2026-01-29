@@ -17,13 +17,18 @@ import com.fishit.player.core.model.sort.SortOption
 import com.fishit.player.infra.logging.UnifiedLog
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -96,7 +101,7 @@ data class LibraryState(
  * Provides VOD and Series browsing with category filtering,
  * sorting, and content filtering.
  */
-@OptIn(ExperimentalCoroutinesApi::class)
+@OptIn(ExperimentalCoroutinesApi::class, FlowPreview::class)
 @HiltViewModel
 class LibraryViewModel
     @Inject
@@ -105,6 +110,8 @@ class LibraryViewModel
     ) : ViewModel() {
         companion object {
             private const val TAG = "LibraryViewModel"
+            /** Debounce delay for search input (ms) - consistent with HomeViewModel */
+            private const val SEARCH_DEBOUNCE_MS = 300L
         }
 
         private val _selectedVodCategory = MutableStateFlow<String?>(null)
@@ -113,6 +120,15 @@ class LibraryViewModel
         private val _searchQuery = MutableStateFlow("")
         private val _isSearchActive = MutableStateFlow(false)
         private val _searchResults = MutableStateFlow<List<LibraryMediaItem>>(emptyList())
+
+        /**
+         * Debounced search query - waits 300ms after typing stops.
+         * Prevents UI blocking by not triggering search on every keystroke.
+         */
+        private val debouncedSearchQuery =
+            _searchQuery
+                .debounce(SEARCH_DEBOUNCE_MS)
+                .distinctUntilChanged()
 
         // Sort & Filter state (using unified core/model types)
         private val _vodSortOption = MutableStateFlow(SortOption.DEFAULT)
@@ -124,6 +140,8 @@ class LibraryViewModel
 
         init {
             loadMetadata()
+            // Start collecting debounced search queries
+            collectDebouncedSearchQuery()
         }
 
         /** Load genres and year range for filter UI */
@@ -344,23 +362,33 @@ class LibraryViewModel
             _searchResults.value = emptyList()
         }
 
-        /** Perform search */
+        /** Perform search (debounced).
+         * The actual search is triggered by [debouncedSearchQuery] after 300ms of inactivity.
+         */
         fun search(query: String) {
             _searchQuery.value = query
-            if (query.isBlank()) {
-                _searchResults.value = emptyList()
-                return
-            }
+        }
 
-            viewModelScope.launch {
-                try {
-                    val results = libraryContentRepository.search(query)
-                    _searchResults.value = results
-                } catch (e: Exception) {
-                    UnifiedLog.e(TAG) { "Search error: ${e.message}" }
-                    _searchResults.value = emptyList()
+        /**
+         * Collect debounced search queries and perform search.
+         * Prevents UI blocking by waiting 300ms after user stops typing.
+         */
+        private fun collectDebouncedSearchQuery() {
+            debouncedSearchQuery
+                .onEach { query ->
+                    if (query.isBlank()) {
+                        _searchResults.value = emptyList()
+                    } else {
+                        try {
+                            val results = libraryContentRepository.search(query)
+                            _searchResults.value = results
+                        } catch (e: Exception) {
+                            UnifiedLog.e(TAG) { "Search error: ${e.message}" }
+                            _searchResults.value = emptyList()
+                        }
+                    }
                 }
-            }
+                .launchIn(viewModelScope)
         }
     }
 

@@ -31,10 +31,23 @@ data class XtreamEpisode(
     val containerExtension: String? = null,
     val plot: String? = null,
     val duration: String? = null,
+    /**
+     * Duration in seconds from API (more accurate than parsing duration string).
+     *
+     * When available, this should be preferred over parsing the "duration" string (HH:MM:SS).
+     * API field: info.duration_secs
+     */
+    val durationSecs: Int? = null,
     val releaseDate: String? = null,
     val rating: Double? = null,
     val thumbnail: String? = null,
     val added: Long? = null,
+    /**
+     * Video bitrate in kbps from API ffprobe data.
+     *
+     * Useful for quality selection in player. API field: info.bitrate
+     */
+    val bitrate: Int? = null,
     /**
      * TMDB TV show ID inherited from parent series (Gold Decision Dec 2025).
      *

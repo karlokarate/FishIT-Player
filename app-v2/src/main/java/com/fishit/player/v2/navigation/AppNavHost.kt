@@ -15,7 +15,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -27,6 +30,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.fishit.player.core.model.MediaType
 import com.fishit.player.core.model.SourceType
+import com.fishit.player.core.sourceactivation.SourceActivationStore
 import com.fishit.player.core.ui.theme.FishTheme
 import com.fishit.player.feature.detail.ui.DetailScreen
 import com.fishit.player.feature.home.HomeScreen
@@ -41,6 +45,7 @@ import com.fishit.player.feature.settings.dbinspector.DbInspectorNavArgs
 import com.fishit.player.feature.settings.dbinspector.DbInspectorRowsScreen
 import com.fishit.player.ui.PlayerScreen
 import com.fishit.player.v2.ui.debug.DebugSkeletonScreen
+import kotlinx.coroutines.delay
 
 /**
  * Top-level navigation host for FishIT Player v2.
@@ -58,20 +63,59 @@ import com.fishit.player.v2.ui.debug.DebugSkeletonScreen
  * 2. AppNavHost stores context in PlaybackPendingState
  * 3. Navigation to Player route
  * 4. PlayerNavViewModel consumes pending state for full playback data
+ *
+ * **Conditional Start Destination:**
+ * - If user has active sources (Xtream/Telegram logged in), skip StartScreen
+ * - Otherwise, show StartScreen for onboarding
  */
 @Suppress("ktlint:standard:function-naming")
 @Composable
-fun AppNavHost(playbackPendingState: PlaybackPendingState) {
+fun AppNavHost(
+    playbackPendingState: PlaybackPendingState,
+    sourceActivationStore: SourceActivationStore,
+) {
     val navController = rememberNavController()
     val coroutineScope = rememberCoroutineScope()
 
+    // Observe source activation state to determine start destination
+    val activationSnapshot by sourceActivationStore.observeStates().collectAsState(
+        initial = sourceActivationStore.getCurrentSnapshot()
+    )
+    
+    // Track if initial navigation has been determined
+    var initialCheckComplete by remember { mutableStateOf(false) }
+    var shouldStartAtHome by remember { mutableStateOf(false) }
+    
+    // Determine start destination based on source activation
+    // Wait a brief moment to allow XtreamSessionBootstrap to complete
+    LaunchedEffect(Unit) {
+        // Give bootstraps a moment to restore state (bootstrap has 2s delay)
+        delay(200) // Small delay, bootstrap persists state immediately on success
+        
+        // Check if user has active sources
+        val snapshot = sourceActivationStore.getCurrentSnapshot()
+        shouldStartAtHome = snapshot.hasActiveSources
+        initialCheckComplete = true
+    }
+
     FishTheme {
+        // Show loading indicator while checking auth state
+        if (!initialCheckComplete) {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator()
+            }
+            return@FishTheme
+        }
+
         // Contract S-3: Removed LaunchedEffect bootstrap trigger
         // Sync is managed by CatalogSyncBootstrap in Application.onCreate()
 
         NavHost(
             navController = navController,
-            startDestination = Routes.START,
+            startDestination = if (shouldStartAtHome) Routes.HOME else Routes.START,
         ) {
             // Start/Onboarding Screen
             composable(Routes.START) {

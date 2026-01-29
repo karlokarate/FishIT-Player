@@ -5,6 +5,8 @@ import androidx.lifecycle.viewModelScope
 import com.fishit.player.core.model.MediaSourceRef
 import com.fishit.player.core.model.MediaType
 import com.fishit.player.core.model.PlaybackHintKeys
+import com.fishit.player.core.model.repository.NxWorkRepository
+import com.fishit.player.core.model.repository.NxWorkSourceRefRepository
 import com.fishit.player.core.playermodel.PlaybackContext
 import com.fishit.player.core.playermodel.SourceType
 import com.fishit.player.infra.data.xtream.XtreamCatalogRepository
@@ -24,6 +26,8 @@ class PlayerNavViewModel
         private val xtreamCatalogRepository: XtreamCatalogRepository,
         private val xtreamLiveRepository: XtreamLiveRepository,
         private val playbackPendingState: PlaybackPendingState,
+        private val workRepository: NxWorkRepository,
+        private val sourceRefRepository: NxWorkSourceRefRepository,
     ) : ViewModel() {
         private val _state = MutableStateFlow(PlayerNavState())
         val state: StateFlow<PlayerNavState> = _state
@@ -213,24 +217,51 @@ class PlayerNavViewModel
             _state.value = PlayerNavState(error = "Telegram playback not yet implemented via route")
         }
 
+        /**
+         * Load Xtream playback context.
+         * 
+         * **Smart ID Detection:**
+         * Supports both workKey format (from HomeScreen tiles) and sourceId format (from DetailScreen).
+         * - workKey format: `live:channel-name:...` or `movie:title:year` (from NxHomeContentRepository)
+         * - sourceId format: `xtream:live:123` or `xtream:vod:456` (from pipeline)
+         * 
+         * For workKey format, resolves sourceId via NxWorkSourceRefRepository.
+         */
         private suspend fun loadXtreamContext(sourceId: String) {
+            // Detect workKey format (from HomeScreen) vs sourceId format (from DetailScreen)
+            val isWorkKey = isWorkKeyFormat(sourceId)
+            
+            val resolvedSourceId = if (isWorkKey) {
+                // Resolve workKey → sourceId via NxWorkSourceRefRepository
+                val resolved = resolveWorkKeyToSourceId(sourceId)
+                if (resolved == null) {
+                    UnifiedLog.w(TAG) { "Could not resolve workKey to sourceId: $sourceId" }
+                    _state.value = PlayerNavState(error = "Item unavailable")
+                    return
+                }
+                UnifiedLog.d(TAG) { "Resolved workKey '$sourceId' → sourceId '$resolved'" }
+                resolved
+            } else {
+                sourceId
+            }
+            
             val raw =
                 when {
-                    sourceId.contains(":live:") ->
-                        xtreamLiveRepository.getBySourceId(sourceId)
-                    else -> xtreamCatalogRepository.getBySourceId(sourceId)
+                    resolvedSourceId.contains(":live:") ->
+                        xtreamLiveRepository.getBySourceId(resolvedSourceId)
+                    else -> xtreamCatalogRepository.getBySourceId(resolvedSourceId)
                 }
 
             if (raw == null) {
-                UnifiedLog.w(TAG) { "No media found for $sourceId" }
+                UnifiedLog.w(TAG) { "No media found for $resolvedSourceId (original: $sourceId)" }
                 _state.value = PlayerNavState(error = "Item unavailable")
                 return
             }
 
             val context =
                 when (raw.mediaType) {
-                    MediaType.LIVE -> buildLiveContext(sourceId, raw.originalTitle)
-                    MediaType.MOVIE -> buildVodContext(sourceId, raw.originalTitle)
+                    MediaType.LIVE -> buildLiveContext(resolvedSourceId, raw.originalTitle)
+                    MediaType.MOVIE -> buildVodContext(resolvedSourceId, raw.originalTitle)
                     else -> null
                 }
 
@@ -239,6 +270,49 @@ class PlayerNavViewModel
             } else {
                 _state.value = PlayerNavState(context = context)
             }
+        }
+
+        /**
+         * Detect if the ID is a workKey (from HomeScreen) vs a sourceId (from DetailScreen).
+         * 
+         * workKey formats: `live:...`, `movie:...`, `series:...`, `episode:...`
+         * sourceId formats: `xtream:...`, `msg:...`, `io:...`, `audiobook:...`
+         */
+        private fun isWorkKeyFormat(id: String): Boolean {
+            // sourceId formats start with source-specific prefixes
+            if (id.startsWith("xtream:") || 
+                id.startsWith("msg:") || 
+                id.startsWith("io:") || 
+                id.startsWith("audiobook:") ||
+                id.startsWith("src:")) {
+                return false
+            }
+            // workKey formats start with content-type prefixes
+            return id.startsWith("live:") || 
+                   id.startsWith("movie:") || 
+                   id.startsWith("series:") || 
+                   id.startsWith("episode:") ||
+                   id.startsWith("clip:") ||
+                   id.startsWith("tmdb:")
+        }
+
+        /**
+         * Resolve a workKey to its Xtream sourceId via NxWorkSourceRefRepository.
+         * 
+         * Looks up the work by workKey, then finds its Xtream source reference.
+         * Returns the sourceItemKey (which contains the sourceId like "xtream:live:123").
+         */
+        private suspend fun resolveWorkKeyToSourceId(workKey: String): String? {
+            // Find all source refs for this workKey
+            val sourceRefs = sourceRefRepository.findByWorkKey(workKey)
+            
+            // Find the Xtream source ref
+            val xtreamRef = sourceRefs.find { 
+                it.sourceType == NxWorkSourceRefRepository.SourceType.XTREAM 
+            }
+            
+            // sourceItemKey contains the sourceId format: "xtream:live:123", "xtream:vod:456"
+            return xtreamRef?.sourceItemKey
         }
 
         private fun buildLiveContext(

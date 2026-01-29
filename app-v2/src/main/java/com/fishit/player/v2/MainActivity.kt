@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
+import com.fishit.player.core.sourceactivation.SourceActivationStore
 import com.fishit.player.v2.navigation.AppNavHost
 import com.fishit.player.v2.navigation.PlaybackPendingState
 import com.fishit.player.v2.ui.theme.FishItV2Theme
@@ -25,6 +26,9 @@ class MainActivity : ComponentActivity() {
     @Inject
     lateinit var playbackPendingState: PlaybackPendingState
 
+    @Inject
+    lateinit var sourceActivationStore: SourceActivationStore
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -35,7 +39,10 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background,
                 ) {
-                    AppNavHost(playbackPendingState = playbackPendingState)
+                    AppNavHost(
+                        playbackPendingState = playbackPendingState,
+                        sourceActivationStore = sourceActivationStore,
+                    )
                 }
             }
         }
