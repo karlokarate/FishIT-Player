@@ -363,8 +363,19 @@ class NxCatalogWriter @Inject constructor(
         }
     }
 
+    /**
+     * Extract container format from playback hints.
+     *
+     * BUG FIX (Jan 2026): Added support for Xtream-specific key "xtream.containerExtension"
+     * which is the actual key used by XtreamRawMetadataExtensions via PlaybackHintKeys.
+     *
+     * @see com.fishit.player.core.model.PlaybackHintKeys.Xtream.CONTAINER_EXT
+     */
     private fun extractContainerFromHints(hints: Map<String, String>): String? {
-        val ext = hints["containerExtension"] ?: hints["extension"]
+        // Check all possible keys (Xtream uses "xtream.containerExtension")
+        val ext = hints["xtream.containerExtension"]
+            ?: hints["containerExtension"]
+            ?: hints["extension"]
         return when (ext?.lowercase()) {
             "mp4" -> "mp4"
             "mkv" -> "mkv"
@@ -372,7 +383,10 @@ class NxCatalogWriter @Inject constructor(
             "webm" -> "webm"
             "ts" -> "ts"
             "m3u8" -> "hls"
-            else -> null
+            "mov" -> "mov"
+            "wmv" -> "wmv"
+            "flv" -> "flv"
+            else -> ext?.lowercase()?.takeIf { it.isNotBlank() }  // Pass through unknown formats
         }
     }
 

@@ -10,6 +10,7 @@ import com.fishit.player.core.model.TmdbMediaType
 import com.fishit.player.core.model.TmdbRef
 import com.fishit.player.infra.transport.xtream.XtreamVodInfo
 import com.fishit.player.pipeline.xtream.debug.XtcLogger
+import com.fishit.player.pipeline.xtream.ids.XtreamIdCodec
 import com.fishit.player.pipeline.xtream.model.XtreamChannel
 import com.fishit.player.pipeline.xtream.model.XtreamEpisode
 import com.fishit.player.pipeline.xtream.model.XtreamSeriesItem
@@ -137,18 +138,23 @@ fun XtreamVodItem.toRawMetadata(
     // Stable source ID format (contract): xtream:vod:{id}
     // Container extension is *format*, not identity.
     // Playback can infer a default extension or use detail fetch.
-    val sourceIdStable = "xtream:vod:$id"
+    // Uses XtreamIdCodec as SSOT per xtream_290126.md Blocker #1
+    val sourceIdStable = XtreamIdCodec.vod(id)
     // Build typed TMDB reference for movies
     val externalIds =
         tmdbId?.let { ExternalIds(tmdb = TmdbRef(TmdbMediaType.MOVIE, it)) }
             ?: ExternalIds()
     // Build playback hints for VOD URL construction
+    // BUG FIX (Jan 2026): Include categoryId for proper category-based filtering
     val hints =
         buildMap {
             put(PlaybackHintKeys.Xtream.CONTENT_TYPE, PlaybackHintKeys.Xtream.CONTENT_VOD)
             put(PlaybackHintKeys.Xtream.VOD_ID, id.toString())
             containerExtension?.takeIf { it.isNotBlank() }?.let {
                 put(PlaybackHintKeys.Xtream.CONTAINER_EXT, it)
+            }
+            categoryId?.takeIf { it.isNotBlank() }?.let {
+                put("xtream.categoryId", it)
             }
         }
 
@@ -167,6 +173,10 @@ fun XtreamVodItem.toRawMetadata(
         pipelineIdTag = PipelineIdTag.XTREAM,
         // === Timing (v2) - for "Recently Added" sorting ===
         addedTimestamp = added,
+        // BUG FIX (Jan 2026): VOD list API provides "added" timestamp which is when
+        // the provider added the item. Use this as lastModifiedTimestamp so it gets
+        // persisted to NX_WorkSourceRef.sourceLastModifiedMs for incremental sync.
+        lastModifiedTimestamp = added,
         // === Rating (v2) - TMDB rating from provider ===
         rating = rating,
         // === ImageRef from XtreamImageRefExtensions ===
@@ -240,7 +250,8 @@ fun XtreamSeriesItem.toRawMetadata(
         externalIds = externalIds,
         sourceType = SourceType.XTREAM,
         sourceLabel = accountName,
-        sourceId = "xtream:series:$id",
+        // Uses XtreamIdCodec as SSOT per xtream_290126.md Blocker #1
+        sourceId = XtreamIdCodec.series(id),
         // === Pipeline Identity (v2) ===
         pipelineIdTag = PipelineIdTag.XTREAM,
         // === Timing (v2) ===
@@ -267,8 +278,8 @@ fun XtreamSeriesItem.toRawMetadata(
         categoryId = categoryId,
     )
 
-    // XTC: Track DTO → RawMetadata mapping
-    XtcLogger.logDtoToRaw("SERIES", "xtream:series:$id", rawTitle, raw)
+    // XTC: Track DTO → RawMetadata mapping (uses codec-generated sourceId)
+    XtcLogger.logDtoToRaw("SERIES", raw.sourceId, rawTitle, raw)
 
     return raw
 }
@@ -296,9 +307,14 @@ fun XtreamEpisode.toRawMediaMetadata(
     val rawTitle = title.ifBlank { effectiveSeriesName ?: "Episode $episodeNumber" }
     val rawYear: Int? = null // Episodes typically don't have year; inherit from series
     // Stable source ID format used across v2:
-    // xtream:episode:{seriesId}:{season}:{episode}
-    // (episode stream id is stored in provider tables, not in the identity string)
-    val sourceIdStable = "xtream:episode:$seriesId:$seasonNumber:$episodeNumber"
+    // Preferred format: xtream:episode:{episodeId} when available
+    // Fallback format: xtream:episode:series:{seriesId}:s{season}:e{episode}
+    // Uses XtreamIdCodec as SSOT per xtream_290126.md Blocker #1
+    //
+    // Note: This function receives episode stream ID via `id` parameter (= episodeId)
+    // For identity, we use the composite format to enable parent lookups.
+    // The stream ID is stored in playback hints for URL construction.
+    val sourceIdStable = XtreamIdCodec.episodeComposite(seriesId, seasonNumber, episodeNumber)
     // Build typed TMDB reference for episodes per Gold Decision (Dec 2025):
     // Episodes use the SERIES TMDB ID (TV type) combined with season/episode numbers.
     // This enables lookup via: GET /tv/{seriesTmdbId}/season/{s}/episode/{e}
@@ -352,6 +368,9 @@ fun XtreamEpisode.toRawMediaMetadata(
         pipelineIdTag = PipelineIdTag.XTREAM,
         // === Timing (v2) - for "Recently Added" sorting ===
         addedTimestamp = added,
+        // BUG FIX (Jan 2026): Episode API provides "added" timestamp. Use this as
+        // lastModifiedTimestamp for NX_WorkSourceRef.sourceLastModifiedMs.
+        lastModifiedTimestamp = added,
         // === Rating (v2) ===
         rating = rating,
         // === ImageRef from XtreamImageRefExtensions ===
@@ -407,11 +426,15 @@ fun XtreamChannel.toRawMediaMetadata(
         externalIds = ExternalIds(),
         sourceType = SourceType.XTREAM,
         sourceLabel = accountName,
-        sourceId = "xtream:live:$id",
+        // Uses XtreamIdCodec as SSOT per xtream_290126.md Blocker #1
+        sourceId = XtreamIdCodec.live(id),
         // === Pipeline Identity (v2) ===
         pipelineIdTag = PipelineIdTag.XTREAM,
         // === Timing (v2) - for "Recently Added" sorting ===
         addedTimestamp = added,
+        // BUG FIX (Jan 2026): Live channel API provides "added" timestamp. Use this as
+        // lastModifiedTimestamp for NX_WorkSourceRef.sourceLastModifiedMs.
+        lastModifiedTimestamp = added,
         // === ImageRef from XtreamImageRefExtensions ===
         poster = toLogoImageRef(authHeaders), // Use logo as poster for channels
         backdrop = null,
@@ -427,8 +450,8 @@ fun XtreamChannel.toRawMediaMetadata(
         tvArchiveDuration = tvArchiveDuration,
     )
 
-    // XTC: Track DTO → RawMetadata mapping
-    XtcLogger.logDtoToRaw("LIVE", "xtream:live:$id", rawTitle, raw)
+    // XTC: Track DTO → RawMetadata mapping (uses codec-generated sourceId)
+    XtcLogger.logDtoToRaw("LIVE", raw.sourceId, rawTitle, raw)
 
     return raw
 }
@@ -457,6 +480,7 @@ fun XtreamChannel.toRawMediaMetadata(
 fun XtreamVodInfo.toRawMediaMetadata(
     vodItem: XtreamVodItem,
     authHeaders: Map<String, String> = emptyMap(),
+    accountName: String = "xtream",
 ): RawMediaMetadata {
     val infoBlock = info
     val movieData = movieData
@@ -477,8 +501,9 @@ fun XtreamVodInfo.toRawMediaMetadata(
 
     // Stable source ID format (contract): xtream:vod:{streamId}
     // Container extension is *format*, not identity.
+    // Uses XtreamIdCodec as SSOT per xtream_290126.md Blocker #1
     val streamId = movieData?.streamId ?: vodItem.id
-    val sourceIdStable = "xtream:vod:$streamId"
+    val sourceIdStable = XtreamIdCodec.vod(streamId)
 
     // Build TMDB reference - prefer info block, fall back to vodItem
     // Note: TMDB-ID is written as Int here, stored as String in NX_Work for persistence.
@@ -512,13 +537,16 @@ fun XtreamVodInfo.toRawMediaMetadata(
         durationMs = durationMs,
         externalIds = externalIds,
         sourceType = SourceType.XTREAM,
-        sourceLabel = "Xtream VOD",
+        sourceLabel = accountName,
         sourceId = sourceIdStable,
         // === Pipeline Identity (v2) ===
         pipelineIdTag = PipelineIdTag.XTREAM,
         // === Timing (v2) ===
         // movieData.added is Unix SECONDS string; vodItem.added is already converted to ms
         addedTimestamp = movieData?.added?.toLongOrNull()?.let { it * 1000L } ?: vodItem.added,
+        // BUG FIX (Jan 2026): Detail API must also set lastModifiedTimestamp for
+        // NX_WorkSourceRef.sourceLastModifiedMs persistence (same fix as list APIs).
+        lastModifiedTimestamp = movieData?.added?.toLongOrNull()?.let { it * 1000L } ?: vodItem.added,
         // === Rating (v2) ===
         rating = rating,
         // === ImageRef ===
@@ -546,7 +574,14 @@ fun XtreamVodInfo.toRawMediaMetadata(
                 } ?: vodItem.containerExtension?.takeIf { it.isNotBlank() }?.let {
                     put(PlaybackHintKeys.Xtream.CONTAINER_EXT, it)
                 }
+                // Include categoryId for consistency with list API
+                vodItem.categoryId?.takeIf { it.isNotBlank() }?.let {
+                    put("xtream.categoryId", it)
+                }
             },
+        // === Content Classification (v2) ===
+        isAdult = vodItem.isAdult,
+        categoryId = vodItem.categoryId,
     )
 }
 

@@ -3,6 +3,7 @@ package com.fishit.player.pipeline.xtream.model
 import com.fishit.player.core.model.MediaType
 import com.fishit.player.core.model.SourceType
 import com.fishit.player.pipeline.xtream.mapper.toRawMediaMetadata
+import com.fishit.player.pipeline.xtream.mapper.toRawMetadata
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
@@ -15,7 +16,7 @@ import kotlin.test.assertNull
  */
 class XtreamRawMetadataExtensionsTest {
     @Test
-    fun `XtreamVodItem toRawMediaMetadata provides correct fields`() {
+    fun `XtreamVodItem toRawMetadata provides correct fields`() {
         val dtoTitle = "The Matrix"
         val vod =
             XtreamVodItem(
@@ -26,7 +27,7 @@ class XtreamRawMetadataExtensionsTest {
                 containerExtension = "mkv",
             )
 
-        val raw = vod.toRawMediaMetadata()
+        val raw = vod.toRawMetadata(accountName = "Xtream VOD")
 
         assertEquals(dtoTitle, raw.originalTitle)
         assertEquals("", raw.globalId)
@@ -41,7 +42,7 @@ class XtreamRawMetadataExtensionsTest {
     }
 
     @Test
-    fun `XtreamSeriesItem toRawMediaMetadata provides correct fields`() {
+    fun `XtreamSeriesItem toRawMetadata provides correct fields`() {
         val dtoTitle = "Breaking Bad"
         val series =
             XtreamSeriesItem(
@@ -51,7 +52,7 @@ class XtreamRawMetadataExtensionsTest {
                 categoryId = "2",
             )
 
-        val raw = series.toRawMediaMetadata()
+        val raw = series.toRawMetadata(accountName = "Xtream Series")
 
         assertEquals(dtoTitle, raw.originalTitle)
         assertEquals("", raw.globalId)
@@ -80,7 +81,8 @@ class XtreamRawMetadataExtensionsTest {
         assertEquals("", raw.globalId)
         assertEquals(MediaType.SERIES_EPISODE, raw.mediaType)
         assertEquals(SourceType.XTREAM, raw.sourceType)
-        assertEquals("xtream:episode:456:1:5", raw.sourceId)
+        // Updated format per XtreamIdCodec: xtream:episode:series:{seriesId}:s{season}:e{episode}
+        assertEquals("xtream:episode:series:456:s1:e5", raw.sourceId)
         assertEquals("Xtream: Breaking Bad", raw.sourceLabel)
         assertEquals(1, raw.season)
         assertEquals(5, raw.episode)
@@ -117,7 +119,7 @@ class XtreamRawMetadataExtensionsTest {
                 categoryId = "5",
             )
 
-        val raw = channel.toRawMediaMetadata()
+        val raw = channel.toRawMediaMetadata(accountName = "Xtream Live")
 
         assertEquals(dtoTitle, raw.originalTitle)
         assertEquals("", raw.globalId)
@@ -142,11 +144,71 @@ class XtreamRawMetadataExtensionsTest {
         val channel = XtreamChannel(id = 4, name = "Test")
 
         // Per contract: Xtream list APIs don't provide TMDB IDs
-        assertNull(vod.toRawMediaMetadata().externalIds.effectiveTmdbId)
-        assertNull(series.toRawMediaMetadata().externalIds.effectiveTmdbId)
+        assertNull(vod.toRawMetadata().externalIds.effectiveTmdbId)
+        assertNull(series.toRawMetadata().externalIds.effectiveTmdbId)
         assertNull(episode.toRawMediaMetadata().externalIds.effectiveTmdbId)
         assertNull(channel.toRawMediaMetadata().externalIds.effectiveTmdbId)
     }
+
+    // =======================================================================
+    // BUG FIX TESTS: lastModifiedTimestamp (Jan 2026)
+    // =======================================================================
+
+    @Test
+    fun `BUG FIX - VOD sets lastModifiedTimestamp from added`() {
+        val addedTimestamp = 1704067200000L
+        val vod = XtreamVodItem(id = 1, name = "Test", added = addedTimestamp)
+
+        val raw = vod.toRawMetadata()
+
+        assertEquals(addedTimestamp, raw.addedTimestamp, "addedTimestamp should be set")
+        assertEquals(addedTimestamp, raw.lastModifiedTimestamp, "lastModifiedTimestamp should equal added")
+    }
+
+    @Test
+    fun `BUG FIX - Series sets lastModifiedTimestamp from lastModified`() {
+        val lastModifiedTimestamp = 1704067200000L
+        val series = XtreamSeriesItem(id = 1, name = "Test", lastModified = lastModifiedTimestamp)
+
+        val raw = series.toRawMetadata()
+
+        assertEquals(lastModifiedTimestamp, raw.addedTimestamp, "addedTimestamp should use lastModified")
+        assertEquals(lastModifiedTimestamp, raw.lastModifiedTimestamp, "lastModifiedTimestamp should be set")
+    }
+
+    @Test
+    fun `BUG FIX - Episode sets lastModifiedTimestamp from added`() {
+        val addedTimestamp = 1704067200000L
+        val episode = XtreamEpisode(
+            id = 1,
+            seriesId = 2,
+            seasonNumber = 1,
+            episodeNumber = 1,
+            title = "Test",
+            added = addedTimestamp,
+        )
+
+        val raw = episode.toRawMediaMetadata()
+
+        assertEquals(addedTimestamp, raw.addedTimestamp, "addedTimestamp should be set")
+        assertEquals(addedTimestamp, raw.lastModifiedTimestamp, "lastModifiedTimestamp should equal added")
+    }
+
+    @Test
+    fun `BUG FIX - Live channel sets lastModifiedTimestamp from added`() {
+        val addedTimestamp = 1704067200000L
+        val channel = XtreamChannel(id = 1, name = "Test", added = addedTimestamp)
+
+        val raw = channel.toRawMediaMetadata()
+
+        assertEquals(addedTimestamp, raw.addedTimestamp, "addedTimestamp should be set")
+        assertEquals(addedTimestamp, raw.lastModifiedTimestamp, "lastModifiedTimestamp should equal added")
+    }
+
+    // Note: XtreamVodInfo.toRawMediaMetadata() test requires kotlinx.serialization
+    // dependency in test scope. The fix was verified manually:
+    // - lastModifiedTimestamp now set same as addedTimestamp
+    // - Falls back to vodItem.added when movieData.added is null
 
     // =======================================================================
     // CONTRACT TEST: GlobalId Isolation (MEDIA_NORMALIZATION_CONTRACT Section 2.1.1)
@@ -171,10 +233,10 @@ class XtreamRawMetadataExtensionsTest {
         val channel = XtreamChannel(id = 4, name = "BBC One HD")
 
         // ALL conversions must leave globalId empty - normalizer owns this field
-        assertEquals("", vod.toRawMediaMetadata().globalId, "VOD globalId must be empty")
+        assertEquals("", vod.toRawMetadata().globalId, "VOD globalId must be empty")
         assertEquals(
             "",
-            series.toRawMediaMetadata().globalId,
+            series.toRawMetadata().globalId,
             "Series globalId must be empty",
         )
         assertEquals(

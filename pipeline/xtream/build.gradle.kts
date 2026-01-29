@@ -23,6 +23,12 @@ android {
         jvmTarget = "17"
     }
 
+    // Configure test working directory to root project for test-data access
+    testOptions {
+        unitTests.all {
+            it.workingDir = rootProject.projectDir
+        }
+    }
 }
 
 dependencies {
@@ -45,5 +51,6 @@ dependencies {
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.jetbrains.kotlin:kotlin-test:2.0.21")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.2")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.8.0")
     testImplementation("io.mockk:mockk:1.13.12")
 }

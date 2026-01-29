@@ -1,0 +1,101 @@
+{
+    "exportedAt": "2026-01-29T10:15:29.448Z",
+    "workKey": "movie:ein-sommer-in-sommerby:2025",
+    "work": {
+        "entityType": "NX_Work",
+        "id": 955,
+        "fields": {
+            "__boxStore": "io.objectbox.BoxStore@cc60db3",
+            "authorityKey": null,
+            "backdrop": null,
+            "canonicalTitle": "Ein Sommer in Sommerby",
+            "canonicalTitleLower": "ein sommer in sommerby",
+            "cast": null,
+            "childRelations": "io.objectbox.relation.ToMany@bdc22bc",
+            "createdAt": "1766387455000",
+            "director": null,
+            "durationMs": null,
+            "episode": null,
+            "genres": null,
+            "id": "955",
+            "imdbId": null,
+            "isAdult": "false",
+            "needsReview": "false",
+            "plot": null,
+            "poster": "Http(url=https://image.tmdb.org/t/p/w600_and_h900_bestv2/aIsB4AtZwU1VPB0ihmbMIPahXQd.jpg, headers={}, preferredWidth=null, preferredHeight=null)",
+            "rating": "7.4",
+            "releaseDate": null,
+            "season": null,
+            "sourceRefs": "io.objectbox.relation.ToMany@8b84245",
+            "thumbnail": null,
+            "tmdbId": null,
+            "trailer": null,
+            "tvdbId": null,
+            "updatedAt": "1769662845756",
+            "variants": "io.objectbox.relation.ToMany@1036d9a",
+            "workKey": "movie:ein-sommer-in-sommerby:2025",
+            "workType": "MOVIE",
+            "year": "2025"
+        }
+    },
+    "sourceRefs": [
+        {
+            "entityType": "NX_WorkSourceRef",
+            "id": 1022,
+            "fields": {
+                "__boxStore": "io.objectbox.BoxStore@cc60db3",
+                "accountKey": "xtream:xtream",
+                "discoveredAt": "1769634458337",
+                "epgChannelId": null,
+                "fileName": null,
+                "fileSizeBytes": null,
+                "id": "1022",
+                "lastSeenAt": "1769662845770",
+                "mimeType": null,
+                "rawTitle": "Ein Sommer in Sommerby | 2025 | 7.4",
+                "sourceId": "xtream:vod:801307",
+                "sourceKey": "src:xtream:xtream:xtream:vod:xtream:vod:801307",
+                "sourceLastModifiedMs": null,
+                "sourceType": "xtream",
+                "telegramChatId": null,
+                "telegramMessageId": null,
+                "tvArchive": "0",
+                "tvArchiveDuration": "0",
+                "work": "io.objectbox.relation.ToOne@3bb",
+                "xtreamCategoryId": null,
+                "xtreamStreamId": null
+            }
+        }
+    ],
+    "variants": [
+        {
+            "entityType": "NX_WorkVariant",
+            "id": 746,
+            "fields": {
+                "__boxStore": "io.objectbox.BoxStore@cc60db3",
+                "audioCodec": null,
+                "bitrateBps": null,
+                "containerFormat": null,
+                "createdAt": "1769634458337",
+                "height": null,
+                "id": "746",
+                "languageTag": "original",
+                "playbackHintsJson": "{\"xtream.contentType\":\"vod\",\"xtream.vodId\":\"801307\",\"xtream.containerExtension\":\"mkv\"}",
+                "playbackMethod": "DIRECT",
+                "playbackUrl": null,
+                "qualityTag": "source",
+                "sourceKey": "src:xtream:xtream:xtream:vod:xtream:vod:801307",
+                "variantKey": "v:src:xtream:xtream:xtream:vod:xtream:vod:801307:default",
+                "videoCodec": null,
+                "width": null,
+                "work": "io.objectbox.relation.ToOne@3bb"
+            }
+        }
+    ],
+    "relations": [],
+    "userStates": [],
+    "categories": [],
+    "ingestLedger": [],
+    "embedding": null,
+    "runtimeStates": []
+}
