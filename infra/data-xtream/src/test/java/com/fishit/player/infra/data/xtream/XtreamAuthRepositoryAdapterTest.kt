@@ -63,10 +63,9 @@ class XtreamAuthRepositoryAdapterTest {
             // Given: API client will return success
             val capabilities =
                 XtreamCapabilities(
+                    cacheKey = "http://test.com:8080|user",
                     baseUrl = "http://test.com:8080",
-                    vodEnabled = true,
-                    seriesEnabled = true,
-                    liveEnabled = true,
+                    username = "user",
                 )
             coEvery { apiClient.initialize(any()) } returns Result.success(capabilities)
 

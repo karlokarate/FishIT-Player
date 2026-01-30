@@ -68,6 +68,15 @@ class XtreamAuthRepositoryAdapter
 
         private var transportStateJob: Job? = null
 
+        init {
+            // Start observing transport state changes immediately on construction.
+            // This is critical because XtreamSessionBootstrap may initialize the
+            // XtreamApiClient directly (without going through this adapter's initialize()).
+            // Without this, authState would remain Idle even after successful login,
+            // causing XtreamPreflightWorker to retry indefinitely.
+            observeTransportStates()
+        }
+
         override suspend fun initialize(config: DomainConfig): Result<Unit> {
             UnifiedLog.d(TAG) {
                 "initialize: Starting with config - scheme=${config.scheme}, host=${config.host}, port=${config.port}, username=${config.username}"
@@ -82,8 +91,8 @@ class XtreamAuthRepositoryAdapter
                 .initialize(transportConfig)
                 .map { caps ->
                     UnifiedLog.d(TAG) { "initialize: API client initialized successfully with capabilities: ${caps.baseUrl}" }
-                    // Start observing transport state changes
-                    observeTransportStates()
+                    // Note: Transport state observation already started in init block.
+                    // The authState will update automatically via observeTransportStates().
                     // CRITICAL: Set XTREAM as ACTIVE source after successful connection
                     sourceActivationStore.setXtreamActive()
                     UnifiedLog.i(TAG) { "initialize: XTREAM source activated" }
@@ -134,11 +143,14 @@ class XtreamAuthRepositoryAdapter
         /**
          * Observe transport layer state changes and map them to domain states.
          *
-         * This method sets up state synchronization between transport and domain layers
-         * after successful initialization.
+         * This method sets up state synchronization between transport and domain layers.
+         * Called in init block to ensure transport state changes are always observed,
+         * even when XtreamSessionBootstrap initializes the API client directly.
          */
         private fun observeTransportStates() {
-            transportStateJob?.cancel()
+            // Only start if not already observing (idempotent)
+            if (transportStateJob?.isActive == true) return
+
             transportStateJob =
                 combine(
                     apiClient.connectionState,
