@@ -83,6 +83,11 @@ class XtreamAuthRepositoryAdapter
                 "initialize: Starting with config - scheme=${config.scheme}, host=${config.host}, port=${config.port}, username=${config.username}"
             }
 
+            // Ensure transport state observation is active.
+            // This is idempotent - if already observing, this is a no-op.
+            // Critical for logout→login scenarios where close() cancelled the observation.
+            observeTransportStates()
+
             _connectionState.value = DomainConnectionState.Connecting
 
             val transportConfig = config.toTransportConfig()
@@ -92,8 +97,6 @@ class XtreamAuthRepositoryAdapter
                 .initialize(transportConfig)
                 .map { caps ->
                     UnifiedLog.d(TAG) { "initialize: API client initialized successfully with capabilities: ${caps.baseUrl}" }
-                    // Note: Transport state observation already started in init block.
-                    // The authState will update automatically via observeTransportStates().
                     // CRITICAL: Set XTREAM as ACTIVE source after successful connection
                     sourceActivationStore.setXtreamActive()
                     UnifiedLog.i(TAG) { "initialize: XTREAM source activated" }
