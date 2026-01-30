@@ -135,7 +135,7 @@ class HomeViewModel
         val moviesPagingFlow: Flow<PagingData<HomeMediaItem>> =
             homeContentRepository.getMoviesPagingData()
                 .cachedIn(viewModelScope)
-        
+
         /**
          * Series row with horizontal paging.
          * Use with collectAsLazyPagingItems() in LazyRow.
@@ -143,7 +143,7 @@ class HomeViewModel
         val seriesPagingFlow: Flow<PagingData<HomeMediaItem>> =
             homeContentRepository.getSeriesPagingData()
                 .cachedIn(viewModelScope)
-        
+
         /**
          * Clips row with horizontal paging.
          * Use with collectAsLazyPagingItems() in LazyRow.
@@ -151,7 +151,7 @@ class HomeViewModel
         val clipsPagingFlow: Flow<PagingData<HomeMediaItem>> =
             homeContentRepository.getClipsPagingData()
                 .cachedIn(viewModelScope)
-        
+
         /**
          * Live TV row with horizontal paging.
          * Use with collectAsLazyPagingItems() in LazyRow.
@@ -159,7 +159,7 @@ class HomeViewModel
         val livePagingFlow: Flow<PagingData<HomeMediaItem>> =
             homeContentRepository.getLivePagingData()
                 .cachedIn(viewModelScope)
-        
+
         /**
          * Recently Added row with horizontal paging.
          * Use with collectAsLazyPagingItems() in LazyRow.

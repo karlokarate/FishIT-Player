@@ -22,6 +22,9 @@ import io.objectbox.query.QueryBuilder
 import io.objectbox.query.QueryBuilder.StringOrder
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
@@ -33,6 +36,7 @@ import javax.inject.Singleton
  * Thread-safe: all suspend functions run on IO dispatcher.
  * Uses ObjectBox Flow for reactive observation.
  */
+@OptIn(kotlinx.coroutines.FlowPreview::class)
 @Singleton
 class NxWorkRepositoryImpl @Inject constructor(
     private val boxStore: BoxStore,
@@ -73,10 +77,13 @@ class NxWorkRepositoryImpl @Inject constructor(
             .order(NX_Work_.canonicalTitle)
             .build()
             .asFlowWithLimit(limit)
+            .distinctUntilChanged() // PERF FIX: Prevent duplicate emissions
+            .debounce(100) // PERF FIX: Throttle rapid emissions during sync
             .map { list ->
                 UnifiedLog.i(TAG) { "observeByType EMITTING: type=$type, count=${list.size}" }
                 list.map { it.toDomain() }
             }
+            .flowOn(Dispatchers.IO) // PERF FIX: Ensure mapping happens off main thread
     }
 
     override fun observeRecentlyUpdated(limit: Int): Flow<List<Work>> {

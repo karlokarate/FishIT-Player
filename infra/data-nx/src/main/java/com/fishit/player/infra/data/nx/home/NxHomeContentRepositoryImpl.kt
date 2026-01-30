@@ -62,22 +62,9 @@ class NxHomeContentRepositoryImpl @Inject constructor(
 
     companion object {
         private const val TAG = "NxHomeContentRepo"
-        
-        // ==================== Shared Limits from core/model ====================
-        // Large catalog limits REMOVED - use Paging for 40K+ catalogs.
-        // This small limit is only for deprecated Flow-based methods that still exist
-        // for backward compatibility but should NOT be used in production.
-        private const val DEPRECATED_FALLBACK_LIMIT = 50
     }
-    
-    // Cache for new episodes badge (avoids repeated DB queries)
-    // @Volatile ensures visibility across threads since this is a Singleton with Flow emissions
-    @Volatile
-    private var cachedNewEpisodesWorkKeys: Set<String> = emptySet()
-    @Volatile
-    private var newEpisodesCacheTimestamp: Long = 0L
 
-    // ==================== Primary Content Methods ==
+    // ==================== Primary Content Methods ====================
 
     @OptIn(ExperimentalCoroutinesApi::class)
     override fun observeContinueWatching(): Flow<List<HomeMediaItem>> {
@@ -139,94 +126,6 @@ class NxHomeContentRepositoryImpl @Inject constructor(
             }
     }
 
-    // ==================== DEPRECATED Methods (use Paging instead) ====================
-    // These methods are kept for backward compatibility but should NOT be used.
-    // For large catalogs (40K+ items), use getMoviesPagingData() etc.
-
-    @Suppress("DEPRECATION")
-    @OptIn(ExperimentalCoroutinesApi::class)
-    @Deprecated("Use getMoviesPagingData() instead")
-    override fun observeMovies(): Flow<List<HomeMediaItem>> {
-        UnifiedLog.i(TAG) { "observeMovies() CALLED - THIS SHOULD APPEAR IN LOGCAT!" }
-        UnifiedLog.w(TAG, "observeMovies() is deprecated - use getMoviesPagingData() for large catalogs")
-        return workRepository.observeByType(WorkType.MOVIE, limit = DEPRECATED_FALLBACK_LIMIT)
-            .mapLatest { works -> batchMapToHomeMediaItems(works) }
-            .catch { e ->
-                UnifiedLog.e(TAG, e) { "Failed to observe movies" }
-                emit(emptyList())
-            }
-    }
-
-    @Suppress("DEPRECATION")
-    @OptIn(ExperimentalCoroutinesApi::class)
-    @Deprecated("Use getSeriesPagingData() instead")
-    override fun observeSeries(): Flow<List<HomeMediaItem>> {
-        UnifiedLog.i(TAG) { "observeSeries() CALLED - THIS SHOULD APPEAR IN LOGCAT!" }
-        UnifiedLog.w(TAG, "observeSeries() is deprecated - use getSeriesPagingData() for large catalogs")
-        return workRepository.observeByType(WorkType.SERIES, limit = DEPRECATED_FALLBACK_LIMIT)
-            .mapLatest { works -> 
-                // Use cached lookup to avoid repeated DB queries on every emission
-                val now = System.currentTimeMillis()
-                val seriesWithNewEpisodes = if (now - newEpisodesCacheTimestamp > ContentDisplayLimits.NEW_EPISODES_CACHE_MS) {
-                    // Cache expired, refresh
-                    val newEpisodesCheckTimestamp = now - ContentDisplayLimits.NEW_EPISODES_WINDOW_MS
-                    sourceRefRepository.findWorkKeysWithSeriesUpdates(
-                        sinceMs = newEpisodesCheckTimestamp,
-                        sourceType = null, // All sources
-                    ).also {
-                        cachedNewEpisodesWorkKeys = it
-                        newEpisodesCacheTimestamp = now
-                    }
-                } else {
-                    // Use cached value
-                    cachedNewEpisodesWorkKeys
-                }
-                
-                batchMapToHomeMediaItems(
-                    works = works,
-                    hasNewEpisodes = { work -> work.workKey in seriesWithNewEpisodes }
-                )
-            }
-            .catch { e ->
-                UnifiedLog.e(TAG, e) { "Failed to observe series" }
-                emit(emptyList())
-            }
-    }
-
-    @Suppress("DEPRECATION")
-    @OptIn(ExperimentalCoroutinesApi::class)
-    @Deprecated("Use getClipsPagingData() instead")
-    override fun observeClips(): Flow<List<HomeMediaItem>> {
-        UnifiedLog.w(TAG, "observeClips() is deprecated - use getClipsPagingData() for large catalogs")
-        return workRepository.observeByType(WorkType.CLIP, limit = DEPRECATED_FALLBACK_LIMIT)
-            .mapLatest { works -> batchMapToHomeMediaItems(works) }
-            .catch { e ->
-                UnifiedLog.e(TAG, e) { "Failed to observe clips" }
-                emit(emptyList())
-            }
-    }
-
-    @Suppress("DEPRECATION")
-    @OptIn(ExperimentalCoroutinesApi::class)
-    @Deprecated("Use getLivePagingData() instead")
-    override fun observeXtreamLive(): Flow<List<HomeMediaItem>> {
-        UnifiedLog.w(TAG, "observeXtreamLive() is deprecated - use getLivePagingData() for large catalogs")
-        return workRepository.observeByType(WorkType.LIVE_CHANNEL, limit = DEPRECATED_FALLBACK_LIMIT)
-            .mapLatest { works ->
-                // Live channels default to Xtream source
-                works.map { work ->
-                    work.toHomeMediaItemFast(
-                        sourceType = SourceType.XTREAM,
-                        allSourceTypes = listOf(SourceType.XTREAM),
-                    )
-                }
-            }
-            .catch { e ->
-                UnifiedLog.e(TAG, e) { "Failed to observe Xtream live" }
-                emit(emptyList())
-            }
-    }
-    
     // ==================== Paging Methods (Infinite Horizontal Scroll) ====================
     
     private val homePagingConfig = PagingConfig(
@@ -311,32 +210,6 @@ class NxHomeContentRepositoryImpl @Inject constructor(
         ).flow
     }
 
-    // ==================== Legacy Methods (backward compatibility) ====================
-
-    override fun observeTelegramMedia(): Flow<List<HomeMediaItem>> {
-        // Combine movies, series, clips - filtered for Telegram source
-        return combine(
-            observeMovies(),
-            observeSeries(),
-            observeClips(),
-        ) { movies, series, clips ->
-            (movies + series + clips)
-                .filter { it.sourceType == SourceType.TELEGRAM }
-                .take(200)
-        }
-    }
-
-    override fun observeXtreamVod(): Flow<List<HomeMediaItem>> {
-        return observeMovies().map { movies ->
-            movies.filter { it.sourceType == SourceType.XTREAM }
-        }
-    }
-
-    override fun observeXtreamSeries(): Flow<List<HomeMediaItem>> {
-        return observeSeries().map { series ->
-            series.filter { it.sourceType == SourceType.XTREAM }
-        }
-    }
 
     // ==================== Mapping Helpers ====================
 

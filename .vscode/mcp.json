@@ -1,5 +1,13 @@
 {
   "servers": {
+    "sequential-thinking": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-sequential-thinking"
+      ]
+    },
     "fishit-pipeline": {
       "type": "stdio",
       "command": "java",
@@ -13,7 +21,8 @@
         "XTREAM_PASS": "JQ2rKsQ744",
         "TELEGRAM_API_ID": "${env:TELEGRAM_API_ID}",
         "TELEGRAM_API_HASH": "${env:TELEGRAM_API_HASH}"
-      }
+      },
+      "disabled": true
     }
   }
 }

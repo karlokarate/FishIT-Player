@@ -15,22 +15,28 @@ package com.fishit.player.pipeline.xtream.ids
 /**
  * Xtream VOD (Movie) stream ID.
  * Used in: get_vod_streams, get_vod_info, playback URLs
+ *
+ * **Note:** Some providers use negative IDs for test content or special categories.
+ * We accept any non-zero ID.
  */
 @JvmInline
 value class XtreamVodId(val id: Long) {
     init {
-        require(id > 0) { "XtreamVodId must be positive, got: $id" }
+        require(id != 0L) { "XtreamVodId must not be zero, got: $id" }
     }
 }
 
 /**
  * Xtream Series ID.
  * Used in: get_series, get_series_info
+ *
+ * **Note:** Some providers use negative IDs for test content or special categories.
+ * We accept any non-zero ID.
  */
 @JvmInline
 value class XtreamSeriesId(val id: Long) {
     init {
-        require(id > 0) { "XtreamSeriesId must be positive, got: $id" }
+        require(id != 0L) { "XtreamSeriesId must not be zero, got: $id" }
     }
 }
 
@@ -38,22 +44,28 @@ value class XtreamSeriesId(val id: Long) {
  * Xtream Episode stream ID.
  * This is the actual stream ID for playback, NOT the composite series/season/episode.
  * Used in: series/{seriesId}/{episodeId}.{ext} playback URLs
+ *
+ * **Note:** Some providers use negative IDs for test content or special categories.
+ * We accept any non-zero ID.
  */
 @JvmInline
 value class XtreamEpisodeId(val id: Long) {
     init {
-        require(id > 0) { "XtreamEpisodeId must be positive, got: $id" }
+        require(id != 0L) { "XtreamEpisodeId must not be zero, got: $id" }
     }
 }
 
 /**
  * Xtream Live Channel stream ID.
  * Used in: get_live_streams, live playback URLs
+ *
+ * **Note:** Some providers use negative IDs for test channels.
+ * We accept any non-zero ID.
  */
 @JvmInline
 value class XtreamChannelId(val id: Long) {
     init {
-        require(id > 0) { "XtreamChannelId must be positive, got: $id" }
+        require(id != 0L) { "XtreamChannelId must not be zero, got: $id" }
     }
 }
 

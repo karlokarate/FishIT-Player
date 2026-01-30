@@ -38,6 +38,26 @@ object XtreamTransportConfig {
     const val CALL_TIMEOUT_SECONDS: Long = 30L
 
     // =========================================================================
+    // Streaming Timeouts (Extended for large JSON responses)
+    // PERF FIX: Socket closed errors during catalog sync (21k+ items)
+    // =========================================================================
+
+    /**
+     * Extended read timeout for streaming large JSON arrays (VOD, Live, Series catalogs).
+     * Regular API calls use [READ_TIMEOUT_SECONDS] (30s).
+     * Streaming calls use this value (120s) to handle 20k+ item responses.
+     *
+     * Note: The call timeout is set per-request using OkHttpClient.newBuilder().
+     */
+    const val STREAMING_READ_TIMEOUT_SECONDS: Long = 120L
+
+    /**
+     * Extended call timeout for streaming operations.
+     * Allows enough time for full catalog downloads.
+     */
+    const val STREAMING_CALL_TIMEOUT_SECONDS: Long = 180L
+
+    // =========================================================================
     // Headers (Premium Contract Section 4)
     // "User-Agent: FishIT-Player/2.x (Android) (mandatory)"
     // =========================================================================

@@ -75,6 +75,11 @@ android {
         buildConfigField("boolean", "INCLUDE_LEAKCANARY", includeLeakCanary.toString())
         buildConfigField("boolean", "INCLUDE_CHUCKER", includeChucker.toString())
 
+        // Channel-buffered sync feature flag
+        val channelSyncEnabled =
+            project.findProperty("channelSyncEnabled")?.toString()?.toBoolean() ?: true
+        buildConfigField("boolean", "CHANNEL_SYNC_ENABLED", channelSyncEnabled.toString())
+
         // ABI configuration is handled via splits when useSplits=true
         // Otherwise, use NDK abiFilters for single-ABI builds
     }
@@ -136,6 +141,7 @@ android {
             // Override: Debug tools MUST be disabled in release builds
             buildConfigField("boolean", "INCLUDE_LEAKCANARY", "false")
             buildConfigField("boolean", "INCLUDE_CHUCKER", "false")
+            buildConfigField("boolean", "CHANNEL_SYNC_ENABLED", "false")
         }
         debug {
             isMinifyEnabled = false
@@ -144,6 +150,7 @@ android {
             // Explicit: Debug tools enabled
             buildConfigField("boolean", "INCLUDE_LEAKCANARY", "true")
             buildConfigField("boolean", "INCLUDE_CHUCKER", "true")
+            buildConfigField("boolean", "CHANNEL_SYNC_ENABLED", "true")
         }
     }
 

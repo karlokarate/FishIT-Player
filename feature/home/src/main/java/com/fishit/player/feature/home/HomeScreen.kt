@@ -540,52 +540,72 @@ private fun HomeContent(
         }
 
         // Live TV (Xtream only) - PAGING ONLY
-        if (usePaging && livePagingItems != null && livePagingItems.itemCount > 0) {
-            item(key = "live_tv_paging") {
-                PagingMediaRow(
-                    title = "Live TV",
-                    icon = Icons.Default.LiveTv,
-                    iconTint = FishColors.SourceXtream,
-                    pagingItems = livePagingItems,
-                    onItemClick = onItemClick,
-                )
+        // BUG FIX: Show row if items exist OR if still loading (itemCount is 0 initially)
+        if (usePaging && livePagingItems != null) {
+            val hasItems = livePagingItems.itemCount > 0
+            val isLoading = livePagingItems.loadState.refresh is androidx.paging.LoadState.Loading
+            if (hasItems || isLoading) {
+                item(key = "live_tv_paging") {
+                    PagingMediaRow(
+                        title = "Live TV",
+                        icon = Icons.Default.LiveTv,
+                        iconTint = FishColors.SourceXtream,
+                        pagingItems = livePagingItems,
+                        onItemClick = onItemClick,
+                    )
+                }
             }
         }
 
         // Movies (cross-pipeline: Xtream + Telegram) - PAGING ONLY
-        if (usePaging && moviesPagingItems != null && moviesPagingItems.itemCount > 0) {
-            item(key = "movies_paging") {
-                PagingMediaRow(
-                    title = "Movies",
-                    icon = Icons.Default.Movie,
-                    pagingItems = moviesPagingItems,
-                    onItemClick = onItemClick,
-                )
+        // BUG FIX: Show row if items exist OR if still loading (itemCount is 0 initially)
+        if (usePaging && moviesPagingItems != null) {
+            val hasItems = moviesPagingItems.itemCount > 0
+            val isLoading = moviesPagingItems.loadState.refresh is androidx.paging.LoadState.Loading
+            if (hasItems || isLoading) {
+                item(key = "movies_paging") {
+                    PagingMediaRow(
+                        title = "Movies",
+                        icon = Icons.Default.Movie,
+                        pagingItems = moviesPagingItems,
+                        onItemClick = onItemClick,
+                    )
+                }
             }
         }
 
         // Series (cross-pipeline: Xtream + Telegram) - PAGING ONLY
-        if (usePaging && seriesPagingItems != null && seriesPagingItems.itemCount > 0) {
-            item(key = "series_paging") {
-                PagingMediaRow(
-                    title = "Series",
-                    icon = Icons.Default.Tv,
-                    pagingItems = seriesPagingItems,
-                    onItemClick = onItemClick,
-                )
+        // BUG FIX: Show row if items exist OR if still loading (itemCount is 0 initially)
+        if (usePaging && seriesPagingItems != null) {
+            val hasItems = seriesPagingItems.itemCount > 0
+            val isLoading = seriesPagingItems.loadState.refresh is androidx.paging.LoadState.Loading
+            if (hasItems || isLoading) {
+                item(key = "series_paging") {
+                    PagingMediaRow(
+                        title = "Series",
+                        icon = Icons.Default.Tv,
+                        pagingItems = seriesPagingItems,
+                        onItemClick = onItemClick,
+                    )
+                }
             }
         }
 
         // Clips (Telegram only) - PAGING ONLY
-        if (usePaging && clipsPagingItems != null && clipsPagingItems.itemCount > 0) {
-            item(key = "clips_paging") {
-                PagingMediaRow(
-                    title = "Clips",
-                    icon = Icons.Default.VideoLibrary,
-                    iconTint = FishColors.SourceTelegram,
-                    pagingItems = clipsPagingItems,
-                    onItemClick = onItemClick,
-                )
+        // BUG FIX: Show row if items exist OR if still loading (itemCount is 0 initially)
+        if (usePaging && clipsPagingItems != null) {
+            val hasItems = clipsPagingItems.itemCount > 0
+            val isLoading = clipsPagingItems.loadState.refresh is androidx.paging.LoadState.Loading
+            if (hasItems || isLoading) {
+                item(key = "clips_paging") {
+                    PagingMediaRow(
+                        title = "Clips",
+                        icon = Icons.Default.VideoLibrary,
+                        iconTint = FishColors.SourceTelegram,
+                        pagingItems = clipsPagingItems,
+                        onItemClick = onItemClick,
+                    )
+                }
             }
         }
 

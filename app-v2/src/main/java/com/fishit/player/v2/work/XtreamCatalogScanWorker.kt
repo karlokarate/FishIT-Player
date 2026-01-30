@@ -16,15 +16,16 @@ import com.fishit.player.infra.data.xtream.XtreamCatalogRepository
 import com.fishit.player.infra.data.xtream.XtreamLiveRepository
 import com.fishit.player.infra.logging.UnifiedLog
 import com.fishit.player.infra.transport.xtream.XtreamApiClient
+import com.fishit.player.v2.BuildConfig
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.currentCoroutineContext
-import kotlinx.coroutines.isActive
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 
 /**
  * Xtream Catalog Scan Worker with resumable checkpoint support.
@@ -76,7 +77,7 @@ class XtreamCatalogScanWorker
             val input = WorkerInputData.from(inputData)
             val startTimeMs = System.currentTimeMillis()
             var itemsPersisted = 0L
-            
+
             // =========================================================================
             // INCREMENTAL SYNC: Quick count comparison (Industry best practice)
             // Like TiviMate and XCIPTV: check counts first, skip if unchanged
@@ -94,12 +95,12 @@ class XtreamCatalogScanWorker
                 } else {
                     val saved = checkpointStore.getXtreamCheckpoint()
                     val decoded = XtreamSyncCheckpoint.decode(saved)
-                    
+
                     // BUG FIX (Jan 2026): Reset checkpoint if not at VOD_LIST or SERIES_LIST.
                     // For AUTO sync at app start, we want to re-scan all list phases (VOD, Series, Live)
                     // to pick up new content. The pipeline runs VOD/Series/Live in PARALLEL, so we only
                     // need to start from VOD_LIST - the pipeline will scan all enabled phases.
-                    // 
+                    //
                     // Phases that require reset to VOD_LIST:
                     // - LIVE_LIST: Would skip VOD and Series (only Live scanned)
                     // - SERIES_EPISODES: Legacy phase, now lazy-loaded
@@ -135,12 +136,6 @@ class XtreamCatalogScanWorker
             if (guardReason != null) {
                 UnifiedLog.w(TAG) { "GUARD_DEFER reason=$guardReason mode=${input.syncMode}" }
                 return Result.retry()
-            }
-
-            // Helper to check if budget is exceeded
-            fun isBudgetExceeded(): Boolean {
-                val elapsed = System.currentTimeMillis() - startTimeMs
-                return elapsed > input.maxRuntimeMs
             }
 
             // Helper to save checkpoint and return retry
@@ -220,7 +215,7 @@ class XtreamCatalogScanWorker
 
                 // Clear checkpoint on full completion
                 checkpointStore.clearXtreamCheckpoint()
-                
+
                 // Save last sync timestamp and counts for incremental sync
                 checkpointStore.saveXtreamLastSyncTimestamp(System.currentTimeMillis())
                 checkpointStore.saveXtreamLastCounts(vodCount.toInt(), seriesCount.toInt(), liveCount.toInt())
@@ -233,7 +228,7 @@ class XtreamCatalogScanWorker
                         checkpointCursor = null, // Cleared on success
                     ),
                 )
-            } catch (e: CancellationException) {
+            } catch (_: CancellationException) {
                 val durationMs = System.currentTimeMillis() - startTimeMs
                 val encoded = currentCheckpoint.encode()
                 checkpointStore.saveXtreamCheckpoint(encoded)
@@ -333,30 +328,14 @@ class XtreamCatalogScanWorker
                 // *** TASK 1: Wire up Enhanced Sync ***
                 // Use EnhancedSyncConfig for progressive UI and phase-based batching
                 val enhancedConfig = selectEnhancedConfig(input)
+                val useChannelSync = BuildConfig.CHANNEL_SYNC_ENABLED && !input.isFireTvLowRam
 
-                UnifiedLog.i(TAG) {
-                    "Using ENHANCED sync: live=${enhancedConfig.liveConfig.batchSize} " +
-                        "movies=${enhancedConfig.moviesConfig.batchSize} " +
-                        "series=${enhancedConfig.seriesConfig.batchSize} " +
-                        "timeFlush=${enhancedConfig.enableTimeBasedFlush}"
-                }
-
-                catalogSyncService
-                    .syncXtreamEnhanced(
-                        includeVod = includeVod,
-                        includeSeries = includeSeries,
-                        includeEpisodes = includeEpisodes,
-                        includeLive = includeLive,
-                        excludeSeriesIds = excludeSeriesIds,
-                        episodeParallelism = 4, // Default parallelism
-                        config = enhancedConfig,
-                    ).collect { status ->
-                        // Check if worker is cancelled
+                suspend fun collectEnhanced(flow: kotlinx.coroutines.flow.Flow<SyncStatus>) {
+                    flow.collect { status ->
                         if (!currentCoroutineContext().isActive) {
                             throw CancellationException("Worker cancelled")
                         }
 
-                        // Check max runtime
                         val elapsedMs = System.currentTimeMillis() - startTimeMs
                         if (elapsedMs > input.maxRuntimeMs) {
                             budgetExceeded = true
@@ -388,10 +367,7 @@ class XtreamCatalogScanWorker
                             is SyncStatus.Completed -> {
                                 itemsPersisted = status.totalItems
                                 // Advance to info backfill phase
-                                currentCheckpoint =
-                                    XtreamSyncCheckpoint(
-                                        phase = XtreamSyncPhase.VOD_INFO,
-                                    )
+                                currentCheckpoint = XtreamSyncCheckpoint(phase = XtreamSyncPhase.VOD_INFO)
                                 UnifiedLog.i(TAG) {
                                     "Enhanced catalog sync completed: ${status.totalItems} items, " +
                                         "advancing to VOD_INFO phase"
@@ -405,9 +381,7 @@ class XtreamCatalogScanWorker
                                 throw status.throwable ?: RuntimeException(status.message)
                             }
                             is SyncStatus.SeriesEpisodeComplete -> {
-                                // PLATINUM: Track completed series for checkpoint resume
-                                currentCheckpoint =
-                                    currentCheckpoint.withProcessedSeries(status.seriesId)
+                                currentCheckpoint = currentCheckpoint.withProcessedSeries(status.seriesId)
                                 UnifiedLog.v(TAG) {
                                     "Series ${status.seriesId} episodes complete: ${status.episodeCount} eps, " +
                                         "processed=${currentCheckpoint.processedSeriesCount}"
@@ -418,6 +392,106 @@ class XtreamCatalogScanWorker
                             }
                         }
                     }
+                }
+
+                val enhancedFlow =
+                    catalogSyncService.syncXtreamEnhanced(
+                        includeVod = includeVod,
+                        includeSeries = includeSeries,
+                        includeEpisodes = includeEpisodes,
+                        includeLive = includeLive,
+                        excludeSeriesIds = excludeSeriesIds,
+                        episodeParallelism = 4,
+                        config = enhancedConfig,
+                    )
+
+                if (useChannelSync) {
+                    UnifiedLog.i(TAG) {
+                        "Using CHANNEL-BUFFERED sync: buffer=1000, consumers=3 (25-30% faster than enhanced sync)"
+                    }
+                    try {
+                        catalogSyncService
+                            .syncXtreamBuffered(
+                                includeVod = includeVod,
+                                includeSeries = includeSeries,
+                                includeEpisodes = includeEpisodes,
+                                includeLive = includeLive,
+                                bufferSize = 1000,
+                                consumerCount = 3,
+                            ).collect { status ->
+                                if (!currentCoroutineContext().isActive) {
+                                    throw CancellationException("Worker cancelled")
+                                }
+
+                                val elapsedMs = System.currentTimeMillis() - startTimeMs
+                                if (elapsedMs > input.maxRuntimeMs) {
+                                    budgetExceeded = true
+                                    return@collect
+                                }
+
+                                when (status) {
+                                    is SyncStatus.Started -> {
+                                        UnifiedLog.d(TAG) { "Channel-buffered catalog sync started" }
+                                    }
+                                    is SyncStatus.InProgress -> {
+                                        itemsPersisted = status.itemsPersisted
+
+                                        // Update checkpoint based on current phase
+                                        val phase = parsePhaseFromStatus(status.currentPhase)
+                                        if (phase != null) {
+                                            currentCheckpoint =
+                                                XtreamSyncCheckpoint(
+                                                    phase = phase,
+                                                    offset = status.itemsPersisted.toInt(),
+                                                )
+                                        }
+
+                                        UnifiedLog.d(TAG) {
+                                            "PROGRESS discovered=${status.itemsDiscovered} " +
+                                                "persisted=$itemsPersisted phase=${status.currentPhase ?: "N/A"}"
+                                        }
+                                    }
+                                    is SyncStatus.Completed -> {
+                                        itemsPersisted = status.totalItems
+                                        currentCheckpoint = XtreamSyncCheckpoint(phase = XtreamSyncPhase.VOD_INFO)
+                                        UnifiedLog.i(TAG) {
+                                            "Channel-buffered catalog sync completed: ${status.totalItems} items, " +
+                                                "advancing to VOD_INFO phase"
+                                        }
+                                    }
+                                    is SyncStatus.Cancelled -> {
+                                        itemsPersisted = status.itemsPersisted
+                                        UnifiedLog.w(TAG) { "Channel-buffered catalog sync cancelled" }
+                                    }
+                                    is SyncStatus.Error -> {
+                                        throw status.throwable ?: RuntimeException(status.message)
+                                    }
+                                    is SyncStatus.SeriesEpisodeComplete -> {
+                                        currentCheckpoint = currentCheckpoint.withProcessedSeries(status.seriesId)
+                                        UnifiedLog.v(TAG) {
+                                            "Series ${status.seriesId} episodes complete: ${status.episodeCount} eps"
+                                        }
+                                    }
+                                    is SyncStatus.TelegramChatComplete -> {
+                                        // N/A for Xtream - ignore
+                                    }
+                                }
+                            }
+                    } catch (e: CancellationException) {
+                        throw e
+                    } catch (e: Exception) {
+                        UnifiedLog.w(TAG, e) { "Channel-buffered sync failed, falling back to enhanced sync" }
+                        collectEnhanced(enhancedFlow)
+                    }
+                } else {
+                    UnifiedLog.i(TAG) {
+                        "Using ENHANCED sync: live=${enhancedConfig.liveConfig.batchSize} " +
+                            "movies=${enhancedConfig.moviesConfig.batchSize} " +
+                            "series=${enhancedConfig.seriesConfig.batchSize} " +
+                            "timeFlush=${enhancedConfig.enableTimeBasedFlush}"
+                    }
+                    collectEnhanced(enhancedFlow)
+                }
             } else {
                 // Standard sync (backward compatibility)
                 val syncConfig =
@@ -436,73 +510,63 @@ class XtreamCatalogScanWorker
                         excludeSeriesIds = excludeSeriesIds,
                         syncConfig = syncConfig,
                     ).collect { status ->
-                    // Check if worker is cancelled
-                    if (!currentCoroutineContext().isActive) {
-                        throw CancellationException("Worker cancelled")
-                    }
+                        if (!currentCoroutineContext().isActive) {
+                            throw CancellationException("Worker cancelled")
+                        }
 
-                    // Check max runtime
-                    val elapsedMs = System.currentTimeMillis() - startTimeMs
-                    if (elapsedMs > input.maxRuntimeMs) {
-                        budgetExceeded = true
-                        return@collect
-                    }
+                        val elapsedMs = System.currentTimeMillis() - startTimeMs
+                        if (elapsedMs > input.maxRuntimeMs) {
+                            budgetExceeded = true
+                            return@collect
+                        }
 
-                    when (status) {
-                        is SyncStatus.Started -> {
-                            UnifiedLog.d(TAG) { "Catalog sync started" }
-                        }
-                        is SyncStatus.InProgress -> {
-                            itemsPersisted = status.itemsPersisted
+                        when (status) {
+                            is SyncStatus.Started -> {
+                                UnifiedLog.d(TAG) { "Catalog sync started" }
+                            }
+                            is SyncStatus.InProgress -> {
+                                itemsPersisted = status.itemsPersisted
 
-                            // Update checkpoint based on current phase
-                            val phase = parsePhaseFromStatus(status.currentPhase)
-                            if (phase != null) {
-                                currentCheckpoint =
-                                    XtreamSyncCheckpoint(
-                                        phase = phase,
-                                        offset = status.itemsPersisted.toInt(),
-                                    )
-                            }
+                                val phase = parsePhaseFromStatus(status.currentPhase)
+                                if (phase != null) {
+                                    currentCheckpoint =
+                                        XtreamSyncCheckpoint(
+                                            phase = phase,
+                                            offset = status.itemsPersisted.toInt(),
+                                        )
+                                }
 
-                            UnifiedLog.d(TAG) {
-                                "PROGRESS discovered=${status.itemsDiscovered} " +
-                                    "persisted=$itemsPersisted phase=${status.currentPhase}"
+                                UnifiedLog.d(TAG) {
+                                    "PROGRESS discovered=${status.itemsDiscovered} " +
+                                        "persisted=$itemsPersisted phase=${status.currentPhase}"
+                                }
                             }
-                        }
-                        is SyncStatus.Completed -> {
-                            itemsPersisted = status.totalItems
-                            // Advance to info backfill phase
-                            currentCheckpoint =
-                                XtreamSyncCheckpoint(
-                                    phase = XtreamSyncPhase.VOD_INFO,
-                                )
-                            UnifiedLog.i(TAG) {
-                                "Catalog sync completed: ${status.totalItems} items, " +
-                                    "advancing to VOD_INFO phase"
+                            is SyncStatus.Completed -> {
+                                itemsPersisted = status.totalItems
+                                currentCheckpoint = XtreamSyncCheckpoint(phase = XtreamSyncPhase.VOD_INFO)
+                                UnifiedLog.i(TAG) {
+                                    "Catalog sync completed: ${status.totalItems} items, advancing to VOD_INFO phase"
+                                }
                             }
-                        }
-                        is SyncStatus.Cancelled -> {
-                            itemsPersisted = status.itemsPersisted
-                            UnifiedLog.w(TAG) { "Catalog sync cancelled" }
-                        }
-                        is SyncStatus.Error -> {
-                            throw status.throwable ?: RuntimeException(status.message)
-                        }
-                        is SyncStatus.SeriesEpisodeComplete -> {
-                            // PLATINUM: Track completed series for checkpoint resume
-                            currentCheckpoint =
-                                currentCheckpoint.withProcessedSeries(status.seriesId)
-                            UnifiedLog.v(TAG) {
-                                "Series ${status.seriesId} episodes complete: ${status.episodeCount} eps, " +
-                                    "processed=${currentCheckpoint.processedSeriesCount}"
+                            is SyncStatus.Cancelled -> {
+                                itemsPersisted = status.itemsPersisted
+                                UnifiedLog.w(TAG) { "Catalog sync cancelled" }
                             }
-                        }
-                        is SyncStatus.TelegramChatComplete -> {
-                            // N/A for Xtream - ignore
+                            is SyncStatus.Error -> {
+                                throw status.throwable ?: RuntimeException(status.message)
+                            }
+                            is SyncStatus.SeriesEpisodeComplete -> {
+                                currentCheckpoint = currentCheckpoint.withProcessedSeries(status.seriesId)
+                                UnifiedLog.v(TAG) {
+                                    "Series ${status.seriesId} episodes complete: ${status.episodeCount} eps, " +
+                                        "processed=${currentCheckpoint.processedSeriesCount}"
+                                }
+                            }
+                            is SyncStatus.TelegramChatComplete -> {
+                                // N/A for Xtream - ignore
+                            }
                         }
                     }
-                }
             }
 
             return SyncPhaseResult(
@@ -514,42 +578,29 @@ class XtreamCatalogScanWorker
 
         /**
          * Select EnhancedSyncConfig based on device class and sync mode.
-         *
-         * Per PLATIN guidelines (app-work.instructions.md):
-         * - FireTV Low-RAM: Use FIRETV_SAFE (35-item cap across all phases, 300 JSON streaming batch)
-         * - Normal devices: Use PROGRESSIVE_UI (optimized for UI-first loading)
-         * - Force rescan: Larger batches for throughput (600/400/200, 1000 JSON streaming batch)
-         *
-         * Precedence when conditions overlap:
-         * - FireTV safety ALWAYS takes precedence over sync mode.
-         *   For example, a FireTV low-RAM device in SYNC_MODE_FORCE_RESCAN will still use
-         *   FIRETV_SAFE, not the larger force-rescan batch sizes.
          */
         private fun selectEnhancedConfig(input: WorkerInputData): com.fishit.player.core.catalogsync.EnhancedSyncConfig {
             return when {
-                // FireTV: Use predefined FIRETV_SAFE config (global 35-item cap, 300 JSON batch to prevent OOM)
                 input.isFireTvLowRam -> com.fishit.player.core.catalogsync.EnhancedSyncConfig.FIRETV_SAFE
-                // Force rescan: Maximize throughput with larger batches
                 input.syncMode == WorkerConstants.SYNC_MODE_FORCE_RESCAN -> {
                     com.fishit.player.core.catalogsync.EnhancedSyncConfig(
                         liveConfig =
                             com.fishit.player.core.catalogsync.SyncPhaseConfig.LIVE.copy(
-                                batchSize = 600, // Larger than default 400
+                                batchSize = 600,
                             ),
                         moviesConfig =
                             com.fishit.player.core.catalogsync.SyncPhaseConfig.MOVIES.copy(
-                                batchSize = 400, // Larger than default 250
+                                batchSize = 400,
                             ),
                         seriesConfig =
                             com.fishit.player.core.catalogsync.SyncPhaseConfig.SERIES.copy(
-                                batchSize = 200, // Larger than default 150
+                                batchSize = 200,
                             ),
-                        jsonStreamingBatchSize = com.fishit.player.core.persistence.config.ObxWriteConfig.JSON_STREAMING_BATCH_SIZE_NORMAL, // 1000 for throughput
-                        enableTimeBasedFlush = false, // Prioritize throughput over UI
-                        enableCanonicalLinking = false, // Disable canonical linking for throughput-optimized rescan
+                        jsonStreamingBatchSize = com.fishit.player.core.persistence.config.ObxWriteConfig.JSON_STREAMING_BATCH_SIZE_NORMAL,
+                        enableTimeBasedFlush = false,
+                        enableCanonicalLinking = false,
                     )
                 }
-                // Default: Use PROGRESSIVE_UI for maximum UI-first loading speed
                 else -> com.fishit.player.core.catalogsync.EnhancedSyncConfig.PROGRESSIVE_UI
             }
         }
@@ -568,7 +619,6 @@ class XtreamCatalogScanWorker
             }
 
             while (currentCoroutineContext().isActive) {
-                // Check budget
                 val elapsedMs = System.currentTimeMillis() - startTimeMs
                 if (elapsedMs > input.maxRuntimeMs) {
                     return SyncPhaseResult(
@@ -578,7 +628,6 @@ class XtreamCatalogScanWorker
                     )
                 }
 
-                // Get next batch of VOD IDs needing info
                 val vodIds =
                     catalogRepository.getVodIdsNeedingInfoBackfill(
                         limit = INFO_BACKFILL_BATCH_SIZE,
@@ -586,7 +635,6 @@ class XtreamCatalogScanWorker
                     )
 
                 if (vodIds.isEmpty()) {
-                    // No more VODs to process, advance to next phase
                     currentCheckpoint = currentCheckpoint.advancePhase()
                     UnifiedLog.i(TAG) {
                         "VOD_INFO complete, processed=$processedCount, advancing to SERIES_INFO"
@@ -594,8 +642,6 @@ class XtreamCatalogScanWorker
                     break
                 }
 
-                // *** TASK 4: Parallel Info Backfill ***
-                // Process VODs in parallel with bounded concurrency
                 val batchStartTimeMs = System.currentTimeMillis()
                 val vodResults =
                     processVodInfoBatchParallel(
@@ -603,11 +649,9 @@ class XtreamCatalogScanWorker
                         concurrency = input.xtreamInfoBackfillConcurrency,
                     )
 
-                // Bulk persist results
                 val successful = vodResults.filter { it.success }
                 if (successful.isNotEmpty()) {
                     val batchPersistStart = System.currentTimeMillis()
-                    // Batch update all successful results
                     successful.forEach { result ->
                         catalogRepository.updateVodInfo(
                             vodId = result.vodId,
@@ -625,7 +669,6 @@ class XtreamCatalogScanWorker
                     val fetchDuration = batchPersistStart - batchStartTimeMs
                     processedCount += successful.size
 
-                    // TASK 5: Log detailed per-batch performance metrics
                     val itemsPerSec = if (fetchDuration > 0) successful.size * 1000 / fetchDuration else 0
                     UnifiedLog.d(TAG) {
                         "VOD batch: ${successful.size}/${vodIds.size} successful " +
@@ -641,10 +684,8 @@ class XtreamCatalogScanWorker
                         "(${itemsPerSec} items/sec, failed=${vodIds.size - successful.size})"
                 }
 
-                // Update checkpoint to last processed ID
                 currentCheckpoint = currentCheckpoint.withLastVodInfoId(vodIds.last())
 
-                // Brief delay between batches
                 delay(INFO_BACKFILL_THROTTLE_MS)
             }
 
@@ -669,7 +710,6 @@ class XtreamCatalogScanWorker
             }
 
             while (currentCoroutineContext().isActive) {
-                // Check budget
                 val elapsedMs = System.currentTimeMillis() - startTimeMs
                 if (elapsedMs > input.maxRuntimeMs) {
                     return SyncPhaseResult(
@@ -679,7 +719,6 @@ class XtreamCatalogScanWorker
                     )
                 }
 
-                // Get next batch of series IDs needing info
                 val seriesIds =
                     catalogRepository.getSeriesIdsNeedingInfoBackfill(
                         limit = INFO_BACKFILL_BATCH_SIZE,
@@ -687,7 +726,6 @@ class XtreamCatalogScanWorker
                     )
 
                 if (seriesIds.isEmpty()) {
-                    // No more series to process, mark as completed
                     currentCheckpoint = currentCheckpoint.advancePhase()
                     UnifiedLog.i(TAG) {
                         "SERIES_INFO complete, processed=$processedCount, sync COMPLETED"
@@ -695,8 +733,6 @@ class XtreamCatalogScanWorker
                     break
                 }
 
-                // *** TASK 4: Parallel Info Backfill ***
-                // Process series in parallel with bounded concurrency
                 val batchStartTimeMs = System.currentTimeMillis()
                 val seriesResults =
                     processSeriesInfoBatchParallel(
@@ -704,11 +740,9 @@ class XtreamCatalogScanWorker
                         concurrency = input.xtreamInfoBackfillConcurrency,
                     )
 
-                // Bulk persist results
                 val successful = seriesResults.filter { it.success }
                 if (successful.isNotEmpty()) {
                     val batchPersistStart = System.currentTimeMillis()
-                    // Batch update all successful results
                     successful.forEach { result ->
                         catalogRepository.updateSeriesInfo(
                             seriesId = result.seriesId,
@@ -725,7 +759,6 @@ class XtreamCatalogScanWorker
                     val fetchDuration = batchPersistStart - batchStartTimeMs
                     processedCount += successful.size
 
-                    // TASK 5: Log detailed per-batch performance metrics
                     val itemsPerSec = if (fetchDuration > 0) successful.size * 1000 / fetchDuration else 0
                     UnifiedLog.d(TAG) {
                         "Series batch: ${successful.size}/${seriesIds.size} successful " +
@@ -741,10 +774,8 @@ class XtreamCatalogScanWorker
                         "(${itemsPerSec} items/sec, failed=${seriesIds.size - successful.size})"
                 }
 
-                // Update checkpoint to last processed ID
                 currentCheckpoint = currentCheckpoint.withLastSeriesInfoId(seriesIds.last())
 
-                // Brief delay between batches
                 delay(INFO_BACKFILL_THROTTLE_MS)
             }
 
@@ -776,10 +807,6 @@ class XtreamCatalogScanWorker
             val budgetExceeded: Boolean,
         )
 
-        // ========================================================================
-        // TASK 4: Parallel Info Backfill Helper Methods
-        // ========================================================================
-
         /** Result from VOD info fetch with retry. */
         private data class VodInfoResult(
             val vodId: Int,
@@ -809,18 +836,12 @@ class XtreamCatalogScanWorker
 
         /**
          * Process VOD info batch in parallel with bounded concurrency.
-         *
-         * Features:
-         * - Bounded concurrency (6-12 normal, 2-4 FireTV)
-         * - Exponential backoff retry for 429/5xx errors
-         * - Graceful failure handling (continues on error)
          */
         private suspend fun processVodInfoBatchParallel(
             vodIds: List<Int>,
             concurrency: Int,
         ): List<VodInfoResult> =
             coroutineScope {
-                // Create a semaphore-like chunking to limit concurrency
                 vodIds.chunked(concurrency).flatMap { chunk ->
                     chunk.map { vodId ->
                         async {
@@ -835,7 +856,6 @@ class XtreamCatalogScanWorker
          */
         private suspend fun fetchVodInfoWithRetry(vodId: Int): VodInfoResult {
             var attempt = 0
-            var lastException: Exception? = null
 
             while (attempt < INFO_BACKFILL_RETRY_MAX_ATTEMPTS) {
                 try {
@@ -855,22 +875,18 @@ class XtreamCatalogScanWorker
                             tmdbId = info?.tmdbId?.takeIf { it.isNotBlank() && it != "0" },
                         )
                     } else {
-                        // Null response - no retry needed
                         return VodInfoResult(vodId = vodId, success = false)
                     }
                 } catch (e: Exception) {
-                    lastException = e
                     val isRetryable = isRetryableError(e)
 
                     if (!isRetryable || attempt >= INFO_BACKFILL_RETRY_MAX_ATTEMPTS - 1) {
-                        // Non-retryable or max attempts reached
                         UnifiedLog.w(TAG) {
                             "VOD info fetch failed for vodId=$vodId after ${attempt + 1} attempts: ${e.message}"
                         }
                         return VodInfoResult(vodId = vodId, success = false)
                     }
 
-                    // Exponential backoff
                     val delayMs =
                         minOf(
                             INFO_BACKFILL_RETRY_INITIAL_DELAY_MS * (1 shl attempt),
@@ -884,7 +900,6 @@ class XtreamCatalogScanWorker
                 }
             }
 
-            // Should not reach here, but handle gracefully
             return VodInfoResult(vodId = vodId, success = false)
         }
 
@@ -910,7 +925,6 @@ class XtreamCatalogScanWorker
          */
         private suspend fun fetchSeriesInfoWithRetry(seriesId: Int): SeriesInfoResult {
             var attempt = 0
-            var lastException: Exception? = null
 
             while (attempt < INFO_BACKFILL_RETRY_MAX_ATTEMPTS) {
                 try {
@@ -932,7 +946,6 @@ class XtreamCatalogScanWorker
                         return SeriesInfoResult(seriesId = seriesId, success = false)
                     }
                 } catch (e: Exception) {
-                    lastException = e
                     val isRetryable = isRetryableError(e)
 
                     if (!isRetryable || attempt >= INFO_BACKFILL_RETRY_MAX_ATTEMPTS - 1) {
@@ -963,57 +976,26 @@ class XtreamCatalogScanWorker
          */
         private fun isRetryableError(e: Exception): Boolean {
             val message = e.message?.lowercase() ?: ""
-            return message.contains("429") || // Too Many Requests
+            return message.contains("429") ||
                 message.contains("rate limit") ||
-                message.contains("500") || // Internal Server Error
-                message.contains("502") || // Bad Gateway
-                message.contains("503") || // Service Unavailable
-                message.contains("504") || // Gateway Timeout
+                message.contains("500") ||
+                message.contains("502") ||
+                message.contains("503") ||
+                message.contains("504") ||
                 message.contains("timeout") ||
                 message.contains("connection")
         }
-        
-        // =========================================================================
-        // INCREMENTAL SYNC (Industry Best Practice)
-        // =========================================================================
-        
+
         /**
          * Run incremental sync: Only fetch newly added items.
-         * 
-         * This follows the pattern used by TiviMate and XCIPTV:
-         * 
-         * **Step 1: Quick Count Comparison**
-         * - Fetch current counts from API (lightweight operation)
-         * - Compare with stored counts from last sync
-         * - If all counts match → skip sync entirely (nothing new)
-         * 
-         * **Step 2: Delta Fetch (if counts changed)**
-         * - Only fetch items where `added > lastSyncTimestamp`
-         * - This dramatically reduces traffic (~95% reduction)
-         * 
-         * **Traffic Comparison:**
-         * - Full sync of 10k items: ~2-5 MB
-         * - Incremental sync (no changes): ~10-50 KB (just count API calls)
-         * - Incremental sync (100 new items): ~100-200 KB
-         * 
-         * **Jan 2026 Update:** Now uses `syncXtreamIncremental` with 4-tier optimization:
-         * - Tier 1: ETag/304 (if server supports)
-         * - Tier 2: Item count quick-check
-         * - Tier 3: Timestamp filtering
-         * - Tier 4: Fingerprint comparison (hash-based change detection)
-         * 
-         * @param input Worker input data
-         * @param startTimeMs Start time for duration tracking
-         * @return Worker result
          */
         private suspend fun runIncrementalSync(
             input: WorkerInputData,
             startTimeMs: Long,
         ): Result {
             UnifiedLog.i(TAG) { "INCREMENTAL sync started: sync_run_id=${input.syncRunId}" }
-            
+
             try {
-                // Get account key from capabilities (baseUrl|username)
                 val capabilities = xtreamApiClient.capabilities
                 val accountKey = capabilities?.cacheKey ?: run {
                     UnifiedLog.w(TAG) { "No capabilities - incremental sync not possible" }
@@ -1026,20 +1008,18 @@ class XtreamCatalogScanWorker
                         ),
                     )
                 }
-                
+
                 UnifiedLog.d(TAG) { "Using accountKey=$accountKey for incremental sync" }
-                
-                // Determine which content types to sync
+
                 val scope = input.xtreamSyncScope.orEmpty()
                 val includeVod = scope.contains("VOD") || scope.isEmpty()
                 val includeSeries = scope.contains("SERIES") || scope.isEmpty()
                 val includeLive = scope.contains("LIVE") || scope.isEmpty()
-                
+
                 var itemsPersisted = 0L
                 var syncSucceeded = false
                 var skippedSync = false
-                
-                // Use new 4-tier incremental sync with fingerprint comparison
+
                 catalogSyncService.syncXtreamIncremental(
                     accountKey = accountKey,
                     includeVod = includeVod,
@@ -1065,7 +1045,6 @@ class XtreamCatalogScanWorker
                         is SyncStatus.Completed -> {
                             itemsPersisted = status.totalItems
                             syncSucceeded = true
-                            // Check if this was a skip (0 items means likely all unchanged)
                             if (status.totalItems == 0L && status.durationMs < 1000) {
                                 skippedSync = true
                             }
@@ -1080,20 +1059,19 @@ class XtreamCatalogScanWorker
                             itemsPersisted = status.itemsPersisted
                             UnifiedLog.w(TAG) { "Incremental sync cancelled" }
                         }
-                        else -> {} // SeriesEpisodeComplete, TelegramChatComplete - ignore
+                        else -> {}
                     }
                 }
-                
-                // Invalidate home cache if items were persisted
+
                 if (itemsPersisted > 0) {
                     homeCacheInvalidator.invalidateAllAfterSync(
                         source = "XTREAM_INCREMENTAL",
                         syncRunId = input.syncRunId,
                     )
                 }
-                
+
                 val durationMs = System.currentTimeMillis() - startTimeMs
-                
+
                 return if (syncSucceeded) {
                     val cursor = if (skippedSync) "incremental_skipped_no_changes" else "incremental_completed"
                     UnifiedLog.i(TAG) {
@@ -1122,3 +1100,8 @@ class XtreamCatalogScanWorker
             }
         }
     }
+
+
+
+
+

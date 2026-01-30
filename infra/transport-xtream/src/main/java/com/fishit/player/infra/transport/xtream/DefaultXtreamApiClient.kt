@@ -36,6 +36,7 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import java.io.InputStream
+import java.util.concurrent.TimeUnit
 import java.util.zip.GZIPInputStream
 
 /**
@@ -87,6 +88,18 @@ class DefaultXtreamApiClient(
     private var resolvedPort: Int = 80
     private var vodKind: String = "vod"
     private var urlBuilder: XtreamUrlBuilder? = null
+
+    /**
+     * OkHttpClient with extended timeouts for streaming large JSON arrays.
+     * PERF FIX: Prevents "Socket closed" errors during catalog sync (21k+ items).
+     * Uses XtreamTransportConfig.STREAMING_READ_TIMEOUT_SECONDS (120s).
+     */
+    private val streamingHttp: OkHttpClient by lazy {
+        http.newBuilder()
+            .readTimeout(XtreamTransportConfig.STREAMING_READ_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+            .callTimeout(XtreamTransportConfig.STREAMING_CALL_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+            .build()
+    }
 
     // Rate limiting (shared across all instances for same host)
     private companion object {
@@ -954,6 +967,10 @@ class DefaultXtreamApiClient(
                 }
                 val count = runCatching {
                     streamFromUrl(url, batchSize, mapper, onBatch)
+                }.onFailure { error ->
+                    UnifiedLog.w(TAG) {
+                        "streamContentInBatches($action): streamFromUrl FAILED for alias=$alias params=$params | ${error.javaClass.simpleName}: ${error.message}"
+                    }
                 }.getOrElse { 0 }
                 if (count > 0) {
                     return count
@@ -997,14 +1014,30 @@ class DefaultXtreamApiClient(
         mapper: (JsonObjectReader) -> T?,
         onBatch: suspend (List<T>) -> Unit,
     ): Int {
+        UnifiedLog.d(TAG) {
+            "streamFromUrl: CALLED for ${redactUrl(url)}"
+        }
+
         return fetchRawAsStream(url).use { streamResp ->
             if (!streamResp.isSuccessful || streamResp.inputStream == null) {
+                UnifiedLog.w(TAG) {
+                    "streamFromUrl: Request failed for ${redactUrl(url)} | isSuccessful=${streamResp.isSuccessful} hasInputStream=${streamResp.inputStream != null}"
+                }
                 return@use 0
             }
 
             val startTime = SystemClock.elapsedRealtime()
+
+            // IMPORTANT: fetchRawAsStream() already handles GZIP decompression
+            // We must NOT buffer the stream again, as it's already decompressed
+            val inputStream = streamResp.inputStream
+
+            UnifiedLog.d(TAG) {
+                "streamFromUrl: Starting StreamingJsonParser.streamInBatches() for ${redactUrl(url)}"
+            }
+
             val stats = StreamingJsonParser.streamInBatches(
-                input = streamResp.inputStream!!,
+                input = inputStream,
                 batchSize = batchSize,
                 mapper = mapper,
                 onBatch = onBatch,
@@ -1012,7 +1045,13 @@ class DefaultXtreamApiClient(
 
             val elapsed = SystemClock.elapsedRealtime() - startTime
             UnifiedLog.d(TAG) {
-                "StreamBatch: ${stats.totalCount} items in ${stats.batchCount} batches (${elapsed}ms)"
+                "StreamBatch: ${stats.totalCount} items in ${stats.batchCount} batches (${elapsed}ms) | errors=${stats.errorCount}"
+            }
+
+            if (stats.totalCount == 0) {
+                UnifiedLog.w(TAG) {
+                    "streamFromUrl: ZERO items parsed from ${redactUrl(url)} | batchCount=${stats.batchCount} errors=${stats.errorCount}"
+                }
             }
 
             stats.totalCount
@@ -1710,7 +1749,9 @@ class DefaultXtreamApiClient(
         val safeUrl = redactUrl(url)
 
         return try {
-            val response = http.newCall(request).execute()
+            // PERF FIX: Use streamingHttp with extended timeouts (120s read, 180s call)
+            // to prevent Socket closed errors during large catalog sync (21k+ items)
+            val response = streamingHttp.newCall(request).execute()
 
             if (!response.isSuccessful) {
                 UnifiedLog.i(TAG) {
@@ -1728,28 +1769,36 @@ class DefaultXtreamApiClient(
             }
 
             // Get the raw InputStream
-            // OkHttp automatically decompresses gzip when Content-Encoding: gzip is present
             var inputStream: InputStream = responseBody.byteStream()
 
-            // Defensive: Check for gzip magic bytes if server doesn't set Content-Encoding
-            // This handles edge-case servers that compress but don't signal it
-            val contentEncoding = response.header("Content-Encoding")
-            if (contentEncoding == null || !contentEncoding.contains("gzip", ignoreCase = true)) {
-                // Peek first 2 bytes to check for gzip magic (0x1F 0x8B)
-                val buffered = inputStream.buffered()
-                buffered.mark(2)
-                val b1 = buffered.read()
-                val b2 = buffered.read()
-                buffered.reset()
+            // CRITICAL: ALWAYS check for GZIP manually
+            // OkHttp's automatic decompression is NOT working for these servers
+            // Use PushbackInputStream to peek at magic bytes
+            val pushback = java.io.PushbackInputStream(inputStream, 2)
+            val b1 = pushback.read()
+            val b2 = pushback.read()
 
-                if (b1 == 0x1F && b2 == 0x8B) {
-                    // Gzip without header - wrap in GZIPInputStream
-                    UnifiedLog.d(TAG) {
-                        "StreamingFetch: Detected unannounced gzip for $safeUrl"
-                    }
-                    inputStream = GZIPInputStream(buffered)
-                } else {
-                    inputStream = buffered
+            if (b1 == 0x1F && b2 == 0x8B) {
+                // GZIP detected - push bytes back and wrap in GZIPInputStream
+                pushback.unread(b2)
+                pushback.unread(b1)
+                UnifiedLog.d(TAG) {
+                    "StreamingFetch: Detected GZIP for $safeUrl (manual decompression)"
+                }
+                inputStream = GZIPInputStream(pushback)
+            } else if (b1 != -1) {
+                // Not GZIP - push bytes back
+                if (b2 != -1) pushback.unread(b2)
+                pushback.unread(b1)
+                inputStream = pushback
+                UnifiedLog.d(TAG) {
+                    "StreamingFetch: Plain stream for $safeUrl (no GZIP)"
+                }
+            } else {
+                // Empty stream
+                inputStream = pushback
+                UnifiedLog.w(TAG) {
+                    "StreamingFetch: Empty stream for $safeUrl"
                 }
             }
 

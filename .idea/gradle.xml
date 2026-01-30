@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="GradleMigrationSettings" migrationVersion="1" />
+  <component name="GradleSettings">
+    <option name="linkedExternalProjectsSettings">
+      <GradleProjectSettings>
+        <option name="testRunner" value="CHOOSE_PER_TEST" />
+        <option name="externalProjectPath" value="$PROJECT_DIR$" />
+        <option name="gradleJvm" value="temurin-21" />
+        <option name="modules">
+          <set>
+            <option value="$PROJECT_DIR$" />
+            <option value="$PROJECT_DIR$/app-v2" />
+            <option value="$PROJECT_DIR$/core" />
+            <option value="$PROJECT_DIR$/core/app-startup" />
+            <option value="$PROJECT_DIR$/core/catalog-sync" />
+            <option value="$PROJECT_DIR$/core/debug-settings" />
+            <option value="$PROJECT_DIR$/core/detail-domain" />
+            <option value="$PROJECT_DIR$/core/device-api" />
+            <option value="$PROJECT_DIR$/core/feature-api" />
+            <option value="$PROJECT_DIR$/core/firebase" />
+            <option value="$PROJECT_DIR$/core/home-domain" />
+            <option value="$PROJECT_DIR$/core/library-domain" />
+            <option value="$PROJECT_DIR$/core/live-domain" />
+            <option value="$PROJECT_DIR$/core/metadata-normalizer" />
+            <option value="$PROJECT_DIR$/core/model" />
+            <option value="$PROJECT_DIR$/core/onboarding-domain" />
+            <option value="$PROJECT_DIR$/core/persistence" />
+            <option value="$PROJECT_DIR$/core/player-model" />
+            <option value="$PROJECT_DIR$/core/source-activation-api" />
+            <option value="$PROJECT_DIR$/core/telegrammedia-domain" />
+            <option value="$PROJECT_DIR$/core/ui-imaging" />
+            <option value="$PROJECT_DIR$/core/ui-layout" />
+            <option value="$PROJECT_DIR$/core/ui-theme" />
+            <option value="$PROJECT_DIR$/feature" />
+            <option value="$PROJECT_DIR$/feature/audiobooks" />
+            <option value="$PROJECT_DIR$/feature/detail" />
+            <option value="$PROJECT_DIR$/feature/home" />
+            <option value="$PROJECT_DIR$/feature/library" />
+            <option value="$PROJECT_DIR$/feature/live" />
+            <option value="$PROJECT_DIR$/feature/onboarding" />
+            <option value="$PROJECT_DIR$/feature/settings" />
+            <option value="$PROJECT_DIR$/feature/telegram-media" />
+            <option value="$PROJECT_DIR$/infra" />
+            <option value="$PROJECT_DIR$/infra/cache" />
+            <option value="$PROJECT_DIR$/infra/data-detail" />
+            <option value="$PROJECT_DIR$/infra/data-home" />
+            <option value="$PROJECT_DIR$/infra/data-nx" />
+            <option value="$PROJECT_DIR$/infra/data-telegram" />
+            <option value="$PROJECT_DIR$/infra/data-xtream" />
+            <option value="$PROJECT_DIR$/infra/device-android" />
+            <option value="$PROJECT_DIR$/infra/imaging" />
+            <option value="$PROJECT_DIR$/infra/logging" />
+            <option value="$PROJECT_DIR$/infra/tooling" />
+            <option value="$PROJECT_DIR$/infra/transport-telegram" />
+            <option value="$PROJECT_DIR$/infra/transport-xtream" />
+            <option value="$PROJECT_DIR$/infra/work" />
+            <option value="$PROJECT_DIR$/pipeline" />
+            <option value="$PROJECT_DIR$/pipeline/audiobook" />
+            <option value="$PROJECT_DIR$/pipeline/io" />
+            <option value="$PROJECT_DIR$/pipeline/telegram" />
+            <option value="$PROJECT_DIR$/pipeline/xtream" />
+            <option value="$PROJECT_DIR$/playback" />
+            <option value="$PROJECT_DIR$/playback/domain" />
+            <option value="$PROJECT_DIR$/playback/telegram" />
+            <option value="$PROJECT_DIR$/playback/xtream" />
+            <option value="$PROJECT_DIR$/player" />
+            <option value="$PROJECT_DIR$/player/internal" />
+            <option value="$PROJECT_DIR$/player/miniplayer" />
+            <option value="$PROJECT_DIR$/player/nextlib-codecs" />
+            <option value="$PROJECT_DIR$/player/ui" />
+            <option value="$PROJECT_DIR$/player/ui-api" />
+            <option value="$PROJECT_DIR$/tools" />
+            <option value="$PROJECT_DIR$/tools/mcp-server" />
+          </set>
+        </option>
+        <option name="resolveExternalAnnotations" value="true" />
+      </GradleProjectSettings>
+    </option>
+  </component>
+</project>

@@ -24,25 +24,10 @@ interface HomeContentRepository {
 
     fun observeRecentlyAdded(): Flow<List<HomeMediaItem>>
 
-    // ==================== Large Catalogs - DEPRECATED (Use Paging) ====================
-    // These methods load too much data into memory for large catalogs (40K+ items).
-    // Use the corresponding PagingData methods instead.
-    
-    @Deprecated("Use getMoviesPagingData() instead - this loads all movies into memory", ReplaceWith("getMoviesPagingData()"))
-    fun observeMovies(): Flow<List<HomeMediaItem>>
-
-    @Deprecated("Use getSeriesPagingData() instead - this loads all series into memory", ReplaceWith("getSeriesPagingData()"))
-    fun observeSeries(): Flow<List<HomeMediaItem>>
-
-    @Deprecated("Use getClipsPagingData() instead - this loads all clips into memory", ReplaceWith("getClipsPagingData()"))
-    fun observeClips(): Flow<List<HomeMediaItem>>
-
-    @Deprecated("Use getLivePagingData() instead - this loads all live channels into memory", ReplaceWith("getLivePagingData()"))
-    fun observeXtreamLive(): Flow<List<HomeMediaItem>>
-    
     // ==================== Paging Methods (Infinite Scroll) ====================
-    // These are the preferred methods for large catalogs.
-    
+    // These are the only supported methods for large catalogs.
+    // All content (Movies, Series, Clips, Live) MUST use Paging for performance.
+
     /**
      * Movies row with horizontal paging.
      * Loads movies in pages as user scrolls right.
@@ -72,21 +57,4 @@ interface HomeContentRepository {
      * Sorted by createdAt descending.
      */
     fun getRecentlyAddedPagingData(): Flow<PagingData<HomeMediaItem>>
-
-    // ==================== Legacy Methods (backward compatibility) ====================
-
-    /**
-     * @deprecated Use observeMovies(), observeSeries(), observeClips() instead.
-     */
-    fun observeTelegramMedia(): Flow<List<HomeMediaItem>>
-
-    /**
-     * @deprecated Use observeMovies() instead.
-     */
-    fun observeXtreamVod(): Flow<List<HomeMediaItem>>
-
-    /**
-     * @deprecated Use observeSeries() instead.
-     */
-    fun observeXtreamSeries(): Flow<List<HomeMediaItem>>
 }
