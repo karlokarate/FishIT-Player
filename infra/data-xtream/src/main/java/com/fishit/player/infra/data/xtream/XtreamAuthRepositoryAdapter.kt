@@ -66,6 +66,7 @@ class XtreamAuthRepositoryAdapter
         private val _authState = MutableStateFlow<DomainAuthState>(DomainAuthState.Idle)
         override val authState: StateFlow<DomainAuthState> = _authState.asStateFlow()
 
+        @Volatile
         private var transportStateJob: Job? = null
 
         init {
