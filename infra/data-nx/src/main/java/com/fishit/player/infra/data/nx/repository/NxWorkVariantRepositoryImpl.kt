@@ -13,6 +13,7 @@ import com.fishit.player.core.persistence.obx.NX_WorkVariant_
 import com.fishit.player.core.persistence.obx.NX_Work_
 import com.fishit.player.infra.data.nx.mapper.toDomain
 import com.fishit.player.infra.data.nx.mapper.toEntity
+import com.fishit.player.infra.logging.UnifiedLog
 import io.objectbox.BoxStore
 import io.objectbox.kotlin.boxFor
 import com.fishit.player.core.persistence.ObjectBoxFlow.asFlow
@@ -128,28 +129,49 @@ class NxWorkVariantRepositoryImpl @Inject constructor(
     override suspend fun upsertBatch(variants: List<Variant>): List<Variant> = withContext(Dispatchers.IO) {
         if (variants.isEmpty()) return@withContext emptyList()
 
-        // Batch lookup existing
-        val variantKeys = variants.map { it.variantKey }
-        val existingMap = box.query(NX_WorkVariant_.variantKey.oneOf(variantKeys.toTypedArray(), StringOrder.CASE_SENSITIVE))
-            .build()
-            .find()
-            .associateBy { it.variantKey }
+        try {
+            // CRITICAL FIX: Deduplicate variants by variantKey within batch
+            val uniqueVariants = variants.associateBy { it.variantKey }.values.toList()
 
-        // Batch lookup works
-        val workKeys = variants.map { it.workKey }.distinct()
-        val workMap = workBox.query(NX_Work_.workKey.oneOf(workKeys.toTypedArray(), StringOrder.CASE_SENSITIVE))
-            .build()
-            .find()
-            .associateBy { it.workKey }
+            if (uniqueVariants.size < variants.size) {
+                UnifiedLog.w("NxWorkVariantRepo") {
+                    "Deduped ${variants.size - uniqueVariants.size} duplicate variantKeys in batch"
+                }
+            }
 
-        val entities = variants.map { variant ->
-            val entity = variant.toEntity(existingMap[variant.variantKey])
-            workMap[variant.workKey]?.let { entity.work.target = it }
-            entity
+            // Use runInTx for atomic batch update
+            boxStore.runInTx {
+                // CRITICAL: Query existing entities INSIDE transaction!
+                val variantKeys = uniqueVariants.map { it.variantKey }
+                val existingMap = box.query(NX_WorkVariant_.variantKey.oneOf(variantKeys.toTypedArray(), StringOrder.CASE_SENSITIVE))
+                    .build()
+                    .find()
+                    .associateBy { it.variantKey }
+
+                // Batch lookup works
+                val workKeys = uniqueVariants.map { it.workKey }.distinct()
+                val workMap = workBox.query(NX_Work_.workKey.oneOf(workKeys.toTypedArray(), StringOrder.CASE_SENSITIVE))
+                    .build()
+                    .find()
+                    .associateBy { it.workKey }
+
+                val entities = uniqueVariants.map { variant ->
+                    val entity = variant.toEntity(existingMap[variant.variantKey])
+                    workMap[variant.workKey]?.let { entity.work.target = it }
+                    entity
+                }
+                box.put(entities)
+            }
+
+            uniqueVariants
+        } finally {
+            // CRITICAL: Cleanup thread-local resources to prevent transaction leaks
+            try {
+                boxStore.closeThreadResources()
+            } catch (e: Exception) {
+                // Ignore cleanup errors
+            }
         }
-
-        box.put(entities)
-        entities.map { it.toDomain() }
     }
 
     override suspend fun delete(variantKey: String): Boolean = withContext(Dispatchers.IO) {

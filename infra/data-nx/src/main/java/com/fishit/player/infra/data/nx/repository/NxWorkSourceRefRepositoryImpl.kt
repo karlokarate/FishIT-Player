@@ -14,6 +14,7 @@ import com.fishit.player.core.persistence.obx.NX_WorkSourceRef_
 import com.fishit.player.core.persistence.obx.NX_Work_
 import com.fishit.player.infra.data.nx.mapper.toDomain
 import com.fishit.player.infra.data.nx.mapper.toEntity
+import com.fishit.player.infra.logging.UnifiedLog
 import io.objectbox.BoxStore
 import io.objectbox.kotlin.boxFor
 import com.fishit.player.core.persistence.ObjectBoxFlow.asFlow
@@ -147,31 +148,52 @@ class NxWorkSourceRefRepositoryImpl @Inject constructor(
     override suspend fun upsertBatch(sourceRefs: List<SourceRef>): List<SourceRef> = withContext(Dispatchers.IO) {
         if (sourceRefs.isEmpty()) return@withContext emptyList()
 
-        // Validate all have accountKey
-        sourceRefs.forEach { require(it.accountKey.isNotBlank()) { "accountKey cannot be blank for ${it.sourceKey}" } }
+        try {
+            // Validate all have accountKey
+            sourceRefs.forEach { require(it.accountKey.isNotBlank()) { "accountKey cannot be blank for ${it.sourceKey}" } }
 
-        // Batch lookup existing entities
-        val sourceKeys = sourceRefs.map { it.sourceKey }
-        val existingMap = box.query(NX_WorkSourceRef_.sourceKey.oneOf(sourceKeys.toTypedArray(), StringOrder.CASE_SENSITIVE))
-            .build()
-            .find()
-            .associateBy { it.sourceKey }
+            // CRITICAL FIX: Deduplicate sourceRefs by sourceKey within batch
+            val uniqueRefs = sourceRefs.associateBy { it.sourceKey }.values.toList()
 
-        // Batch lookup work entities
-        val workKeys = sourceRefs.map { it.workKey }.distinct()
-        val workMap = workBox.query(NX_Work_.workKey.oneOf(workKeys.toTypedArray(), StringOrder.CASE_SENSITIVE))
-            .build()
-            .find()
-            .associateBy { it.workKey }
+            if (uniqueRefs.size < sourceRefs.size) {
+                UnifiedLog.w("NxWorkSourceRefRepo") {
+                    "Deduped ${sourceRefs.size - uniqueRefs.size} duplicate sourceKeys in batch"
+                }
+            }
 
-        val entities = sourceRefs.map { sourceRef ->
-            val entity = sourceRef.toEntity(existingMap[sourceRef.sourceKey])
-            workMap[sourceRef.workKey]?.let { entity.work.target = it }
-            entity
+            // Use runInTx for atomic batch update
+            boxStore.runInTx {
+                // CRITICAL: Query existing entities INSIDE transaction!
+                val sourceKeys = uniqueRefs.map { it.sourceKey }
+                val existingMap = box.query(NX_WorkSourceRef_.sourceKey.oneOf(sourceKeys.toTypedArray(), StringOrder.CASE_SENSITIVE))
+                    .build()
+                    .find()
+                    .associateBy { it.sourceKey }
+
+                // Batch lookup work entities
+                val workKeys = uniqueRefs.map { it.workKey }.distinct()
+                val workMap = workBox.query(NX_Work_.workKey.oneOf(workKeys.toTypedArray(), StringOrder.CASE_SENSITIVE))
+                    .build()
+                    .find()
+                    .associateBy { it.workKey }
+
+                val entities = uniqueRefs.map { sourceRef ->
+                    val entity = sourceRef.toEntity(existingMap[sourceRef.sourceKey])
+                    workMap[sourceRef.workKey]?.let { entity.work.target = it }
+                    entity
+                }
+                box.put(entities)
+            }
+
+            uniqueRefs
+        } finally {
+            // CRITICAL: Cleanup thread-local resources to prevent transaction leaks
+            try {
+                boxStore.closeThreadResources()
+            } catch (e: Exception) {
+                // Ignore cleanup errors
+            }
         }
-
-        box.put(entities)
-        entities.map { it.toDomain() }
     }
 
     override suspend fun updateLastSeen(sourceKey: String, lastSeenAtMs: Long): Boolean = withContext(Dispatchers.IO) {

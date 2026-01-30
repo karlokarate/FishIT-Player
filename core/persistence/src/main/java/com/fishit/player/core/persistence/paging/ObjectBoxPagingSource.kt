@@ -43,9 +43,15 @@ class ObjectBoxPagingSource<T, R : Any>(
             val loadSize = params.loadSize
 
             val items = withContext(Dispatchers.IO) {
-                queryFactory()
-                    .find(offset.toLong(), loadSize.toLong())
+                val query = queryFactory()
+                val results = query.find(offset.toLong(), loadSize.toLong())
                     .mapNotNull(mapper)
+
+                // DEBUG: Log query execution
+                android.util.Log.d("ObjectBoxPagingSource",
+                    "🔍 DB Query: offset=$offset loadSize=$loadSize → results=${results.size}")
+
+                results
             }
 
             // Calculate prev/next keys as offsets
@@ -61,6 +67,7 @@ class ObjectBoxPagingSource<T, R : Any>(
                 itemsAfter = LoadResult.Page.COUNT_UNDEFINED,
             )
         } catch (e: Exception) {
+            android.util.Log.e("ObjectBoxPagingSource", "❌ DB Query ERROR: ${e.message}", e)
             LoadResult.Error(e)
         }
     }

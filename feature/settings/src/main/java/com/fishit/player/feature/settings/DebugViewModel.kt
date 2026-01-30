@@ -145,7 +145,10 @@ class DebugViewModel
             observeWorkManager()
             observeConnectionStatus()
             observeContentCounts()
-            observeLogs()
+            // PERFORMANCE: observeLogs() DISABLED - massive overhead!
+            // Live log updates cause continuous UI recomposition
+            // Use loadMoreLogs() on-demand instead
+            // observeLogs()  // ❌ DISABLED!
             loadCacheSizes()
         }
 
@@ -439,8 +442,16 @@ class DebugViewModel
         }
 
         fun loadMoreLogs() {
-            // No-op: Logs are already observed via Flow
-            // Could increase limit in future
+            // PERFORMANCE: Load logs on-demand (no live observation)
+            viewModelScope.launch {
+                try {
+                    val bufferedLogs = logBufferProvider.getLogs(limit = 100)
+                    val logEntries = bufferedLogs.map { it.toLogEntry() }
+                    _state.update { it.copy(recentLogs = logEntries) }
+                } catch (e: Exception) {
+                    UnifiedLog.w(TAG) { "loadMoreLogs: error loading logs: ${e.message}" }
+                }
+            }
         }
 
         fun clearLogs() {

@@ -406,8 +406,13 @@ class XtreamCatalogScanWorker
                     )
 
                 if (useChannelSync) {
+                    // PLATINUM CONFIGURATION (MCP Research-based):
+                    // - Buffer = 300 items (enough for 3 consumers × 100 items each)
+                    // - Consumers = 3 (parallel DB writers)
+                    // - Ratio: buffer should be ≥ consumers × batchSize to avoid starvation
+                    // - Memory: 300 × 2KB = 600KB (very safe!)
                     UnifiedLog.i(TAG) {
-                        "Using CHANNEL-BUFFERED sync: buffer=1000, consumers=3 (25-30% faster than enhanced sync)"
+                        "Using CHANNEL-BUFFERED sync: buffer=300, consumers=3 (PLATINUM config)"
                     }
                     try {
                         catalogSyncService
@@ -416,8 +421,8 @@ class XtreamCatalogScanWorker
                                 includeSeries = includeSeries,
                                 includeEpisodes = includeEpisodes,
                                 includeLive = includeLive,
-                                bufferSize = 1000,
-                                consumerCount = 3,
+                                bufferSize = 300,   // ← PLATINUM: 3 × 100 items per consumer
+                                consumerCount = 3,  // ← KEEP 3 consumers for parallel writes!
                             ).collect { status ->
                                 if (!currentCoroutineContext().isActive) {
                                     throw CancellationException("Worker cancelled")

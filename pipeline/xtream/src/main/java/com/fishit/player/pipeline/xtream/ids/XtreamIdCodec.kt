@@ -39,11 +39,11 @@ object XtreamIdCodec {
     /**
      * Format VOD source ID.
      *
-     * @param vodId The Xtream VOD stream ID (positive Long)
+     * @param vodId The Xtream VOD stream ID (non-zero Long, may be negative)
      * @return Canonical source ID: `xtream:vod:{vodId}`
      */
     fun vod(vodId: Long): String {
-        require(vodId > 0) { "VOD ID must be positive, got: $vodId" }
+        require(vodId != 0L) { "VOD ID must not be zero, got: $vodId" }
         return "$PREFIX:vod:$vodId"
     }
 
@@ -60,11 +60,11 @@ object XtreamIdCodec {
     /**
      * Format Series source ID.
      *
-     * @param seriesId The Xtream series ID (positive Long)
+     * @param seriesId The Xtream series ID (non-zero Long, may be negative)
      * @return Canonical source ID: `xtream:series:{seriesId}`
      */
     fun series(seriesId: Long): String {
-        require(seriesId > 0) { "Series ID must be positive, got: $seriesId" }
+        require(seriesId != 0L) { "Series ID must not be zero, got: $seriesId" }
         return "$PREFIX:series:$seriesId"
     }
 
@@ -83,11 +83,11 @@ object XtreamIdCodec {
      *
      * Use this when the Xtream API provides a unique episode stream ID.
      *
-     * @param episodeId The Xtream episode stream ID (positive Long)
+     * @param episodeId The Xtream episode stream ID (non-zero Long, may be negative)
      * @return Canonical source ID: `xtream:episode:{episodeId}`
      */
     fun episode(episodeId: Long): String {
-        require(episodeId > 0) { "Episode ID must be positive, got: $episodeId" }
+        require(episodeId != 0L) { "Episode ID must not be zero, got: $episodeId" }
         return "$PREFIX:episode:$episodeId"
     }
 
@@ -128,11 +128,11 @@ object XtreamIdCodec {
     /**
      * Format Live channel source ID.
      *
-     * @param channelId The Xtream live stream ID (positive Long)
+     * @param channelId The Xtream live stream ID (non-zero Long, may be negative)
      * @return Canonical source ID: `xtream:live:{channelId}`
      */
     fun live(channelId: Long): String {
-        require(channelId > 0) { "Channel ID must be positive, got: $channelId" }
+        require(channelId != 0L) { "Channel ID must not be zero, got: $channelId" }
         return "$PREFIX:live:$channelId"
     }
 

@@ -95,7 +95,8 @@ android {
                 reset()
                 // If abiFilters is specified, use it; otherwise use all ABIs
                 if (abiFilters != null) {
-                    abiFilters.split(",").forEach { abi ->
+                    val abiList = abiFilters.split(",")
+                    abiList.forEach { abi ->
                         include(abi.trim())
                     }
                 } else {
@@ -107,7 +108,8 @@ android {
     } else if (abiFilters != null) {
         // Only use NDK abiFilters when splits are NOT enabled
         defaultConfig.ndk {
-            abiFilters.split(",").forEach { abi ->
+            val abiList = abiFilters.split(",")
+            abiList.forEach { abi ->
                 this.abiFilters.add(abi.trim())
             }
         }

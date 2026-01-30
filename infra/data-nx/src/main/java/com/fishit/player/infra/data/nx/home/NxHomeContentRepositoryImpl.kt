@@ -40,15 +40,20 @@ import com.fishit.player.core.model.repository.NxWorkRepository.Work
 import com.fishit.player.core.model.repository.NxWorkRepository.WorkType
 import com.fishit.player.core.model.repository.NxWorkSourceRefRepository
 import com.fishit.player.core.model.repository.NxWorkUserStateRepository
-import com.fishit.player.core.model.userstate.WorkUserState
+import com.fishit.player.core.persistence.cache.HomeContentCache
 import com.fishit.player.infra.logging.UnifiedLog
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapLatest
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -58,10 +63,29 @@ class NxHomeContentRepositoryImpl @Inject constructor(
     private val workRepository: NxWorkRepository,
     private val sourceRefRepository: NxWorkSourceRefRepository,
     private val userStateRepository: NxWorkUserStateRepository,
+    private val homeContentCache: HomeContentCache,
 ) : HomeContentRepository {
 
     companion object {
         private const val TAG = "NxHomeContentRepo"
+    }
+
+    // Refresh trigger for paging data - emits when sync completes
+    private val refreshTrigger = MutableSharedFlow<Unit>(replay = 1).apply {
+        tryEmit(Unit) // Initial emission to start flow
+    }
+
+    // Coroutine scope for observing cache invalidations
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+
+    init {
+        // Subscribe to cache invalidations and trigger paging refresh
+        scope.launch {
+            homeContentCache.observeInvalidations().collect {
+                UnifiedLog.d(TAG) { "Cache invalidation detected: $it, triggering paging refresh" }
+                refreshTrigger.emit(Unit)
+            }
+        }
     }
 
     // ==================== Primary Content Methods ====================
@@ -135,79 +159,94 @@ class NxHomeContentRepositoryImpl @Inject constructor(
         enablePlaceholders = false,
     )
     
+    @OptIn(ExperimentalCoroutinesApi::class)
     override fun getMoviesPagingData(): Flow<PagingData<HomeMediaItem>> {
         UnifiedLog.i(TAG) { "🎬 getMoviesPagingData() CALLED - Creating Movies PagingSource" }
-        return Pager(
-            config = homePagingConfig,
-            pagingSourceFactory = {
-                UnifiedLog.d(TAG) { "🎬 Movies PagingSource FACTORY invoked" }
-                HomePagingSource(
-                    workRepository = workRepository,
-                    sourceRefRepository = sourceRefRepository,
-                    workType = WorkType.MOVIE,
-                    sortField = NxWorkRepository.SortField.TITLE,
-                )
-            }
-        ).flow
+        return refreshTrigger.flatMapLatest {
+            Pager(
+                config = homePagingConfig,
+                pagingSourceFactory = {
+                    UnifiedLog.d(TAG) { "🎬 Movies PagingSource FACTORY invoked" }
+                    HomePagingSource(
+                        workRepository = workRepository,
+                        sourceRefRepository = sourceRefRepository,
+                        workType = WorkType.MOVIE,
+                        sortField = NxWorkRepository.SortField.TITLE,
+                    )
+                }
+            ).flow
+        }
     }
     
+    @OptIn(ExperimentalCoroutinesApi::class)
     override fun getSeriesPagingData(): Flow<PagingData<HomeMediaItem>> {
         UnifiedLog.i(TAG) { "📺 getSeriesPagingData() CALLED - Creating Series PagingSource" }
-        return Pager(
-            config = homePagingConfig,
-            pagingSourceFactory = {
-                UnifiedLog.d(TAG) { "📺 Series PagingSource FACTORY invoked" }
-                HomePagingSource(
-                    workRepository = workRepository,
-                    sourceRefRepository = sourceRefRepository,
-                    workType = WorkType.SERIES,
-                    sortField = NxWorkRepository.SortField.TITLE,
-                )
-            }
-        ).flow
+        return refreshTrigger.flatMapLatest {
+            Pager(
+                config = homePagingConfig,
+                pagingSourceFactory = {
+                    UnifiedLog.d(TAG) { "📺 Series PagingSource FACTORY invoked" }
+                    HomePagingSource(
+                        workRepository = workRepository,
+                        sourceRefRepository = sourceRefRepository,
+                        workType = WorkType.SERIES,
+                        sortField = NxWorkRepository.SortField.TITLE,
+                    )
+                }
+            ).flow
+        }
     }
     
+    @OptIn(ExperimentalCoroutinesApi::class)
     override fun getClipsPagingData(): Flow<PagingData<HomeMediaItem>> {
-        return Pager(
-            config = homePagingConfig,
-            pagingSourceFactory = {
-                HomePagingSource(
-                    workRepository = workRepository,
-                    sourceRefRepository = sourceRefRepository,
-                    workType = WorkType.CLIP,
-                    sortField = NxWorkRepository.SortField.TITLE,
-                )
-            }
-        ).flow
+        return refreshTrigger.flatMapLatest {
+            Pager(
+                config = homePagingConfig,
+                pagingSourceFactory = {
+                    HomePagingSource(
+                        workRepository = workRepository,
+                        sourceRefRepository = sourceRefRepository,
+                        workType = WorkType.CLIP,
+                        sortField = NxWorkRepository.SortField.TITLE,
+                    )
+                }
+            ).flow
+        }
     }
     
+    @OptIn(ExperimentalCoroutinesApi::class)
     override fun getLivePagingData(): Flow<PagingData<HomeMediaItem>> {
-        return Pager(
-            config = homePagingConfig,
-            pagingSourceFactory = {
-                HomePagingSource(
-                    workRepository = workRepository,
-                    sourceRefRepository = sourceRefRepository,
-                    workType = WorkType.LIVE_CHANNEL,
-                    sortField = NxWorkRepository.SortField.TITLE,
-                )
-            }
-        ).flow
+        return refreshTrigger.flatMapLatest {
+            Pager(
+                config = homePagingConfig,
+                pagingSourceFactory = {
+                    HomePagingSource(
+                        workRepository = workRepository,
+                        sourceRefRepository = sourceRefRepository,
+                        workType = WorkType.LIVE_CHANNEL,
+                        sortField = NxWorkRepository.SortField.TITLE,
+                    )
+                }
+            ).flow
+        }
     }
     
+    @OptIn(ExperimentalCoroutinesApi::class)
     override fun getRecentlyAddedPagingData(): Flow<PagingData<HomeMediaItem>> {
-        return Pager(
-            config = homePagingConfig,
-            pagingSourceFactory = {
-                HomePagingSource(
-                    workRepository = workRepository,
-                    sourceRefRepository = sourceRefRepository,
-                    workType = null, // All types
-                    sortField = NxWorkRepository.SortField.RECENTLY_ADDED,
-                    excludeEpisodes = true,
-                )
-            }
-        ).flow
+        return refreshTrigger.flatMapLatest {
+            Pager(
+                config = homePagingConfig,
+                pagingSourceFactory = {
+                    HomePagingSource(
+                        workRepository = workRepository,
+                        sourceRefRepository = sourceRefRepository,
+                        workType = null, // All types
+                        sortField = NxWorkRepository.SortField.RECENTLY_ADDED,
+                        excludeEpisodes = true,
+                    )
+                }
+            ).flow
+        }
     }
 
 
@@ -350,11 +389,17 @@ private class HomePagingSource(
     private val excludeEpisodes: Boolean = false,
 ) : PagingSource<Int, HomeMediaItem>() {
     
+    companion object {
+        private const val TAG = "NxHomeContentRepo"
+    }
+
     override suspend fun load(params: LoadParams<Int>): LoadResult<Int, HomeMediaItem> {
         return try {
             val offset = params.key ?: 0
             val loadSize = params.loadSize
             
+            UnifiedLog.d(TAG) { "🔍 HomePagingSource.load() START | workType=${workType?.name ?: "ALL"} offset=$offset loadSize=$loadSize" }
+
             // Build query options
             val options = NxWorkRepository.QueryOptions(
                 type = workType,
@@ -378,23 +423,35 @@ private class HomePagingSource(
                     )
                 )
                 when (result) {
-                    is LoadResult.Page -> result.data
-                    else -> emptyList()
+                    is LoadResult.Page -> {
+                        UnifiedLog.d(TAG) { "🔍 HomePagingSource: DB returned ${result.data.size} works" }
+                        result.data
+                    }
+                    else -> {
+                        UnifiedLog.w(TAG) { "🔍 HomePagingSource: DB returned non-Page result: ${result::class.simpleName}" }
+                        emptyList()
+                    }
                 }
             }.let { works ->
                 if (excludeEpisodes) {
-                    works.filter { it.type != WorkType.EPISODE }
+                    val filtered = works.filter { it.type != WorkType.EPISODE }
+                    UnifiedLog.d(TAG) { "🔍 HomePagingSource: Filtered out episodes: ${works.size} → ${filtered.size}" }
+                    filtered
                 } else {
                     works
                 }
             }
             
+            UnifiedLog.d(TAG) { "🔍 HomePagingSource: Processing ${works.size} works for mapping" }
+
             // Batch load source refs for all works
             val workKeys = works.map { it.workKey }
             val sourceRefsMap = withContext(Dispatchers.IO) {
                 sourceRefRepository.findByWorkKeysBatch(workKeys)
             }
             
+            UnifiedLog.d(TAG) { "🔍 HomePagingSource: Loaded source refs for ${sourceRefsMap.size} works" }
+
             // Map to HomeMediaItem
             // Filter out items that fail mapping (e.g., corrupted data)
             val items = works.mapNotNull { work ->
@@ -424,6 +481,13 @@ private class HomePagingSource(
                 }
             }
             
+            UnifiedLog.i(TAG) {
+                "✅ HomePagingSource.load() RESULT | workType=${workType?.name ?: "ALL"} " +
+                "offset=$offset count=${items.size} " +
+                "hasNext=${items.size == loadSize} " +
+                "titles=${items.take(3).joinToString { "\"${it.title}\"" }}"
+            }
+
             val prevKey = if (offset > 0) maxOf(0, offset - loadSize) else null
             val nextKey = if (items.size == loadSize) offset + loadSize else null
             
@@ -435,6 +499,10 @@ private class HomePagingSource(
                 itemsAfter = LoadResult.Page.COUNT_UNDEFINED,
             )
         } catch (e: Exception) {
+            UnifiedLog.e(TAG, e) {
+                "❌ HomePagingSource.load() ERROR | workType=${workType?.name ?: "ALL"} " +
+                "offset=${params.key ?: 0} loadSize=${params.loadSize}"
+            }
             LoadResult.Error(e)
         }
     }

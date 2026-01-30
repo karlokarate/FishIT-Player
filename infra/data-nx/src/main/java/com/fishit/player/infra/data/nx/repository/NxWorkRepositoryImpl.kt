@@ -47,6 +47,29 @@ class NxWorkRepositoryImpl @Inject constructor(
         private const val TAG = "NxWorkRepository"
     }
 
+    // ═══════════════════════════════════════════════════════════════════════
+    // PLATINUM OPTIMIZATION: Sync State Management
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /**
+     * Internal sync state flag.
+     * When true, observeByType() throttles emissions aggressively to reduce UI load.
+     */
+    @Volatile
+    private var syncInProgress = false
+
+    /**
+     * Enable/disable aggressive throttling during sync.
+     * Should be called by CatalogSyncService before/after sync.
+     */
+    fun setSyncInProgress(inProgress: Boolean) {
+        val oldValue = syncInProgress
+        syncInProgress = inProgress
+        if (oldValue != inProgress) {
+            UnifiedLog.i(TAG) { "Sync state changed: syncInProgress=$inProgress" }
+        }
+    }
+
     // ──────────────────────────────────────────────────────────────────────
     // Single item
     // ──────────────────────────────────────────────────────────────────────
@@ -73,17 +96,27 @@ class NxWorkRepositoryImpl @Inject constructor(
         val typeString = type.toEntityString()
         UnifiedLog.i(TAG) { "observeByType CALLED: type=$type (entity=$typeString), limit=$limit" }
 
-        return box.query(NX_Work_.workType.equal(typeString, StringOrder.CASE_SENSITIVE))
-            .order(NX_Work_.canonicalTitle)
-            .build()
-            .asFlowWithLimit(limit)
-            .distinctUntilChanged() // PERF FIX: Prevent duplicate emissions
-            .debounce(100) // PERF FIX: Throttle rapid emissions during sync
-            .map { list ->
-                UnifiedLog.i(TAG) { "observeByType EMITTING: type=$type, count=${list.size}" }
-                list.map { it.toDomain() }
-            }
-            .flowOn(Dispatchers.IO) // PERF FIX: Ensure mapping happens off main thread
+        return kotlinx.coroutines.flow.flow {
+            box.query(NX_Work_.workType.equal(typeString, StringOrder.CASE_SENSITIVE))
+                .order(NX_Work_.canonicalTitle)
+                .build()
+                .asFlowWithLimit(limit)
+                .distinctUntilChanged() // PERF FIX: Prevent duplicate emissions
+                .debounce {
+                    // PLATINUM OPTIMIZATION: Aggressive throttling during sync!
+                    // Normal: 100ms debounce
+                    // During Sync: 2000ms debounce (20x less emissions!)
+                    if (syncInProgress) 2000L else 100L
+                }
+                .collect { list ->
+                    if (!syncInProgress || list.size >= limit / 2) {
+                        // Only emit if not syncing OR list is substantial
+                        UnifiedLog.i(TAG) { "observeByType EMITTING: type=$type, count=${list.size}" }
+                        emit(list.map { it.toDomain() })
+                    }
+                    // Else: Skip intermediate emissions during sync
+                }
+        }.flowOn(Dispatchers.IO) // PERF FIX: Ensure mapping happens off main thread
     }
 
     override fun observeRecentlyUpdated(limit: Int): Flow<List<Work>> {
@@ -144,7 +177,11 @@ class NxWorkRepositoryImpl @Inject constructor(
     }
 
     override suspend fun count(options: NxWorkRepository.QueryOptions): Int = withContext(Dispatchers.IO) {
-        buildQuery(options).count().toInt()
+        val count = buildQuery(options).count().toInt()
+        UnifiedLog.d(TAG) {
+            "📊 NxWorkRepository.count() | workType=${options.type?.name ?: "ALL"} → count=$count"
+        }
+        count
     }
 
     override suspend fun advancedSearch(
@@ -302,18 +339,43 @@ class NxWorkRepositoryImpl @Inject constructor(
     override suspend fun upsertBatch(works: List<Work>): List<Work> = withContext(Dispatchers.IO) {
         if (works.isEmpty()) return@withContext emptyList()
 
-        // Batch lookup existing entities by workKey
-        val workKeys = works.map { it.workKey }
-        val existingMap = box.query(NX_Work_.workKey.oneOf(workKeys.toTypedArray(), StringOrder.CASE_SENSITIVE))
-            .build()
-            .find()
-            .associateBy { it.workKey }
+        try {
+            // CRITICAL FIX: Deduplicate works by workKey within batch
+            // If multiple works have same workKey, only keep the last one
+            val uniqueWorks = works.associateBy { it.workKey }.values.toList()
 
-        val entities = works.map { work ->
-            work.toEntity(existingMap[work.workKey])
+            if (uniqueWorks.size < works.size) {
+                UnifiedLog.w(TAG) {
+                    "Deduped ${works.size - uniqueWorks.size} duplicate workKeys in batch " +
+                    "(${works.size} → ${uniqueWorks.size})"
+                }
+            }
+
+            // Use runInTx for atomic batch update
+            boxStore.runInTx {
+                // CRITICAL: Query existing entities INSIDE transaction to avoid race conditions!
+                val workKeys = uniqueWorks.map { it.workKey }
+                val existingMap = box.query(NX_Work_.workKey.oneOf(workKeys.toTypedArray(), StringOrder.CASE_SENSITIVE))
+                    .build()
+                    .find()
+                    .associateBy { it.workKey }
+
+                val entities = uniqueWorks.map { work ->
+                    work.toEntity(existingMap[work.workKey])
+                }
+                box.put(entities)
+            }
+
+            // Return all works that were successfully persisted
+            uniqueWorks
+        } finally {
+            // CRITICAL: Cleanup thread-local resources to prevent transaction leaks
+            try {
+                boxStore.closeThreadResources()
+            } catch (e: Exception) {
+                // Ignore cleanup errors
+            }
         }
-        box.put(entities)
-        entities.map { it.toDomain() }
     }
 
     override suspend fun softDelete(workKey: String): Boolean = withContext(Dispatchers.IO) {

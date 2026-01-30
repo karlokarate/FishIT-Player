@@ -26,6 +26,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -80,13 +81,19 @@ class DefaultCatalogSyncService
         private val incrementalSyncDecider: IncrementalSyncDecider,
         private val syncCheckpointRepository: SyncCheckpointRepository,
         private val fingerprintRepository: FingerprintRepository,
+        // PLATINUM OPTIMIZATION: Sync state management (Jan 2026)
+        private val workRepository: com.fishit.player.infra.data.nx.repository.NxWorkRepositoryImpl,
     ) : CatalogSyncService {
         companion object {
             private const val TAG = "CatalogSyncService"
             private const val SOURCE_TELEGRAM = "telegram"
             private const val SOURCE_XTREAM = "xtream"
             private const val TIME_FLUSH_CHECK_INTERVAL_MS = 200L
-            private const val BATCH_SIZE = 400 // For channel-buffered sync
+            // PLATINUM: Reduced from 400 to 100 for better memory behavior
+            // - Smaller batches = more frequent DB flushes = lower memory peaks
+            // - Works better with buffer=300, consumers=3 (100 items per consumer per flush)
+            // - ObjectBox bulk insert is efficient even at 100 items
+            private const val BATCH_SIZE = 100
         }
 
         // Sync active state for UI flow throttling
@@ -713,6 +720,10 @@ class DefaultCatalogSyncService
             )
 
             try {
+                // PLATINUM OPTIMIZATION: Enable aggressive throttling during sync
+                workRepository.setSyncInProgress(true)
+                UnifiedLog.i(TAG) { "Sync started - UI observation throttling enabled" }
+
                 xtreamPipeline.scanCatalog(pipelineConfig).collect { event ->
                     when (event) {
                         is XtreamCatalogEvent.ItemDiscovered -> {
@@ -947,6 +958,10 @@ class DefaultCatalogSyncService
                     message = e.message ?: "Unknown error",
                     throwable = e,
                 ))
+            } finally {
+                // PLATINUM OPTIMIZATION: Restore normal throttling
+                workRepository.setSyncInProgress(false)
+                UnifiedLog.i(TAG) { "Sync completed - UI observation throttling disabled" }
             }
         }
 
@@ -1503,20 +1518,18 @@ class DefaultCatalogSyncService
 
             // NX-ONLY: Skip old repos, write directly to NX work graph
             if (config.enableCanonicalLinking) {
-                var ingestedCount = 0
-                var failedCount = 0
+                // PLATINUM OPTIMIZATION: Use bulk ingest
                 var playbackHintWarnings = 0
                 val ingestStartMs = System.currentTimeMillis()
 
-                items.forEach { raw ->
+                // Phase 1: Validate and prepare
+                val preparedItems = items.mapNotNull { raw ->
                     try {
                         // Validate playback hints
                         val hintValidation = validateTelegramPlaybackHints(raw)
                         if (!hintValidation.isValid) {
                             playbackHintWarnings++
-                            UnifiedLog.w(TAG) {
-                                "Telegram playback hint warning for ${raw.sourceId}: ${hintValidation.reason}"
-                            }
+                            // PERFORMANCE: Disabled W-level logging
                         }
 
                         // Normalize metadata
@@ -1524,14 +1537,16 @@ class DefaultCatalogSyncService
 
                         // Ingest to NX work graph (SSOT)
                         val telegramAccountKey = "telegram:${raw.playbackHints[PlaybackHintKeys.Telegram.CHAT_ID] ?: raw.sourceLabel}"
-                        nxCatalogWriter.ingest(raw, normalized, telegramAccountKey)
-
-                        ingestedCount++
+                        Triple(raw, normalized, telegramAccountKey)
                     } catch (e: Exception) {
-                        failedCount++
-                        UnifiedLog.w(TAG) { "Failed to ingest ${raw.sourceId} to NX: ${e.message}" }
+                        UnifiedLog.w(TAG) { "Failed to prepare ${raw.sourceId}: ${e.message}" }
+                        null
                     }
                 }
+
+                // Phase 2: Bulk ingest (OPTIMIZED!)
+                val ingestedCount = nxCatalogWriter.ingestBatchOptimized(preparedItems)
+                val failedCount = items.size - ingestedCount
 
                 val ingestDuration = System.currentTimeMillis() - ingestStartMs
                 val totalDuration = System.currentTimeMillis() - batchStartMs
@@ -1548,18 +1563,18 @@ class DefaultCatalogSyncService
                     }
                 }
             } else {
-                // HOT PATH: Still need to ingest to NX, just skip normalization overhead
-                var ingestedCount = 0
-                items.forEach { raw ->
+                // HOT PATH: Bulk ingest without validation
+                val preparedItems = items.mapNotNull { raw ->
                     try {
                         val normalized = normalizer.normalize(raw)
                         val telegramAccountKey = "telegram:${raw.playbackHints[PlaybackHintKeys.Telegram.CHAT_ID] ?: raw.sourceLabel}"
-                        nxCatalogWriter.ingest(raw, normalized, telegramAccountKey)
-                        ingestedCount++
+                        Triple(raw, normalized, telegramAccountKey)
                     } catch (e: Exception) {
-                        UnifiedLog.w(TAG) { "HOT PATH: Failed to ingest ${raw.sourceId}: ${e.message}" }
+                        UnifiedLog.w(TAG) { "HOT PATH: Failed to prepare ${raw.sourceId}: ${e.message}" }
+                        null
                     }
                 }
+                val ingestedCount = nxCatalogWriter.ingestBatchOptimized(preparedItems)
                 val totalDuration = System.currentTimeMillis() - batchStartMs
                 UnifiedLog.d(TAG) { 
                     "Telegram batch complete (HOT PATH/NX): ingested=$ingestedCount total_ms=$totalDuration"
@@ -1604,34 +1619,41 @@ class DefaultCatalogSyncService
 
             // NX-ONLY: Skip old repos, write directly to NX work graph
             if (config.enableCanonicalLinking) {
-                var ingestedCount = 0
-                var failedCount = 0
+                // PLATINUM OPTIMIZATION: Use bulk ingest instead of sequential per-item
                 var playbackHintWarnings = 0
                 val ingestStartMs = System.currentTimeMillis()
 
-                items.forEach { raw ->
+                // Phase 1: Validate and prepare items
+                val preparedItems = items.mapNotNull { raw ->
                     try {
                         // Validate playback hints
                         val hintValidation = validateXtreamPlaybackHints(raw)
                         if (!hintValidation.isValid) {
                             playbackHintWarnings++
-                            UnifiedLog.w(TAG) {
-                                "Xtream playback hint warning for ${raw.sourceId}: ${hintValidation.reason}"
-                            }
+                            // PERFORMANCE: Disabled W-level logging
                         }
 
                         val normalized = normalizer.normalize(raw)
-
-                        // Ingest to NX work graph (SSOT)
-                        val xtreamAccountKey = "xtream:${raw.sourceLabel}"
-                        nxCatalogWriter.ingest(raw, normalized, xtreamAccountKey)
-
-                        ingestedCount++
+                        // CRITICAL FIX: Extract clean account identifier from sourceLabel
+                        // sourceLabel may be full URL (http://host:port|user) or just hostname
+                        // We need simple identifier like "xtream:hostname" for NX keys
+                        val accountIdentifier = raw.sourceLabel
+                            .substringBefore("|") // Remove |username part
+                            .replace(Regex("^https?://"), "") // Remove protocol
+                            .substringBefore(":") // Remove port
+                            .replace(Regex("[^a-z0-9-]"), "-") // Sanitize
+                            .take(30) // Limit length
+                        val xtreamAccountKey = "xtream:$accountIdentifier"
+                        Triple(raw, normalized, xtreamAccountKey)
                     } catch (e: Exception) {
-                        failedCount++
-                        UnifiedLog.w(TAG) { "Failed to ingest ${raw.sourceId} to NX: ${e.message}" }
+                        UnifiedLog.w(TAG) { "Failed to prepare ${raw.sourceId}: ${e.message}" }
+                        null
                     }
                 }
+
+                // Phase 2: Bulk ingest (OPTIMIZED!)
+                val ingestedCount = nxCatalogWriter.ingestBatchOptimized(preparedItems)
+                val failedCount = items.size - ingestedCount
 
                 val ingestDuration = System.currentTimeMillis() - ingestStartMs
                 val totalDuration = System.currentTimeMillis() - batchStartMs
@@ -1648,18 +1670,18 @@ class DefaultCatalogSyncService
                     }
                 }
             } else {
-                // HOT PATH: Still need to ingest to NX, just skip normalization overhead
-                var ingestedCount = 0
-                items.forEach { raw ->
+                // HOT PATH: Bulk ingest without validation
+                val preparedItems = items.mapNotNull { raw ->
                     try {
                         val normalized = normalizer.normalize(raw)
                         val xtreamAccountKey = "xtream:${raw.sourceLabel}"
-                        nxCatalogWriter.ingest(raw, normalized, xtreamAccountKey)
-                        ingestedCount++
+                        Triple(raw, normalized, xtreamAccountKey)
                     } catch (e: Exception) {
-                        UnifiedLog.w(TAG) { "HOT PATH: Failed to ingest ${raw.sourceId}: ${e.message}" }
+                        UnifiedLog.w(TAG) { "HOT PATH: Failed to prepare ${raw.sourceId}: ${e.message}" }
+                        null
                     }
                 }
+                val ingestedCount = nxCatalogWriter.ingestBatchOptimized(preparedItems)
                 val totalDuration = System.currentTimeMillis() - batchStartMs
                 UnifiedLog.d(TAG) { 
                     "Xtream batch complete (HOT PATH/NX): ingested=$ingestedCount total_ms=$totalDuration"
@@ -1677,17 +1699,19 @@ class DefaultCatalogSyncService
             val batchStartMs = System.currentTimeMillis()
             UnifiedLog.d(TAG) { "Persisting Xtream live batch (NX-ONLY): ${items.size} items" }
 
-            var ingestedCount = 0
-            items.forEach { raw ->
+            // PLATINUM OPTIMIZATION: Use bulk ingest
+            val preparedItems = items.mapNotNull { raw ->
                 try {
                     val normalized = normalizer.normalize(raw)
                     val xtreamAccountKey = "xtream:${raw.sourceLabel}"
-                    nxCatalogWriter.ingest(raw, normalized, xtreamAccountKey)
-                    ingestedCount++
+                    Triple(raw, normalized, xtreamAccountKey)
                 } catch (e: Exception) {
-                    UnifiedLog.w(TAG) { "Failed to ingest live channel ${raw.sourceId}: ${e.message}" }
+                    UnifiedLog.w(TAG) { "Failed to prepare live channel ${raw.sourceId}: ${e.message}" }
+                    null
                 }
             }
+
+            val ingestedCount = nxCatalogWriter.ingestBatchOptimized(preparedItems)
 
             val totalDuration = System.currentTimeMillis() - batchStartMs
             UnifiedLog.d(TAG) { 
@@ -1736,9 +1760,12 @@ class DefaultCatalogSyncService
          * Required hints per PLATINUM contract:
          * - contentType (xtream.contentType)
          * - For VOD: vodId (xtream.vodId) + containerExtension
-         * - For Series/Episode: seriesId + seasonNumber + episodeNumber + episodeId +
-         * containerExtension
+         * - For Episodes: seriesId + seasonNumber + episodeNumber + episodeId + containerExtension
          * - For Live: streamId (xtream.streamId)
+         * - For Series Containers: seriesId ONLY (not playable, just metadata container)
+         *
+         * **IMPORTANT:** Series containers (XtreamItemKind.SERIES) are NOT playable items!
+         * They only have seriesId. Episodes (playable) have all episode-specific hints.
          */
         private fun validateXtreamPlaybackHints(raw: RawMediaMetadata): PlaybackHintValidation {
             val hints = raw.playbackHints
@@ -1758,25 +1785,37 @@ class DefaultCatalogSyncService
                 }
                 PlaybackHintKeys.Xtream.CONTENT_SERIES -> {
                     val seriesId = hints[PlaybackHintKeys.Xtream.SERIES_ID]
-                    val seasonNum = hints[PlaybackHintKeys.Xtream.SEASON_NUMBER]
-                    val episodeNum = hints[PlaybackHintKeys.Xtream.EPISODE_NUMBER]
                     val episodeId = hints[PlaybackHintKeys.Xtream.EPISODE_ID]
-                    val containerExt = hints[PlaybackHintKeys.Xtream.CONTAINER_EXT]
-                    when {
-                        seriesId.isNullOrBlank() ->
-                            PlaybackHintValidation(false, "Episode missing seriesId")
-                        seasonNum.isNullOrBlank() ->
-                            PlaybackHintValidation(false, "Episode missing seasonNumber")
-                        episodeNum.isNullOrBlank() ->
-                            PlaybackHintValidation(false, "Episode missing episodeNumber")
-                        episodeId.isNullOrBlank() ->
-                            PlaybackHintValidation(
-                                false,
-                                "Episode missing episodeId (critical for playback)",
-                            )
-                        containerExt.isNullOrBlank() ->
-                            PlaybackHintValidation(false, "Episode missing containerExtension")
-                        else -> PlaybackHintValidation(true)
+
+                    // LOGIC FIX: Check if this is a series container or an episode
+                    // Series container: has seriesId, NO episodeId → metadata-only, not playable
+                    // Episode: has seriesId AND episodeId → playable
+
+                    if (episodeId.isNullOrBlank()) {
+                        // This is a SERIES CONTAINER (not playable)
+                        // Only validate seriesId
+                        when {
+                            seriesId.isNullOrBlank() ->
+                                PlaybackHintValidation(false, "Series container missing seriesId")
+                            else -> PlaybackHintValidation(true) // ✅ Series container is valid!
+                        }
+                    } else {
+                        // This is an EPISODE (playable)
+                        // Validate all episode-specific hints
+                        val seasonNum = hints[PlaybackHintKeys.Xtream.SEASON_NUMBER]
+                        val episodeNum = hints[PlaybackHintKeys.Xtream.EPISODE_NUMBER]
+                        val containerExt = hints[PlaybackHintKeys.Xtream.CONTAINER_EXT]
+                        when {
+                            seriesId.isNullOrBlank() ->
+                                PlaybackHintValidation(false, "Episode missing seriesId")
+                            seasonNum.isNullOrBlank() ->
+                                PlaybackHintValidation(false, "Episode missing seasonNumber")
+                            episodeNum.isNullOrBlank() ->
+                                PlaybackHintValidation(false, "Episode missing episodeNumber")
+                            containerExt.isNullOrBlank() ->
+                                PlaybackHintValidation(false, "Episode missing containerExtension")
+                            else -> PlaybackHintValidation(true)
+                        }
                     }
                 }
                 PlaybackHintKeys.Xtream.CONTENT_LIVE -> {
@@ -1831,8 +1870,8 @@ class DefaultCatalogSyncService
         bufferSize: Int,
         consumerCount: Int,
     ): Flow<SyncStatus> =
-        flow {
-            emit(SyncStatus.Started(SOURCE_XTREAM))
+        channelFlow {
+            send(SyncStatus.Started(SOURCE_XTREAM))
             _syncActiveState.value = SyncActiveState(isActive = true, source = SOURCE_XTREAM)
 
             val startTimeMs = System.currentTimeMillis()
@@ -1867,7 +1906,7 @@ class DefaultCatalogSyncService
                                                 totalDiscovered.incrementAndGet()
                                             }
                                             is XtreamCatalogEvent.ScanProgress -> {
-                                                emit(
+                                                send(
                                                     SyncStatus.InProgress(
                                                         source = SOURCE_XTREAM,
                                                         itemsDiscovered =
@@ -1941,6 +1980,19 @@ class DefaultCatalogSyncService
                                     UnifiedLog.d(TAG) {
                                         "Consumer#$consumerId: Finished ($batchCount batches)"
                                     }
+                                } finally {
+                                    // CRITICAL: Close ObjectBox thread resources to prevent transaction leaks
+                                    // This prevents "Destroying inactive transaction" errors in FinalizerDaemon
+                                    try {
+                                        io.objectbox.BoxStore.closeThreadResources()
+                                        UnifiedLog.d(TAG) {
+                                            "Consumer#$consumerId: Closed ObjectBox thread resources"
+                                        }
+                                    } catch (e: Exception) {
+                                        UnifiedLog.w(TAG, e) {
+                                            "Consumer#$consumerId: Failed to close thread resources: ${e.message}"
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -1958,7 +2010,7 @@ class DefaultCatalogSyncService
                             "${bufferMetrics.backpressureEvents} backpressure events)"
                     }
 
-                    emit(
+                    send(
                         SyncStatus.Completed(
                             source = SOURCE_XTREAM,
                             totalItems = totalPersisted.get().toLong(),
@@ -1968,7 +2020,7 @@ class DefaultCatalogSyncService
                 }
             } catch (e: CancellationException) {
                 UnifiedLog.w(TAG) { "Channel-buffered sync cancelled" }
-                emit(
+                send(
                     SyncStatus.Cancelled(
                         source = SOURCE_XTREAM,
                         itemsPersisted = 0,
@@ -1977,7 +2029,7 @@ class DefaultCatalogSyncService
                 throw e
             } catch (e: Exception) {
                 UnifiedLog.e(TAG, e) { "Channel-buffered sync failed: ${e.message}" }
-                emit(
+                send(
                     SyncStatus.Error(
                         source = SOURCE_XTREAM,
                         reason = "channel_sync_error",
