@@ -18,6 +18,8 @@ import com.fishit.player.pipeline.xtream.catalog.XtreamItemKind
 import com.fishit.player.pipeline.xtream.catalog.XtreamScanPhase
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
@@ -84,6 +86,7 @@ class DefaultCatalogSyncService
             private const val SOURCE_TELEGRAM = "telegram"
             private const val SOURCE_XTREAM = "xtream"
             private const val TIME_FLUSH_CHECK_INTERVAL_MS = 200L
+            private const val BATCH_SIZE = 400 // For channel-buffered sync
         }
 
         // Sync active state for UI flow throttling
@@ -189,7 +192,7 @@ class DefaultCatalogSyncService
                     )
 
                 // Track new high-water marks during this sync
-                var newHighWaterMarks: Map<Long, Long> = emptyMap()
+                var newHighWaterMarks = emptyMap<Long, Long>()
 
                 try {
                     telegramPipeline.scanCatalog(pipelineConfig).collect { event ->
@@ -1790,7 +1793,6 @@ class DefaultCatalogSyncService
         }
         // NOTE: toMediaSourceRef() was removed - no longer needed with NX-only persistence.
         // Source references are now created directly in NxCatalogWriter.
-    }
 
     // ========================================================================
     // Channel-Buffered Sync (Performance Optimization)
@@ -1831,7 +1833,7 @@ class DefaultCatalogSyncService
     ): Flow<SyncStatus> =
         flow {
             emit(SyncStatus.Started(SOURCE_XTREAM))
-            _syncActiveState.value = SyncActiveState(xtreamActive = true)
+            _syncActiveState.value = SyncActiveState(isActive = true, source = SOURCE_XTREAM)
 
             val startTimeMs = System.currentTimeMillis()
             val buffer = ChannelSyncBuffer<RawMediaMetadata>(capacity = bufferSize)
@@ -1925,10 +1927,10 @@ class DefaultCatalogSyncService
                                                 totalPersisted.addAndGet(batch.size)
                                             }
                                             batch.clear()
-                                        }
                                     }
-                                } catch (e: kotlinx.coroutines.channels.ClosedReceiveChannelException) {
-                                    // Buffer closed, flush remaining
+                                }
+                            } catch (_: kotlinx.coroutines.channels.ClosedReceiveChannelException) {
+                                // Buffer closed, flush remaining
                                     if (batch.isNotEmpty()) {
                                         UnifiedLog.d(TAG) {
                                             "Consumer#$consumerId: Flushing ${batch.size} remaining items"
@@ -1959,7 +1961,7 @@ class DefaultCatalogSyncService
                     emit(
                         SyncStatus.Completed(
                             source = SOURCE_XTREAM,
-                            itemsPersisted = totalPersisted.get().toLong(),
+                            totalItems = totalPersisted.get().toLong(),
                             durationMs = durationMs,
                         ),
                     )
@@ -1984,12 +1986,8 @@ class DefaultCatalogSyncService
                     ),
                 )
             } finally {
-                _syncActiveState.value = SyncActiveState(xtreamActive = false)
+                _syncActiveState.value = SyncActiveState(isActive = false)
             }
         }
-
-    companion object {
-        private const val BATCH_SIZE = 400
     }
-}
 
