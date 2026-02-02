@@ -2,7 +2,9 @@ package com.fishit.player.feature.detail
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.fishit.player.core.detail.domain.DetailBundle
 import com.fishit.player.core.detail.domain.EpisodeIndexItem
+import com.fishit.player.core.detail.domain.UnifiedDetailLoader
 import com.fishit.player.core.model.CanonicalMediaId
 import com.fishit.player.core.model.ImageRef
 import com.fishit.player.core.model.MediaKind
@@ -16,8 +18,6 @@ import com.fishit.player.core.model.repository.CanonicalMediaWithSources
 import com.fishit.player.core.model.repository.CanonicalResumeInfo
 import com.fishit.player.feature.detail.enrichment.DetailEnrichmentService
 import com.fishit.player.feature.detail.series.EnsureEpisodePlaybackReadyUseCase
-import com.fishit.player.feature.detail.series.LoadSeasonEpisodesUseCase
-import com.fishit.player.feature.detail.series.LoadSeriesSeasonsUseCase
 import com.fishit.player.feature.detail.ui.helper.DetailEpisodeItem
 import com.fishit.player.infra.logging.UnifiedLog
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -27,15 +27,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.cancellable
-import kotlinx.coroutines.flow.launchIn
-import kotlinx.coroutines.flow.onEach
-import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import javax.inject.Inject
-import kotlin.coroutines.coroutineContext
 
 /**
  * ViewModel for unified detail screen with cross-pipeline source selection.
@@ -70,8 +64,7 @@ class UnifiedDetailViewModel
     constructor(
         private val useCases: UnifiedDetailUseCases,
         private val detailEnrichmentService: DetailEnrichmentService,
-        private val loadSeriesSeasonsUseCase: LoadSeriesSeasonsUseCase,
-        private val loadSeasonEpisodesUseCase: LoadSeasonEpisodesUseCase,
+        private val unifiedDetailLoader: UnifiedDetailLoader,
         private val ensureEpisodePlaybackReadyUseCase: EnsureEpisodePlaybackReadyUseCase,
     ) : ViewModel() {
         companion object {
@@ -152,12 +145,55 @@ class UnifiedDetailViewModel
                         )
                     }
 
-                    // Background enrichment: fetch missing details (plot, cast, containerExtension)
-                    // This runs async and updates UI when complete
+                    // PLATIN: Use UnifiedDetailLoader for ONE API call that fetches EVERYTHING
+                    // This replaces separate enrichment + series loading calls
                     viewModelScope.launch {
-                        val enriched = detailEnrichmentService.enrichIfNeeded(mediaState.media)
-                        if (enriched !== mediaState.media) {
-                            // Update media - UI will re-derive activeSource from new sources
+                        loadDetailWithUnifiedLoader(mediaState.media)
+                    }
+                }
+            }
+        }
+
+        /**
+         * 🏆 PLATIN Implementation: Load all detail data with ONE API call.
+         *
+         * For Series: metadata + seasons + ALL episodes in single call
+         * For VOD: metadata + playback hints in single call
+         *
+         * This eliminates the 3x API call problem where getSeriesInfo was called
+         * separately by enrichment, season loading, and episode loading.
+         *
+         * **Race-Proof Design:**
+         * - UnifiedDetailLoader ALWAYS returns a bundle for Xtream sources
+         * - Fresh-but-empty cache triggers API call (not null return)
+         * - No legacy fallback for Xtream - prevents take(1) race condition
+         */
+        private suspend fun loadDetailWithUnifiedLoader(media: CanonicalMediaWithSources) {
+            val startMs = System.currentTimeMillis()
+
+            try {
+                // Single API call via UnifiedDetailLoader (PLATIN)
+                val bundle = unifiedDetailLoader.loadDetailImmediate(media)
+
+                if (bundle == null) {
+                    // PLATIN: Only null for NON-Xtream sources (e.g., Telegram)
+                    // OR when Xtream API returns null (network error, invalid ID, etc.)
+                    val hasXtreamSource = media.sources.any { it.sourceType == SourceType.XTREAM }
+                    if (hasXtreamSource) {
+                        // Xtream source but bundle null - API call failed or returned null
+                        // This is NOT a critical error - the basic data is already in state.media
+                        // Just log it and continue with what we have
+                        UnifiedLog.w(TAG) { 
+                            "loadDetailWithUnifiedLoader: Xtream API returned null for ${media.mediaType}" +
+                                " (canonicalId=${media.canonicalId.key.value}). Using cached data."
+                        }
+                        // DON'T show error to user - we already have basic media data
+                        // The detail screen can work without enrichment (just won't have plot/cast)
+                    } else {
+                        // Non-Xtream: Enrichment only (no seasons/episodes)
+                        UnifiedLog.d(TAG) { "loadDetailWithUnifiedLoader: non-Xtream source, enrichment only" }
+                        val enriched = detailEnrichmentService.enrichImmediate(media)
+                        if (enriched !== media) {
                             _state.update { currentState ->
                                 currentState.copy(
                                     media = enriched,
@@ -166,15 +202,120 @@ class UnifiedDetailViewModel
                             }
                         }
                     }
+                    return
+                }
 
-                    // Series-specific: Load seasons and episodes
-                    if (mediaState.media.mediaType == MediaType.SERIES) {
-                        viewModelScope.launch {
-                            loadSeriesDetails(mediaState.media)
-                        }
-                    }
+                // Apply bundle data based on type
+                when (bundle) {
+                    is DetailBundle.Series -> applySeriesBundle(bundle, media)
+                    is DetailBundle.Vod -> applyVodBundle(bundle, media)
+                    is DetailBundle.Live -> applyLiveBundle(bundle, media)
+                }
+
+                val durationMs = System.currentTimeMillis() - startMs
+                UnifiedLog.i(TAG) {
+                    "loadDetailWithUnifiedLoader: completed in ${durationMs}ms " +
+                        "type=${bundle::class.simpleName}"
+                }
+            } catch (e: Exception) {
+                UnifiedLog.e(TAG, e) { "loadDetailWithUnifiedLoader: failed" }
+                _state.update { it.copy(error = "Details konnten nicht geladen werden: ${e.message}") }
+            }
+        }
+
+        /**
+         * Apply Series bundle to state - seasons and episodes are already loaded.
+         */
+        private suspend fun applySeriesBundle(
+            bundle: DetailBundle.Series,
+            media: CanonicalMediaWithSources,
+        ) {
+            // Update media if enrichment data available
+            if (bundle.plot != null || bundle.poster != null || bundle.backdrop != null) {
+                val enrichedMedia = media.copy(
+                    plot = bundle.plot ?: media.plot,
+                    poster = bundle.poster ?: media.poster,
+                    backdrop = bundle.backdrop ?: media.backdrop,
+                    rating = bundle.rating ?: media.rating,
+                    trailer = bundle.trailer ?: media.trailer,
+                    imdbId = bundle.imdbId ?: media.imdbId,
+                )
+                _state.update { currentState ->
+                    currentState.copy(
+                        media = enrichedMedia,
+                        sourceGroups = useCases.sortSourcesForDisplay(enrichedMedia.sources),
+                    )
                 }
             }
+
+            // Update seasons and episodes from bundle
+            val seasonNumbers = bundle.seasons.map { it.seasonNumber }.sorted()
+            val firstSeason = seasonNumbers.firstOrNull() ?: 1
+
+            _state.update { currentState ->
+                currentState.copy(
+                    seasons = seasonNumbers,
+                    selectedSeason = currentState.selectedSeason ?: firstSeason,
+                )
+            }
+
+            // Convert bundle episodes to UI items
+            val selectedSeason = _state.value.selectedSeason ?: firstSeason
+            val episodes = bundle.episodesBySeason[selectedSeason] ?: emptyList()
+            val episodeItems = mapToDetailEpisodeItems(episodes, bundle.seriesId, selectedSeason)
+
+            _state.update { currentState ->
+                currentState.copy(episodes = episodeItems)
+            }
+
+            UnifiedLog.d(TAG) {
+                "applySeriesBundle: ${seasonNumbers.size} seasons, " +
+                    "${bundle.totalEpisodeCount} total episodes, " +
+                    "${episodeItems.size} episodes for season $selectedSeason"
+            }
+        }
+
+        /**
+         * Apply VOD bundle to state - playback hints already included.
+         */
+        private fun applyVodBundle(
+            bundle: DetailBundle.Vod,
+            media: CanonicalMediaWithSources,
+        ) {
+            // Update media with enrichment data
+            if (bundle.plot != null || bundle.poster != null || bundle.backdrop != null) {
+                val enrichedMedia = media.copy(
+                    plot = bundle.plot ?: media.plot,
+                    poster = bundle.poster ?: media.poster,
+                    backdrop = bundle.backdrop ?: media.backdrop,
+                    rating = bundle.rating ?: media.rating,
+                    trailer = bundle.trailer ?: media.trailer,
+                    imdbId = bundle.imdbId ?: media.imdbId,
+                )
+                _state.update { currentState ->
+                    currentState.copy(
+                        media = enrichedMedia,
+                        sourceGroups = useCases.sortSourcesForDisplay(enrichedMedia.sources),
+                    )
+                }
+            }
+
+            // Note: Playback hints (containerExtension, directUrl) are already persisted
+            // in the source by UnifiedDetailLoader, so no additional action needed
+            UnifiedLog.d(TAG) {
+                "applyVodBundle: vodId=${bundle.vodId} containerExtension=${bundle.containerExtension}"
+            }
+        }
+
+        /**
+         * Apply Live bundle to state (minimal - Live doesn't need much enrichment).
+         */
+        private fun applyLiveBundle(
+            bundle: DetailBundle.Live,
+            media: CanonicalMediaWithSources,
+        ) {
+            // Live channels typically don't have plot/backdrop, just EPG
+            UnifiedLog.d(TAG) { "applyLiveBundle: channelId=${bundle.channelId}" }
         }
 
         // ==========================================================================
@@ -444,56 +585,8 @@ class UnifiedDetailViewModel
         }
 
         // ==========================================================================
-        // Series-specific methods
+        // Series-specific methods (PLATIN - no legacy race conditions)
         // ==========================================================================
-
-        /**
-         * Load series details (seasons and episodes).
-         *
-         * This is called automatically when a SERIES media is loaded.
-         */
-        private suspend fun loadSeriesDetails(media: CanonicalMediaWithSources) {
-            // Extract Xtream series ID from canonical ID first (before try block for catch access)
-            val seriesId =
-                extractSeriesId(media.canonicalId) ?: run {
-                    UnifiedLog.w(TAG) { "Cannot load series details: unable to extract series ID from ${media.canonicalId.key.value}" }
-                    return
-                }
-
-            try {
-                UnifiedLog.d(TAG) { "Loading series details for seriesId=$seriesId" }
-
-                // Load seasons
-                loadSeriesSeasonsUseCase.ensureSeasonsLoaded(seriesId)
-                loadSeriesSeasonsUseCase
-                    .observeSeasons(seriesId)
-                    .take(1)
-                    .cancellable()
-                    .onEach { seasonItems ->
-                        if (!coroutineContext.isActive) return@onEach
-
-                        val seasons = seasonItems.map { it.seasonNumber }.sorted()
-
-                        UnifiedLog.d(TAG) { "Loaded ${seasons.size} seasons for series $seriesId" }
-
-                        _state.update {
-                            it.copy(
-                                seasons = seasons,
-                                selectedSeason = it.selectedSeason ?: seasons.firstOrNull() ?: 1,
-                            )
-                        }
-
-                        // Load first season episodes
-                        val firstSeason = _state.value.selectedSeason ?: seasons.firstOrNull()
-                        if (firstSeason != null) {
-                            loadEpisodesForSeason(seriesId, firstSeason)
-                        }
-                    }.launchIn(viewModelScope)
-            } catch (e: Exception) {
-                UnifiedLog.e(TAG, e) { "Failed to load series details for seriesId=$seriesId" }
-                _state.update { it.copy(error = "Staffeln konnten nicht geladen werden", seasons = emptyList()) }
-            }
-        }
 
         /**
          * Extract Xtream series ID from canonical media ID.
@@ -548,43 +641,6 @@ class UnifiedDetailViewModel
         }
 
         /**
-         * Load episodes for a specific season.
-         */
-        private suspend fun loadEpisodesForSeason(
-            seriesId: Int,
-            seasonNumber: Int,
-        ) {
-            try {
-                UnifiedLog.d(TAG) { "Loading episodes for series $seriesId season $seasonNumber" }
-
-                _state.update { it.copy(episodesLoading = true) }
-
-                loadSeasonEpisodesUseCase.ensureEpisodesLoaded(seriesId, seasonNumber)
-                loadSeasonEpisodesUseCase
-                    .observeEpisodes(seriesId, seasonNumber)
-                    .take(1)
-                    .cancellable()
-                    .onEach { episodeItems ->
-                        if (!coroutineContext.isActive) return@onEach
-
-                        val episodes = episodeItems.map { it.toDetailEpisodeItem() }
-
-                        UnifiedLog.d(TAG) { "Loaded ${episodes.size} episodes for season $seasonNumber" }
-
-                        _state.update {
-                            it.copy(
-                                episodes = episodes,
-                                episodesLoading = false,
-                            )
-                        }
-                    }.launchIn(viewModelScope)
-            } catch (e: Exception) {
-                UnifiedLog.e(TAG, e) { "Failed to load episodes for seriesId=$seriesId, season=$seasonNumber" }
-                _state.update { it.copy(episodesLoading = false, error = "Episoden konnten nicht geladen werden") }
-            }
-        }
-
-        /**
          * Convert EpisodeIndexItem to DetailEpisodeItem.
          */
         private fun EpisodeIndexItem.toDetailEpisodeItem(): DetailEpisodeItem =
@@ -610,15 +666,53 @@ class UnifiedDetailViewModel
                 resumePercent = 0,
             )
 
-        /** Select a season for episode display. */
+        /**
+         * Map a list of EpisodeIndexItems to DetailEpisodeItems.
+         *
+         * Helper for PLATIN unified loader which provides episodes directly.
+         */
+        private fun mapToDetailEpisodeItems(
+            episodes: List<EpisodeIndexItem>,
+            seriesId: Int,
+            seasonNumber: Int,
+        ): List<DetailEpisodeItem> = episodes.map { it.toDetailEpisodeItem() }
+
+        /**
+         * 🏆 PLATIN: Select a season for episode display.
+         *
+         * **Race-Proof Design:**
+         * - Episodes are already loaded in memory via applySeriesBundle()
+         * - No API call needed - just filter from existing bundle data
+         * - If bundle not yet loaded, trigger a PLATIN load
+         */
         fun selectSeason(season: Int) {
             val media = _state.value.media ?: return
-            val seriesId = extractSeriesId(media.canonicalId) ?: return
 
-            _state.update { it.copy(selectedSeason = season) }
+            _state.update { it.copy(selectedSeason = season, episodesLoading = true) }
 
             viewModelScope.launch {
-                loadEpisodesForSeason(seriesId, season)
+                // PLATIN: Get episodes from UnifiedDetailLoader (already cached from initial load)
+                val bundle = unifiedDetailLoader.loadDetailImmediate(media)
+                
+                when (bundle) {
+                    is DetailBundle.Series -> {
+                        val episodes = bundle.episodesBySeason[season] ?: emptyList()
+                        val episodeItems = mapToDetailEpisodeItems(episodes, bundle.seriesId, season)
+                        
+                        _state.update { currentState ->
+                            currentState.copy(
+                                episodes = episodeItems,
+                                episodesLoading = false,
+                            )
+                        }
+                        
+                        UnifiedLog.d(TAG) { "selectSeason: Loaded ${episodeItems.size} episodes for season $season (PLATIN)" }
+                    }
+                    else -> {
+                        UnifiedLog.w(TAG) { "selectSeason: Expected Series bundle but got ${bundle?.javaClass?.simpleName}" }
+                        _state.update { it.copy(episodesLoading = false) }
+                    }
+                }
             }
         }
 

@@ -49,6 +49,7 @@ import com.fishit.player.core.model.PlaybackHintKeys
 import com.fishit.player.core.model.RawMediaMetadata
 import com.fishit.player.core.model.SourceType
 import com.fishit.player.core.model.TmdbMediaType
+import com.fishit.player.core.model.ids.XtreamIdCodec
 import com.fishit.player.core.model.TmdbRef
 import com.fishit.player.core.model.repository.NxWorkRepository
 import com.fishit.player.core.model.repository.NxWorkRepository.WorkType
@@ -435,7 +436,7 @@ class NxXtreamCatalogRepositoryImpl
                 durationMs = durationMs,
                 sourceType = SourceType.XTREAM,
                 sourceLabel = "Xtream VOD",
-                sourceId = "xtream:vod:${vodId ?: "unknown"}",
+                sourceId = XtreamIdCodec.vodOrUnknown(vodId),
                 poster = poster,
                 backdrop = backdrop,
                 externalIds = buildExternalIds(TmdbMediaType.MOVIE),
@@ -462,7 +463,7 @@ class NxXtreamCatalogRepositoryImpl
                 year = year,
                 sourceType = SourceType.XTREAM,
                 sourceLabel = "Xtream Series",
-                sourceId = "xtream:series:${seriesId ?: "unknown"}",
+                sourceId = XtreamIdCodec.seriesOrUnknown(seriesId),
                 poster = poster,
                 backdrop = backdrop,
                 externalIds = buildExternalIds(TmdbMediaType.TV),
@@ -495,7 +496,7 @@ class NxXtreamCatalogRepositoryImpl
                 durationMs = durationMs,
                 sourceType = SourceType.XTREAM,
                 sourceLabel = "Xtream Episode",
-                sourceId = "xtream:episode:${episodeInfo?.seriesId ?: "unknown"}:${season ?: 0}:${episode ?: 0}",
+                sourceId = XtreamIdCodec.episodeCompositeOrUnknown(episodeInfo?.seriesId, season, episode),
                 thumbnail = thumbnail ?: poster,
                 externalIds = buildExternalIds(TmdbMediaType.TV),
                 rating = rating,

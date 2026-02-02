@@ -26,6 +26,7 @@ android {
 
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 
@@ -35,6 +36,7 @@ dependencies {
     implementation(project(":core:player-model"))
     implementation(project(":core:source-activation-api"))
     implementation(project(":core:catalog-sync"))
+    implementation(project(":core:persistence"))  // For HomeContentCache invalidation
     implementation(project(":core:ui-theme"))
     implementation(project(":core:ui-layout"))
     implementation(project(":core:ui-imaging"))

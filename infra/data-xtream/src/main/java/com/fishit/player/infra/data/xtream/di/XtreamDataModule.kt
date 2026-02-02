@@ -1,12 +1,8 @@
 package com.fishit.player.infra.data.xtream.di
 
-import com.fishit.player.core.detail.domain.XtreamSeriesIndexRefresher
-import com.fishit.player.infra.data.xtream.XtreamSeriesIndexRefresherImpl
-import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
-import javax.inject.Singleton
 
 /**
  * Hilt module providing Xtream data layer bindings.
@@ -28,7 +24,14 @@ import javax.inject.Singleton
  * - XtreamLiveRepository → NxXtreamLiveRepositoryImpl
  * - XtreamSeriesIndexRepository → NxXtreamSeriesIndexRepository
  *
- * Only XtreamSeriesIndexRefresher remains here (depends on transport, not NX).
+ * ## PLATIN Phase 3 (Feb 2026)
+ * XtreamSeriesIndexRefresher has been REMOVED. Its callers now use
+ * UnifiedDetailLoader directly:
+ * - LoadSeriesSeasonsUseCase → unifiedDetailLoader.loadSeriesDetailBySeriesId()
+ * - LoadSeasonEpisodesUseCase → unifiedDetailLoader.loadSeriesDetailBySeriesId()
+ * - EnsureEpisodePlaybackReadyUseCase → unifiedDetailLoader.loadSeriesDetailBySeriesId()
+ *
+ * See: core/detail-domain/UnifiedDetailLoader.kt
  */
 @Module
 @InstallIn(SingletonComponent::class)
@@ -113,7 +116,16 @@ abstract class XtreamDataModule {
     // @Singleton
     // abstract fun bindXtreamSeriesIndexRepository(impl: ObxXtreamSeriesIndexRepository): XtreamSeriesIndexRepository
 
-    @Binds
-    @Singleton
-    abstract fun bindXtreamSeriesIndexRefresher(impl: XtreamSeriesIndexRefresherImpl): XtreamSeriesIndexRefresher
+    // ========== PLATIN Phase 3: XtreamSeriesIndexRefresher REMOVED ==========
+    // The deprecated XtreamSeriesIndexRefresher has been completely removed.
+    // All callers now use UnifiedDetailLoader directly:
+    //
+    // - LoadSeriesSeasonsUseCase.ensureSeasonsLoaded() → unifiedDetailLoader.loadSeriesDetailBySeriesId()
+    // - LoadSeasonEpisodesUseCase.ensureEpisodesLoaded() → unifiedDetailLoader.loadSeriesDetailBySeriesId()
+    // - EnsureEpisodePlaybackReadyUseCase.invoke() → unifiedDetailLoader.loadSeriesDetailBySeriesId()
+    //
+    // OLD (deprecated):
+    // @Binds
+    // @Singleton
+    // abstract fun bindXtreamSeriesIndexRefresher(impl: XtreamSeriesIndexRefresherImpl): XtreamSeriesIndexRefresher
 }

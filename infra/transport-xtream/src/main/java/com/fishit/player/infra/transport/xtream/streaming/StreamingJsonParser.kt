@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonFactory
 import com.fasterxml.jackson.core.JsonParser
 import com.fasterxml.jackson.core.JsonToken
 import com.fishit.player.infra.logging.UnifiedLog
+import kotlinx.coroutines.yield
 import java.io.InputStream
 
 /**
@@ -176,6 +177,10 @@ object StreamingJsonParser {
                                 onBatch(batch.toList())
                                 batch.clear()
                                 batchCount++
+
+                                // YIELD: Allow GC and other coroutines to run
+                                // This prevents memory pressure buildup between batches
+                                yield()
                             }
                         }
                     } catch (e: Exception) {
@@ -241,6 +246,9 @@ object StreamingJsonParser {
                                     onBatch(batch.toList())
                                     batch.clear()
                                     batchCount++
+
+                                    // YIELD: Allow GC and other coroutines to run
+                                    yield()
                                 }
                             }
                         } catch (e: Exception) {

@@ -41,8 +41,10 @@ class LiveViewModel
         private val repository: LiveContentRepository,
     ) : ViewModel() {
         companion object {
-            /** Debounce delay for search input (ms) - consistent with HomeViewModel */
-            private const val SEARCH_DEBOUNCE_MS = 300L
+            /** Debounce delay for search input (ms) - wait for user to stop typing */
+            private const val SEARCH_DEBOUNCE_MS = 500L
+            /** Minimum characters required before search is triggered */
+            private const val MIN_SEARCH_LENGTH = 2
         }
 
         /** Selected category filter (null = all) */
@@ -144,7 +146,8 @@ class LiveViewModel
 
         /**
          * Update search query (debounced).
-         * The actual search is triggered by [debouncedSearchQuery] after 300ms of inactivity.
+         * The actual search is triggered by [debouncedSearchQuery] after 500ms of inactivity.
+         * Requires at least [MIN_SEARCH_LENGTH] characters.
          */
         fun search(query: String) {
             _searchQuery.value = query
@@ -152,12 +155,14 @@ class LiveViewModel
 
         /**
          * Collect debounced search queries and perform search.
-         * Prevents UI blocking by waiting 300ms after user stops typing.
+         * Prevents UI blocking by waiting 500ms after user stops typing.
+         * Requires minimum length to prevent single-character noise searches.
          */
         private fun collectDebouncedSearchQuery() {
             debouncedSearchQuery
                 .onEach { query ->
-                    if (query.isBlank()) {
+                    if (query.length < MIN_SEARCH_LENGTH) {
+                        // Clear results when query is too short
                         _searchResults.value = emptyList()
                     } else {
                         try {

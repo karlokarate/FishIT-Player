@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.fishit.player.core.model.MediaSourceRef
 import com.fishit.player.core.model.MediaType
 import com.fishit.player.core.model.PlaybackHintKeys
+import com.fishit.player.core.model.ids.XtreamIdCodec
 import com.fishit.player.core.model.repository.NxWorkRepository
 import com.fishit.player.core.model.repository.NxWorkSourceRefRepository
 import com.fishit.player.core.playermodel.PlaybackContext
@@ -322,7 +323,7 @@ class PlayerNavViewModel
             val streamIdStr = extractXtreamItemId(sourceId, XtreamContentType.LIVE) ?: return null
             val streamId = streamIdStr.toIntOrNull() ?: return null
             return PlaybackContext(
-                canonicalId = "xtream:live:$streamId",
+                canonicalId = XtreamIdCodec.live(streamId),
                 sourceType = SourceType.XTREAM,
                 uri = null, // Factory builds URL from XtreamApiClient session
                 title = title,
@@ -354,7 +355,7 @@ class PlayerNavViewModel
                 extras[XtreamPlaybackSourceFactoryImpl.EXTRA_CONTAINER_EXT] = ext
             }
             return PlaybackContext(
-                canonicalId = "xtream:vod:${parsed.id}",
+                canonicalId = XtreamIdCodec.vod(parsed.id),
                 sourceType = SourceType.XTREAM,
                 uri = null, // Factory builds URL from XtreamApiClient session
                 title = title,

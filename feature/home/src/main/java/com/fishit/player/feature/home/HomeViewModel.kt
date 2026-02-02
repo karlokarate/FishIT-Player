@@ -10,10 +10,13 @@ import com.fishit.player.core.home.domain.HomeContentRepository
 import com.fishit.player.core.home.domain.HomeMediaItem
 import com.fishit.player.core.model.SourceType
 import com.fishit.player.core.model.filter.PresetGenreFilter
+import com.fishit.player.core.persistence.cache.CacheKey
+import com.fishit.player.core.persistence.cache.HomeContentCache
 import com.fishit.player.core.sourceactivation.SourceActivationSnapshot
 import com.fishit.player.core.sourceactivation.SourceActivationStore
 import com.fishit.player.infra.logging.UnifiedLog
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -24,6 +27,7 @@ import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
@@ -64,6 +68,10 @@ data class HomeState(
     val isSearchVisible: Boolean = false,
     /** All available genres extracted from content (for dynamic filtering) */
     val availableGenres: List<String> = emptyList(),
+    /** Search results from DB query (when searchQuery is not blank) */
+    val searchResults: List<HomeMediaItem> = emptyList(),
+    /** True when search is loading */
+    val isSearchLoading: Boolean = false,
     // === Row-level loading states (for special rows only) ===
     /** True while continue watching row is still loading */
     val isContinueWatchingLoading: Boolean = true,
@@ -78,6 +86,10 @@ data class HomeState(
     /** True if search or filter is active */
     val isFilterActive: Boolean
         get() = searchQuery.isNotBlank() || selectedGenre != PresetGenreFilter.ALL
+    
+    /** True if there are search results to show */
+    val hasSearchResults: Boolean
+        get() = searchResults.isNotEmpty()
     
     /** True if special rows are still loading */
     val isSpecialRowsLoading: Boolean
@@ -94,6 +106,10 @@ data class HomeState(
  * - Series row appears independently
  * - User sees content immediately, not after slowest row finishes
  *
+ * **Paging Invalidation:**
+ * When sync completes or refresh() is called, the _pagingInvalidationTrigger increments.
+ * This causes all Paging flows to re-fetch fresh data from the repository via flatMapLatest.
+ *
  * Aggregates media from multiple pipelines:
  * - Telegram media
  * - Xtream VOD/Series/Live
@@ -104,7 +120,7 @@ data class HomeState(
  * - Observes SyncStateObserver for sync status indicator
  * - Observes SourceActivationStore for meaningful empty states
  */
-@OptIn(FlowPreview::class)
+@OptIn(FlowPreview::class, ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class HomeViewModel
     @Inject
@@ -112,6 +128,7 @@ class HomeViewModel
         private val homeContentRepository: HomeContentRepository,
         private val syncStateObserver: SyncStateObserver,
         private val sourceActivationStore: SourceActivationStore,
+        private val homeContentCache: HomeContentCache,
     ) : ViewModel() {
         
         // ==================== Mutable State (Progressive Loading) ====================
@@ -126,47 +143,81 @@ class HomeViewModel
          */
         val state: StateFlow<HomeState> = _state.asStateFlow()
         
+        // ==================== Paging Invalidation ====================
+        
+        /**
+         * Trigger for Paging flow invalidation.
+         * 
+         * **Pattern:** When this value changes, flatMapLatest re-emits the inner flow,
+         * causing PagingSource to re-fetch fresh data from ObjectBox.
+         * 
+         * **Triggers:**
+         * - refresh() button clicked
+         * - Cache invalidation after sync completion (via HomeContentCache.observeInvalidations)
+         */
+        private val _pagingInvalidationTrigger = MutableStateFlow(0)
+        
         // ==================== Paging Flows (Horizontal Infinite Scroll) ====================
         
         /**
          * Movies row with horizontal paging.
          * Use with collectAsLazyPagingItems() in LazyRow.
+         * 
+         * **Invalidation:** Recreated when _pagingInvalidationTrigger changes.
          */
         val moviesPagingFlow: Flow<PagingData<HomeMediaItem>> =
-            homeContentRepository.getMoviesPagingData()
-                .cachedIn(viewModelScope)
+            _pagingInvalidationTrigger.flatMapLatest {
+                UnifiedLog.d(TAG) { "🔄 Movies PagingFlow recreated (trigger=$it)" }
+                homeContentRepository.getMoviesPagingData()
+            }.cachedIn(viewModelScope)
 
         /**
          * Series row with horizontal paging.
          * Use with collectAsLazyPagingItems() in LazyRow.
+         * 
+         * **Invalidation:** Recreated when _pagingInvalidationTrigger changes.
          */
         val seriesPagingFlow: Flow<PagingData<HomeMediaItem>> =
-            homeContentRepository.getSeriesPagingData()
-                .cachedIn(viewModelScope)
+            _pagingInvalidationTrigger.flatMapLatest {
+                UnifiedLog.d(TAG) { "🔄 Series PagingFlow recreated (trigger=$it)" }
+                homeContentRepository.getSeriesPagingData()
+            }.cachedIn(viewModelScope)
 
         /**
          * Clips row with horizontal paging.
          * Use with collectAsLazyPagingItems() in LazyRow.
+         * 
+         * **Invalidation:** Recreated when _pagingInvalidationTrigger changes.
          */
         val clipsPagingFlow: Flow<PagingData<HomeMediaItem>> =
-            homeContentRepository.getClipsPagingData()
-                .cachedIn(viewModelScope)
+            _pagingInvalidationTrigger.flatMapLatest {
+                UnifiedLog.d(TAG) { "🔄 Clips PagingFlow recreated (trigger=$it)" }
+                homeContentRepository.getClipsPagingData()
+            }.cachedIn(viewModelScope)
 
         /**
          * Live TV row with horizontal paging.
          * Use with collectAsLazyPagingItems() in LazyRow.
+         * 
+         * **Invalidation:** Recreated when _pagingInvalidationTrigger changes.
          */
         val livePagingFlow: Flow<PagingData<HomeMediaItem>> =
-            homeContentRepository.getLivePagingData()
-                .cachedIn(viewModelScope)
+            _pagingInvalidationTrigger.flatMapLatest {
+                UnifiedLog.d(TAG) { "🔄 Live PagingFlow recreated (trigger=$it)" }
+                homeContentRepository.getLivePagingData()
+            }.cachedIn(viewModelScope)
 
         /**
          * Recently Added row with horizontal paging.
          * Use with collectAsLazyPagingItems() in LazyRow.
+         * 
+         * **Invalidation:** Recreated when _pagingInvalidationTrigger changes.
          */
         val recentlyAddedPagingFlow: Flow<PagingData<HomeMediaItem>> =
-            homeContentRepository.getRecentlyAddedPagingData()
-                .cachedIn(viewModelScope)
+            _pagingInvalidationTrigger.flatMapLatest {
+                UnifiedLog.d(TAG) { "🔄 RecentlyAdded PagingFlow recreated (trigger=$it)" }
+                homeContentRepository.getRecentlyAddedPagingData()
+            }.cachedIn(viewModelScope)
 
         // ==================== Search & Filter State ====================
 
@@ -174,12 +225,21 @@ class HomeViewModel
         private val _selectedGenre = MutableStateFlow(PresetGenreFilter.ALL)
         private val _isSearchVisible = MutableStateFlow(false)
 
+        companion object {
+            private const val TAG = "HomeViewModel"
+            /** Debounce delay for search input (ms) - wait for user to stop typing */
+            private const val SEARCH_DEBOUNCE_MS = 500L
+            /** Minimum characters required before search is triggered */
+            private const val MIN_SEARCH_LENGTH = 2
+        }
+
         /**
          * Debounced search query to prevent excessive filtering on every keystroke.
+         * Only triggers search when query is at least MIN_SEARCH_LENGTH characters.
          */
         private val debouncedSearchQuery =
             _searchQuery
-                .debounce(300)
+                .debounce(SEARCH_DEBOUNCE_MS)
                 .distinctUntilChanged()
                 .stateIn(
                     scope = viewModelScope,
@@ -189,6 +249,20 @@ class HomeViewModel
 
         init {
             UnifiedLog.i(TAG) { "🏠 HomeViewModel INIT - Creating content flows and paging sources" }
+
+            // ==================== Cache Invalidation Observer ====================
+            // When sync completes, HomeContentCache emits invalidation events.
+            // We increment the trigger to cause Paging flows to refresh.
+            
+            homeContentCache.observeInvalidations()
+                .onEach { cacheKey ->
+                    UnifiedLog.i(TAG) { "📢 Cache invalidation received: ${cacheKey.name} - triggering paging refresh" }
+                    _pagingInvalidationTrigger.value = _pagingInvalidationTrigger.value + 1
+                }
+                .catch { e ->
+                    UnifiedLog.e(TAG, e) { "Error observing cache invalidations" }
+                }
+                .launchIn(viewModelScope)
 
             // ==================== Special Rows (Flow-based, small limits) ====================
             // Continue Watching and Recently Added use Flow-based loading with limits.
@@ -241,9 +315,24 @@ class HomeViewModel
             
             // ==================== Search/Filter State ====================
             
+            // Perform actual search when debounced query changes
+            // Requires minimum length to prevent single-character noise searches
             debouncedSearchQuery
                 .onEach { query ->
                     _state.update { it.copy(searchQuery = query) }
+                    if (query.length >= MIN_SEARCH_LENGTH) {
+                        _state.update { it.copy(isSearchLoading = true) }
+                        try {
+                            val results = homeContentRepository.search(query)
+                            _state.update { it.copy(searchResults = results, isSearchLoading = false) }
+                        } catch (e: Exception) {
+                            UnifiedLog.e(TAG) { "Search failed: ${e.message}" }
+                            _state.update { it.copy(searchResults = emptyList(), isSearchLoading = false) }
+                        }
+                    } else {
+                        // Clear results when query is too short
+                        _state.update { it.copy(searchResults = emptyList(), isSearchLoading = false) }
+                    }
                 }
                 .launchIn(viewModelScope)
             
@@ -264,6 +353,7 @@ class HomeViewModel
          * Filtered state that applies search query, genre filter, and search visibility.
          *
          * This is the primary state to use in UI when filtering is desired.
+         * When search is active with results, searchResults contains DB-queried items.
          */
         val filteredState: StateFlow<HomeState> =
             combine(
@@ -272,8 +362,7 @@ class HomeViewModel
                 _selectedGenre,
                 _isSearchVisible,
             ) { currentState, query, genre, isSearchVisible ->
-                // NOTE: Filtering for Movies/Series/Clips/Live is NOT done here anymore.
-                // Large catalog filtering should be done at the DB/Paging level for efficiency.
+                // When search is active, use searchResults from state (populated by DB query)
                 // Only special rows (Continue Watching, Recently Added) can be filtered in-memory.
                 val baseState = if (query.isBlank() && genre == PresetGenreFilter.ALL) {
                     currentState
@@ -281,6 +370,7 @@ class HomeViewModel
                     currentState.copy(
                         continueWatchingItems = filterItems(currentState.continueWatchingItems, query, genre),
                         recentlyAddedItems = filterItems(currentState.recentlyAddedItems, query, genre),
+                        // searchResults comes from state (DB query)
                     )
                 }
                 baseState.copy(
@@ -297,16 +387,28 @@ class HomeViewModel
 
         // ==================== Public Actions ====================
 
+        /**
+         * Manually refresh all content rows.
+         * 
+         * **Behavior:**
+         * 1. Resets loading states for special rows (Continue Watching, Recently Added)
+         * 2. Increments _pagingInvalidationTrigger to force Paging flows to re-fetch
+         * 
+         * **Flow-based rows:** Will automatically re-emit from their source flows.
+         * **Paging rows:** flatMapLatest catches the trigger change and recreates PagingSource.
+         */
         fun refresh() {
+            UnifiedLog.i(TAG) { "🔄 REFRESH triggered - invalidating all Paging flows" }
+            
             // Reset loading states for special rows
-            // Paging rows (Movies/Series/Clips/Live) refresh automatically via their PagingSource
             _state.update { it.copy(
                 isContinueWatchingLoading = true,
                 isRecentlyAddedLoading = true,
                 error = null,
             ) }
-            // Note: Data reload is handled by background CatalogSync, not by Home.
-            // The flows will re-emit when data changes.
+            
+            // Trigger Paging invalidation - this causes all flatMapLatest flows to re-emit
+            _pagingInvalidationTrigger.value = _pagingInvalidationTrigger.value + 1
         }
 
         fun onItemClicked(item: HomeMediaItem) {
@@ -393,9 +495,5 @@ class HomeViewModel
                 .sorted()
             
             _state.update { it.copy(availableGenres = genres) }
-        }
-
-        private companion object {
-            const val TAG = "HomeViewModel"
         }
     }

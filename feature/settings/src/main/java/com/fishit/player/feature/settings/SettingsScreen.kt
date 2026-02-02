@@ -60,6 +60,7 @@ import com.fishit.player.core.catalogsync.SyncUiState
  * 2. **Sync** - Catalog sync controls via SSOT WorkManager
  * 3. **TMDB** - Enrichment status and force refresh
  * 4. **Cache** - Sizes and clear actions via CacheManager
+ * 5. **Datenbank** - DB Inspector link for power users
  *
  * **Architecture:**
  * - UI never calls transport/pipelines directly
@@ -75,6 +76,7 @@ import com.fishit.player.core.catalogsync.SyncUiState
 @Composable
 fun SettingsScreen(
     onBack: () -> Unit,
+    onDatabaseInspector: () -> Unit = {},
     modifier: Modifier = Modifier,
     viewModel: SettingsViewModel = hiltViewModel(),
 ) {
@@ -301,6 +303,30 @@ fun SettingsScreen(
                             )
                             Spacer(modifier = Modifier.width(4.dp))
                             Text("Größen aktualisieren")
+                        }
+                    }
+                }
+
+                // 5. Database Section (Power User)
+                item {
+                    SettingsSection(title = "Datenbank", icon = Icons.Default.Storage) {
+                        Text(
+                            text = "Zugriff auf die ObjectBox-Datenbank für fortgeschrittene Benutzer.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+                        OutlinedButton(
+                            onClick = onDatabaseInspector,
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Storage,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp),
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("DB Inspector öffnen")
                         }
                     }
                 }

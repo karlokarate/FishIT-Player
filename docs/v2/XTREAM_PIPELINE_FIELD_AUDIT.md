@@ -1,10 +1,10 @@
 # Xtream Pipeline Complete Field Audit
 
-> **Stand:** 28. Januar 2026 (aktualisiert)  
+> **Stand:** 2. Februar 2026 (aktualisiert)  
 > **Basiert auf:** `XTREAM_ENTITY_FIELD_MAPPING.md`, `NX_ENTITY_DUPLICATION_ANALYSIS.md`, Codeanalyse  
 > **Scope:** Vollständige Ketten-Analyse: API Response → Transport → Pipeline → RawMediaMetadata → NxCatalogWriter → NX_Entities
 > 
-> **✅ FIX STATUS: 7/7 Probleme behoben (P1-P7 alle gelöst)**
+> **✅ FIX STATUS: 8/8 Probleme behoben (P1-P8 alle gelöst)**
 
 ---
 
@@ -29,8 +29,8 @@
 
 | Kategorie | Anzahl | Schweregrad | Status |
 |-----------|:------:|:-----------:|:------:|
-| **Felder korrekt gemappt** | 45+ | ✅ OK | - |
-| **Felder verloren im Flow** | 8 | 🔴 HOCH | ✅ 5 behoben |
+| **Felder korrekt gemappt** | 50+ | ✅ OK | - |
+| **Felder verloren im Flow** | 8 | 🔴 HOCH | ✅ 8 behoben |
 | **Doppelte Parsing-Logik** | 3 | 🟡 MITTEL | ✅ behoben |
 | **Format-Konvertierungen** | 4 | 🟢 DESIGN | ✅ behoben |
 | **Layer-Boundary Issues** | 2 | 🟡 MITTEL | - |
@@ -42,9 +42,14 @@
    Parsing verarbeitet. XtreamVodInfoBlock hat video/audio: JsonElement?
    mit videoInfo/audioInfo Resolver-Properties.
 
+✅ BEHOBEN (Feb 2026): XtreamVideoInfo/XtreamAudioInfo nutzen nun @SerialName("codec_name")
+   → Episode Video/Audio Codec wird korrekt geparst (vorher: "codec" erwartet, API liefert "codec_name")
+   → XtreamVideoInfo: @SerialName("codec_name") val codec
+   → XtreamAudioInfo: @SerialName("codec_name") val codec
+
 ✅ BEHOBEN: Episode tmdb_id wird durch gesamte Pipeline gemappt
    → XtreamEpisodeInfoBlock.tmdbId → XtreamEpisode.episodeTmdbId 
-   → RawMediaMetadata.externalIds.tmdb
+   → RawMediaMetadata.playbackHints["xtream.episodeTmdbId"]
 
 ✅ BEHOBEN: Video/Audio Codec-Info wird in playbackHints gespeichert
    → PlaybackHintKeys: VIDEO_CODEC, VIDEO_WIDTH, VIDEO_HEIGHT, AUDIO_CODEC, AUDIO_CHANNELS
@@ -304,6 +309,8 @@ Diese Felder sind in der API vorhanden aber werden nirgends persistiert:
 
 ## 5. Episode Feld-Audit
 
+> **✅ STATUS (Feb 2026):** Alle kritischen Episode-Felder werden nun korrekt gemappt!
+
 ### 5.1 Episode aus get_series_info
 
 **API Response (Episode):**
@@ -332,62 +339,70 @@ Diese Felder sind in der API vorhanden aber werden nirgends persistiert:
 }
 ```
 
-**Komplette Mapping-Kette:**
+**Komplette Mapping-Kette (AKTUALISIERT Feb 2026):**
 
-| API Feld | Transport | Pipeline | RawMediaMetadata | NX_Entity | Status |
-|----------|-----------|----------|------------------|-----------|--------|
+| API Feld | Transport Model | Pipeline DTO | RawMediaMetadata | NX_Entity | Status |
+|----------|-----------------|--------------|------------------|-----------|--------|
 | `id` / `episode_id` | `resolvedEpisodeId` | `id: Int` | `sourceId` | `NX_WorkSourceRef.sourceItemKey` | ✅ |
 | `episode_num` | `episodeNum: Int?` | `episodeNumber: Int` | `episode` | `NX_Work.episode` | ✅ |
 | `title` | `title: String?` | `title: String` | `originalTitle` | `NX_Work.canonicalTitle` | ✅ |
-| `season` (outer) | `season: Int?` ¹ | `seasonNumber: Int` | `season` | `NX_Work.season` | ✅ |
+| `season` (map key) | (Map key) | `seasonNumber: Int` | `season` | `NX_Work.season` | ✅ |
 | `container_extension` | `containerExtension` | `containerExtension` | `playbackHints["containerExtension"]` | `NX_WorkVariant.container` | ✅ |
 | `added` | `added: String?` | `added: Long?` | `addedTimestamp` | `NX_Work.createdAt` | ✅ |
-| `info.tmdb_id` | `info.tmdbId: Int?` ² | ❌ nicht im Pipeline DTO | ❌ verloren | - | 🔴 KRITISCH |
+| `info.tmdb_id` | `info.tmdbId: Int?` | `episodeTmdbId: Int?` | `playbackHints["xtream.episodeTmdbId"]` | (Normalizer) | ✅ BEHOBEN |
 | `info.releasedate` | `info.releaseDate` | `releaseDate: String?` | `releaseDate` | `NX_Work.releaseDate` | ✅ |
 | `info.plot` | `info.plot` | `plot: String?` | `plot` | `NX_Work.plot` | ✅ |
-| `info.duration_secs` | `info.durationSecs` | `duration: String?` ³ | `durationMs` | `NX_Work.durationMs` | ✅ |
+| `info.duration_secs` | `info.durationSecs` | `durationSecs: Int?` | `durationMs` | `NX_Work.durationMs` | ✅ |
 | `info.movie_image` | `info.movieImage` | `thumbnail: String?` | `thumbnail: ImageRef` | `NX_Work.thumbnail` | ✅ |
 | `info.rating` | `info.rating` | `rating: Double?` | `rating` | `NX_Work.rating` | ✅ |
-| `info.video.codec_name` | `info.video.codec` | ❌ nicht weitergereicht | - | - | 🔴 VERLOREN |
-| `info.video.width` | `info.video.width` | ❌ nicht weitergereicht | - | - | 🔴 VERLOREN |
-| `info.video.height` | `info.video.height` | ❌ nicht weitergereicht | - | - | 🔴 VERLOREN |
-| `info.audio.codec_name` | `info.audio.codec` | ❌ nicht weitergereicht | - | - | 🔴 VERLOREN |
-| `info.bitrate` | `info.bitrate: Int?` | ❌ nicht weitergereicht | - | - | 🔴 VERLOREN |
+| `info.video.codec_name` | `video.codec` ¹ | `videoCodec: String?` | `playbackHints["videoCodec"]` | (Player) | ✅ BEHOBEN |
+| `info.video.width` | `video.width` | `videoWidth: Int?` | `playbackHints["videoWidth"]` | (Player) | ✅ BEHOBEN |
+| `info.video.height` | `video.height` | `videoHeight: Int?` | `playbackHints["videoHeight"]` | (Player) | ✅ BEHOBEN |
+| `info.audio.codec_name` | `audio.codec` ¹ | `audioCodec: String?` | `playbackHints["audioCodec"]` | (Player) | ✅ BEHOBEN |
+| `info.audio.channels` | `audio.channels` | `audioChannels: Int?` | `playbackHints["audioChannels"]` | (Player) | ✅ BEHOBEN |
+| `info.bitrate` | `info.bitrate: Int?` | ❌ nicht gemappt | - | - | 🟡 OPTIONAL |
 
 **Legende:**
-- ¹ Es gibt `season` im äußeren Objekt UND `info.season` - beide werden verwendet
-- ² Episode tmdb_id ist der EPISODE-spezifische TMDB ID (nicht Series!)
-- ³ Pipeline DTO hat nur `duration: String?`, nicht `durationSecs: Int?`
+- ¹ **KRITISCHER FIX (Feb 2026):** XtreamVideoInfo/XtreamAudioInfo verwenden nun `@SerialName("codec_name")` 
+  da die API `codec_name` liefert, nicht `codec`
 
-### 5.2 Kritische Episode-Befunde
+### 5.2 Episode-Befunde - ALLE BEHOBEN ✅
 
-#### 🔴 KRITISCH: Episode tmdb_id geht verloren
+#### ✅ BEHOBEN: Episode tmdb_id wird durchgereicht
 
-**Problem:** `XtreamEpisodeInfo.info.tmdbId` wird im Transport geparsed, aber:
-- `XtreamEpisode` (Pipeline DTO) hat KEIN `tmdbId` Feld
-- Daher geht diese Information komplett verloren
+**Vorher:** `XtreamEpisodeInfo.info.tmdbId` wurde geparst aber nicht weitergereicht  
+**Jetzt:** 
+- `XtreamEpisode.episodeTmdbId: Int?` existiert
+- `XtreamPipelineAdapter.toEpisodes()` mappt: `episodeTmdbId = ep.info?.tmdbId`
+- `XtreamRawMetadataExtensions` schreibt: `playbackHints["xtream.episodeTmdbId"]`
 
-**Impact:** Episoden können nicht via TMDB angereichert werden!
+#### ✅ BEHOBEN: Video/Audio Codec-Info für Episoden
 
-**Fix:** In `XtreamEpisode.kt` hinzufügen:
+**Vorher:** `XtreamVideoInfo.codec` erwartete "codec" aber API liefert "codec_name" → NULL  
+**Jetzt (Fix Feb 2026):**
 ```kotlin
-data class XtreamEpisode(
-    // ... existing fields ...
-    val tmdbId: Int? = null,  // ← ADD THIS
-)
-```
-
-Und in `XtreamPipelineAdapter.kt`:
-```kotlin
-XtreamEpisode(
+// XtreamApiModels.kt
+data class XtreamVideoInfo(
+    /** Video codec (e.g., "h264", "hevc"). API returns this as "codec_name". */
+    @SerialName("codec_name") val codec: String? = null,
+    val width: Int? = null,
+    val height: Int? = null,
     // ...
-    tmdbId = ep.info?.tmdbId,  // ← ADD THIS
+)
+
+data class XtreamAudioInfo(
+    /** Audio codec (e.g., "aac", "ac3"). API returns this as "codec_name". */
+    @SerialName("codec_name") val codec: String? = null,
+    // ...
 )
 ```
 
-#### 🔴 VERLOREN: Video/Audio Codec-Info für Episoden
-
-Obwohl das Transport Model `XtreamEpisodeInfoBlock.video: XtreamVideoInfo?` hat, wird diese Info nicht an Pipeline/RawMediaMetadata weitergegeben.
+**Vollständige Kette:**
+1. API: `"video": { "codec_name": "h264", "width": 1920, "height": 816 }`
+2. Transport: `XtreamVideoInfo(codec="h264", width=1920, height=816)` via @SerialName
+3. Pipeline: `XtreamEpisode(videoCodec="h264", videoWidth=1920, videoHeight=816)`
+4. RawMetadata: `playbackHints["videoCodec"]="h264"`, `playbackHints["videoWidth"]="1920"`
+5. Player: Verwendet Hints für Codec-Detection und Quality-Display
 
 ---
 
@@ -699,6 +714,40 @@ val audioInfo: XtreamAudioInfo?
 - Smart Refresh bei Detail-Ansicht
 - Background Sync Priorisierung
 
+#### P8: codec_name @SerialName Annotation fehlte ✅ BEHOBEN
+
+**Problem:** `XtreamVideoInfo.codec` und `XtreamAudioInfo.codec` erwarteten Feld "codec",
+aber API liefert "codec_name". Dadurch wurden alle Video/Audio-Codec-Informationen für
+Episoden als NULL deserialisiert.
+
+**Discovery:** Feldabgleich zwischen echten API-Responses (`series_detail_response_xtream.txt`)
+und Transport DTOs zeigte Diskrepanz.
+
+**Fix (implementiert 2026-02-02):**
+```kotlin
+// XtreamApiModels.kt
+
+data class XtreamVideoInfo(
+    /** Video codec (e.g., "h264", "hevc"). API returns this as "codec_name". */
+    @SerialName("codec_name") val codec: String? = null,
+    val width: Int? = null,
+    val height: Int? = null,
+    // ...
+)
+
+data class XtreamAudioInfo(
+    /** Audio codec (e.g., "aac", "ac3"). API returns this as "codec_name". */
+    @SerialName("codec_name") val codec: String? = null,
+    // ...
+)
+```
+
+**Zusätzlicher Fix:** `aspect_ratio` → `@SerialName("display_aspect_ratio")` da API "display_aspect_ratio" liefert.
+
+**Impact:** 
+- Vorher: Episode videoCodec/audioCodec immer NULL
+- Nachher: Korrekte Codec-Werte (z.B. "h264", "aac") werden geparst
+
 ---
 
 ## 10. Anhang: Code-Referenzen
@@ -753,3 +802,6 @@ Data Layer:
 | 2026-01-28 | P4 behoben: Timestamps von Unix Seconds zu Milliseconds konvertiert |
 | 2026-01-28 | P5 behoben: Deprecated resolvedDurationMins entfernt |
 | 2026-01-28 | P7 behoben: lastModifiedTimestamp für inkrementellen Sync implementiert |
+| 2026-02-02 | P8 behoben: @SerialName("codec_name") für XtreamVideoInfo/AudioInfo hinzugefügt |
+| 2026-02-02 | P8: Auch @SerialName("display_aspect_ratio") für XtreamVideoInfo.aspectRatio |
+| 2026-02-02 | Dokumentation aktualisiert: 8/8 Probleme behoben, Episode-Tabelle vollständig überarbeitet |

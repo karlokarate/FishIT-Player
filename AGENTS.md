@@ -201,6 +201,7 @@ The repository uses **path-scoped instruction files** that provide module-specif
 | `core-imaging.instructions.md` | `core/ui-imaging/**` | PLATIN |
 | `core-ui.instructions.md` | `core/ui-layout/**`, `core/ui-theme/**` | PLATIN |
 | `core-catalog-sync.instructions.md` | `core/catalog-sync/**` | PLATIN |
+| `catalog-sync.instructions.md` | `**/catalog-sync/**`, `**/work/**CatalogSync*`, `**/bootstrap/*Bootstrap*` | PLATIN |
 | `pipeline.instructions.md` | `pipeline/telegram/**`, `pipeline/xtream/**`, etc. | PLATIN |
 | `infra-transport.instructions.md` | `infra/transport-*/**` (general) | PLATIN |
 | `infra-transport-telegram.instructions.md` | `infra/transport-telegram/**` | PLATIN |

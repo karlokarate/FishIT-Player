@@ -1,5 +1,6 @@
 package com.fishit.player.v2.navigation
 
+import com.fishit.player.v2.BuildConfig
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -238,16 +239,18 @@ fun AppNavHost(
                 )
             }
 
-            // Debug Screen (settings/diagnostics)
-            composable(Routes.DEBUG) {
-                DebugScreen(
-                    onBack = { navController.popBackStack() },
-                    onDebugPlayback = { navController.navigate(Routes.DEBUG_PLAYBACK) },
-                    onDatabaseInspector = { navController.navigate(Routes.DB_INSPECTOR) },
-                )
+            // Debug Screen (settings/diagnostics) - only in debug builds
+            if (BuildConfig.DEBUG) {
+                composable(Routes.DEBUG) {
+                    DebugScreen(
+                        onBack = { navController.popBackStack() },
+                        onDebugPlayback = { navController.navigate(Routes.DEBUG_PLAYBACK) },
+                        onDatabaseInspector = { navController.navigate(Routes.DB_INSPECTOR) },
+                    )
+                }
             }
 
-            // ObjectBox DB Inspector (debug/power-user)
+            // ObjectBox DB Inspector (power-user tool, available in all builds)
             composable(Routes.DB_INSPECTOR) {
                 DbInspectorEntityTypesScreen(
                     onBack = { navController.popBackStack() },
@@ -282,23 +285,28 @@ fun AppNavHost(
                 )
             }
 
-            // Debug Playback Screen (test player with Big Buck Bunny)
-            composable(Routes.DEBUG_PLAYBACK) {
-                DebugPlaybackScreen(
-                    onBack = { navController.popBackStack() },
-                )
+            // Debug Playback Screen (test player with Big Buck Bunny) - only in debug builds
+            if (BuildConfig.DEBUG) {
+                composable(Routes.DEBUG_PLAYBACK) {
+                    DebugPlaybackScreen(
+                        onBack = { navController.popBackStack() },
+                    )
+                }
             }
 
             // Settings Screen
             composable(Routes.SETTINGS) {
                 SettingsScreen(
                     onBack = { navController.popBackStack() },
+                    onDatabaseInspector = { navController.navigate(Routes.DB_INSPECTOR) },
                 )
             }
 
-            // Legacy Debug Skeleton (for reference)
-            composable(Routes.DEBUG_SKELETON) {
-                DebugSkeletonScreen()
+            // Legacy Debug Skeleton (for reference) - only in debug builds
+            if (BuildConfig.DEBUG) {
+                composable(Routes.DEBUG_SKELETON) {
+                    DebugSkeletonScreen()
+                }
             }
         }
     }

@@ -40,6 +40,7 @@ dependencies {
     implementation(project(":core:detail-domain"))
     implementation(project(":playback:domain"))
     implementation(project(":infra:logging"))
+    implementation(project(":infra:api-priority"))
 
     // NOTE: Feature modules MUST NOT depend on transport/pipeline/data modules directly.
 

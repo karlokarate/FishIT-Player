@@ -9,4 +9,22 @@
     <string name="player_unmute">Ton an</string>
     <string name="player_live">LIVE</string>
     <string name="player_error_generic">Bei der Wiedergabe ist ein Fehler aufgetreten</string>
+    
+    <!-- Track selection (Phase 6/7) -->
+    <string name="player_audio_track">Audiospur</string>
+    <string name="player_subtitles">Untertitel</string>
+    <string name="player_playback_speed">Wiedergabegeschwindigkeit</string>
+    
+    <!-- Audio track sheet -->
+    <string name="player_audio_track_title">Audiospur</string>
+    <string name="player_audio_track_none">Keine Audiospuren verfügbar</string>
+    
+    <!-- Subtitle sheet -->
+    <string name="player_subtitle_title">Untertitel</string>
+    <string name="player_subtitle_off">Aus</string>
+    <string name="player_subtitle_none">Keine Untertitel verfügbar</string>
+    
+    <!-- Speed selection sheet -->
+    <string name="player_speed_title">Wiedergabegeschwindigkeit</string>
+    <string name="player_speed_normal">Normal</string>
 </resources>

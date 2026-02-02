@@ -1,6 +1,7 @@
 package com.fishit.player.core.model
 
 import com.fishit.player.core.model.ids.PipelineItemId
+import com.fishit.player.core.model.ids.XtreamIdCodec
 
 /**
  * Extension functions for creating MediaSourceRef from various pipeline items.
@@ -59,7 +60,7 @@ fun createXtreamVodSourceRef(
     sizeBytes: Long? = null,
     priority: Int = 0,
 ): MediaSourceRef {
-    val sourceId = "xtream:vod:$vodId"
+    val sourceId = XtreamIdCodec.vod(vodId)
 
     return MediaSourceRef(
         sourceType = SourceType.XTREAM,
@@ -90,9 +91,8 @@ fun createXtreamEpisodeSourceRef(
     containerExt: String? = null,
     priority: Int = 0,
 ): MediaSourceRef {
-    // Stable episode identity used across v2:
-    // xtream:episode:{seriesId}:{season}:{episode}
-    val sourceId = "xtream:episode:$seriesId:$season:$episode"
+    // Stable episode identity used across v2 (XtreamIdCodec SSOT)
+    val sourceId = XtreamIdCodec.episodeComposite(seriesId, season, episode)
 
     return MediaSourceRef(
         sourceType = SourceType.XTREAM,

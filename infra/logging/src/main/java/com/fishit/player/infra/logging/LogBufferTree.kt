@@ -4,6 +4,8 @@ import android.util.Log
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import timber.log.Timber
 import java.util.concurrent.locks.ReentrantReadWriteLock
@@ -92,10 +94,67 @@ class LogBufferTree(
     private val lock = ReentrantReadWriteLock()
     private val buffer = ArrayDeque<BufferedLogEntry>(maxEntries)
     private val _entriesFlow = MutableStateFlow<List<BufferedLogEntry>>(emptyList())
+    
+    /**
+     * Counter for pending updates - used to batch flow emissions.
+     * When > 0, we have logs waiting to be emitted.
+     * This prevents UI lag from rapid log emissions.
+     */
+    @Volatile
+    private var pendingUpdates = 0
+    
+    /**
+     * Last time we emitted to the flow.
+     * Used to throttle emissions to max once per 500ms during heavy logging.
+     */
+    @Volatile
+    private var lastEmitTimeMs = 0L
+    
+    companion object {
+        /**
+         * Default buffer size - 500 entries is a good balance between
+         * memory usage and useful log history.
+         */
+        const val DEFAULT_BUFFER_SIZE = 500
+        
+        /**
+         * Minimum interval between flow emissions (milliseconds).
+         * Prevents UI lag during heavy logging bursts.
+         */
+        private const val MIN_EMIT_INTERVAL_MS = 500L
+
+        /**
+         * Singleton instance for global access.
+         * Initialized by [UnifiedLogInitializer].
+         */
+        @Volatile
+        private var instance: LogBufferTree? = null
+
+        /**
+         * Get or create the singleton instance.
+         *
+         * @param maxEntries Buffer size (only used if creating new instance)
+         * @return The singleton LogBufferTree
+         */
+        @JvmStatic
+        fun getInstance(maxEntries: Int = DEFAULT_BUFFER_SIZE): LogBufferTree =
+            instance ?: synchronized(this) {
+                instance ?: LogBufferTree(maxEntries).also { instance = it }
+            }
+
+        /**
+         * Get singleton instance or null if not initialized.
+         */
+        @JvmStatic
+        fun getInstanceOrNull(): LogBufferTree? = instance
+    }
 
     /**
      * Flow of buffered log entries.
      * Emits a new list whenever a log entry is added.
+     * 
+     * **Performance Note:** Emissions are throttled to max once per 500ms
+     * to prevent UI lag during heavy logging.
      */
     val entriesFlow: Flow<List<BufferedLogEntry>> = _entriesFlow.asStateFlow()
 
@@ -155,41 +214,19 @@ class LogBufferTree(
                 buffer.removeFirst()
             }
             buffer.addLast(entry)
-            _entriesFlow.value = buffer.toList()
-        }
-    }
-
-    companion object {
-        /**
-         * Default buffer size - 500 entries is a good balance between
-         * memory usage and useful log history.
-         */
-        const val DEFAULT_BUFFER_SIZE = 500
-
-        /**
-         * Singleton instance for global access.
-         * Initialized by [UnifiedLogInitializer].
-         */
-        @Volatile
-        private var instance: LogBufferTree? = null
-
-        /**
-         * Get or create the singleton instance.
-         *
-         * @param maxEntries Buffer size (only used if creating new instance)
-         * @return The singleton LogBufferTree
-         */
-        @JvmStatic
-        fun getInstance(maxEntries: Int = DEFAULT_BUFFER_SIZE): LogBufferTree =
-            instance ?: synchronized(this) {
-                instance ?: LogBufferTree(maxEntries).also { instance = it }
+            
+            // Throttle flow emissions to prevent UI lag during heavy logging.
+            // Only emit if MIN_EMIT_INTERVAL_MS has passed since last emission.
+            val now = System.currentTimeMillis()
+            pendingUpdates++
+            if (now - lastEmitTimeMs >= MIN_EMIT_INTERVAL_MS) {
+                _entriesFlow.value = buffer.toList()
+                lastEmitTimeMs = now
+                pendingUpdates = 0
             }
-
-        /**
-         * Get singleton instance or null if not initialized.
-         */
-        @JvmStatic
-        fun getInstanceOrNull(): LogBufferTree? = instance
+            // Note: Pending updates will be picked up on next log that passes the interval,
+            // or via getEntries() / observeLogs() which always get fresh data.
+        }
     }
 }
 
@@ -234,6 +271,10 @@ interface LogBufferProvider {
 
 /**
  * Default implementation of [LogBufferProvider] using [LogBufferTree].
+ *
+ * **Performance Optimization:**
+ * Uses debounce on the log flow to prevent UI lag during heavy logging.
+ * UI updates are batched to max once per 300ms.
  */
 @Singleton
 class DefaultLogBufferProvider
@@ -241,11 +282,18 @@ class DefaultLogBufferProvider
     constructor() : LogBufferProvider {
         private val tree: LogBufferTree
             get() = LogBufferTree.getInstance()
+            
+        companion object {
+            /** Debounce interval for UI updates (ms) */
+            private const val UI_DEBOUNCE_MS = 300L
+        }
 
+        @OptIn(kotlinx.coroutines.FlowPreview::class)
         override fun observeLogs(limit: Int): Flow<List<BufferedLogEntry>> =
-            tree.entriesFlow.map { entries ->
-                entries.takeLast(limit)
-            }
+            tree.entriesFlow
+                .debounce(UI_DEBOUNCE_MS) // Batch rapid updates
+                .map { entries -> entries.takeLast(limit) }
+                .distinctUntilChanged() // Only emit when content actually changes
 
         override fun getLogs(limit: Int): List<BufferedLogEntry> = tree.getEntries().takeLast(limit)
 

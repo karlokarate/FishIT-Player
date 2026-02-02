@@ -15,6 +15,7 @@ import com.fishit.player.core.persistence.cache.HomeCacheInvalidator
 import com.fishit.player.infra.data.xtream.XtreamCatalogRepository
 import com.fishit.player.infra.data.xtream.XtreamLiveRepository
 import com.fishit.player.infra.logging.UnifiedLog
+import com.fishit.player.infra.priority.ApiPriorityDispatcher
 import com.fishit.player.infra.transport.xtream.XtreamApiClient
 import com.fishit.player.v2.BuildConfig
 import dagger.assisted.Assisted
@@ -41,6 +42,11 @@ import kotlinx.coroutines.isActive
  * 5. VOD_INFO - Backfill VOD details (plot/cast/director)
  * 6. SERIES_INFO - Backfill series details
  *
+ * **Priority Cooperation:**
+ * This worker cooperates with the priority system to yield when user
+ * opens detail screens (HIGH priority calls). At batch boundaries, it
+ * checks [ApiPriorityDispatcher.shouldYield] and pauses if needed.
+ *
  * Contract: CATALOG_SYNC_WORKERS_CONTRACT_V2
  * - W-2: All scanning MUST go through CatalogSyncService
  * - W-17: FireTV Safety (bounded batches, frequent checkpoints)
@@ -62,6 +68,7 @@ class XtreamCatalogScanWorker
         private val liveRepository: XtreamLiveRepository,
         private val xtreamApiClient: XtreamApiClient,
         private val homeCacheInvalidator: HomeCacheInvalidator, // ✅ Phase 2: Cache invalidation
+        private val priorityDispatcher: ApiPriorityDispatcher, // ✅ Priority cooperation
     ) : CoroutineWorker(context, workerParams) {
         companion object {
             private const val TAG = "XtreamCatalogScanWorker"
@@ -298,20 +305,37 @@ class XtreamCatalogScanWorker
                     checkpoint
                 }
 
-            // Determine what to include based on checkpoint phase
-            val includeVod = currentCheckpoint.phase == XtreamSyncPhase.VOD_LIST
-            val includeSeries =
-                currentCheckpoint.phase in
-                    listOf(
-                        XtreamSyncPhase.VOD_LIST,
-                        XtreamSyncPhase.SERIES_LIST,
-                    )
-            // Episodes are NEVER included in background sync (lazy loading)
+            // =================================================================
+            // BUG FIX (Feb 2026): Always include ALL content types
+            //
+            // RATIONALE: The XtreamCatalogPipeline runs VOD, Series, and Live
+            // in PARALLEL via async jobs with Semaphore(3). The checkpoint phase
+            // was originally designed for SEQUENTIAL scanning, but with parallel
+            // execution, the phase-based includes caused series to be skipped:
+            //
+            // OLD (BUG): includeSeries = phase in [VOD_LIST, SERIES_LIST]
+            //   → If checkpoint was at LIVE_LIST from interrupted sync, series skipped!
+            //
+            // NEW (FIX): Always include ALL content types. The pipeline handles
+            // parallel execution, and the checkpoint is only for tracking progress
+            // within each phase, not for deciding what to scan.
+            //
+            // This matches the pipeline's PARALLEL architecture where:
+            // - Phase 1 (async): Live Channels
+            // - Phase 2 (async): VOD Items
+            // - Phase 3 (async): Series Containers
+            // All start concurrently via Semaphore(3).
+            // =================================================================
+            val includeVod = true
+            val includeSeries = true
+            // Episodes are NEVER included in background sync (lazy loading via LoadSeasonEpisodesUseCase)
             val includeEpisodes = false
-            val includeLive = true // Always include live in list phases
+            val includeLive = true
 
-            UnifiedLog.d(TAG) {
-                "Catalog sync: includeVod=$includeVod includeSeries=$includeSeries includeEpisodes=$includeEpisodes (lazy) includeLive=$includeLive scope=${input.xtreamSyncScope} enhanced=${input.xtreamUseEnhancedSync}"
+            UnifiedLog.i(TAG) {
+                "Catalog sync (PARALLEL): includeVod=$includeVod includeSeries=$includeSeries " +
+                    "includeEpisodes=$includeEpisodes (lazy) includeLive=$includeLive " +
+                    "checkpoint_phase=${currentCheckpoint.phase} enhanced=${input.xtreamUseEnhancedSync}"
             }
 
             // PLATINUM: Pass already-processed series IDs (kept for future episode pre-fetch feature)
@@ -328,7 +352,14 @@ class XtreamCatalogScanWorker
                 // *** TASK 1: Wire up Enhanced Sync ***
                 // Use EnhancedSyncConfig for progressive UI and phase-based batching
                 val enhancedConfig = selectEnhancedConfig(input)
-                val useChannelSync = BuildConfig.CHANNEL_SYNC_ENABLED && !input.isFireTvLowRam
+                
+                // CONSOLIDATED SYNC (Jan 2026): ALWAYS use channel-buffered sync
+                // - Phone/Tablet: buffer=1000, consumers=3 (fastest)
+                // - FireTV Low RAM: buffer=500, consumers=2 (memory-safe)
+                // Old flag BuildConfig.CHANNEL_SYNC_ENABLED is now always true
+                val useChannelSync = true // ALWAYS use channel sync
+                val bufferSize = if (input.isFireTvLowRam) 500 else 1000
+                val consumerCount = if (input.isFireTvLowRam) 2 else 3
 
                 suspend fun collectEnhanced(flow: kotlinx.coroutines.flow.Flow<SyncStatus>) {
                     flow.collect { status ->
@@ -340,6 +371,13 @@ class XtreamCatalogScanWorker
                         if (elapsedMs > input.maxRuntimeMs) {
                             budgetExceeded = true
                             return@collect
+                        }
+
+                        // Cooperative yielding: pause if high-priority user action is active
+                        if (priorityDispatcher.shouldYield()) {
+                            UnifiedLog.d(TAG) { "Catalog sync yielding for high-priority user action" }
+                            priorityDispatcher.awaitHighPriorityComplete()
+                            UnifiedLog.d(TAG) { "Catalog sync resuming after high-priority completion" }
                         }
 
                         when (status) {
@@ -406,13 +444,9 @@ class XtreamCatalogScanWorker
                     )
 
                 if (useChannelSync) {
-                    // PLATINUM CONFIGURATION (MCP Research-based):
-                    // - Buffer = 300 items (enough for 3 consumers × 100 items each)
-                    // - Consumers = 3 (parallel DB writers)
-                    // - Ratio: buffer should be ≥ consumers × batchSize to avoid starvation
-                    // - Memory: 300 × 2KB = 600KB (very safe!)
                     UnifiedLog.i(TAG) {
-                        "Using CHANNEL-BUFFERED sync: buffer=300, consumers=3 (PLATINUM config)"
+                        "Using CHANNEL-BUFFERED sync: buffer=$bufferSize, consumers=$consumerCount " +
+                            "(FireTV=${input.isFireTvLowRam})"
                     }
                     try {
                         catalogSyncService
@@ -421,8 +455,8 @@ class XtreamCatalogScanWorker
                                 includeSeries = includeSeries,
                                 includeEpisodes = includeEpisodes,
                                 includeLive = includeLive,
-                                bufferSize = 300,   // ← PLATINUM: 3 × 100 items per consumer
-                                consumerCount = 3,  // ← KEEP 3 consumers for parallel writes!
+                                bufferSize = bufferSize,
+                                consumerCount = consumerCount,
                             ).collect { status ->
                                 if (!currentCoroutineContext().isActive) {
                                     throw CancellationException("Worker cancelled")
@@ -432,6 +466,13 @@ class XtreamCatalogScanWorker
                                 if (elapsedMs > input.maxRuntimeMs) {
                                     budgetExceeded = true
                                     return@collect
+                                }
+
+                                // Cooperative yielding: pause if high-priority user action is active
+                                if (priorityDispatcher.shouldYield()) {
+                                    UnifiedLog.d(TAG) { "Channel sync yielding for high-priority user action" }
+                                    priorityDispatcher.awaitHighPriorityComplete()
+                                    UnifiedLog.d(TAG) { "Channel sync resuming after high-priority completion" }
                                 }
 
                                 when (status) {
@@ -489,8 +530,9 @@ class XtreamCatalogScanWorker
                         collectEnhanced(enhancedFlow)
                     }
                 } else {
-                    UnifiedLog.i(TAG) {
-                        "Using ENHANCED sync: live=${enhancedConfig.liveConfig.batchSize} " +
+                    // This branch should never be reached with useChannelSync = true
+                    UnifiedLog.w(TAG) {
+                        "⚠️ Fallback to ENHANCED sync (unexpected): live=${enhancedConfig.liveConfig.batchSize} " +
                             "movies=${enhancedConfig.moviesConfig.batchSize} " +
                             "series=${enhancedConfig.seriesConfig.batchSize} " +
                             "timeFlush=${enhancedConfig.enableTimeBasedFlush}"
@@ -498,7 +540,11 @@ class XtreamCatalogScanWorker
                     collectEnhanced(enhancedFlow)
                 }
             } else {
-                // Standard sync (backward compatibility)
+                // DEPRECATED: Legacy sync path - should not be used
+                // This entire else branch will be removed in v2.1
+                UnifiedLog.w(TAG) {
+                    "⚠️ Using DEPRECATED legacy syncXtream() - xtreamUseEnhancedSync=false is obsolete!"
+                }
                 val syncConfig =
                     SyncConfig(
                         batchSize = input.batchSize,
@@ -506,6 +552,7 @@ class XtreamCatalogScanWorker
                         emitProgressEvery = input.batchSize,
                     )
 
+                @Suppress("DEPRECATION")
                 catalogSyncService
                     .syncXtream(
                         includeVod = includeVod,
@@ -691,6 +738,13 @@ class XtreamCatalogScanWorker
 
                 currentCheckpoint = currentCheckpoint.withLastVodInfoId(vodIds.last())
 
+                // Cooperative yielding: pause if high-priority user action is active
+                if (priorityDispatcher.shouldYield()) {
+                    UnifiedLog.d(TAG) { "VOD backfill yielding for high-priority user action" }
+                    priorityDispatcher.awaitHighPriorityComplete()
+                    UnifiedLog.d(TAG) { "VOD backfill resuming after high-priority completion" }
+                }
+
                 delay(INFO_BACKFILL_THROTTLE_MS)
             }
 
@@ -780,6 +834,13 @@ class XtreamCatalogScanWorker
                 }
 
                 currentCheckpoint = currentCheckpoint.withLastSeriesInfoId(seriesIds.last())
+
+                // Cooperative yielding: pause if high-priority user action is active
+                if (priorityDispatcher.shouldYield()) {
+                    UnifiedLog.d(TAG) { "Series backfill yielding for high-priority user action" }
+                    priorityDispatcher.awaitHighPriorityComplete()
+                    UnifiedLog.d(TAG) { "Series backfill resuming after high-priority completion" }
+                }
 
                 delay(INFO_BACKFILL_THROTTLE_MS)
             }

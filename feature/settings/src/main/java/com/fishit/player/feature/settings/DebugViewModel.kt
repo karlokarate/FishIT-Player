@@ -337,10 +337,14 @@ class DebugViewModel
             }
         }
 
-        /** Observe real logs from LogBufferProvider. */
+        /** Observe real logs from LogBufferProvider.
+         * 
+         * **Performance:** Limited to 50 entries to reduce UI rendering load.
+         * Debouncing is handled by LogBufferProvider.
+         */
         private fun observeLogs() {
             viewModelScope.launch {
-                logBufferProvider.observeLogs(limit = 100).collect { bufferedLogs ->
+                logBufferProvider.observeLogs(limit = 50).collect { bufferedLogs ->
                     val logEntries = bufferedLogs.map { it.toLogEntry() }
                     _state.update { it.copy(recentLogs = logEntries) }
                 }

@@ -3,7 +3,11 @@ package com.fishit.player.ui
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.media3.common.Player
+import com.fishit.player.core.playermodel.AudioSelectionState
+import com.fishit.player.core.playermodel.AudioTrackId
 import com.fishit.player.core.playermodel.PlaybackContext
+import com.fishit.player.core.playermodel.SubtitleSelectionState
+import com.fishit.player.core.playermodel.SubtitleTrackId
 import com.fishit.player.infra.logging.UnifiedLog
 import com.fishit.player.internal.InternalPlayerEntryImpl
 import com.fishit.player.internal.state.InternalPlayerState
@@ -152,6 +156,63 @@ class PlayerUiViewModel
          */
         fun hideControls() {
             playerEntryImpl.getCurrentSession()?.hideControls()
+        }
+
+        // ══════════════════════════════════════════════════════════════════════════════
+        // Audio Track APIs (Phase 7 Backend → UI Wiring)
+        // ══════════════════════════════════════════════════════════════════════════════
+
+        /**
+         * Returns the audio selection state flow for observing available tracks.
+         */
+        fun getAudioState(): StateFlow<AudioSelectionState>? =
+            playerEntryImpl.getCurrentSession()?.audioState
+
+        /**
+         * Selects an audio track by ID.
+         */
+        fun selectAudioTrack(trackId: AudioTrackId): Boolean =
+            playerEntryImpl.getCurrentSession()?.selectAudioTrack(trackId) ?: false
+
+        /**
+         * Cycles to the next audio track (useful for remote control).
+         */
+        fun cycleAudioTrack() {
+            playerEntryImpl.getCurrentSession()?.cycleAudioTrack()
+        }
+
+        // ══════════════════════════════════════════════════════════════════════════════
+        // Subtitle Track APIs (Phase 6 Backend → UI Wiring)
+        // ══════════════════════════════════════════════════════════════════════════════
+
+        /**
+         * Returns the subtitle selection state flow for observing available tracks.
+         */
+        fun getSubtitleState(): StateFlow<SubtitleSelectionState>? =
+            playerEntryImpl.getCurrentSession()?.subtitleState
+
+        /**
+         * Selects a subtitle track by ID.
+         */
+        fun selectSubtitleTrack(trackId: SubtitleTrackId): Boolean =
+            playerEntryImpl.getCurrentSession()?.selectSubtitleTrack(trackId) ?: false
+
+        /**
+         * Disables all subtitles.
+         */
+        fun disableSubtitles(): Boolean =
+            playerEntryImpl.getCurrentSession()?.disableSubtitles() ?: false
+
+        // ══════════════════════════════════════════════════════════════════════════════
+        // Playback Speed API
+        // ══════════════════════════════════════════════════════════════════════════════
+
+        /**
+         * Sets the playback speed.
+         * @param speed Playback speed (0.5f to 2.0f recommended)
+         */
+        fun setPlaybackSpeed(speed: Float) {
+            playerEntryImpl.getCurrentSession()?.setPlaybackSpeed(speed)
         }
 
         /**

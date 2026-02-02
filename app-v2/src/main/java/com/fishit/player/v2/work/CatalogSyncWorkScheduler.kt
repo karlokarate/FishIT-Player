@@ -224,10 +224,22 @@ enum class CatalogSyncWorkMode(
         tagValue = "mode_auto",
         workPolicy = ExistingWorkPolicy.KEEP,
     ),
+    /**
+     * User-triggered "Sync Now" from Settings.
+     * 
+     * BUG FIX (Feb 2026): Changed from KEEP to REPLACE.
+     * 
+     * KEEP was wrong because:
+     * - If an AUTO sync started at app launch, user's explicit "Sync Now" was silently ignored
+     * - User expected their action to trigger a new sync, not be discarded
+     * - This caused "sync doesn't work" complaints when AUTO sync was still running
+     * 
+     * REPLACE ensures user-triggered syncs always execute immediately.
+     */
     EXPERT_NOW(
         storageValue = "expert_now",
         tagValue = "mode_expert_now",
-        workPolicy = ExistingWorkPolicy.KEEP,
+        workPolicy = ExistingWorkPolicy.REPLACE,
     ),
     FORCE_RESCAN(
         storageValue = "force_rescan",

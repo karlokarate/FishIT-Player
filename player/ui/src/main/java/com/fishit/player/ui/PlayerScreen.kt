@@ -24,6 +24,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -35,8 +36,13 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.Player
 import androidx.media3.ui.PlayerView
 import com.fishit.player.core.playermodel.PlaybackContext
+import com.fishit.player.core.playermodel.AudioSelectionState
+import com.fishit.player.core.playermodel.SubtitleSelectionState
 import com.fishit.player.internal.state.InternalPlayerState
 import com.fishit.player.internal.ui.InternalPlayerControls
+import com.fishit.player.ui.sheets.AudioTrackSheet
+import com.fishit.player.ui.sheets.SubtitleTrackSheet
+import com.fishit.player.ui.sheets.SpeedSelectionSheet
 
 /**
  * Public entry point for the player UI.
@@ -170,6 +176,24 @@ private fun PlayingView(
         ?.value
         ?: InternalPlayerState.INITIAL
 
+    // Observe audio/subtitle state for track selection
+    val audioStateFlow = viewModel.getAudioState()
+    val audioState: AudioSelectionState = audioStateFlow
+        ?.collectAsStateWithLifecycle(initialValue = AudioSelectionState())
+        ?.value
+        ?: AudioSelectionState()
+
+    val subtitleStateFlow = viewModel.getSubtitleState()
+    val subtitleState: SubtitleSelectionState = subtitleStateFlow
+        ?.collectAsStateWithLifecycle(initialValue = SubtitleSelectionState())
+        ?.value
+        ?: SubtitleSelectionState()
+
+    // Sheet visibility state
+    var showAudioSheet by remember { mutableStateOf(false) }
+    var showSubtitleSheet by remember { mutableStateOf(false) }
+    var showSpeedSheet by remember { mutableStateOf(false) }
+
     Box(modifier = Modifier.fillMaxSize()) {
         if (player != null) {
             // Video surface via Media3 PlayerView (no built-in controls)
@@ -203,7 +227,54 @@ private fun PlayingView(
                 onToggleMute = viewModel::toggleMute,
                 onTapSurface = viewModel::toggleControls,
                 onHideControls = viewModel::hideControls,
+                // Track selection callbacks (Phase 6/7 wiring)
+                onAudioTrackClick = { showAudioSheet = true },
+                onSubtitleClick = { showSubtitleSheet = true },
+                onSpeedClick = { showSpeedSheet = true },
+                // State indicators
+                hasSubtitles = subtitleState.selectedTrack != null,
+                hasMultipleAudioTracks = audioState.availableTracks.size > 1,
             )
+
+            // Audio Track Selection Sheet
+            if (showAudioSheet) {
+                AudioTrackSheet(
+                    audioState = audioState,
+                    onSelectTrack = { trackId ->
+                        viewModel.selectAudioTrack(trackId)
+                        showAudioSheet = false
+                    },
+                    onDismiss = { showAudioSheet = false },
+                )
+            }
+
+            // Subtitle Selection Sheet
+            if (showSubtitleSheet) {
+                SubtitleTrackSheet(
+                    subtitleState = subtitleState,
+                    onSelectTrack = { trackId ->
+                        viewModel.selectSubtitleTrack(trackId)
+                        showSubtitleSheet = false
+                    },
+                    onDisableSubtitles = {
+                        viewModel.disableSubtitles()
+                        showSubtitleSheet = false
+                    },
+                    onDismiss = { showSubtitleSheet = false },
+                )
+            }
+
+            // Speed Selection Sheet
+            if (showSpeedSheet) {
+                SpeedSelectionSheet(
+                    currentSpeed = sessionState.playbackSpeed,
+                    onSelectSpeed = { speed ->
+                        viewModel.setPlaybackSpeed(speed)
+                        showSpeedSheet = false
+                    },
+                    onDismiss = { showSpeedSheet = false },
+                )
+            }
 
             // Cleanup when composable is disposed
             DisposableEffect(player) {

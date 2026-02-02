@@ -36,6 +36,7 @@ import com.fishit.player.core.model.ImageRef
 import com.fishit.player.core.model.MediaType
 import com.fishit.player.core.model.RawMediaMetadata
 import com.fishit.player.core.model.SourceType
+import com.fishit.player.core.model.ids.XtreamIdCodec
 import com.fishit.player.core.model.repository.NxWorkRepository.WorkType
 import com.fishit.player.core.persistence.ObjectBoxFlow.asFlow
 import com.fishit.player.core.persistence.obx.NX_Work
@@ -213,7 +214,7 @@ class NxXtreamLiveRepositoryImpl
                 mediaType = MediaType.LIVE,
                 sourceType = SourceType.XTREAM,
                 sourceLabel = "Xtream Live",
-                sourceId = "xtream:live:${streamId ?: "unknown"}",
+                sourceId = XtreamIdCodec.liveOrUnknown(streamId),
                 poster = poster,
                 thumbnail = poster, // Use poster as thumbnail for live channels
             )

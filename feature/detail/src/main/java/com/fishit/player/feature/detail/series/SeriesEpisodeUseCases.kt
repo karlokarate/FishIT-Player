@@ -3,33 +3,44 @@ package com.fishit.player.feature.detail.series
 import com.fishit.player.core.detail.domain.EpisodeIndexItem
 import com.fishit.player.core.detail.domain.EpisodePlaybackHints
 import com.fishit.player.core.detail.domain.SeasonIndexItem
-import com.fishit.player.core.detail.domain.XtreamSeriesIndexRefresher
+import com.fishit.player.core.detail.domain.UnifiedDetailLoader
 import com.fishit.player.core.detail.domain.XtreamSeriesIndexRepository
 import com.fishit.player.infra.logging.UnifiedLog
+import com.fishit.player.infra.priority.ApiPriorityDispatcher
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withTimeout
 import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * Use case for loading series seasons.
+ * 🏆 PLATIN Phase 3: Use case for loading series seasons.
+ *
+ * **Migration from XtreamSeriesIndexRefresher:**
+ * - OLD: Called `refresher.refreshSeasons(seriesId)` which made separate API calls
+ * - NEW: Uses [UnifiedDetailLoader.loadSeriesDetailBySeriesId] which makes ONE API call
+ *        and saves metadata + seasons + ALL episodes atomically
  *
  * **Flow:**
  * 1. Check repository for cached seasons
  * 2. If fresh → return cached
- * 3. If stale/missing → fetch from API, persist, return
+ * 3. If stale/missing → fetch via UnifiedDetailLoader, return
+ *
+ * **Priority System:**
+ * - [ensureSeasonsLoaded] - Normal priority (background)
+ * - [ensureSeasonsLoadedImmediate] - HIGH priority (pauses background sync)
  *
  * **Architecture:**
  * - UI/Feature-safe (no transport / pipeline imports)
- * - Uses XtreamSeriesIndexRepository for cache
- * - Uses XtreamSeriesIndexRefresher port for refresh
+ * - Uses XtreamSeriesIndexRepository for cache observation
+ * - Uses UnifiedDetailLoader for refresh (PLATIN)
  */
 @Singleton
 class LoadSeriesSeasonsUseCase
     @Inject
     constructor(
         private val repository: XtreamSeriesIndexRepository,
-        private val refresher: XtreamSeriesIndexRefresher,
+        private val unifiedDetailLoader: UnifiedDetailLoader,
+        private val priorityDispatcher: ApiPriorityDispatcher,
     ) {
         companion object {
             private const val TAG = "LoadSeriesSeasons"
@@ -51,9 +62,9 @@ class LoadSeriesSeasonsUseCase
         }
 
         /**
-         * Ensure seasons are loaded and fresh.
+         * Ensure seasons are loaded and fresh (normal background priority).
          *
-         * Call this when opening series detail to trigger fetch if needed.
+         * Call this for background/prefetch operations.
          *
          * @param seriesId The Xtream series ID
          * @param forceRefresh Force API fetch even if cached
@@ -69,18 +80,58 @@ class LoadSeriesSeasonsUseCase
                 return false
             }
 
-            UnifiedLog.d(TAG) { "Refreshing seasons for series $seriesId" }
-            return refresher.refreshSeasons(seriesId)
+            UnifiedLog.d(TAG) { "Refreshing seasons for series $seriesId via UnifiedDetailLoader (PLATIN)" }
+            val bundle = unifiedDetailLoader.loadSeriesDetailBySeriesId(seriesId)
+            return bundle != null && bundle.seasons.isNotEmpty()
+        }
+
+        /**
+         * Ensure seasons are loaded with HIGH priority.
+         *
+         * **Call this when user clicks on a series tile!**
+         * This pauses background sync to prioritize user interaction.
+         *
+         * @param seriesId The Xtream series ID
+         * @param forceRefresh Force API fetch even if cached
+         * @return True if seasons were fetched, false if cached was used
+         */
+        suspend fun ensureSeasonsLoadedImmediate(
+            seriesId: Int,
+            forceRefresh: Boolean = false,
+        ): Boolean {
+            // Check if we have fresh cached data (no priority needed for fast path)
+            if (!forceRefresh && repository.hasFreshSeasons(seriesId)) {
+                UnifiedLog.d(TAG) { "Using cached seasons for series $seriesId (fast path)" }
+                return false
+            }
+
+            // Use HIGH priority to pause background sync
+            return priorityDispatcher.withHighPriority(
+                tag = "LoadSeasons:$seriesId",
+            ) {
+                UnifiedLog.i(TAG) { "Refreshing seasons for series $seriesId (HIGH PRIORITY, PLATIN)" }
+                val bundle = unifiedDetailLoader.loadSeriesDetailBySeriesId(seriesId)
+                bundle != null && bundle.seasons.isNotEmpty()
+            }
         }
     }
 
 /**
- * Use case for loading season episodes with paging.
+ * 🏆 PLATIN Phase 3: Use case for loading season episodes with paging.
+ *
+ * **Migration from XtreamSeriesIndexRefresher:**
+ * - OLD: Called `refresher.refreshEpisodes(seriesId, seasonNumber)` which made separate API calls
+ * - NEW: Uses [UnifiedDetailLoader.loadSeriesDetailBySeriesId] which makes ONE API call
+ *        and saves ALL episodes for ALL seasons atomically
  *
  * **Flow:**
  * 1. Check repository for cached episodes
  * 2. If fresh → return cached (paged)
- * 3. If stale/missing → fetch from API, persist, return
+ * 3. If stale/missing → fetch via UnifiedDetailLoader, return
+ *
+ * **Priority System:**
+ * - [ensureEpisodesLoaded] - Normal priority (background)
+ * - [ensureEpisodesLoadedImmediate] - HIGH priority (pauses background sync)
  *
  * **Paging:**
  * - Default page size: 30 episodes
@@ -91,7 +142,8 @@ class LoadSeasonEpisodesUseCase
     @Inject
     constructor(
         private val repository: XtreamSeriesIndexRepository,
-        private val refresher: XtreamSeriesIndexRefresher,
+        private val unifiedDetailLoader: UnifiedDetailLoader,
+        private val priorityDispatcher: ApiPriorityDispatcher,
     ) {
         companion object {
             private const val TAG = "LoadSeasonEpisodes"
@@ -123,7 +175,9 @@ class LoadSeasonEpisodesUseCase
         ): Int = repository.getEpisodeCount(seriesId, seasonNumber)
 
         /**
-         * Ensure episodes are loaded for a season.
+         * Ensure episodes are loaded for a season (normal background priority).
+         *
+         * Call this for background/prefetch operations.
          *
          * @param seriesId The Xtream series ID
          * @param seasonNumber The season number
@@ -141,8 +195,43 @@ class LoadSeasonEpisodesUseCase
                 return false
             }
 
-            UnifiedLog.d(TAG) { "Refreshing episodes for series $seriesId season $seasonNumber" }
-            return refresher.refreshEpisodes(seriesId, seasonNumber)
+            UnifiedLog.d(TAG) { "Refreshing episodes for series $seriesId season $seasonNumber via UnifiedDetailLoader (PLATIN)" }
+            val bundle = unifiedDetailLoader.loadSeriesDetailBySeriesId(seriesId)
+            val episodes = bundle?.getEpisodesForSeason(seasonNumber) ?: emptyList()
+            return episodes.isNotEmpty()
+        }
+
+        /**
+         * Ensure episodes are loaded with HIGH priority.
+         *
+         * **Call this when user opens a season!**
+         * This pauses background sync to prioritize user interaction.
+         *
+         * @param seriesId The Xtream series ID
+         * @param seasonNumber The season number
+         * @param forceRefresh Force API fetch even if cached
+         * @return True if episodes were fetched, false if cached was used
+         */
+        suspend fun ensureEpisodesLoadedImmediate(
+            seriesId: Int,
+            seasonNumber: Int,
+            forceRefresh: Boolean = false,
+        ): Boolean {
+            // Check if we have fresh cached data (no priority needed for fast path)
+            if (!forceRefresh && repository.hasFreshEpisodes(seriesId, seasonNumber)) {
+                UnifiedLog.d(TAG) { "Using cached episodes for series $seriesId season $seasonNumber (fast path)" }
+                return false
+            }
+
+            // Use HIGH priority to pause background sync
+            return priorityDispatcher.withHighPriority(
+                tag = "LoadEpisodes:$seriesId-S$seasonNumber",
+            ) {
+                UnifiedLog.i(TAG) { "Refreshing episodes for series $seriesId season $seasonNumber (HIGH PRIORITY, PLATIN)" }
+                val bundle = unifiedDetailLoader.loadSeriesDetailBySeriesId(seriesId)
+                val episodes = bundle?.getEpisodesForSeason(seasonNumber) ?: emptyList()
+                episodes.isNotEmpty()
+            }
         }
 
         /**
@@ -162,7 +251,11 @@ class LoadSeasonEpisodesUseCase
     }
 
 /**
- * Use case for ensuring episode playback readiness.
+ * 🏆 PLATIN Phase 3: Use case for ensuring episode playback readiness.
+ *
+ * **Migration from XtreamSeriesIndexRefresher:**
+ * - OLD: Called `refresher.refreshEpisodePlaybackHints(...)` which made separate API calls
+ * - NEW: Uses [UnifiedDetailLoader.loadSeriesDetailBySeriesId] which loads all data at once
  *
  * **Critical for Playback:**
  * This use case MUST be called before playing an episode to ensure
@@ -171,20 +264,19 @@ class LoadSeasonEpisodesUseCase
  * **Flow:**
  * 1. Check if episode has fresh playback hints
  * 2. If ready → return immediately
- * 3. If missing → fetch from API, persist, wait with timeout
- * 4. Return updated episode or throw if timeout
+ * 3. If missing → fetch via UnifiedDetailLoader, extract hints
+ * 4. Return result or timeout
  *
  * **Race-Proof Design:**
- * - Always fetches latest data from repository after enrichment
- * - Uses timeout to prevent infinite waits
- * - Returns stable sourceKey for playback URL construction
+ * - UnifiedDetailLoader has built-in deduplication
+ * - Repository is updated atomically
  */
 @Singleton
 class EnsureEpisodePlaybackReadyUseCase
     @Inject
     constructor(
         private val repository: XtreamSeriesIndexRepository,
-        private val refresher: XtreamSeriesIndexRefresher,
+        private val unifiedDetailLoader: UnifiedDetailLoader,
     ) {
         companion object {
             private const val TAG = "EnsureEpisodePlayback"
@@ -224,7 +316,7 @@ class EnsureEpisodePlaybackReadyUseCase
             sourceKey: String,
             forceEnrich: Boolean = false,
         ): Result {
-            UnifiedLog.d(TAG) { "Checking playback readiness for $sourceKey" }
+            UnifiedLog.d(TAG) { "Checking playback readiness for $sourceKey (PLATIN)" }
 
             // Step 1: Check if already ready
             if (!forceEnrich && repository.isPlaybackReady(sourceKey)) {
@@ -245,19 +337,28 @@ class EnsureEpisodePlaybackReadyUseCase
             val seasonNumber = parts[3].toIntOrNull() ?: return Result.Failed(sourceKey, "Invalid seasonNumber")
             val episodeNumber = parts[4].toIntOrNull() ?: return Result.Failed(sourceKey, "Invalid episodeNumber")
 
-            // Step 3: Fetch from API with timeout
-            UnifiedLog.d(TAG) { "Enriching episode $sourceKey (series=$seriesId, s=$seasonNumber, e=$episodeNumber)" }
+            // Step 3: Fetch from API via UnifiedDetailLoader with timeout
+            UnifiedLog.d(TAG) { "Enriching episode $sourceKey via UnifiedDetailLoader (series=$seriesId, s=$seasonNumber, e=$episodeNumber)" }
 
             return try {
                 withTimeout(ENRICHMENT_TIMEOUT_MS) {
-                    val hints =
-                        refresher.refreshEpisodePlaybackHints(
-                            seriesId = seriesId,
-                            seasonNumber = seasonNumber,
-                            episodeNumber = episodeNumber,
-                            sourceKey = sourceKey,
-                        )
-                            ?: return@withTimeout Result.Failed(sourceKey, "Failed to resolve playback hints")
+                    val bundle = unifiedDetailLoader.loadSeriesDetailBySeriesId(seriesId)
+                        ?: return@withTimeout Result.Failed(sourceKey, "Failed to load series detail")
+
+                    val episodes = bundle.getEpisodesForSeason(seasonNumber)
+                    val episode = episodes.find { it.episodeNumber == episodeNumber }
+                        ?: return@withTimeout Result.Failed(sourceKey, "Episode not found in bundle")
+
+                    // Build hints from episode data
+                    val episodeId = episode.episodeId
+                        ?: return@withTimeout Result.Failed(sourceKey, "Episode has no episodeId")
+
+                    val hints = EpisodePlaybackHints(
+                        episodeId = episodeId,
+                        streamId = episodeId,
+                        containerExtension = parseContainerExtension(episode.playbackHintsJson),
+                        directUrl = parseDirectUrl(episode.playbackHintsJson),
+                    )
 
                     UnifiedLog.d(TAG) { "Episode $sourceKey enriched successfully: streamId=${hints.streamId}" }
                     Result.Ready(sourceKey, hints)
@@ -272,4 +373,24 @@ class EnsureEpisodePlaybackReadyUseCase
          * Quick check if episode is playback-ready (no API call).
          */
         suspend fun isReady(sourceKey: String): Boolean = repository.isPlaybackReady(sourceKey)
+
+        private fun parseContainerExtension(hintsJson: String?): String? {
+            if (hintsJson.isNullOrBlank()) return null
+            return try {
+                val regex = """"containerExtension"\s*:\s*"([^"]*)"""".toRegex()
+                regex.find(hintsJson)?.groupValues?.get(1)?.takeIf { it.isNotBlank() }
+            } catch (e: Exception) {
+                null
+            }
+        }
+
+        private fun parseDirectUrl(hintsJson: String?): String? {
+            if (hintsJson.isNullOrBlank()) return null
+            return try {
+                val regex = """"directUrl"\s*:\s*"([^"]*)"""".toRegex()
+                regex.find(hintsJson)?.groupValues?.get(1)?.takeIf { it.isNotBlank() }
+            } catch (e: Exception) {
+                null
+            }
+        }
     }

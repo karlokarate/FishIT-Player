@@ -1,4 +1,4 @@
-package com.fishit.player.pipeline.xtream.catalog
+package com.fishit.player.core.catalogsync
 
 import com.fishit.player.infra.logging.UnifiedLog
 import kotlinx.coroutines.delay

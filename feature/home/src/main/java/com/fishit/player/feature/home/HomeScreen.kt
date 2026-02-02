@@ -23,6 +23,9 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
@@ -40,6 +43,7 @@ import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.filled.PlayCircle
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.SearchOff
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Tv
 import androidx.compose.material.icons.filled.VideoLibrary
@@ -245,12 +249,15 @@ private fun HomeTopBar(
                 )
             }
 
-            IconButton(onClick = onDebugClick) {
-                Icon(
-                    Icons.Default.Info,
-                    contentDescription = "Debug",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+            // Debug button only visible in debug builds
+            if (com.fishit.player.feature.home.BuildConfig.DEBUG) {
+                IconButton(onClick = onDebugClick) {
+                    Icon(
+                        Icons.Default.Info,
+                        contentDescription = "Debug",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
 
             IconButton(onClick = onSettingsClick) {
@@ -496,6 +503,15 @@ private fun HomeContent(
     recentlyAddedPagingItems: LazyPagingItems<HomeMediaItem>? = null,
 ) {
     val listState = rememberLazyListState()
+    
+    // When search is active with query, show search results instead of normal rows
+    if (state.searchQuery.isNotBlank()) {
+        SearchResultsContent(
+            state = state,
+            onItemClick = onItemClick,
+        )
+        return
+    }
 
     LazyColumn(
         state = listState,
@@ -1166,6 +1182,151 @@ private fun SourceCountBadge(
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
+    }
+}
+
+/**
+ * Search results content displayed when user has entered a search query.
+ * Shows a grid of matching items from all content types.
+ * Requires at least 2 characters before search is triggered.
+ */
+@Composable
+private fun SearchResultsContent(
+    state: HomeState,
+    onItemClick: (HomeMediaItem) -> Unit,
+) {
+    val dimens = LocalFishDimens.current
+    val minSearchLength = 2
+    
+    when {
+        // Show hint when query is too short
+        state.searchQuery.length < minSearchLength -> {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center,
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center,
+                ) {
+                    Icon(
+                        Icons.Default.Search,
+                        contentDescription = null,
+                        modifier = Modifier.size(64.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        text = "Enter at least $minSearchLength characters",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+        }
+        
+        state.isSearchLoading -> {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center,
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center,
+                ) {
+                    CircularProgressIndicator()
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        text = "Searching...",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+        }
+        
+        state.searchResults.isEmpty() -> {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center,
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center,
+                ) {
+                    Icon(
+                        Icons.Default.SearchOff,
+                        contentDescription = null,
+                        modifier = Modifier.size(64.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        text = "No results for \"${state.searchQuery}\"",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "Try a different search term",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                    )
+                }
+            }
+        }
+        
+        else -> {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = dimens.contentPaddingHorizontal),
+            ) {
+                // Header with result count
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Icon(
+                        Icons.Default.Search,
+                        contentDescription = null,
+                        tint = FishColors.Primary,
+                        modifier = Modifier.size(24.dp),
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "${state.searchResults.size} results for \"${state.searchQuery}\"",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+                }
+                
+                // Results grid
+                LazyVerticalGrid(
+                    columns = GridCells.Adaptive(minSize = dimens.tileWidth),
+                    horizontalArrangement = Arrangement.spacedBy(dimens.tileSpacing),
+                    verticalArrangement = Arrangement.spacedBy(dimens.tileSpacing),
+                    modifier = Modifier.fillMaxSize(),
+                ) {
+                    items(
+                        items = state.searchResults,
+                        key = { it.id },
+                    ) { item ->
+                        FishTile(
+                            title = item.title,
+                            poster = item.poster,
+                            placeholder = item.placeholderThumbnail,
+                            onClick = { onItemClick(item) },
+                            modifier = Modifier.width(dimens.tileWidth),
+                            isNew = item.isNew,
+                            sourceColors = getSourceColors(item.sourceTypes),
+                        )
+                    }
+                }
+            }
+        }
     }
 }
 

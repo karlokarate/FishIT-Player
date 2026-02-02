@@ -30,6 +30,7 @@ dependencies {
     implementation(project(":core:detail-domain"))
     implementation(project(":core:metadata-normalizer"))
     implementation(project(":infra:logging"))
+    implementation(project(":infra:api-priority"))
 
     // For Xtream-based enrichment
     implementation(project(":infra:transport-xtream"))

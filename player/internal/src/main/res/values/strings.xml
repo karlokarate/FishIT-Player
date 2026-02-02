@@ -9,4 +9,22 @@
     <string name="player_unmute">Unmute</string>
     <string name="player_live">LIVE</string>
     <string name="player_error_generic">An error occurred during playback</string>
+    
+    <!-- Track selection (Phase 6/7) -->
+    <string name="player_audio_track">Audio track</string>
+    <string name="player_subtitles">Subtitles</string>
+    <string name="player_playback_speed">Playback speed</string>
+    
+    <!-- Audio track sheet -->
+    <string name="player_audio_track_title">Audio Track</string>
+    <string name="player_audio_track_none">No audio tracks available</string>
+    
+    <!-- Subtitle sheet -->
+    <string name="player_subtitle_title">Subtitles</string>
+    <string name="player_subtitle_off">Off</string>
+    <string name="player_subtitle_none">No subtitles available</string>
+    
+    <!-- Speed selection sheet -->
+    <string name="player_speed_title">Playback Speed</string>
+    <string name="player_speed_normal">Normal</string>
 </resources>
