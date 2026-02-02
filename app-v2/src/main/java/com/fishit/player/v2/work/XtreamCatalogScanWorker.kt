@@ -305,20 +305,37 @@ class XtreamCatalogScanWorker
                     checkpoint
                 }
 
-            // Determine what to include based on checkpoint phase
-            val includeVod = currentCheckpoint.phase == XtreamSyncPhase.VOD_LIST
-            val includeSeries =
-                currentCheckpoint.phase in
-                    listOf(
-                        XtreamSyncPhase.VOD_LIST,
-                        XtreamSyncPhase.SERIES_LIST,
-                    )
-            // Episodes are NEVER included in background sync (lazy loading)
+            // =================================================================
+            // BUG FIX (Feb 2026): Always include ALL content types
+            //
+            // RATIONALE: The XtreamCatalogPipeline runs VOD, Series, and Live
+            // in PARALLEL via async jobs with Semaphore(3). The checkpoint phase
+            // was originally designed for SEQUENTIAL scanning, but with parallel
+            // execution, the phase-based includes caused series to be skipped:
+            //
+            // OLD (BUG): includeSeries = phase in [VOD_LIST, SERIES_LIST]
+            //   → If checkpoint was at LIVE_LIST from interrupted sync, series skipped!
+            //
+            // NEW (FIX): Always include ALL content types. The pipeline handles
+            // parallel execution, and the checkpoint is only for tracking progress
+            // within each phase, not for deciding what to scan.
+            //
+            // This matches the pipeline's PARALLEL architecture where:
+            // - Phase 1 (async): Live Channels
+            // - Phase 2 (async): VOD Items
+            // - Phase 3 (async): Series Containers
+            // All start concurrently via Semaphore(3).
+            // =================================================================
+            val includeVod = true
+            val includeSeries = true
+            // Episodes are NEVER included in background sync (lazy loading via LoadSeasonEpisodesUseCase)
             val includeEpisodes = false
-            val includeLive = true // Always include live in list phases
+            val includeLive = true
 
-            UnifiedLog.d(TAG) {
-                "Catalog sync: includeVod=$includeVod includeSeries=$includeSeries includeEpisodes=$includeEpisodes (lazy) includeLive=$includeLive scope=${input.xtreamSyncScope} enhanced=${input.xtreamUseEnhancedSync}"
+            UnifiedLog.i(TAG) {
+                "Catalog sync (PARALLEL): includeVod=$includeVod includeSeries=$includeSeries " +
+                    "includeEpisodes=$includeEpisodes (lazy) includeLive=$includeLive " +
+                    "checkpoint_phase=${currentCheckpoint.phase} enhanced=${input.xtreamUseEnhancedSync}"
             }
 
             // PLATINUM: Pass already-processed series IDs (kept for future episode pre-fetch feature)
