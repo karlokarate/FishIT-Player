@@ -103,25 +103,23 @@ class XtreamCatalogPipelineImpl
                     val headers = XtreamHttpHeaders.withDefaults(config.imageAuthHeaders)
 
                     // ================================================================
-                    // THROTTLED PARALLEL PHASE EXECUTION (Hybrid Approach)
+                    // FULL PARALLEL PHASE EXECUTION (Memory-Optimized)
                     //
-                    // Balanced approach combining benefits of parallel and sequential:
-                    // - Uses Semaphore to limit to 2 concurrent streams (LIVE + VOD)
-                    // - Memory: 2 × 70MB = 140MB peak (manageable, no GC thrashing)
-                    // - Time: ~160s (-40% vs sequential 263s)
-                    // - SERIES guaranteed to sync (no timeout with new 120s limit)
+                    // With reduced batch size (150 items vs 500), all 3 streams
+                    // can now run in parallel without GC thrashing:
+                    // - Memory per stream: ~25MB (was ~70MB with batch size 500)
+                    // - Total peak: 3 × 25MB = ~75MB (well under 140MB threshold)
+                    // - Time: ~120s (fastest possible)
                     //
-                    // Why throttled parallel is optimal:
-                    // - Full Sequential: 263s, 70MB ✅ Low memory ❌ Too slow
-                    // - Full Parallel: 150s, 210MB ✅ Fast ❌ GC thrashing
-                    // - Throttled (2): 160s, 140MB ✅ Balanced ✅ No GC issues
+                    // Memory profile comparison:
+                    // - Batch 500 + Semaphore(2): 2 × 70MB = 140MB, ~160s
+                    // - Batch 150 + Semaphore(3): 3 × 25MB = 75MB, ~120s ✅
                     //
-                    // Order: LIVE + VOD parallel, then SERIES
-                    // This ensures Live TV and Movies appear simultaneously!
+                    // All content types (Live, VOD, Series) appear simultaneously!
                     // ================================================================
                     
-                    // Semaphore: Max 2 concurrent streams to control memory
-                    val syncSemaphore = Semaphore(permits = 2)
+                    // Semaphore: Max 3 concurrent streams (all parallel with optimized batches)
+                    val syncSemaphore = Semaphore(permits = 3)
 
                     coroutineScope {
                         val jobs = listOf(

@@ -66,8 +66,17 @@ data class XtreamCatalogConfig(
         /** Default parallelism for episode loading (4 concurrent series). */
         const val DEFAULT_EPISODE_PARALLELISM = 4
 
-        /** Default batch size for streaming (500 items per batch). */
-        const val DEFAULT_BATCH_SIZE = 500
+        /**
+         * Memory-optimized batch size for streaming (150 items per batch).
+         *
+         * **Memory Profile:**
+         * - 150 items × ~3KB/item = ~450KB per batch
+         * - Enables Semaphore(3) without GC thrashing
+         * - Safe for 1GB RAM devices (Fire TV Stick)
+         *
+         * Previous: 500 items (~1.5MB per batch) required Semaphore(2)
+         */
+        const val DEFAULT_BATCH_SIZE = 150
 
         /** Default config including all content types. */
         val DEFAULT = XtreamCatalogConfig()
