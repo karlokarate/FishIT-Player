@@ -64,6 +64,10 @@ data class HomeState(
     val isSearchVisible: Boolean = false,
     /** All available genres extracted from content (for dynamic filtering) */
     val availableGenres: List<String> = emptyList(),
+    /** Search results from DB query (when searchQuery is not blank) */
+    val searchResults: List<HomeMediaItem> = emptyList(),
+    /** True when search is loading */
+    val isSearchLoading: Boolean = false,
     // === Row-level loading states (for special rows only) ===
     /** True while continue watching row is still loading */
     val isContinueWatchingLoading: Boolean = true,
@@ -78,6 +82,10 @@ data class HomeState(
     /** True if search or filter is active */
     val isFilterActive: Boolean
         get() = searchQuery.isNotBlank() || selectedGenre != PresetGenreFilter.ALL
+    
+    /** True if there are search results to show */
+    val hasSearchResults: Boolean
+        get() = searchResults.isNotEmpty()
     
     /** True if special rows are still loading */
     val isSpecialRowsLoading: Boolean
@@ -174,12 +182,21 @@ class HomeViewModel
         private val _selectedGenre = MutableStateFlow(PresetGenreFilter.ALL)
         private val _isSearchVisible = MutableStateFlow(false)
 
+        companion object {
+            private const val TAG = "HomeViewModel"
+            /** Debounce delay for search input (ms) - wait for user to stop typing */
+            private const val SEARCH_DEBOUNCE_MS = 500L
+            /** Minimum characters required before search is triggered */
+            private const val MIN_SEARCH_LENGTH = 2
+        }
+
         /**
          * Debounced search query to prevent excessive filtering on every keystroke.
+         * Only triggers search when query is at least MIN_SEARCH_LENGTH characters.
          */
         private val debouncedSearchQuery =
             _searchQuery
-                .debounce(300)
+                .debounce(SEARCH_DEBOUNCE_MS)
                 .distinctUntilChanged()
                 .stateIn(
                     scope = viewModelScope,
@@ -241,9 +258,24 @@ class HomeViewModel
             
             // ==================== Search/Filter State ====================
             
+            // Perform actual search when debounced query changes
+            // Requires minimum length to prevent single-character noise searches
             debouncedSearchQuery
                 .onEach { query ->
                     _state.update { it.copy(searchQuery = query) }
+                    if (query.length >= MIN_SEARCH_LENGTH) {
+                        _state.update { it.copy(isSearchLoading = true) }
+                        try {
+                            val results = homeContentRepository.search(query)
+                            _state.update { it.copy(searchResults = results, isSearchLoading = false) }
+                        } catch (e: Exception) {
+                            UnifiedLog.e(TAG) { "Search failed: ${e.message}" }
+                            _state.update { it.copy(searchResults = emptyList(), isSearchLoading = false) }
+                        }
+                    } else {
+                        // Clear results when query is too short
+                        _state.update { it.copy(searchResults = emptyList(), isSearchLoading = false) }
+                    }
                 }
                 .launchIn(viewModelScope)
             
@@ -264,6 +296,7 @@ class HomeViewModel
          * Filtered state that applies search query, genre filter, and search visibility.
          *
          * This is the primary state to use in UI when filtering is desired.
+         * When search is active with results, searchResults contains DB-queried items.
          */
         val filteredState: StateFlow<HomeState> =
             combine(
@@ -272,8 +305,7 @@ class HomeViewModel
                 _selectedGenre,
                 _isSearchVisible,
             ) { currentState, query, genre, isSearchVisible ->
-                // NOTE: Filtering for Movies/Series/Clips/Live is NOT done here anymore.
-                // Large catalog filtering should be done at the DB/Paging level for efficiency.
+                // When search is active, use searchResults from state (populated by DB query)
                 // Only special rows (Continue Watching, Recently Added) can be filtered in-memory.
                 val baseState = if (query.isBlank() && genre == PresetGenreFilter.ALL) {
                     currentState
@@ -281,6 +313,7 @@ class HomeViewModel
                     currentState.copy(
                         continueWatchingItems = filterItems(currentState.continueWatchingItems, query, genre),
                         recentlyAddedItems = filterItems(currentState.recentlyAddedItems, query, genre),
+                        // searchResults comes from state (DB query)
                     )
                 }
                 baseState.copy(
@@ -393,9 +426,5 @@ class HomeViewModel
                 .sorted()
             
             _state.update { it.copy(availableGenres = genres) }
-        }
-
-        private companion object {
-            const val TAG = "HomeViewModel"
         }
     }

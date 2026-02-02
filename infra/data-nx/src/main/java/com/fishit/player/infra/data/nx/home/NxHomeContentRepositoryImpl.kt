@@ -334,6 +334,22 @@ class NxHomeContentRepositoryImpl @Inject constructor(
             WorkType.UNKNOWN -> MediaType.UNKNOWN
         }
     }
+    
+    // ==================== Search ====================
+    
+    override suspend fun search(query: String, limit: Int): List<HomeMediaItem> {
+        val normalizedQuery = query.trim().lowercase()
+        if (normalizedQuery.isBlank()) return emptyList()
+        
+        return try {
+            val works = workRepository.searchByTitle(normalizedQuery, limit.coerceAtMost(ContentDisplayLimits.SEARCH))
+                .filter { it.type != WorkType.EPISODE } // Exclude episodes from search
+            batchMapToHomeMediaItems(works)
+        } catch (e: Exception) {
+            UnifiedLog.e(TAG, e) { "Search failed for query: $query" }
+            emptyList()
+        }
+    }
 }
 
 /**

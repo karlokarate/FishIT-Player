@@ -110,8 +110,10 @@ class LibraryViewModel
     ) : ViewModel() {
         companion object {
             private const val TAG = "LibraryViewModel"
-            /** Debounce delay for search input (ms) - consistent with HomeViewModel */
-            private const val SEARCH_DEBOUNCE_MS = 300L
+            /** Debounce delay for search input (ms) - wait for user to stop typing */
+            private const val SEARCH_DEBOUNCE_MS = 500L
+            /** Minimum characters required before search is triggered */
+            private const val MIN_SEARCH_LENGTH = 2
         }
 
         private val _selectedVodCategory = MutableStateFlow<String?>(null)
@@ -266,6 +268,8 @@ class LibraryViewModel
                 base.copy(selectedSeriesCategory = seriesCat)
             }.combine(_isSearchActive) { base, searching ->
                 base.copy(isSearchActive = searching)
+            }.combine(_searchQuery) { base, query ->
+                base.copy(searchQuery = query)
             }.combine(_searchResults) { base, results ->
                 base.copy(searchResults = results)
             }.combine(_vodSortOption) { base, sort ->
@@ -371,12 +375,14 @@ class LibraryViewModel
 
         /**
          * Collect debounced search queries and perform search.
-         * Prevents UI blocking by waiting 300ms after user stops typing.
+         * Prevents UI blocking by waiting 500ms after user stops typing.
+         * Requires minimum length to prevent single-character noise searches.
          */
         private fun collectDebouncedSearchQuery() {
             debouncedSearchQuery
                 .onEach { query ->
-                    if (query.isBlank()) {
+                    if (query.length < MIN_SEARCH_LENGTH) {
+                        // Clear results when query is too short
                         _searchResults.value = emptyList()
                     } else {
                         try {
@@ -405,6 +411,7 @@ private data class CombinedBase(
     val selectedVodCategory: String? = null,
     val selectedSeriesCategory: String? = null,
     val isSearchActive: Boolean = false,
+    val searchQuery: String = "",
     val searchResults: List<LibraryMediaItem> = emptyList(),
     val vodSortOption: SortOption = SortOption.DEFAULT,
     val seriesSortOption: SortOption = SortOption.DEFAULT,
@@ -423,6 +430,7 @@ private data class CombinedBase(
             selectedVodCategory = selectedVodCategory,
             selectedSeriesCategory = selectedSeriesCategory,
             isSearchActive = isSearchActive,
+            searchQuery = searchQuery,
             searchResults = searchResults,
             vodSortOption = vodSortOption,
             seriesSortOption = seriesSortOption,

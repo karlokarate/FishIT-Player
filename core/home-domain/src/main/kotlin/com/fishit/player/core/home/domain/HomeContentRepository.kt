@@ -57,4 +57,16 @@ interface HomeContentRepository {
      * Sorted by createdAt descending.
      */
     fun getRecentlyAddedPagingData(): Flow<PagingData<HomeMediaItem>>
+    
+    // ==================== Search ====================
+    
+    /**
+     * Search all content by title.
+     * Returns a flat list (not paged) for search results display.
+     *
+     * @param query Search query (case-insensitive, matches title contains)
+     * @param limit Maximum results to return (default 50)
+     * @return List of matching items across all content types
+     */
+    suspend fun search(query: String, limit: Int = 50): List<HomeMediaItem>
 }
