@@ -239,6 +239,7 @@ dependencies {
     implementation(project(":infra:data-home"))
     implementation(project(":infra:data-nx"))
     implementation(project(":infra:work"))
+    implementation(project(":infra:api-priority"))
 
     // Coil for ImageLoader singleton
     implementation("io.coil-kt.coil3:coil-compose:3.3.0")

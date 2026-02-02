@@ -97,14 +97,16 @@ class UnifiedDetailUseCases
                             }
 
                             // Priority 2: Fallback canonical key patterns
-                            // Format: movie:slug:year or episode:slug:SxxExx
-                            id.startsWith("movie:") || id.startsWith("episode:") -> {
+                            // Format: movie:slug:year, series:slug:year, or episode:slug:SxxExx
+                            // NOTE: series:* uses MediaKind.MOVIE (it's a "work" not an episode)
+                            id.startsWith("movie:") || id.startsWith("series:") || id.startsWith("episode:") -> {
                                 val canonicalId =
                                     CanonicalMediaId(
                                         kind =
                                             if (id.startsWith("episode:")) {
                                                 MediaKind.EPISODE
                                             } else {
+                                                // Both movie:* and series:* use MOVIE kind
                                                 MediaKind.MOVIE
                                             },
                                         key = id.asCanonicalId(),

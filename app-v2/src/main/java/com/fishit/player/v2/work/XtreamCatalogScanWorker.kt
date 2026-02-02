@@ -15,6 +15,7 @@ import com.fishit.player.core.persistence.cache.HomeCacheInvalidator
 import com.fishit.player.infra.data.xtream.XtreamCatalogRepository
 import com.fishit.player.infra.data.xtream.XtreamLiveRepository
 import com.fishit.player.infra.logging.UnifiedLog
+import com.fishit.player.infra.priority.ApiPriorityDispatcher
 import com.fishit.player.infra.transport.xtream.XtreamApiClient
 import com.fishit.player.v2.BuildConfig
 import dagger.assisted.Assisted
@@ -41,6 +42,11 @@ import kotlinx.coroutines.isActive
  * 5. VOD_INFO - Backfill VOD details (plot/cast/director)
  * 6. SERIES_INFO - Backfill series details
  *
+ * **Priority Cooperation:**
+ * This worker cooperates with the priority system to yield when user
+ * opens detail screens (HIGH priority calls). At batch boundaries, it
+ * checks [ApiPriorityDispatcher.shouldYield] and pauses if needed.
+ *
  * Contract: CATALOG_SYNC_WORKERS_CONTRACT_V2
  * - W-2: All scanning MUST go through CatalogSyncService
  * - W-17: FireTV Safety (bounded batches, frequent checkpoints)
@@ -62,6 +68,7 @@ class XtreamCatalogScanWorker
         private val liveRepository: XtreamLiveRepository,
         private val xtreamApiClient: XtreamApiClient,
         private val homeCacheInvalidator: HomeCacheInvalidator, // ✅ Phase 2: Cache invalidation
+        private val priorityDispatcher: ApiPriorityDispatcher, // ✅ Priority cooperation
     ) : CoroutineWorker(context, workerParams) {
         companion object {
             private const val TAG = "XtreamCatalogScanWorker"
@@ -342,6 +349,13 @@ class XtreamCatalogScanWorker
                             return@collect
                         }
 
+                        // Cooperative yielding: pause if high-priority user action is active
+                        if (priorityDispatcher.shouldYield()) {
+                            UnifiedLog.d(TAG) { "Catalog sync yielding for high-priority user action" }
+                            priorityDispatcher.awaitHighPriorityComplete()
+                            UnifiedLog.d(TAG) { "Catalog sync resuming after high-priority completion" }
+                        }
+
                         when (status) {
                             is SyncStatus.Started -> {
                                 UnifiedLog.d(TAG) { "Enhanced catalog sync started" }
@@ -427,6 +441,13 @@ class XtreamCatalogScanWorker
                                 if (elapsedMs > input.maxRuntimeMs) {
                                     budgetExceeded = true
                                     return@collect
+                                }
+
+                                // Cooperative yielding: pause if high-priority user action is active
+                                if (priorityDispatcher.shouldYield()) {
+                                    UnifiedLog.d(TAG) { "Channel sync yielding for high-priority user action" }
+                                    priorityDispatcher.awaitHighPriorityComplete()
+                                    UnifiedLog.d(TAG) { "Channel sync resuming after high-priority completion" }
                                 }
 
                                 when (status) {
@@ -686,6 +707,13 @@ class XtreamCatalogScanWorker
 
                 currentCheckpoint = currentCheckpoint.withLastVodInfoId(vodIds.last())
 
+                // Cooperative yielding: pause if high-priority user action is active
+                if (priorityDispatcher.shouldYield()) {
+                    UnifiedLog.d(TAG) { "VOD backfill yielding for high-priority user action" }
+                    priorityDispatcher.awaitHighPriorityComplete()
+                    UnifiedLog.d(TAG) { "VOD backfill resuming after high-priority completion" }
+                }
+
                 delay(INFO_BACKFILL_THROTTLE_MS)
             }
 
@@ -775,6 +803,13 @@ class XtreamCatalogScanWorker
                 }
 
                 currentCheckpoint = currentCheckpoint.withLastSeriesInfoId(seriesIds.last())
+
+                // Cooperative yielding: pause if high-priority user action is active
+                if (priorityDispatcher.shouldYield()) {
+                    UnifiedLog.d(TAG) { "Series backfill yielding for high-priority user action" }
+                    priorityDispatcher.awaitHighPriorityComplete()
+                    UnifiedLog.d(TAG) { "Series backfill resuming after high-priority completion" }
+                }
 
                 delay(INFO_BACKFILL_THROTTLE_MS)
             }

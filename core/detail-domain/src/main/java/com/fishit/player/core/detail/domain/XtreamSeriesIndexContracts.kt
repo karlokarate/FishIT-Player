@@ -119,18 +119,23 @@ interface XtreamSeriesIndexRepository {
     }
 }
 
-interface XtreamSeriesIndexRefresher {
-    suspend fun refreshSeasons(seriesId: Int): Boolean
-
-    suspend fun refreshEpisodes(
-        seriesId: Int,
-        seasonNumber: Int,
-    ): Boolean
-
-    suspend fun refreshEpisodePlaybackHints(
-        seriesId: Int,
-        seasonNumber: Int,
-        episodeNumber: Int,
-        sourceKey: String,
-    ): EpisodePlaybackHints?
-}
+// =============================================================================
+// PLATIN PHASE 3 COMPLETE: XtreamSeriesIndexRefresher REMOVED (2025-01-31)
+// =============================================================================
+//
+// The deprecated XtreamSeriesIndexRefresher interface has been completely removed.
+// All callers have been migrated to use UnifiedDetailLoader directly:
+//
+// Migration completed for:
+// - LoadSeriesSeasonsUseCase → unifiedDetailLoader.loadSeriesDetailBySeriesId()
+// - LoadSeasonEpisodesUseCase → unifiedDetailLoader.loadSeriesDetailBySeriesId()
+// - EnsureEpisodePlaybackReadyUseCase → unifiedDetailLoader.loadSeriesDetailBySeriesId()
+//
+// Benefits achieved:
+// - ONE API call instead of multiple separate calls
+// - Atomic save of metadata + seasons + episodes
+// - Proper layer boundaries (detail API in infra:data-detail)
+// - Reduced code complexity and maintenance burden
+//
+// See: UnifiedDetailLoader, UnifiedDetailLoaderImpl
+// =============================================================================

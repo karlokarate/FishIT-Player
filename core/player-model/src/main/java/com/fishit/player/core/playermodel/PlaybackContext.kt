@@ -74,7 +74,17 @@ data class PlaybackContext(
 
         /**
          * Creates an Xtream VOD playback context.
+         *
+         * **DEPRECATED:** Use [com.fishit.player.core.model.ids.XtreamIdCodec.vod] to generate
+         * the canonicalId, then construct PlaybackContext directly. This method uses hardcoded
+         * ID format because core:player-model has no dependencies.
+         *
+         * @see com.fishit.player.core.model.ids.XtreamIdCodec
          */
+        @Deprecated(
+            message = "Use XtreamIdCodec.vod(vodId) for canonicalId instead",
+            level = DeprecationLevel.WARNING,
+        )
         fun xtreamVod(
             vodId: Long,
             streamUrl: String,
@@ -82,6 +92,7 @@ data class PlaybackContext(
             headers: Map<String, String> = emptyMap(),
         ): PlaybackContext =
             PlaybackContext(
+                // Format must match XtreamIdCodec.vod() - "xtream:vod:{vodId}"
                 canonicalId = "xtream:vod:$vodId",
                 sourceType = SourceType.XTREAM,
                 uri = streamUrl,
@@ -91,7 +102,17 @@ data class PlaybackContext(
 
         /**
          * Creates an Xtream Live playback context.
+         *
+         * **DEPRECATED:** Use [com.fishit.player.core.model.ids.XtreamIdCodec.live] to generate
+         * the canonicalId, then construct PlaybackContext directly. This method uses hardcoded
+         * ID format because core:player-model has no dependencies.
+         *
+         * @see com.fishit.player.core.model.ids.XtreamIdCodec
          */
+        @Deprecated(
+            message = "Use XtreamIdCodec.live(channelId) for canonicalId instead",
+            level = DeprecationLevel.WARNING,
+        )
         fun xtreamLive(
             channelId: Long,
             streamUrl: String,
@@ -99,6 +120,7 @@ data class PlaybackContext(
             headers: Map<String, String> = emptyMap(),
         ): PlaybackContext =
             PlaybackContext(
+                // Format must match XtreamIdCodec.live() - "xtream:live:{channelId}"
                 canonicalId = "xtream:live:$channelId",
                 sourceType = SourceType.XTREAM,
                 uri = streamUrl,
