@@ -42,6 +42,7 @@
             <option value="$PROJECT_DIR$/feature/settings" />
             <option value="$PROJECT_DIR$/feature/telegram-media" />
             <option value="$PROJECT_DIR$/infra" />
+            <option value="$PROJECT_DIR$/infra/api-priority" />
             <option value="$PROJECT_DIR$/infra/cache" />
             <option value="$PROJECT_DIR$/infra/data-detail" />
             <option value="$PROJECT_DIR$/infra/data-home" />

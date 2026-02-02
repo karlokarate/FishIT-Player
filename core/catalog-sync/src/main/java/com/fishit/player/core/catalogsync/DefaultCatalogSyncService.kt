@@ -83,6 +83,8 @@ class DefaultCatalogSyncService
         private val fingerprintRepository: FingerprintRepository,
         // PLATINUM OPTIMIZATION: Sync state management (Jan 2026)
         private val workRepository: com.fishit.player.infra.data.nx.repository.NxWorkRepositoryImpl,
+        // ObjectBox store for thread resource cleanup
+        private val boxStore: io.objectbox.BoxStore,
     ) : CatalogSyncService {
         companion object {
             private const val TAG = "CatalogSyncService"
@@ -1883,18 +1885,27 @@ class DefaultCatalogSyncService
             val buffer = ChannelSyncBuffer<RawMediaMetadata>(capacity = bufferSize)
             val syncConfig = SyncConfig.DEFAULT
 
+            // HARDENED: Error tracking for resilience
+            val totalDiscovered = java.util.concurrent.atomic.AtomicInteger(0)
+            val totalPersisted = java.util.concurrent.atomic.AtomicInteger(0)
+            val totalErrors = java.util.concurrent.atomic.AtomicInteger(0)
+            val consecutiveErrors = java.util.concurrent.atomic.AtomicInteger(0)
+
+            // HARDENED: Constants for resilience
+            val maxRetries = 3
+            val maxConsecutiveErrors = 10 // Abort only after 10 consecutive failures
+            val retryBackoffMs = listOf(100L, 500L, 2000L) // Exponential backoff
+
             UnifiedLog.i(TAG) {
-                "Starting channel-buffered Xtream sync: buffer=$bufferSize, consumers=$consumerCount"
+                "Starting HARDENED channel-buffered Xtream sync: buffer=$bufferSize, consumers=$consumerCount"
             }
 
             try {
                 coroutineScope {
-                    val totalDiscovered = java.util.concurrent.atomic.AtomicInteger(0)
-                    val totalPersisted = java.util.concurrent.atomic.AtomicInteger(0)
-
-                    // Producer: Pipeline → Buffer
+                    // Producer: Pipeline → Buffer (with error isolation)
                     val producerJob =
                         launch {
+                            var producerError: Throwable? = null
                             try {
                                 xtreamPipeline
                                     .scanCatalog(
@@ -1924,26 +1935,90 @@ class DefaultCatalogSyncService
                                                     ),
                                                 )
                                             }
+                                            is XtreamCatalogEvent.ScanError -> {
+                                                // HARDENED: Log pipeline errors but don't abort
+                                                UnifiedLog.w(TAG) {
+                                                    "Pipeline scan error (non-fatal): ${event.message}"
+                                                }
+                                            }
                                             else -> { /* Ignore other events */ }
                                         }
                                     }
+                            } catch (ce: CancellationException) {
+                                throw ce
+                            } catch (e: Exception) {
+                                // HARDENED: Store producer error but don't throw immediately
+                                // Let consumers finish processing buffered items
+                                producerError = e
+                                UnifiedLog.w(TAG, e) {
+                                    "Producer encountered error, closing buffer gracefully: ${e.message}"
+                                }
                             } finally {
                                 buffer.close()
                                 val metrics = buffer.getMetrics()
                                 UnifiedLog.d(TAG) {
                                     "Producer finished: ${metrics.itemsSent} items sent, " +
-                                        "${metrics.backpressureEvents} backpressure events"
+                                        "${metrics.backpressureEvents} backpressure events" +
+                                        (producerError?.let { ", error=${it.message}" } ?: "")
                                 }
                             }
                         }
 
-                    // Consumers: Buffer → DB (parallel)
+                    // Consumers: Buffer → DB (parallel, with hardened retry logic)
                     val consumerJobs =
                         List(consumerCount) { consumerId ->
                             async(kotlinx.coroutines.Dispatchers.IO.limitedParallelism(1)) {
                                 // ✅ limitedParallelism(1) ensures ObjectBox transaction stays on same thread!
                                 val batch = mutableListOf<RawMediaMetadata>()
                                 var batchCount = 0
+                                var consumerErrors = 0
+
+                                /**
+                                 * HARDENED: Persist batch with exponential backoff retry.
+                                 * Returns true if successful, false if all retries exhausted.
+                                 */
+                                suspend fun persistWithRetry(items: List<RawMediaMetadata>): Boolean {
+                                    var lastError: Exception? = null
+
+                                    repeat(maxRetries) { attempt ->
+                                        try {
+                                            persistXtreamCatalogBatch(items, syncConfig)
+                                            // Success! Reset consecutive error counter
+                                            consecutiveErrors.set(0)
+                                            return true
+                                        } catch (ce: CancellationException) {
+                                            throw ce
+                                        } catch (e: Exception) {
+                                            lastError = e
+                                            val backoffMs = retryBackoffMs.getOrElse(attempt) { 2000L }
+                                            UnifiedLog.w(TAG) {
+                                                "Consumer#$consumerId: Batch failed (attempt ${attempt + 1}/$maxRetries), " +
+                                                    "retrying in ${backoffMs}ms: ${e.message}"
+                                            }
+                                            delay(backoffMs)
+                                        }
+                                    }
+
+                                    // All retries exhausted
+                                    val currentConsecutive = consecutiveErrors.incrementAndGet()
+                                    totalErrors.incrementAndGet()
+                                    consumerErrors++
+
+                                    UnifiedLog.e(TAG, lastError) {
+                                        "Consumer#$consumerId: Batch FAILED after $maxRetries retries " +
+                                            "(consecutive=$currentConsecutive, total=${totalErrors.get()})"
+                                    }
+
+                                    // HARDENED: Only abort if too many consecutive errors
+                                    if (currentConsecutive >= maxConsecutiveErrors) {
+                                        throw IllegalStateException(
+                                            "Too many consecutive errors ($currentConsecutive), aborting sync",
+                                            lastError
+                                        )
+                                    }
+
+                                    return false
+                                }
 
                                 try {
                                     while (isActive) {
@@ -1951,45 +2026,39 @@ class DefaultCatalogSyncService
                                         batch.add(item)
 
                                         if (batch.size >= BATCH_SIZE) {
-                                            try {
-                                                persistXtreamCatalogBatch(batch, syncConfig)
+                                            if (persistWithRetry(batch)) {
                                                 totalPersisted.addAndGet(batch.size)
                                                 batchCount++
 
                                                 if (batchCount % 5 == 0) {
                                                     UnifiedLog.d(TAG) {
-                                                        "Consumer#$consumerId: ${batchCount} batches, " +
-                                                            "${totalPersisted.get()} total items"
+                                                        "Consumer#$consumerId: $batchCount batches, " +
+                                                            "${totalPersisted.get()} total, " +
+                                                            "${totalErrors.get()} errors"
                                                     }
                                                 }
-                                            } catch (e: Exception) {
-                                                UnifiedLog.e(TAG, e) {
-                                                    "Consumer#$consumerId: Batch failed, retrying"
-                                                }
-                                                // Retry once
-                                                persistXtreamCatalogBatch(batch, syncConfig)
-                                                totalPersisted.addAndGet(batch.size)
                                             }
+                                            // Clear batch even on failure to prevent memory leak
                                             batch.clear()
+                                        }
                                     }
-                                }
-                            } catch (_: kotlinx.coroutines.channels.ClosedReceiveChannelException) {
-                                // Buffer closed, flush remaining
+                                } catch (_: kotlinx.coroutines.channels.ClosedReceiveChannelException) {
+                                    // Buffer closed, flush remaining with retry
                                     if (batch.isNotEmpty()) {
                                         UnifiedLog.d(TAG) {
                                             "Consumer#$consumerId: Flushing ${batch.size} remaining items"
                                         }
-                                        persistXtreamCatalogBatch(batch, syncConfig)
-                                        totalPersisted.addAndGet(batch.size)
+                                        if (persistWithRetry(batch)) {
+                                            totalPersisted.addAndGet(batch.size)
+                                        }
                                     }
                                     UnifiedLog.d(TAG) {
-                                        "Consumer#$consumerId: Finished ($batchCount batches)"
+                                        "Consumer#$consumerId: Finished ($batchCount batches, $consumerErrors errors)"
                                     }
                                 } finally {
                                     // CRITICAL: Close ObjectBox thread resources to prevent transaction leaks
-                                    // This prevents "Destroying inactive transaction" errors in FinalizerDaemon
                                     try {
-                                        io.objectbox.BoxStore.closeThreadResources()
+                                        boxStore.closeThreadResources()
                                         UnifiedLog.d(TAG) {
                                             "Consumer#$consumerId: Closed ObjectBox thread resources"
                                         }
@@ -2008,40 +2077,83 @@ class DefaultCatalogSyncService
 
                     val durationMs = System.currentTimeMillis() - startTimeMs
                     val bufferMetrics = buffer.getMetrics()
+                    val errorCount = totalErrors.get()
 
                     UnifiedLog.i(TAG) {
                         "Channel-buffered sync complete: ${totalPersisted.get()} items in ${durationMs}ms " +
                             "(${bufferMetrics.throughputPerSec.toInt()} items/sec, " +
-                            "${bufferMetrics.backpressureEvents} backpressure events)"
+                            "${bufferMetrics.backpressureEvents} backpressure, " +
+                            "$errorCount batch errors)"
                     }
 
-                    send(
-                        SyncStatus.Completed(
-                            source = SOURCE_XTREAM,
-                            totalItems = totalPersisted.get().toLong(),
-                            durationMs = durationMs,
-                        ),
-                    )
+                    // HARDENED: Report success even with some errors (partial success)
+                    if (totalPersisted.get() > 0) {
+                        send(
+                            SyncStatus.Completed(
+                                source = SOURCE_XTREAM,
+                                totalItems = totalPersisted.get().toLong(),
+                                durationMs = durationMs,
+                            ),
+                        )
+                    } else if (errorCount > 0) {
+                        // No items persisted and errors occurred - report error
+                        send(
+                            SyncStatus.Error(
+                                source = SOURCE_XTREAM,
+                                reason = "all_batches_failed",
+                                message = "All $errorCount batches failed, no items persisted",
+                                throwable = null,
+                            ),
+                        )
+                    } else {
+                        // No items and no errors - empty catalog
+                        send(
+                            SyncStatus.Completed(
+                                source = SOURCE_XTREAM,
+                                totalItems = 0,
+                                durationMs = durationMs,
+                            ),
+                        )
+                    }
                 }
             } catch (e: CancellationException) {
-                UnifiedLog.w(TAG) { "Channel-buffered sync cancelled" }
+                UnifiedLog.w(TAG) { "Channel-buffered sync cancelled (persisted=${totalPersisted.get()})" }
                 send(
                     SyncStatus.Cancelled(
                         source = SOURCE_XTREAM,
-                        itemsPersisted = 0,
+                        itemsPersisted = totalPersisted.get().toLong(),
                     ),
                 )
                 throw e
             } catch (e: Exception) {
-                UnifiedLog.e(TAG, e) { "Channel-buffered sync failed: ${e.message}" }
-                send(
-                    SyncStatus.Error(
-                        source = SOURCE_XTREAM,
-                        reason = "channel_sync_error",
-                        message = e.message ?: "Unknown error",
-                        throwable = e,
-                    ),
-                )
+                // HARDENED: Only reach here on catastrophic failure (>10 consecutive errors)
+                val persisted = totalPersisted.get()
+                UnifiedLog.e(TAG, e) {
+                    "Channel-buffered sync FAILED (persisted=$persisted): ${e.message}"
+                }
+
+                // If we persisted some items, report partial success instead of error
+                if (persisted > 0) {
+                    UnifiedLog.w(TAG) {
+                        "Reporting partial success: $persisted items persisted before failure"
+                    }
+                    send(
+                        SyncStatus.Completed(
+                            source = SOURCE_XTREAM,
+                            totalItems = persisted.toLong(),
+                            durationMs = System.currentTimeMillis() - startTimeMs,
+                        ),
+                    )
+                } else {
+                    send(
+                        SyncStatus.Error(
+                            source = SOURCE_XTREAM,
+                            reason = "channel_sync_catastrophic_error",
+                            message = e.message ?: "Unknown error",
+                            throwable = e,
+                        ),
+                    )
+                }
             } finally {
                 _syncActiveState.value = SyncActiveState(isActive = false)
             }
