@@ -59,19 +59,56 @@ object UnifiedLog {
     }
 
     /**
+     * Global enable flag for logging.
+     *
+     * When false, ALL logging operations are short-circuited immediately
+     * for maximum performance in release builds. No string allocation,
+     * no lambda evaluation, no backend calls.
+     *
+     * Default is true (logging enabled).
+     * In release builds, this should be set to false via [setEnabled].
+     */
+    @Volatile
+    @PublishedApi
+    internal var enabled: Boolean = true
+        private set
+
+    /**
      * Current minimum log level.
      *
      * Only logs at or above this level will be emitted.
      * Default is DEBUG to balance verbosity and performance.
+     *
+     * Note: If [enabled] is false, no logs are processed regardless of level.
      */
     @Volatile
     private var minLevel: Level = Level.DEBUG
+
+    /**
+     * Enables or disables all logging operations globally.
+     *
+     * When disabled, ALL logging calls return immediately without
+     * any string allocation, lambda evaluation, or backend calls.
+     * This provides maximum performance for release builds.
+     *
+     * @param isEnabled true to enable logging, false to completely disable
+     */
+    fun setEnabled(isEnabled: Boolean) {
+        enabled = isEnabled
+    }
+
+    /**
+     * Returns true if logging is globally enabled.
+     */
+    fun isEnabled(): Boolean = enabled
 
     /**
      * Set the minimum log level.
      *
      * Logs below this level will be silently dropped.
      * Useful for controlling verbosity in different build types or runtime scenarios.
+     *
+     * Note: If [enabled] is false, no logs are processed regardless of level.
      *
      * @param level the minimum level to log
      */
@@ -82,12 +119,16 @@ object UnifiedLog {
     /**
      * Check if a specific log level is currently enabled.
      *
+     * Returns false if logging is globally disabled OR if the level
+     * is below the minimum configured level.
+     *
      * Useful for expensive log preparations that should be skipped entirely.
      *
      * @param level the level to check
      * @return true if logs at this level would be emitted
      */
-    fun isEnabled(level: Level): Boolean = level.ordinal >= minLevel.ordinal
+    @PublishedApi
+    internal fun isEnabled(level: Level): Boolean = enabled && level.ordinal >= minLevel.ordinal
 
     // ========== PRIMARY API: Lambda-based (Lazy) ==========
 
@@ -330,7 +371,7 @@ object UnifiedLog {
     /**
      * Internal logging implementation.
      *
-     * Checks minLevel and forwards to Timber backend.
+     * Checks global enabled flag and minLevel, then forwards to Timber backend.
      * This is the only place where Timber is accessed directly.
      *
      * Note: @PublishedApi is required for inline functions to call this method.
@@ -342,6 +383,9 @@ object UnifiedLog {
         message: String,
         throwable: Throwable?,
     ) {
+        // Fast path: skip all processing if logging is globally disabled
+        if (!enabled) return
+
         // Filter by minimum level
         if (level.ordinal < minLevel.ordinal) return
 

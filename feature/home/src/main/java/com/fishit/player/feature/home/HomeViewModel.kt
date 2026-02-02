@@ -10,10 +10,13 @@ import com.fishit.player.core.home.domain.HomeContentRepository
 import com.fishit.player.core.home.domain.HomeMediaItem
 import com.fishit.player.core.model.SourceType
 import com.fishit.player.core.model.filter.PresetGenreFilter
+import com.fishit.player.core.persistence.cache.CacheKey
+import com.fishit.player.core.persistence.cache.HomeContentCache
 import com.fishit.player.core.sourceactivation.SourceActivationSnapshot
 import com.fishit.player.core.sourceactivation.SourceActivationStore
 import com.fishit.player.infra.logging.UnifiedLog
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -24,6 +27,7 @@ import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
@@ -102,6 +106,10 @@ data class HomeState(
  * - Series row appears independently
  * - User sees content immediately, not after slowest row finishes
  *
+ * **Paging Invalidation:**
+ * When sync completes or refresh() is called, the _pagingInvalidationTrigger increments.
+ * This causes all Paging flows to re-fetch fresh data from the repository via flatMapLatest.
+ *
  * Aggregates media from multiple pipelines:
  * - Telegram media
  * - Xtream VOD/Series/Live
@@ -112,7 +120,7 @@ data class HomeState(
  * - Observes SyncStateObserver for sync status indicator
  * - Observes SourceActivationStore for meaningful empty states
  */
-@OptIn(FlowPreview::class)
+@OptIn(FlowPreview::class, ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class HomeViewModel
     @Inject
@@ -120,6 +128,7 @@ class HomeViewModel
         private val homeContentRepository: HomeContentRepository,
         private val syncStateObserver: SyncStateObserver,
         private val sourceActivationStore: SourceActivationStore,
+        private val homeContentCache: HomeContentCache,
     ) : ViewModel() {
         
         // ==================== Mutable State (Progressive Loading) ====================
@@ -134,47 +143,81 @@ class HomeViewModel
          */
         val state: StateFlow<HomeState> = _state.asStateFlow()
         
+        // ==================== Paging Invalidation ====================
+        
+        /**
+         * Trigger for Paging flow invalidation.
+         * 
+         * **Pattern:** When this value changes, flatMapLatest re-emits the inner flow,
+         * causing PagingSource to re-fetch fresh data from ObjectBox.
+         * 
+         * **Triggers:**
+         * - refresh() button clicked
+         * - Cache invalidation after sync completion (via HomeContentCache.observeInvalidations)
+         */
+        private val _pagingInvalidationTrigger = MutableStateFlow(0)
+        
         // ==================== Paging Flows (Horizontal Infinite Scroll) ====================
         
         /**
          * Movies row with horizontal paging.
          * Use with collectAsLazyPagingItems() in LazyRow.
+         * 
+         * **Invalidation:** Recreated when _pagingInvalidationTrigger changes.
          */
         val moviesPagingFlow: Flow<PagingData<HomeMediaItem>> =
-            homeContentRepository.getMoviesPagingData()
-                .cachedIn(viewModelScope)
+            _pagingInvalidationTrigger.flatMapLatest {
+                UnifiedLog.d(TAG) { "🔄 Movies PagingFlow recreated (trigger=$it)" }
+                homeContentRepository.getMoviesPagingData()
+            }.cachedIn(viewModelScope)
 
         /**
          * Series row with horizontal paging.
          * Use with collectAsLazyPagingItems() in LazyRow.
+         * 
+         * **Invalidation:** Recreated when _pagingInvalidationTrigger changes.
          */
         val seriesPagingFlow: Flow<PagingData<HomeMediaItem>> =
-            homeContentRepository.getSeriesPagingData()
-                .cachedIn(viewModelScope)
+            _pagingInvalidationTrigger.flatMapLatest {
+                UnifiedLog.d(TAG) { "🔄 Series PagingFlow recreated (trigger=$it)" }
+                homeContentRepository.getSeriesPagingData()
+            }.cachedIn(viewModelScope)
 
         /**
          * Clips row with horizontal paging.
          * Use with collectAsLazyPagingItems() in LazyRow.
+         * 
+         * **Invalidation:** Recreated when _pagingInvalidationTrigger changes.
          */
         val clipsPagingFlow: Flow<PagingData<HomeMediaItem>> =
-            homeContentRepository.getClipsPagingData()
-                .cachedIn(viewModelScope)
+            _pagingInvalidationTrigger.flatMapLatest {
+                UnifiedLog.d(TAG) { "🔄 Clips PagingFlow recreated (trigger=$it)" }
+                homeContentRepository.getClipsPagingData()
+            }.cachedIn(viewModelScope)
 
         /**
          * Live TV row with horizontal paging.
          * Use with collectAsLazyPagingItems() in LazyRow.
+         * 
+         * **Invalidation:** Recreated when _pagingInvalidationTrigger changes.
          */
         val livePagingFlow: Flow<PagingData<HomeMediaItem>> =
-            homeContentRepository.getLivePagingData()
-                .cachedIn(viewModelScope)
+            _pagingInvalidationTrigger.flatMapLatest {
+                UnifiedLog.d(TAG) { "🔄 Live PagingFlow recreated (trigger=$it)" }
+                homeContentRepository.getLivePagingData()
+            }.cachedIn(viewModelScope)
 
         /**
          * Recently Added row with horizontal paging.
          * Use with collectAsLazyPagingItems() in LazyRow.
+         * 
+         * **Invalidation:** Recreated when _pagingInvalidationTrigger changes.
          */
         val recentlyAddedPagingFlow: Flow<PagingData<HomeMediaItem>> =
-            homeContentRepository.getRecentlyAddedPagingData()
-                .cachedIn(viewModelScope)
+            _pagingInvalidationTrigger.flatMapLatest {
+                UnifiedLog.d(TAG) { "🔄 RecentlyAdded PagingFlow recreated (trigger=$it)" }
+                homeContentRepository.getRecentlyAddedPagingData()
+            }.cachedIn(viewModelScope)
 
         // ==================== Search & Filter State ====================
 
@@ -206,6 +249,20 @@ class HomeViewModel
 
         init {
             UnifiedLog.i(TAG) { "🏠 HomeViewModel INIT - Creating content flows and paging sources" }
+
+            // ==================== Cache Invalidation Observer ====================
+            // When sync completes, HomeContentCache emits invalidation events.
+            // We increment the trigger to cause Paging flows to refresh.
+            
+            homeContentCache.observeInvalidations()
+                .onEach { cacheKey ->
+                    UnifiedLog.i(TAG) { "📢 Cache invalidation received: ${cacheKey.name} - triggering paging refresh" }
+                    _pagingInvalidationTrigger.value = _pagingInvalidationTrigger.value + 1
+                }
+                .catch { e ->
+                    UnifiedLog.e(TAG, e) { "Error observing cache invalidations" }
+                }
+                .launchIn(viewModelScope)
 
             // ==================== Special Rows (Flow-based, small limits) ====================
             // Continue Watching and Recently Added use Flow-based loading with limits.
@@ -330,16 +387,28 @@ class HomeViewModel
 
         // ==================== Public Actions ====================
 
+        /**
+         * Manually refresh all content rows.
+         * 
+         * **Behavior:**
+         * 1. Resets loading states for special rows (Continue Watching, Recently Added)
+         * 2. Increments _pagingInvalidationTrigger to force Paging flows to re-fetch
+         * 
+         * **Flow-based rows:** Will automatically re-emit from their source flows.
+         * **Paging rows:** flatMapLatest catches the trigger change and recreates PagingSource.
+         */
         fun refresh() {
+            UnifiedLog.i(TAG) { "🔄 REFRESH triggered - invalidating all Paging flows" }
+            
             // Reset loading states for special rows
-            // Paging rows (Movies/Series/Clips/Live) refresh automatically via their PagingSource
             _state.update { it.copy(
                 isContinueWatchingLoading = true,
                 isRecentlyAddedLoading = true,
                 error = null,
             ) }
-            // Note: Data reload is handled by background CatalogSync, not by Home.
-            // The flows will re-emit when data changes.
+            
+            // Trigger Paging invalidation - this causes all flatMapLatest flows to re-emit
+            _pagingInvalidationTrigger.value = _pagingInvalidationTrigger.value + 1
         }
 
         fun onItemClicked(item: HomeMediaItem) {

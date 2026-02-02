@@ -249,12 +249,15 @@ private fun HomeTopBar(
                 )
             }
 
-            IconButton(onClick = onDebugClick) {
-                Icon(
-                    Icons.Default.Info,
-                    contentDescription = "Debug",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+            // Debug button only visible in debug builds
+            if (com.fishit.player.feature.home.BuildConfig.DEBUG) {
+                IconButton(onClick = onDebugClick) {
+                    Icon(
+                        Icons.Default.Info,
+                        contentDescription = "Debug",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
 
             IconButton(onClick = onSettingsClick) {
