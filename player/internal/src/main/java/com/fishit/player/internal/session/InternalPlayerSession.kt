@@ -400,6 +400,20 @@ class InternalPlayerSession(
         }
     }
 
+    // ========== Playback Speed API ==========
+
+    /**
+     * Sets the playback speed.
+     *
+     * @param speed Playback speed multiplier (0.25 to 4.0, recommended: 0.5 to 2.0)
+     */
+    fun setPlaybackSpeed(speed: Float) {
+        val clampedSpeed = speed.coerceIn(0.25f, 4f)
+        player?.setPlaybackSpeed(clampedSpeed)
+        _state.update { it.copy(playbackSpeed = clampedSpeed) }
+        UnifiedLog.d(TAG) { "Playback speed set to: ${clampedSpeed}x" }
+    }
+
     /** Sets controls visibility. */
     fun setControlsVisible(visible: Boolean) {
         _state.update { it.copy(areControlsVisible = visible) }

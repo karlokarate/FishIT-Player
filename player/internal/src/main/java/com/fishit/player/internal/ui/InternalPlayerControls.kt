@@ -34,6 +34,10 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Replay10
 import androidx.compose.material.icons.filled.VolumeOff
 import androidx.compose.material.icons.filled.VolumeUp
+import androidx.compose.material.icons.filled.ClosedCaption
+import androidx.compose.material.icons.filled.ClosedCaptionOff
+import androidx.compose.material.icons.filled.MusicNote
+import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -87,6 +91,13 @@ fun InternalPlayerControls(
     onToggleMute: () -> Unit,
     onTapSurface: () -> Unit,
     onHideControls: () -> Unit = {},
+    // Track selection callbacks (Phase 6/7 wiring)
+    onAudioTrackClick: () -> Unit = {},
+    onSubtitleClick: () -> Unit = {},
+    onSpeedClick: () -> Unit = {},
+    // State indicators for button styling
+    hasSubtitles: Boolean = false,
+    hasMultipleAudioTracks: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     // Auto-hide timer: resets on any interaction
@@ -181,6 +192,20 @@ fun InternalPlayerControls(
                         resetAutoHide()
                         onToggleMute()
                     },
+                    onAudioTrackClick = {
+                        resetAutoHide()
+                        onAudioTrackClick()
+                    },
+                    onSubtitleClick = {
+                        resetAutoHide()
+                        onSubtitleClick()
+                    },
+                    onSpeedClick = {
+                        resetAutoHide()
+                        onSpeedClick()
+                    },
+                    hasSubtitles = hasSubtitles,
+                    hasMultipleAudioTracks = hasMultipleAudioTracks,
                     modifier = Modifier.fillMaxWidth(),
                 )
             }
@@ -337,6 +362,11 @@ private fun BottomBar(
     state: InternalPlayerState,
     onSeekTo: (Long) -> Unit,
     onToggleMute: () -> Unit,
+    onAudioTrackClick: () -> Unit,
+    onSubtitleClick: () -> Unit,
+    onSpeedClick: () -> Unit,
+    hasSubtitles: Boolean,
+    hasMultipleAudioTracks: Boolean,
     modifier: Modifier = Modifier,
 ) {
     // Local seeking state to avoid recomposition storm during drag
@@ -441,21 +471,80 @@ private fun BottomBar(
                 ) { showRemainingTime = !showRemainingTime },
             )
 
-            // Volume button with TV focus
-            FocusableIconButton(
-                onClick = onToggleMute,
-                contentDescription = if (state.isMuted) {
-                    stringResource(R.string.player_unmute)
-                } else {
-                    stringResource(R.string.player_mute)
-                },
-                modifier = Modifier.size(40.dp),
+            // Control buttons row (right side)
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                Icon(
-                    imageVector = if (state.isMuted) Icons.Default.VolumeOff else Icons.Default.VolumeUp,
-                    contentDescription = null,
-                    tint = Color.White,
-                )
+                // Speed button
+                FocusableIconButton(
+                    onClick = onSpeedClick,
+                    contentDescription = stringResource(R.string.player_playback_speed),
+                    modifier = Modifier.size(40.dp),
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Speed,
+                        contentDescription = null,
+                        tint = if (state.playbackSpeed != 1.0f) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            Color.White
+                        },
+                    )
+                }
+
+                // Audio track button (only show if multiple audio tracks)
+                if (hasMultipleAudioTracks) {
+                    FocusableIconButton(
+                        onClick = onAudioTrackClick,
+                        contentDescription = stringResource(R.string.player_audio_track),
+                        modifier = Modifier.size(40.dp),
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.MusicNote,
+                            contentDescription = null,
+                            tint = Color.White,
+                        )
+                    }
+                }
+
+                // Subtitle button
+                FocusableIconButton(
+                    onClick = onSubtitleClick,
+                    contentDescription = stringResource(R.string.player_subtitles),
+                    modifier = Modifier.size(40.dp),
+                ) {
+                    Icon(
+                        imageVector = if (hasSubtitles) {
+                            Icons.Default.ClosedCaption
+                        } else {
+                            Icons.Default.ClosedCaptionOff
+                        },
+                        contentDescription = null,
+                        tint = if (hasSubtitles) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            Color.White
+                        },
+                    )
+                }
+
+                // Volume button with TV focus
+                FocusableIconButton(
+                    onClick = onToggleMute,
+                    contentDescription = if (state.isMuted) {
+                        stringResource(R.string.player_unmute)
+                    } else {
+                        stringResource(R.string.player_mute)
+                    },
+                    modifier = Modifier.size(40.dp),
+                ) {
+                    Icon(
+                        imageVector = if (state.isMuted) Icons.Default.VolumeOff else Icons.Default.VolumeUp,
+                        contentDescription = null,
+                        tint = Color.White,
+                    )
+                }
             }
         }
     }
