@@ -141,7 +141,8 @@ android {
             // Override: Debug tools MUST be disabled in release builds
             buildConfigField("boolean", "INCLUDE_LEAKCANARY", "false")
             buildConfigField("boolean", "INCLUDE_CHUCKER", "false")
-            buildConfigField("boolean", "CHANNEL_SYNC_ENABLED", "false")
+            // Channel-buffered sync is stable and faster - enabled in release too
+            buildConfigField("boolean", "CHANNEL_SYNC_ENABLED", "true")
         }
         debug {
             isMinifyEnabled = false

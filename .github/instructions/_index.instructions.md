@@ -1,7 +1,7 @@
 # Instruction Files Index
 
-**Version:** 1.0  
-**Last Updated:** 2026-01-07  
+**Version:** 1.1  
+**Last Updated:** 2026-02-02  
 **Status:** SSOT for path-scoped instruction files
 
 > **Purpose:** Central registry of all instruction files, their scope, dependencies, and versioning.
@@ -66,9 +66,10 @@
 | File | Applies To | Status | Version | Dependencies |
 |------|------------|--------|---------|--------------|
 | `app-work.instructions.md` | `app-v2/src/main/java/*/work/**` | ✅ Active | 1.1 | core-catalog-sync, infra-work, infra-logging |
+| `catalog-sync.instructions.md` | `**/catalog-sync/**`, `**/work/**CatalogSync*`, `**/bootstrap/*Bootstrap*` | ✅ Active | 1.0 | core-catalog-sync, infra-work |
 
-**Total Files:** 21  
-**Last Audit:** 2026-01-07
+**Total Files:** 22  
+**Last Audit:** 2026-02-02
 
 ---
 
@@ -137,6 +138,7 @@ All instruction files MUST comply with these authoritative contracts:
 
 | Version | Date | Changes |
 |---------|------|---------|
+| 1.1 | 2026-02-02 | Added `catalog-sync.instructions.md` (sync triggers, optimistic activation, timeline) |
 | 1.2 | 2026-01-23 | Added infra/data-nx scope, NX Schema Consistency Tests mandate (MANDATORY), NX_SSOT_CONTRACT reference |
 | 1.1 | 2026-01-07 | PLATIN Audit fixes: Dot-space typos, broken refs, extractSeasonEpisode ownership, contract path clarification, imaging exception, TAG length guidance |
 | 1.0 | 2026-01-07 | Initial index creation |

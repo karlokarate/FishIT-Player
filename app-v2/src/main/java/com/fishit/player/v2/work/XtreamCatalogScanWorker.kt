@@ -335,7 +335,14 @@ class XtreamCatalogScanWorker
                 // *** TASK 1: Wire up Enhanced Sync ***
                 // Use EnhancedSyncConfig for progressive UI and phase-based batching
                 val enhancedConfig = selectEnhancedConfig(input)
-                val useChannelSync = BuildConfig.CHANNEL_SYNC_ENABLED && !input.isFireTvLowRam
+                
+                // CONSOLIDATED SYNC (Jan 2026): ALWAYS use channel-buffered sync
+                // - Phone/Tablet: buffer=1000, consumers=3 (fastest)
+                // - FireTV Low RAM: buffer=500, consumers=2 (memory-safe)
+                // Old flag BuildConfig.CHANNEL_SYNC_ENABLED is now always true
+                val useChannelSync = true // ALWAYS use channel sync
+                val bufferSize = if (input.isFireTvLowRam) 500 else 1000
+                val consumerCount = if (input.isFireTvLowRam) 2 else 3
 
                 suspend fun collectEnhanced(flow: kotlinx.coroutines.flow.Flow<SyncStatus>) {
                     flow.collect { status ->
@@ -421,7 +428,8 @@ class XtreamCatalogScanWorker
 
                 if (useChannelSync) {
                     UnifiedLog.i(TAG) {
-                        "Using CHANNEL-BUFFERED sync: buffer=1000, consumers=3 (25-30% faster than enhanced sync)"
+                        "Using CHANNEL-BUFFERED sync: buffer=$bufferSize, consumers=$consumerCount " +
+                            "(FireTV=${input.isFireTvLowRam})"
                     }
                     try {
                         catalogSyncService
@@ -430,8 +438,8 @@ class XtreamCatalogScanWorker
                                 includeSeries = includeSeries,
                                 includeEpisodes = includeEpisodes,
                                 includeLive = includeLive,
-                                bufferSize = 1000,
-                                consumerCount = 3,
+                                bufferSize = bufferSize,
+                                consumerCount = consumerCount,
                             ).collect { status ->
                                 if (!currentCoroutineContext().isActive) {
                                     throw CancellationException("Worker cancelled")
@@ -505,8 +513,9 @@ class XtreamCatalogScanWorker
                         collectEnhanced(enhancedFlow)
                     }
                 } else {
-                    UnifiedLog.i(TAG) {
-                        "Using ENHANCED sync: live=${enhancedConfig.liveConfig.batchSize} " +
+                    // This branch should never be reached with useChannelSync = true
+                    UnifiedLog.w(TAG) {
+                        "⚠️ Fallback to ENHANCED sync (unexpected): live=${enhancedConfig.liveConfig.batchSize} " +
                             "movies=${enhancedConfig.moviesConfig.batchSize} " +
                             "series=${enhancedConfig.seriesConfig.batchSize} " +
                             "timeFlush=${enhancedConfig.enableTimeBasedFlush}"
@@ -514,7 +523,11 @@ class XtreamCatalogScanWorker
                     collectEnhanced(enhancedFlow)
                 }
             } else {
-                // Standard sync (backward compatibility)
+                // DEPRECATED: Legacy sync path - should not be used
+                // This entire else branch will be removed in v2.1
+                UnifiedLog.w(TAG) {
+                    "⚠️ Using DEPRECATED legacy syncXtream() - xtreamUseEnhancedSync=false is obsolete!"
+                }
                 val syncConfig =
                     SyncConfig(
                         batchSize = input.batchSize,
@@ -522,6 +535,7 @@ class XtreamCatalogScanWorker
                         emitProgressEvery = input.batchSize,
                     )
 
+                @Suppress("DEPRECATION")
                 catalogSyncService
                     .syncXtream(
                         includeVod = includeVod,

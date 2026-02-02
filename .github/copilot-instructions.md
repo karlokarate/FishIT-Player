@@ -51,8 +51,9 @@ This repository uses **path-scoped instruction files** in `.github/instructions/
 | `infra-transport-telegram.instructions.md` | `infra/transport-telegram/**` |
 | `infra-data.instructions.md`               | `infra/data-*/**`             |
 | `feature-*.instructions.md`                | `feature/**`                  |
+| `catalog-sync.instructions.md`             | `**/catalog-sync/**`, `**/work/**CatalogSync*`, `**/bootstrap/*Bootstrap*` |
 
-> **Full inventory:** See `AGENTS.md` Section 2.5 for complete list of 21 instruction files.
+> **Full inventory:** See `AGENTS.md` Section 2.5 for complete list of 22 instruction files.
 
 These instructions define **PLATIN quality standards** with:
 
@@ -63,6 +64,44 @@ These instructions define **PLATIN quality standards** with:
 
 > ⚠️ **For Cloud Tasks (Copilot Workspace, GitHub.com):** Path-scoped files are NOT auto-loaded.
 > The critical rules are summarized below in "Layer Boundary Hard Rules".
+
+---
+
+## 🔵 Catalog Sync Architecture (CRITICAL)
+
+> **Full documentation:** See `.github/instructions/catalog-sync.instructions.md`
+
+### Sync Triggers (7 Total)
+
+| Trigger | SyncMode | Replaces Running? |
+|---------|----------|-------------------|
+| App-Start (`CatalogSyncBootstrap`) | AUTO | No |
+| Source-Aktivierung (`SourceActivationObserver`) | AUTO | No |
+| Settings "Sync Now" Button | EXPERT_NOW | No |
+| Settings "Force Rescan" Button | FORCE_RESCAN | **Yes** |
+| Debug Buttons | EXPERT_NOW / FORCE_RESCAN | Depends |
+| Periodic Background (every 2h) | INCREMENTAL | No |
+
+### Optimistic Xtream Activation (CRITICAL)
+
+```kotlin
+// XtreamSessionBootstrap.start()
+if (storedConfig != null) {
+    // 1. IMMEDIATELY activate (optimistic) - enables manual sync buttons
+    sourceActivationStore.setXtreamActive()
+    
+    // 2. Delay for UI stability
+    delay(2000)
+    
+    // 3. Validate in background - deactivate if invalid
+    val result = xtreamApiClient.initialize(...)
+    if (result.isFailure) {
+        sourceActivationStore.setXtreamInactive(...)
+    }
+}
+```
+
+**Why?** Without optimistic activation, manual sync buttons fail with "no active sources" for the first 2-3 seconds after app start.
 
 ---
 

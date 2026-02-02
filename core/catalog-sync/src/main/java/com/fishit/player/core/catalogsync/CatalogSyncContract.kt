@@ -216,6 +216,14 @@ interface CatalogSyncService {
      * Scans Xtream sources via XtreamCatalogPipeline and persists
      * discovered media items to XtreamCatalogRepository and XtreamLiveRepository.
      *
+     * **⚠️ DEPRECATED:** Use [syncXtreamBuffered] instead for better performance.
+     * This method exists for backward compatibility and will be removed in future.
+     *
+     * **Sync Method Hierarchy (Jan 2026):**
+     * 1. [syncXtreamBuffered] - Channel-based, fastest (52% faster than baseline)
+     * 2. [syncXtreamEnhanced] - Fallback for low-RAM devices (FireTV)
+     * 3. [syncXtream] - Legacy, slowest (DO NOT USE)
+     *
      * @param includeVod Whether to sync VOD items
      * @param includeSeries Whether to sync series
      * @param includeEpisodes Whether to sync episodes
@@ -225,6 +233,10 @@ interface CatalogSyncService {
      * @param syncConfig Sync configuration
      * @return Flow of sync status events
      */
+    @Deprecated(
+        message = "Use syncXtreamBuffered() for better performance. This will be removed in v2.1.",
+        replaceWith = ReplaceWith("syncXtreamBuffered(includeVod, includeSeries, includeEpisodes, includeLive)"),
+    )
     fun syncXtream(
         includeVod: Boolean = true,
         includeSeries: Boolean = true,

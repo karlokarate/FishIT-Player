@@ -348,6 +348,11 @@ class DefaultCatalogSyncService
                 }
             }
 
+        @Deprecated(
+            message = "Use syncXtreamBuffered() for better performance",
+            replaceWith = ReplaceWith("syncXtreamBuffered(includeVod, includeSeries, includeEpisodes, includeLive)"),
+        )
+        @Suppress("DEPRECATION")
         override fun syncXtream(
             includeVod: Boolean,
             includeSeries: Boolean,
@@ -358,7 +363,7 @@ class DefaultCatalogSyncService
             syncConfig: SyncConfig,
         ): Flow<SyncStatus> =
             flow {
-                UnifiedLog.i(TAG, "Starting Xtream sync with config: $syncConfig")
+                UnifiedLog.w(TAG, "⚠️ Using DEPRECATED syncXtream() - consider syncXtreamBuffered() for 52% faster sync")
                 emit(SyncStatus.Started(SOURCE_XTREAM))
 
                 val startTimeMs = System.currentTimeMillis()

@@ -177,14 +177,18 @@ class UnifiedDetailViewModel
 
                 if (bundle == null) {
                     // PLATIN: Only null for NON-Xtream sources (e.g., Telegram)
-                    // Xtream sources ALWAYS get a bundle (fresh-but-empty triggers API call)
+                    // OR when Xtream API returns null (network error, invalid ID, etc.)
                     val hasXtreamSource = media.sources.any { it.sourceType == SourceType.XTREAM }
                     if (hasXtreamSource) {
-                        // This should NOT happen after PLATIN fix
-                        UnifiedLog.e(TAG) { 
-                            "loadDetailWithUnifiedLoader: Xtream source but bundle null - this is a bug!" 
+                        // Xtream source but bundle null - API call failed or returned null
+                        // This is NOT a critical error - the basic data is already in state.media
+                        // Just log it and continue with what we have
+                        UnifiedLog.w(TAG) { 
+                            "loadDetailWithUnifiedLoader: Xtream API returned null for ${media.mediaType}" +
+                                " (canonicalId=${media.canonicalId.key.value}). Using cached data."
                         }
-                        _state.update { it.copy(error = "Serien-Daten konnten nicht geladen werden") }
+                        // DON'T show error to user - we already have basic media data
+                        // The detail screen can work without enrichment (just won't have plot/cast)
                     } else {
                         // Non-Xtream: Enrichment only (no seasons/episodes)
                         UnifiedLog.d(TAG) { "loadDetailWithUnifiedLoader: non-Xtream source, enrichment only" }
