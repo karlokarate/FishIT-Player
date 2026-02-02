@@ -680,20 +680,35 @@ data class XtreamEpisodeInfoBlock(
     @SerialName("tmdb_id") val tmdbId: Int? = null,
 )
 
-/** Video stream info. */
+/**
+ * Video stream info from ffprobe.
+ *
+ * Handles both simple and complex API responses:
+ * - Simple: `{ "codec_name": "h264" }`
+ * - Complex: Full ffprobe output with width, height, aspect_ratio, etc.
+ */
 @Serializable
 data class XtreamVideoInfo(
-    val codec: String? = null,
+    /** Video codec name (e.g., "h264", "hevc"). API field: "codec_name" */
+    @SerialName("codec_name") val codec: String? = null,
     val width: Int? = null,
     val height: Int? = null,
-    @SerialName("aspect_ratio") val aspectRatio: String? = null,
+    @SerialName("display_aspect_ratio") val aspectRatio: String? = null,
 )
 
-/** Audio stream info. */
+/**
+ * Audio stream info from ffprobe.
+ *
+ * Handles both simple and complex API responses:
+ * - Simple: `{ "codec_name": "aac" }`
+ * - Complex: Full ffprobe output with channels, sample_rate, language, etc.
+ */
 @Serializable
 data class XtreamAudioInfo(
-    val codec: String? = null,
+    /** Audio codec name (e.g., "aac", "ac3"). API field: "codec_name" */
+    @SerialName("codec_name") val codec: String? = null,
     val channels: Int? = null,
+    /** Audio language from tags.language (not direct field) */
     val language: String? = null,
 )
 
