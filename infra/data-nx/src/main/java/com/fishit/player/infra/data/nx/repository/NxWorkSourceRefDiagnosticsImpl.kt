@@ -9,6 +9,7 @@ import com.fishit.player.core.persistence.obx.NX_Work
 import com.fishit.player.core.persistence.obx.NX_WorkSourceRef
 import com.fishit.player.core.persistence.obx.NX_WorkSourceRef_
 import com.fishit.player.infra.data.nx.mapper.toDomain
+import com.fishit.player.infra.data.nx.mapper.SourceKeyParser
 import io.objectbox.BoxStore
 import io.objectbox.kotlin.boxFor
 import io.objectbox.query.QueryBuilder.StringOrder
@@ -64,8 +65,6 @@ class NxWorkSourceRefDiagnosticsImpl @Inject constructor(
      */
     private fun isValidSourceKeyFormat(sourceKey: String): Boolean {
         if (sourceKey.isBlank()) return false
-        val parts = sourceKey.split(":")
-        // At minimum: src:type:accountKey (3 parts for legacy) or full 5-part format
-        return parts.size >= 3
+        return SourceKeyParser.parse(sourceKey) != null
     }
 }

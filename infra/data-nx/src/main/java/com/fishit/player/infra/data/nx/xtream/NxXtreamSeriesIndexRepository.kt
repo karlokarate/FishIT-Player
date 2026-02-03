@@ -30,6 +30,7 @@ import com.fishit.player.core.model.repository.NxWorkSourceRefRepository
 import com.fishit.player.core.model.repository.NxWorkSourceRefRepository.SourceItemKind
 import com.fishit.player.core.model.repository.NxWorkSourceRefRepository.SourceType
 import com.fishit.player.core.model.repository.NxWorkVariantRepository
+import com.fishit.player.infra.data.nx.mapper.SourceKeyParser
 import com.fishit.player.infra.logging.UnifiedLog
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -162,14 +163,15 @@ class NxXtreamSeriesIndexRepository @Inject constructor(
 
         // Extract seriesId, seasonNumber, episodeNumber from sourceKey
         // Format: src:xtream:<account>:episode:<seriesId>_<season>_<episode>
-        val parts = sourceKey.split(":")
-        if (parts.size < 5) return@withContext null
-
-        val episodePart = parts[4] // seriesId_season_episode
-        val episodeParts = episodePart.split("_")
+        val seriesId = SourceKeyParser.extractXtreamSeriesIdFromEpisode(sourceKey)
+            ?: return@withContext null
+        
+        val itemKey = SourceKeyParser.extractItemKey(sourceKey)
+        if (itemKey == null) return@withContext null
+        
+        val episodeParts = itemKey.split("_")
         if (episodeParts.size < 3) return@withContext null
-
-        val seriesId = episodeParts[0].toIntOrNull() ?: return@withContext null
+        
         val seasonNumber = episodeParts[1].toIntOrNull() ?: return@withContext null
         val episodeNumber = episodeParts[2].toIntOrNull() ?: return@withContext null
 
@@ -184,7 +186,7 @@ class NxXtreamSeriesIndexRepository @Inject constructor(
             seasonNumber = seasonNumber,
             episodeNumber = episodeNumber,
             sourceKey = sourceKey,
-            episodeId = extractEpisodeIdFromSourceKey(sourceKey),
+            episodeId = SourceKeyParser.extractXtreamEpisodeId(sourceKey),
             title = episodeWork.displayTitle,
             thumbUrl = episodeWork.posterRef,
             durationSecs = episodeWork.runtimeMs?.let { (it / 1000).toInt() },
@@ -242,7 +244,7 @@ class NxXtreamSeriesIndexRepository @Inject constructor(
                 sourceKey = episode.sourceKey,
                 workKey = episodeWorkKey,
                 sourceType = SourceType.XTREAM,
-                accountKey = extractAccountKeyFromSourceKey(episode.sourceKey),
+                accountKey = SourceKeyParser.extractAccountKey(episode.sourceKey),
                 sourceItemKind = SourceItemKind.EPISODE,
                 sourceItemKey = "${episode.seriesId}_${episode.seasonNumber}_${episode.episodeNumber}",
                 sourceTitle = episode.title,
@@ -341,7 +343,7 @@ class NxXtreamSeriesIndexRepository @Inject constructor(
         val variant = variants.firstOrNull() ?: return@withContext null
 
         // Parse episodeId from sourceKey
-        val episodeId = extractEpisodeIdFromSourceKey(sourceKey)
+        val episodeId = SourceKeyParser.extractXtreamEpisodeId(sourceKey)
 
         EpisodePlaybackHints(
             episodeId = episodeId,
@@ -492,7 +494,7 @@ class NxXtreamSeriesIndexRepository @Inject constructor(
                 seasonNumber = seasonNumber,
                 episodeNumber = relation.episodeNumber ?: 0,
                 sourceKey = sourceKey,
-                episodeId = extractEpisodeIdFromSourceKey(sourceKey),
+                episodeId = SourceKeyParser.extractXtreamEpisodeId(sourceKey),
                 title = episodeWork.displayTitle,
                 thumbUrl = episodeWork.posterRef,
                 durationSecs = episodeWork.runtimeMs?.let { (it / 1000).toInt() },
@@ -513,23 +515,6 @@ class NxXtreamSeriesIndexRepository @Inject constructor(
             .trim('-')
             .take(30)
         return "episode:${episode.seriesId}-s${episode.seasonNumber}e${episode.episodeNumber}-$slug:unknown"
-    }
-
-    private fun extractAccountKeyFromSourceKey(sourceKey: String): String {
-        // Format: src:xtream:<account>:episode:<itemKey>
-        val parts = sourceKey.split(":")
-        return if (parts.size >= 3) parts[2] else "unknown"
-    }
-
-    private fun extractEpisodeIdFromSourceKey(sourceKey: String): Int? {
-        // Format: src:xtream:<account>:episode:<seriesId>_<season>_<episode>
-        // Try to parse episode number from the item key
-        val parts = sourceKey.split(":")
-        if (parts.size < 5) return null
-
-        val itemKey = parts[4]
-        val itemParts = itemKey.split("_")
-        return if (itemParts.size >= 3) itemParts[2].toIntOrNull() else null
     }
 
     private fun extractPlaybackUrlFromHints(hintsJson: String): String? {

@@ -83,11 +83,13 @@ class NxCatalogWriterVodE2ETest {
     private val workRepository = mockk<NxWorkRepository>(relaxed = true)
     private val sourceRefRepository = mockk<NxWorkSourceRefRepository>(relaxed = true)
     private val variantRepository = mockk<NxWorkVariantRepository>(relaxed = true)
+    private val boxStore = mockk<io.objectbox.BoxStore>(relaxed = true)
 
     private val writer = NxCatalogWriter(
         workRepository = workRepository,
         sourceRefRepository = sourceRefRepository,
         variantRepository = variantRepository,
+        boxStore = boxStore,
     )
 
     // =========================================================================
@@ -297,11 +299,13 @@ class NxCatalogWriterSeriesE2ETest {
     private val workRepository = mockk<NxWorkRepository>(relaxed = true)
     private val sourceRefRepository = mockk<NxWorkSourceRefRepository>(relaxed = true)
     private val variantRepository = mockk<NxWorkVariantRepository>(relaxed = true)
+    private val boxStore = mockk<io.objectbox.BoxStore>(relaxed = true)
 
     private val writer = NxCatalogWriter(
         workRepository = workRepository,
         sourceRefRepository = sourceRefRepository,
         variantRepository = variantRepository,
+        boxStore = boxStore,
     )
 
     @Test
@@ -431,11 +435,13 @@ class NxCatalogWriterLiveE2ETest {
     private val workRepository = mockk<NxWorkRepository>(relaxed = true)
     private val sourceRefRepository = mockk<NxWorkSourceRefRepository>(relaxed = true)
     private val variantRepository = mockk<NxWorkVariantRepository>(relaxed = true)
+    private val boxStore = mockk<io.objectbox.BoxStore>(relaxed = true)
 
     private val writer = NxCatalogWriter(
         workRepository = workRepository,
         sourceRefRepository = sourceRefRepository,
         variantRepository = variantRepository,
+        boxStore = boxStore,
     )
 
     @Test
@@ -533,11 +539,13 @@ class NxCatalogWriterPlaybackHintsE2ETest {
     private val workRepository = mockk<NxWorkRepository>(relaxed = true)
     private val sourceRefRepository = mockk<NxWorkSourceRefRepository>(relaxed = true)
     private val variantRepository = mockk<NxWorkVariantRepository>(relaxed = true)
+    private val boxStore = mockk<io.objectbox.BoxStore>(relaxed = true)
 
     private val writer = NxCatalogWriter(
         workRepository = workRepository,
         sourceRefRepository = sourceRefRepository,
         variantRepository = variantRepository,
+        boxStore = boxStore,
     )
 
     @Test
