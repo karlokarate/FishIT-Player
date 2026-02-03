@@ -41,6 +41,7 @@ import com.fishit.player.core.model.repository.NxWorkRepository.WorkType
 import com.fishit.player.core.model.repository.NxWorkSourceRefRepository
 import com.fishit.player.core.model.repository.NxWorkUserStateRepository
 import com.fishit.player.core.persistence.cache.HomeContentCache
+import com.fishit.player.infra.data.nx.mapper.MediaTypeMapper
 import com.fishit.player.infra.logging.UnifiedLog
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -346,7 +347,7 @@ class NxHomeContentRepositoryImpl @Inject constructor(
             poster = ImageRef.fromString(posterRef),
             placeholderThumbnail = null,
             backdrop = ImageRef.fromString(backdropRef),
-            mediaType = mapWorkTypeToMediaType(type),
+            mediaType = MediaTypeMapper.toMediaType(type),
             sourceType = sourceType,
             sourceTypes = allSourceTypes,
             resumePosition = resumePosition,
@@ -361,18 +362,7 @@ class NxHomeContentRepositoryImpl @Inject constructor(
         )
     }
 
-    private fun mapWorkTypeToMediaType(type: WorkType): MediaType {
-        return when (type) {
-            WorkType.MOVIE -> MediaType.MOVIE
-            WorkType.SERIES -> MediaType.SERIES
-            WorkType.EPISODE -> MediaType.SERIES_EPISODE
-            WorkType.LIVE_CHANNEL -> MediaType.LIVE
-            WorkType.CLIP -> MediaType.CLIP
-            WorkType.AUDIOBOOK -> MediaType.AUDIOBOOK
-            WorkType.MUSIC_TRACK -> MediaType.MUSIC
-            WorkType.UNKNOWN -> MediaType.UNKNOWN
-        }
-    }
+    // Note: mapWorkTypeToMediaType removed - use MediaTypeMapper.toMediaType() instead
     
     // ==================== Search ====================
     
@@ -554,7 +544,7 @@ private class HomePagingSource(
             poster = ImageRef.fromString(posterRef),
             placeholderThumbnail = null,
             backdrop = ImageRef.fromString(backdropRef),
-            mediaType = mapWorkTypeToMediaType(type),
+            mediaType = MediaTypeMapper.toMediaType(type),
             sourceType = sourceType,
             sourceTypes = allSourceTypes,
             resumePosition = 0L,
@@ -569,16 +559,5 @@ private class HomePagingSource(
         )
     }
     
-    private fun mapWorkTypeToMediaType(type: WorkType): MediaType {
-        return when (type) {
-            WorkType.MOVIE -> MediaType.MOVIE
-            WorkType.SERIES -> MediaType.SERIES
-            WorkType.EPISODE -> MediaType.SERIES_EPISODE
-            WorkType.LIVE_CHANNEL -> MediaType.LIVE
-            WorkType.CLIP -> MediaType.CLIP
-            WorkType.AUDIOBOOK -> MediaType.AUDIOBOOK
-            WorkType.MUSIC_TRACK -> MediaType.MUSIC
-            WorkType.UNKNOWN -> MediaType.UNKNOWN
-        }
-    }
+    // Note: mapWorkTypeToMediaType removed - use MediaTypeMapper.toMediaType() instead
 }

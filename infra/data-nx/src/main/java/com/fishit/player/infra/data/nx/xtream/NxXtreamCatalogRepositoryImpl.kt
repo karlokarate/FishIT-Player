@@ -61,6 +61,7 @@ import com.fishit.player.core.persistence.obx.NX_Work
 import com.fishit.player.core.persistence.obx.NX_WorkSourceRef
 import com.fishit.player.core.persistence.obx.NX_WorkSourceRef_
 import com.fishit.player.core.persistence.obx.NX_Work_
+import com.fishit.player.infra.data.nx.mapper.MediaTypeMapper
 import com.fishit.player.infra.data.xtream.XtreamCatalogRepository
 import com.fishit.player.infra.logging.UnifiedLog
 import io.objectbox.BoxStore
@@ -192,12 +193,7 @@ class NxXtreamCatalogRepositoryImpl
             limit: Int,
             offset: Int,
         ): List<RawMediaMetadata> = withContext(Dispatchers.IO) {
-            val workType = when (mediaType) {
-                MediaType.MOVIE -> WorkType.MOVIE.name
-                MediaType.SERIES -> WorkType.SERIES.name
-                MediaType.SERIES_EPISODE -> WorkType.EPISODE.name
-                else -> null
-            }
+            val workType = mediaType?.let { MediaTypeMapper.toWorkType(it).name }
 
             val baseCondition: QueryCondition<NX_Work> = if (workType != null) {
                 NX_Work_.workType.equal(workType)
@@ -290,12 +286,7 @@ class NxXtreamCatalogRepositoryImpl
         }
 
         override suspend fun count(mediaType: MediaType?): Long = withContext(Dispatchers.IO) {
-            val workType = when (mediaType) {
-                MediaType.MOVIE -> WorkType.MOVIE.name
-                MediaType.SERIES -> WorkType.SERIES.name
-                MediaType.SERIES_EPISODE -> WorkType.EPISODE.name
-                else -> null
-            }
+            val workType = mediaType?.let { MediaTypeMapper.toWorkType(it).name }
 
             if (workType != null) {
                 workBox.query(NX_Work_.workType.equal(workType)).build().count()
