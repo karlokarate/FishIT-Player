@@ -11,8 +11,7 @@ import com.fishit.player.core.persistence.obx.NX_SourceAccount
 internal fun NX_SourceAccount.toDomain(): NxSourceAccountRepository.SourceAccount =
     NxSourceAccountRepository.SourceAccount(
         accountKey = accountKey,
-        sourceType = NxWorkSourceRefRepository.SourceType.entries.find { it.name == sourceType }
-            ?: NxWorkSourceRefRepository.SourceType.UNKNOWN,
+        sourceType = SourceTypeMapper.toSourceType(sourceType),
         label = displayName,
         status = when (syncStatus) {
             "OK", "PENDING" -> NxSourceAccountRepository.AccountStatus.ACTIVE
@@ -28,7 +27,7 @@ internal fun NX_SourceAccount.toDomain(): NxSourceAccountRepository.SourceAccoun
 internal fun NxSourceAccountRepository.SourceAccount.toEntity(): NX_SourceAccount =
     NX_SourceAccount(
         accountKey = accountKey,
-        sourceType = sourceType.name,
+        sourceType = SourceTypeMapper.toEntityString(sourceType),
         displayName = label,
         isActive = status == NxSourceAccountRepository.AccountStatus.ACTIVE,
         syncStatus = when (status) {

@@ -17,7 +17,7 @@ import com.fishit.player.core.persistence.obx.NX_Work
  */
 fun NX_Work.toDomain(): Work = Work(
     workKey = workKey,
-    type = workType.toWorkType(),
+    type = WorkTypeMapper.toWorkType(workType),
     displayTitle = canonicalTitle,
     sortTitle = canonicalTitle,
     titleNormalized = canonicalTitleLower,
@@ -54,7 +54,7 @@ fun Work.toEntity(existingEntity: NX_Work? = null): NX_Work {
     return entity.copy(
         id = existingEntity?.id ?: 0,
         workKey = workKey,
-        workType = type.toEntityString(),
+        workType = WorkTypeMapper.toEntityString(type),
         canonicalTitle = displayTitle,
         canonicalTitleLower = titleNormalized,
         year = year,
@@ -100,31 +100,3 @@ private fun ImageRef.toUrlString(): String? = when (this) {
  */
 private fun parseSerializedImageRef(serialized: String): ImageRef? =
     ImageRef.fromString(serialized)
-
-/**
- * Maps WorkType enum to entity string.
- */
-private fun WorkType.toEntityString(): String = when (this) {
-    WorkType.MOVIE -> "MOVIE"
-    WorkType.SERIES -> "SERIES"
-    WorkType.EPISODE -> "EPISODE"
-    WorkType.CLIP -> "CLIP"
-    WorkType.LIVE_CHANNEL -> "LIVE"
-    WorkType.AUDIOBOOK -> "AUDIOBOOK"
-    WorkType.MUSIC_TRACK -> "MUSIC"
-    WorkType.UNKNOWN -> "UNKNOWN"
-}
-
-/**
- * Maps entity string to WorkType enum.
- */
-private fun String.toWorkType(): WorkType = when (this.uppercase()) {
-    "MOVIE" -> WorkType.MOVIE
-    "SERIES" -> WorkType.SERIES
-    "EPISODE" -> WorkType.EPISODE
-    "CLIP" -> WorkType.CLIP
-    "LIVE", "LIVE_CHANNEL" -> WorkType.LIVE_CHANNEL
-    "AUDIOBOOK" -> WorkType.AUDIOBOOK
-    "MUSIC", "MUSIC_TRACK" -> WorkType.MUSIC_TRACK
-    else -> WorkType.UNKNOWN
-}

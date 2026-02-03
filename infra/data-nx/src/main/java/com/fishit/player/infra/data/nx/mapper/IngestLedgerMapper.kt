@@ -11,8 +11,7 @@ import com.fishit.player.core.persistence.obx.NX_IngestLedger
 internal fun NX_IngestLedger.toDomain(): NxIngestLedgerRepository.LedgerEntry =
     NxIngestLedgerRepository.LedgerEntry(
         ledgerKey = sourceKey, // Using sourceKey as ledgerKey
-        sourceType = NxWorkSourceRefRepository.SourceType.entries.find { it.name == sourceType }
-            ?: NxWorkSourceRefRepository.SourceType.UNKNOWN,
+        sourceType = SourceTypeMapper.toSourceType(sourceType),
         accountKey = accountKey,
         sourceItemKey = sourceKey.substringAfterLast(':'), // Extract item part from sourceKey
         state = when (decision) {
@@ -36,7 +35,7 @@ internal fun NX_IngestLedger.toDomain(): NxIngestLedgerRepository.LedgerEntry =
 internal fun NxIngestLedgerRepository.LedgerEntry.toEntity(): NX_IngestLedger =
     NX_IngestLedger(
         sourceKey = ledgerKey,
-        sourceType = sourceType.name,
+        sourceType = SourceTypeMapper.toEntityString(sourceType),
         accountKey = accountKey,
         decision = when (state) {
             NxIngestLedgerRepository.LedgerState.ACCEPTED -> "ACCEPTED"
