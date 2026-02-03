@@ -9,6 +9,7 @@ import com.fishit.player.infra.transport.xtream.XtreamCredentialsStore
 import com.fishit.player.infra.transport.xtream.XtreamDiscovery
 import com.fishit.player.infra.transport.xtream.XtreamParallelism
 import com.fishit.player.infra.transport.xtream.XtreamTransportConfig
+import com.fishit.player.infra.transport.xtream.strategy.CategoryFallbackStrategy
 import dagger.Binds
 import dagger.Module
 import dagger.Provides
@@ -166,7 +167,14 @@ object XtreamTransportModule {
         @XtreamHttpClient okHttpClient: OkHttpClient,
         json: Json,
         parallelism: XtreamParallelism,
-    ): XtreamApiClient = DefaultXtreamApiClient(okHttpClient, json, parallelism = parallelism)
+        categoryFallbackStrategy: CategoryFallbackStrategy,
+    ): XtreamApiClient =
+        DefaultXtreamApiClient(
+            okHttpClient,
+            json,
+            parallelism = parallelism,
+            categoryFallbackStrategy = categoryFallbackStrategy,
+        )
 }
 
 /** Hilt module for Xtream credentials storage. */
