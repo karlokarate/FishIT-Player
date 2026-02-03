@@ -163,14 +163,15 @@ class NxXtreamSeriesIndexRepository @Inject constructor(
 
         // Extract seriesId, seasonNumber, episodeNumber from sourceKey
         // Format: src:xtream:<account>:episode:<seriesId>_<season>_<episode>
-        val parts = sourceKey.split(":")
-        if (parts.size < 5) return@withContext null
-
-        val episodePart = parts[4] // seriesId_season_episode
-        val episodeParts = episodePart.split("_")
+        val seriesId = SourceKeyParser.extractXtreamSeriesIdFromEpisode(sourceKey)
+            ?: return@withContext null
+        
+        val itemKey = SourceKeyParser.extractItemKey(sourceKey)
+        if (itemKey == null) return@withContext null
+        
+        val episodeParts = itemKey.split("_")
         if (episodeParts.size < 3) return@withContext null
-
-        val seriesId = episodeParts[0].toIntOrNull() ?: return@withContext null
+        
         val seasonNumber = episodeParts[1].toIntOrNull() ?: return@withContext null
         val episodeNumber = episodeParts[2].toIntOrNull() ?: return@withContext null
 

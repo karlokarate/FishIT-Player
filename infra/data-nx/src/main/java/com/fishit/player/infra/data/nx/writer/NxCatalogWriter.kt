@@ -488,7 +488,9 @@ class NxCatalogWriter @Inject constructor(
                     val sourceItemKind = SourceItemKindMapper.fromMediaType(normalized.mediaType)
                     val sourceKey = buildSourceKey(raw.sourceType, accountKey, sourceItemKind, raw.sourceId)
                     // CRITICAL: Store just the numeric ID, not the full xtream:type:id format
-                    val cleanSourceItemKey = extractNumericId(raw.sourceId)
+                    val cleanSourceItemKey = SourceKeyParser.extractNumericItemKey(raw.sourceId)?.toString()
+                        ?: SourceKeyParser.extractItemKey(raw.sourceId)
+                        ?: raw.sourceId
                     val sourceRef = NxWorkSourceRefRepository.SourceRef(
                         sourceKey = sourceKey,
                         workKey = workKey,

@@ -14,6 +14,7 @@ import com.fishit.player.core.persistence.obx.NX_WorkSourceRef_
 import com.fishit.player.core.persistence.obx.NX_Work_
 import com.fishit.player.infra.data.nx.mapper.toDomain
 import com.fishit.player.infra.data.nx.mapper.toEntity
+import com.fishit.player.infra.data.nx.mapper.SourceKeyParser
 import com.fishit.player.infra.logging.UnifiedLog
 import io.objectbox.BoxStore
 import io.objectbox.kotlin.boxFor
@@ -246,11 +247,10 @@ class NxWorkSourceRefRepositoryImpl @Inject constructor(
         // (ObjectBox doesn't support nested field queries well)
         query.find()
             .filter { entity ->
-                val sourceKeyParts = entity.sourceKey.split(":")
-                // sourceKey format: src:sourceType:accountKey:itemKind:itemKey
-                if (sourceKeyParts.size >= 5) {
-                    val entityKind = sourceKeyParts[3]
-                    val entityItemKey = sourceKeyParts[4]
+                val parsed = SourceKeyParser.parse(entity.sourceKey)
+                if (parsed != null) {
+                    val entityKind = parsed.itemKind
+                    val entityItemKey = parsed.itemKey
                     entityKind.equals(kindString, ignoreCase = true) &&
                         (itemKeyPrefix == null || entityItemKey.startsWith(itemKeyPrefix))
                 } else {

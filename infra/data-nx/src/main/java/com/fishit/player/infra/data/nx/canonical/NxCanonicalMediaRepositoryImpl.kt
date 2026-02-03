@@ -26,6 +26,7 @@ import com.fishit.player.core.persistence.obx.NX_WorkUserState_
 import com.fishit.player.core.persistence.obx.NX_WorkVariant
 import com.fishit.player.core.persistence.obx.NX_WorkVariant_
 import com.fishit.player.core.persistence.obx.NX_Work_
+import com.fishit.player.infra.data.nx.mapper.SourceKeyParser
 import io.objectbox.Box
 import io.objectbox.BoxStore
 import io.objectbox.query.QueryCondition
@@ -751,8 +752,7 @@ class NxCanonicalMediaRepositoryImpl @Inject constructor(
     }
 
     private fun extractSourceSpecificId(sourceKey: String): String {
-        val parts = sourceKey.split(":", limit = 3)
-        return if (parts.size >= 3) parts[2] else sourceKey
+        return SourceKeyParser.extractAccountKey(sourceKey)
     }
 
     private fun mediaTypeToKind(mediaType: MediaType): MediaKind = when (mediaType) {
