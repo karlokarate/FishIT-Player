@@ -2,6 +2,7 @@ package com.fishit.player.infra.transport.xtream
 
 import android.os.SystemClock
 import com.fishit.player.infra.logging.UnifiedLog
+import com.fishit.player.infra.transport.xtream.strategy.CategoryFallbackStrategy
 import com.fishit.player.infra.transport.xtream.streaming.JsonObjectReader
 import com.fishit.player.infra.transport.xtream.streaming.StreamingJsonParser
 import kotlinx.coroutines.CoroutineDispatcher
@@ -65,6 +66,7 @@ class DefaultXtreamApiClient(
     private val http: OkHttpClient,
     private val json: Json = Json { ignoreUnknownKeys = true },
     private val parallelism: XtreamParallelism,
+    private val categoryFallbackStrategy: CategoryFallbackStrategy,
     private val io: CoroutineDispatcher = Dispatchers.IO,
     private val capabilityStore: XtreamCapabilityStore? = null,
     private val portStore: XtreamPortStore? = null,
@@ -665,51 +667,17 @@ class DefaultXtreamApiClient(
         action: String,
         categoryId: String?,
         mapper: (JsonObject) -> T,
-    ): List<T> {
-        if (categoryId != null) {
-            // Specific category requested
-            val url = buildPlayerApiUrl(action, mapOf("category_id" to categoryId))
-            val body = fetchRaw(url, isEpg = false) ?: return emptyList()
-            return parseJsonArray(body, mapper, action)
-        }
-
-        suspend fun fetchAndParse(params: Map<String, String>?): List<T> {
+    ): List<T> =
+        categoryFallbackStrategy.fetchWithFallback(categoryId) { catId ->
             val url =
-                if (params == null) {
+                if (catId == null) {
                     buildPlayerApiUrl(action)
                 } else {
-                    buildPlayerApiUrl(action, params)
+                    buildPlayerApiUrl(action, mapOf("category_id" to catId))
                 }
-            val body = runCatching { fetchRaw(url, isEpg = false) }.getOrNull()
-            if (body.isNullOrEmpty()) return emptyList()
-            return parseJsonArray(body, mapper, action)
+            val body = fetchRaw(url, isEpg = false) ?: return@fetchWithFallback emptyList()
+            parseJsonArray(body, mapper, action)
         }
-
-        // 1) Try category_id=* first (works on most panels, returns ALL items)
-        val star = fetchAndParse(mapOf("category_id" to "*"))
-        if (star.isNotEmpty()) {
-            UnifiedLog.d(TAG) {
-                "fetchStreamsWithCategoryFallback($action): got ${star.size} items with category_id=*"
-            }
-            return star
-        }
-
-        // 2) If empty → try category_id=0
-        val zero = fetchAndParse(mapOf("category_id" to "0"))
-        if (zero.isNotEmpty()) {
-            UnifiedLog.d(TAG) {
-                "fetchStreamsWithCategoryFallback($action): got ${zero.size} items with category_id=0"
-            }
-            return zero
-        }
-
-        // 3) As last resort → try without category_id
-        val plain = fetchAndParse(null)
-        UnifiedLog.d(TAG) {
-            "fetchStreamsWithCategoryFallback($action): got ${plain.size} items without category_id (fallback)"
-        }
-        return plain
-    }
 
     /**
      * Streaming version of fetchStreamsWithCategoryFallback using Jackson Streaming API.
@@ -737,51 +705,18 @@ class DefaultXtreamApiClient(
         categoryId: String?,
         streamingMapper: (JsonObjectReader) -> T?,
         fallbackMapper: (JsonObject) -> T,
-    ): List<T> {
-        // If specific category requested, use streaming directly
-        if (categoryId != null) {
-            val url = buildPlayerApiUrl(action, mapOf("category_id" to categoryId))
-            return fetchAndParseStreaming(url, action, streamingMapper, fallbackMapper)
-        }
-
-        // Try category fallback order: * → 0 → none
-        suspend fun fetchStreamingWithParams(params: Map<String, String>?): List<T> {
+    ): List<T> =
+        categoryFallbackStrategy.fetchWithFallback(categoryId) { catId ->
             val url =
-                if (params == null) {
+                if (catId == null) {
                     buildPlayerApiUrl(action)
                 } else {
-                    buildPlayerApiUrl(action, params)
+                    buildPlayerApiUrl(action, mapOf("category_id" to catId))
                 }
-            return runCatching {
+            runCatching {
                 fetchAndParseStreaming(url, action, streamingMapper, fallbackMapper)
             }.getOrElse { emptyList() }
         }
-
-        // 1) Try category_id=* first
-        val star = fetchStreamingWithParams(mapOf("category_id" to "*"))
-        if (star.isNotEmpty()) {
-            UnifiedLog.d(TAG) {
-                "fetchStreamsStreaming($action): got ${star.size} items with category_id=*"
-            }
-            return star
-        }
-
-        // 2) Try category_id=0
-        val zero = fetchStreamingWithParams(mapOf("category_id" to "0"))
-        if (zero.isNotEmpty()) {
-            UnifiedLog.d(TAG) {
-                "fetchStreamsStreaming($action): got ${zero.size} items with category_id=0"
-            }
-            return zero
-        }
-
-        // 3) Try without category_id
-        val plain = fetchStreamingWithParams(null)
-        UnifiedLog.d(TAG) {
-            "fetchStreamsStreaming($action): got ${plain.size} items without category_id (fallback)"
-        }
-        return plain
-    }
 
     /**
      * Fetch and parse JSON array using streaming (O(1) memory).
@@ -950,28 +885,24 @@ class DefaultXtreamApiClient(
         mapper: (JsonObjectReader) -> T?,
         onBatch: suspend (List<T>) -> Unit,
     ): Int {
-        // If specific category requested
-        if (categoryId != null) {
-            val url = buildPlayerApiUrl(action, mapOf("category_id" to categoryId))
-            return streamFromUrl(url, batchSize, mapper, onBatch)
-        }
-
-        // Try category fallback order: * → 0 → none
-        suspend fun tryStreamWithParams(params: Map<String, String>?): Int {
+        // Helper to try all aliases for a given categoryId
+        suspend fun tryAllAliases(catId: String?): Int {
             for (alias in aliases) {
                 val actualAction = if (alias == aliases.first()) action else "get_${alias}_streams"
-                val url = if (params == null) {
-                    buildPlayerApiUrl(actualAction)
-                } else {
-                    buildPlayerApiUrl(actualAction, params)
-                }
-                val count = runCatching {
-                    streamFromUrl(url, batchSize, mapper, onBatch)
-                }.onFailure { error ->
-                    UnifiedLog.w(TAG) {
-                        "streamContentInBatches($action): streamFromUrl FAILED for alias=$alias params=$params | ${error.javaClass.simpleName}: ${error.message}"
+                val url =
+                    if (catId == null) {
+                        buildPlayerApiUrl(actualAction)
+                    } else {
+                        buildPlayerApiUrl(actualAction, mapOf("category_id" to catId))
                     }
-                }.getOrElse { 0 }
+                val count =
+                    runCatching {
+                        streamFromUrl(url, batchSize, mapper, onBatch)
+                    }.onFailure { error ->
+                        UnifiedLog.w(TAG) {
+                            "streamContentInBatches($action): streamFromUrl FAILED for alias=$alias catId=$catId | ${error.javaClass.simpleName}: ${error.message}"
+                        }
+                    }.getOrElse { 0 }
                 if (count > 0) {
                     return count
                 }
@@ -979,30 +910,21 @@ class DefaultXtreamApiClient(
             return 0
         }
 
-        // 1) Try category_id=* first
-        var count = tryStreamWithParams(mapOf("category_id" to "*"))
-        if (count > 0) {
-            UnifiedLog.d(TAG) {
-                "streamContentInBatches($action): $count items with category_id=*"
-            }
-            return count
+        // Specific category requested
+        if (categoryId != null) {
+            return tryAllAliases(categoryId)
         }
 
-        // 2) Try category_id=0
-        count = tryStreamWithParams(mapOf("category_id" to "0"))
-        if (count > 0) {
-            UnifiedLog.d(TAG) {
-                "streamContentInBatches($action): $count items with category_id=0"
+        // Use strategy for fallback: * → 0 → null
+        // But we need to try all aliases for each fallback attempt
+        // So we convert the Int result to a List<Int> with a single element
+        val results =
+            categoryFallbackStrategy.fetchWithFallback<Int>(null) { catId ->
+                val count = tryAllAliases(catId)
+                if (count > 0) listOf(count) else emptyList()
             }
-            return count
-        }
 
-        // 3) Try without category_id
-        count = tryStreamWithParams(null)
-        UnifiedLog.d(TAG) {
-            "streamContentInBatches($action): $count items without category_id (fallback)"
-        }
-        return count
+        return results.firstOrNull() ?: 0
     }
 
     /**
