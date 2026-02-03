@@ -15,7 +15,7 @@ import com.fishit.player.core.persistence.obx.NX_WorkSourceRef
 fun NX_WorkSourceRef.toDomain(): SourceRef = SourceRef(
     sourceKey = sourceKey,
     workKey = work.target?.workKey ?: "",
-    sourceType = sourceType.toSourceType(),
+    sourceType = SourceTypeMapper.toSourceType(sourceType),
     accountKey = accountKey,
     sourceItemKind = deriveSourceItemKind(),
     sourceItemKey = sourceId,
@@ -39,7 +39,7 @@ fun SourceRef.toEntity(existingEntity: NX_WorkSourceRef? = null): NX_WorkSourceR
     return entity.copy(
         id = existingEntity?.id ?: 0,
         sourceKey = sourceKey,
-        sourceType = sourceType.toEntityString(),
+        sourceType = SourceTypeMapper.toEntityString(sourceType),
         accountKey = accountKey,
         sourceId = sourceItemKey,
         rawTitle = sourceTitle,
@@ -62,28 +62,4 @@ private fun NX_WorkSourceRef.deriveSourceItemKind(): SourceItemKind {
         telegramMessageId != null -> SourceItemKind.FILE
         else -> SourceItemKind.UNKNOWN
     }
-}
-
-/**
- * Maps SourceType enum to entity string.
- */
-private fun SourceType.toEntityString(): String = when (this) {
-    SourceType.TELEGRAM -> "telegram"
-    SourceType.XTREAM -> "xtream"
-    SourceType.IO -> "io"
-    SourceType.LOCAL -> "local"
-    SourceType.PLEX -> "plex"
-    SourceType.UNKNOWN -> "unknown"
-}
-
-/**
- * Maps entity string to SourceType enum.
- */
-private fun String.toSourceType(): SourceType = when (this.lowercase()) {
-    "telegram" -> SourceType.TELEGRAM
-    "xtream" -> SourceType.XTREAM
-    "io" -> SourceType.IO
-    "local" -> SourceType.LOCAL
-    "plex" -> SourceType.PLEX
-    else -> SourceType.UNKNOWN
 }
