@@ -22,6 +22,8 @@ import com.fishit.player.core.model.repository.NxWorkRepository
 import com.fishit.player.core.model.repository.NxWorkSourceRefRepository
 import com.fishit.player.core.model.repository.NxWorkSourceRefRepository.SourceItemKind
 import com.fishit.player.core.model.repository.NxWorkVariantRepository
+import com.fishit.player.infra.data.nx.mapper.MediaTypeMapper
+import com.fishit.player.infra.data.nx.mapper.SourceItemKindMapper
 import com.fishit.player.infra.logging.UnifiedLog
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -69,7 +71,7 @@ class NxCatalogWriter @Inject constructor(
             val workKey = buildWorkKey(normalized)
             val work = NxWorkRepository.Work(
                 workKey = workKey,
-                type = mapWorkType(normalized.mediaType),
+                type = MediaTypeMapper.toWorkType(normalized.mediaType),
                 displayTitle = normalized.canonicalTitle,
                 sortTitle = normalized.canonicalTitle,
                 titleNormalized = normalized.canonicalTitle.lowercase(),
@@ -99,7 +101,7 @@ class NxCatalogWriter @Inject constructor(
             workRepository.upsert(work)
 
             // 2. Create/update source reference
-            val sourceItemKind = mapSourceItemKind(normalized.mediaType)
+            val sourceItemKind = SourceItemKindMapper.fromMediaType(normalized.mediaType)
             val sourceKey = buildSourceKey(raw.sourceType, accountKey, sourceItemKind, raw.sourceId)
             // CRITICAL: Store just the numeric ID, not the full xtream:type:id format
             val cleanSourceItemKey = extractNumericId(raw.sourceId)
@@ -192,7 +194,7 @@ class NxCatalogWriter @Inject constructor(
                     val workKey = buildWorkKey(normalized)
                     val work = NxWorkRepository.Work(
                         workKey = workKey,
-                        type = mapWorkType(normalized.mediaType),
+                        type = MediaTypeMapper.toWorkType(normalized.mediaType),
                         displayTitle = normalized.canonicalTitle,
                         sortTitle = normalized.canonicalTitle,
                         titleNormalized = normalized.canonicalTitle.lowercase(),
@@ -221,7 +223,7 @@ class NxCatalogWriter @Inject constructor(
                     workRepository.upsert(work)
 
                     // 2. Create/update source reference
-                    val sourceItemKind = mapSourceItemKind(normalized.mediaType)
+                    val sourceItemKind = SourceItemKindMapper.fromMediaType(normalized.mediaType)
                     val sourceKey = buildSourceKey(raw.sourceType, accountKey, sourceItemKind, raw.sourceId)
                     val sourceRef = NxWorkSourceRefRepository.SourceRef(
                         sourceKey = sourceKey,
@@ -377,19 +379,11 @@ class NxCatalogWriter @Inject constructor(
     // =========================================================================
     // Type Mappings
     // =========================================================================
-
-    private fun mapWorkType(type: MediaType): NxWorkRepository.WorkType {
-        return when (type) {
-            MediaType.MOVIE -> NxWorkRepository.WorkType.MOVIE
-            MediaType.SERIES -> NxWorkRepository.WorkType.SERIES
-            MediaType.SERIES_EPISODE -> NxWorkRepository.WorkType.EPISODE
-            MediaType.LIVE -> NxWorkRepository.WorkType.LIVE_CHANNEL
-            MediaType.CLIP -> NxWorkRepository.WorkType.CLIP
-            MediaType.AUDIOBOOK -> NxWorkRepository.WorkType.AUDIOBOOK
-            MediaType.MUSIC -> NxWorkRepository.WorkType.MUSIC_TRACK
-            else -> NxWorkRepository.WorkType.UNKNOWN
-        }
-    }
+    
+    // Note: Type mapping functions removed - using centralized TypeMappers instead
+    // - MediaTypeMapper.toWorkType() → MediaTypeMapper.toWorkType()
+    // - SourceItemKindMapper.fromMediaType() → SourceItemKindMapper.fromMediaType()
+    // - mapSourceType() → Inline conversion (no mapper needed for CoreSourceType)
 
     private fun mapSourceType(type: CoreSourceType): NxWorkSourceRefRepository.SourceType {
         return when (type) {
@@ -397,17 +391,6 @@ class NxCatalogWriter @Inject constructor(
             CoreSourceType.XTREAM -> NxWorkSourceRefRepository.SourceType.XTREAM
             CoreSourceType.IO -> NxWorkSourceRefRepository.SourceType.IO
             else -> NxWorkSourceRefRepository.SourceType.UNKNOWN
-        }
-    }
-
-    private fun mapSourceItemKind(mediaType: MediaType): SourceItemKind {
-        return when (mediaType) {
-            MediaType.MOVIE -> SourceItemKind.VOD
-            MediaType.SERIES -> SourceItemKind.SERIES
-            MediaType.SERIES_EPISODE -> SourceItemKind.EPISODE
-            MediaType.LIVE -> SourceItemKind.LIVE
-            MediaType.CLIP, MediaType.AUDIOBOOK, MediaType.MUSIC -> SourceItemKind.FILE
-            else -> SourceItemKind.UNKNOWN
         }
     }
 
@@ -498,7 +481,7 @@ class NxCatalogWriter @Inject constructor(
                     val workKey = buildWorkKey(normalized)
                     val work = NxWorkRepository.Work(
                         workKey = workKey,
-                        type = mapWorkType(normalized.mediaType),
+                        type = MediaTypeMapper.toWorkType(normalized.mediaType),
                         displayTitle = normalized.canonicalTitle,
                         sortTitle = normalized.canonicalTitle,
                         titleNormalized = normalized.canonicalTitle.lowercase(),
@@ -527,7 +510,7 @@ class NxCatalogWriter @Inject constructor(
                     preparedWorks.add(work)
 
                     // 2. Prepare SourceRef
-                    val sourceItemKind = mapSourceItemKind(normalized.mediaType)
+                    val sourceItemKind = SourceItemKindMapper.fromMediaType(normalized.mediaType)
                     val sourceKey = buildSourceKey(raw.sourceType, accountKey, sourceItemKind, raw.sourceId)
                     // CRITICAL: Store just the numeric ID, not the full xtream:type:id format
                     val cleanSourceItemKey = extractNumericId(raw.sourceId)

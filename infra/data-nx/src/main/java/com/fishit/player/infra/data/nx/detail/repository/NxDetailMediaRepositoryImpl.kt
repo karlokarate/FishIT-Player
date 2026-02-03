@@ -10,6 +10,8 @@ import com.fishit.player.core.persistence.obx.NX_WorkUserState
 import com.fishit.player.core.persistence.obx.NX_WorkUserState_
 import com.fishit.player.core.persistence.obx.NX_WorkVariant
 import com.fishit.player.core.persistence.obx.NX_Work_
+import com.fishit.player.infra.data.nx.mapper.SourceLabelBuilder
+import com.fishit.player.infra.data.nx.mapper.SourcePriorityCalculator
 import io.objectbox.Box
 import io.objectbox.BoxStore
 import io.objectbox.kotlin.toFlow
@@ -352,12 +354,8 @@ class NxDetailMediaRepositoryImpl @Inject constructor(
         playbackHints = buildPlaybackHints(sourceRef, null),
     )
 
-    private fun buildSourceLabel(sourceRef: NX_WorkSourceRef): String = when (sourceRef.sourceType) {
-        "telegram" -> "Telegram: ${sourceRef.accountKey}"
-        "xtream" -> "IPTV: ${sourceRef.accountKey}"
-        "local" -> "Local File"
-        else -> "${sourceRef.sourceType}: ${sourceRef.accountKey}"
-    }
+    private fun buildSourceLabel(sourceRef: NX_WorkSourceRef): String =
+        SourceLabelBuilder.buildLabel(sourceRef.sourceType, sourceRef.accountKey)
 
     private fun buildPlaybackHints(
         sourceRef: NX_WorkSourceRef,
@@ -408,28 +406,12 @@ class NxDetailMediaRepositoryImpl @Inject constructor(
     private fun calculatePriority(
         sourceRef: NX_WorkSourceRef,
         variant: NX_WorkVariant?,
-    ): Int {
-        var priority = when (sourceRef.sourceType) {
-            "local" -> 100
-            "xtream" -> 60
-            "telegram" -> 40
-            else -> 20
-        }
-
-        if (variant != null) {
-            priority += when (variant.qualityTag.lowercase()) {
-                "4k", "2160p" -> 50
-                "1080p" -> 40
-                "720p" -> 30
-                "480p" -> 20
-                else -> 10
-            }
-            if (!variant.playbackUrl.isNullOrBlank()) priority += 10
-            priority += 5
-        }
-
-        return priority
-    }
+    ): Int = SourcePriorityCalculator.calculateTotalPriority(
+        sourceType = sourceRef.sourceType,
+        qualityTag = variant?.qualityTag,
+        hasDirectUrl = !variant?.playbackUrl.isNullOrBlank(),
+        isExplicitVariant = variant != null,
+    )
 
     private fun guesContainerFromMime(mimeType: String): String? = when {
         "mp4" in mimeType -> "mp4"

@@ -7,6 +7,8 @@ import com.fishit.player.core.persistence.obx.NX_WorkVariant
 import com.fishit.player.infra.data.nx.detail.dto.WorkResumeInfo
 import com.fishit.player.infra.data.nx.detail.dto.WorkSourceInfo
 import com.fishit.player.infra.data.nx.detail.dto.WorkWithSources
+import com.fishit.player.infra.data.nx.mapper.SourceLabelBuilder
+import com.fishit.player.infra.data.nx.mapper.SourcePriorityCalculator
 import kotlinx.serialization.json.Json
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -165,18 +167,13 @@ class WorkDetailMapper @Inject constructor() {
 
     /**
      * Builds human-readable source label for UI display.
+     *
+     * Uses SourceLabelBuilder for consistent labeling.
      */
     private fun buildSourceLabel(
         sourceRef: NX_WorkSourceRef,
         accountLabel: String,
-    ): String =
-        when (sourceRef.sourceType) {
-            "telegram" -> "Telegram: $accountLabel"
-            "xtream" -> "IPTV: $accountLabel"
-            "local" -> "Local File"
-            "plex" -> "Plex: $accountLabel"
-            else -> "${sourceRef.sourceType}: $accountLabel"
-        }
+    ): String = SourceLabelBuilder.buildLabel(sourceRef.sourceType, accountLabel)
 
     /**
      * Builds playback hints map for PlaybackSourceFactory.
@@ -237,50 +234,22 @@ class WorkDetailMapper @Inject constructor() {
      * Higher priority = preferred for auto-selection.
      *
      * Priority factors:
-     * - Source type preference (local > xtream > telegram)
+     * - Source type preference (local > plex > xtream > telegram)
      * - Quality (4k > 1080p > 720p > source)
      * - Has direct URL (+10 points)
      * - Explicit variant vs default (+5 points)
+     *
+     * Uses SourcePriorityCalculator for consistent priority logic.
      */
     private fun calculatePriority(
         sourceRef: NX_WorkSourceRef,
         variant: NX_WorkVariant?,
-    ): Int {
-        var priority = 0
-
-        // Source type base priority
-        priority +=
-            when (sourceRef.sourceType) {
-                "local" -> 100
-                "plex" -> 80
-                "xtream" -> 60
-                "telegram" -> 40
-                else -> 20
-            }
-
-        // Quality priority
-        if (variant != null) {
-            priority +=
-                when (variant.qualityTag.lowercase()) {
-                    "4k", "2160p", "uhd" -> 50
-                    "1080p", "fhd" -> 40
-                    "720p", "hd" -> 30
-                    "480p", "sd" -> 20
-                    "source" -> 25 // Slightly lower than explicit qualities
-                    else -> 10
-                }
-
-            // Direct URL bonus
-            if (!variant.playbackUrl.isNullOrBlank()) {
-                priority += 10
-            }
-
-            // Explicit variant bonus
-            priority += 5
-        }
-
-        return priority
-    }
+    ): Int = SourcePriorityCalculator.calculateTotalPriority(
+        sourceType = sourceRef.sourceType,
+        qualityTag = variant?.qualityTag,
+        hasDirectUrl = !variant?.playbackUrl.isNullOrBlank(),
+        isExplicitVariant = variant != null,
+    )
 
     /**
      * Guesses container format from MIME type.
