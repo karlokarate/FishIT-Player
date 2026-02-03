@@ -51,7 +51,7 @@ import javax.inject.Inject
  *
  * @param orchestrator Coordinator for parallel phase execution
  */
-class XtreamCatalogPipelineImpl
+internal class XtreamCatalogPipelineImpl
     @Inject
     constructor(
         private val orchestrator: PhaseScanOrchestrator,

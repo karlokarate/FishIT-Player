@@ -45,7 +45,7 @@ internal interface ScanPhase {
  * Shared atomic counters for all content types.
  * Passed to all phases for coordinated progress reporting.
  */
-data class PhaseCounters(
+internal data class PhaseCounters(
     val vodCounter: AtomicInteger = AtomicInteger(0),
     val seriesCounter: AtomicInteger = AtomicInteger(0),
     val episodeCounter: AtomicInteger = AtomicInteger(0),

@@ -1,11 +1,8 @@
 package com.fishit.player.pipeline.xtream.catalog.phase
 
-import com.fishit.player.infra.logging.UnifiedLog
 import com.fishit.player.infra.transport.xtream.XtreamHttpHeaders
 import com.fishit.player.pipeline.xtream.catalog.XtreamCatalogConfig
 import com.fishit.player.pipeline.xtream.catalog.XtreamCatalogEvent
-import com.fishit.player.pipeline.xtream.debug.XtcLogger
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.channels.SendChannel
@@ -34,7 +31,7 @@ import javax.inject.Inject
  *
  * **CC: ≤ 10** (coordination logic only)
  */
-class PhaseScanOrchestrator @Inject constructor(
+internal class PhaseScanOrchestrator @Inject constructor(
     private val livePhase: LiveChannelPhase,
     private val vodPhase: VodItemPhase,
     private val seriesPhase: SeriesItemPhase,
@@ -50,7 +47,7 @@ class PhaseScanOrchestrator @Inject constructor(
      *
      * @param config Scan configuration
      * @param channel Channel for emitting catalog events
-     * @return Triple of (vodCount, seriesCount, liveCount, episodeCount)
+     * @return ScanResult containing counts for all content types (VOD, series, live, episodes)
      */
     suspend fun executeScan(
         config: XtreamCatalogConfig,
@@ -132,7 +129,7 @@ class PhaseScanOrchestrator @Inject constructor(
 /**
  * Result of a catalog scan.
  */
-data class ScanResult(
+internal data class ScanResult(
     val vodCount: Int,
     val seriesCount: Int,
     val episodeCount: Int,

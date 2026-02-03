@@ -28,7 +28,7 @@ import javax.inject.Inject
  *
  * **CC: ≤ 6** (down from ~38 in monolithic function)
  */
-class VodItemPhase @Inject constructor(
+internal class VodItemPhase @Inject constructor(
     private val source: XtreamCatalogSource,
     private val mapper: XtreamCatalogMapper,
 ) : ScanPhase {

@@ -32,7 +32,7 @@ import javax.inject.Singleton
 abstract class XtreamCatalogModule {
     @Binds
     @Singleton
-    abstract fun bindXtreamCatalogPipeline(impl: XtreamCatalogPipelineImpl): XtreamCatalogPipeline
+    internal abstract fun bindXtreamCatalogPipeline(impl: XtreamCatalogPipelineImpl): XtreamCatalogPipeline
 
     @Binds
     @Singleton

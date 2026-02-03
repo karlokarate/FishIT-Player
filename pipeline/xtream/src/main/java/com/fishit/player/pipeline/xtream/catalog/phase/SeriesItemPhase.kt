@@ -30,7 +30,7 @@ import javax.inject.Inject
  *
  * **CC: ≤ 6** (down from ~38 in monolithic function)
  */
-class SeriesItemPhase @Inject constructor(
+internal class SeriesItemPhase @Inject constructor(
     private val source: XtreamCatalogSource,
     private val mapper: XtreamCatalogMapper,
 ) : ScanPhase {

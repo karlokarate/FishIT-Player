@@ -27,7 +27,7 @@ import javax.inject.Inject
  *
  * **CC: ≤ 6** (down from ~38 in monolithic function)
  */
-class LiveChannelPhase @Inject constructor(
+internal class LiveChannelPhase @Inject constructor(
     private val source: XtreamCatalogSource,
     private val mapper: XtreamCatalogMapper,
 ) : ScanPhase {
