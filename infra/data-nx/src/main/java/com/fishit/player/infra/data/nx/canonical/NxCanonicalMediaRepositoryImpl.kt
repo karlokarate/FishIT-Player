@@ -752,7 +752,7 @@ class NxCanonicalMediaRepositoryImpl @Inject constructor(
     }
 
     private fun extractSourceSpecificId(sourceKey: String): String {
-        return SourceKeyParser.extractAccountKey(sourceKey)
+        return SourceKeyParser.extractItemKey(sourceKey) ?: sourceKey
     }
 
     private fun mediaTypeToKind(mediaType: MediaType): MediaKind = when (mediaType) {
