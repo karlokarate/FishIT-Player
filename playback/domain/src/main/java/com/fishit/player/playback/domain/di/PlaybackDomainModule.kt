@@ -83,11 +83,11 @@ abstract class PlaybackDomainModule {
         /**
          * Provides NX-backed ResumeManager.
          *
-         * Uses NxWorkUserStateRepository for persistence instead of legacy
-         * CanonicalMediaRepository. This is the new standard for resume tracking.
+         * Uses NxWorkUserStateRepository for persistence. This is the ONLY
+         * ResumeManager implementation. Legacy stubs have been removed per
+         * AUDIT_LEGACY_WILDWUCHS_2026.md.
          *
          * @see NxResumeManager for implementation details
-         * @see ObxResumeManager for deprecated OBX-based implementation
          */
         @Provides
         @Singleton
@@ -113,7 +113,8 @@ abstract class PlaybackDomainModule {
          * 1. switchToChannel() is called (player opens a live channel)
          * 2. refreshEpg() is called explicitly
          *
-         * This replaces DefaultLivePlaybackController (stub).
+         * This is the ONLY LivePlaybackController implementation. Legacy stub
+         * (DefaultLivePlaybackController) has been removed per AUDIT_LEGACY_WILDWUCHS_2026.md.
          *
          * @see NxLivePlaybackController for implementation details
          */

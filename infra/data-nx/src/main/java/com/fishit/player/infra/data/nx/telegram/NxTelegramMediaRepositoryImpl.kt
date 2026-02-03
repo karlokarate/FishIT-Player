@@ -1,16 +1,15 @@
 /**
  * NX-based TelegramMediaRepository implementation.
  *
- * This implementation reads from the NX work graph (v2 SSOT) instead of the
- * legacy TelegramContentRepository/RawMediaMetadata layer.
+ * This implementation reads from the NX work graph (v2 SSOT).
  *
  * **Architecture:**
  * - Feature layer (feature:telegram-media) defines TelegramMediaRepository interface
  * - This implementation provides the data from NX repositories
  * - All reads go through NxWorkRepository, NxWorkSourceRefRepository
  *
- * **Migration Note:**
- * This replaces TelegramMediaRepositoryAdapter which reads from TelegramContentRepository.
+ * **Note:** This is the ONLY TelegramMediaRepository implementation.
+ * Legacy adapter has been removed per AUDIT_LEGACY_WILDWUCHS_2026.md.
  *
  * **Source Filtering:**
  * Filters works to only include those with Telegram source refs.
