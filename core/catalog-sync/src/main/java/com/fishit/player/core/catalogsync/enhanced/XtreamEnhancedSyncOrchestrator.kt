@@ -1,6 +1,6 @@
 package com.fishit.player.core.catalogsync.enhanced
 
-import com.fishit.player.core.catalogsync.CatalogSyncContract.SyncStatus
+import com.fishit.player.core.catalogsync.SyncStatus
 import com.fishit.player.core.catalogsync.EnhancedSyncConfig
 import com.fishit.player.core.catalogsync.SyncConfig
 import com.fishit.player.core.catalogsync.SyncPerfMetrics
@@ -145,7 +145,8 @@ class XtreamEnhancedSyncOrchestrator
 private fun EnhancedSyncConfig.toSyncConfig(): SyncConfig =
     SyncConfig(
         batchSize = this.moviesConfig.batchSize,
-        normalizeBeforePersist = this.enableNormalization,
-        progressEmitInterval = 100,
-        enableMetrics = true,
+        jsonStreamingBatchSize = this.jsonStreamingBatchSize,
+        enableNormalization = true,
+        enableCanonicalLinking = this.enableCanonicalLinking,
+        emitProgressEvery = this.emitProgressEvery,
     )

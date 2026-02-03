@@ -1,9 +1,9 @@
 package com.fishit.player.core.catalogsync.enhanced
 
-import com.fishit.player.core.catalogsync.CatalogSyncContract.SyncStatus
 import com.fishit.player.core.catalogsync.EnhancedSyncConfig
 import com.fishit.player.core.catalogsync.SyncConfig
 import com.fishit.player.core.catalogsync.SyncPerfMetrics
+import com.fishit.player.core.catalogsync.SyncStatus
 import com.fishit.player.core.model.RawMediaMetadata
 import com.fishit.player.pipeline.xtream.catalog.XtreamCatalogEvent
 
@@ -14,7 +14,7 @@ import com.fishit.player.pipeline.xtream.catalog.XtreamCatalogEvent
  *
  * **CC: 0** (interface)
  */
-sealed interface XtreamEventHandler<E : XtreamCatalogEvent> {
+interface XtreamEventHandler<E : XtreamCatalogEvent> {
     suspend fun handle(
         event: E,
         state: EnhancedSyncState,

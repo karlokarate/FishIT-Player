@@ -1,6 +1,6 @@
 package com.fishit.player.core.catalogsync.enhanced.handlers
 
-import com.fishit.player.core.catalogsync.CatalogSyncContract.SyncStatus
+import com.fishit.player.core.catalogsync.SyncStatus
 import com.fishit.player.core.catalogsync.SyncPhase
 import com.fishit.player.core.catalogsync.enhanced.EnhancedBatchRouter
 import com.fishit.player.core.catalogsync.enhanced.EnhancedSyncContext
