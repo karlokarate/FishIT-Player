@@ -21,6 +21,11 @@
  *   - Example: `telegram:file:123456789:987654321`
  * - Both formats are parsed by this utility
  *
+ * **Integration with XtreamIdCodec:**
+ * - This parser handles **sourceKey** format (with account prefix)
+ * - For Xtream **sourceId** parsing/formatting, delegates to XtreamIdCodec
+ * - XtreamIdCodec provides type-safe parsing and validation for Xtream sourceIds
+ *
  * **Usage:**
  * ```kotlin
  * // Parse full sourceKey
@@ -39,9 +44,11 @@
  * - Creates single source of truth for sourceKey parsing
  * - Improves testability (test once, use everywhere)
  *
- * @see com.fishit.player.core.model.ids.XtreamIdCodec for sourceId formatting/parsing
+ * @see com.fishit.player.core.model.ids.XtreamIdCodec for Xtream sourceId formatting/parsing
  */
 package com.fishit.player.infra.data.nx.mapper
+
+import com.fishit.player.core.model.ids.XtreamIdCodec
 
 /**
  * Parsed representation of a sourceKey.
@@ -168,19 +175,31 @@ object SourceKeyParser {
      *
      * Handles these formats:
      * - Full sourceKey: `src:xtream:account:vod:12345` → 12345
-     * - Legacy sourceId: `xtream:vod:12345` → 12345
+     * - Legacy sourceId: `xtream:vod:12345` → 12345 (delegates to XtreamIdCodec)
      * - Composite IDs: `src:xtream:account:episode:series:100:s1:e5` → null (use extractItemKey)
      * - Already numeric: `12345` → 12345
      *
      * This replaces NxCatalogWriter.extractNumericId().
+     * For Xtream sourceIds, delegates to XtreamIdCodec for type-safe parsing.
      *
-     * @param sourceKey The source key string
+     * @param sourceKey The source key string or sourceId
      * @return Numeric ID or null if not a simple numeric key
      */
     fun extractNumericItemKey(sourceKey: String?): Long? {
+        if (sourceKey.isNullOrBlank()) return null
+        
         // If input is already just a number, return it
-        sourceKey?.toLongOrNull()?.let { return it }
+        sourceKey.toLongOrNull()?.let { return it }
 
+        // If it's an Xtream sourceId, delegate to XtreamIdCodec for proper parsing
+        if (sourceKey.startsWith("xtream:")) {
+            return XtreamIdCodec.extractVodId(sourceKey)
+                ?: XtreamIdCodec.extractSeriesId(sourceKey)
+                ?: XtreamIdCodec.extractEpisodeId(sourceKey)
+                ?: XtreamIdCodec.extractChannelId(sourceKey)
+        }
+
+        // Otherwise extract from sourceKey format
         val itemKey = extractItemKey(sourceKey) ?: return null
         return itemKey.toLongOrNull()
     }
@@ -193,11 +212,22 @@ object SourceKeyParser {
      * Extract Xtream stream ID from sourceKey (for VOD/Live/Series).
      *
      * This replaces NxXtreamLiveRepositoryImpl.extractStreamIdFromSourceKey().
+     * Delegates to XtreamIdCodec for sourceId parsing when applicable.
      *
-     * @param sourceKey The source key string
+     * @param sourceKey The source key string or sourceId
      * @return Stream ID string or null
      */
     fun extractXtreamStreamId(sourceKey: String?): String? {
+        if (sourceKey.isNullOrBlank()) return null
+        
+        // If it's a sourceId format, delegate to XtreamIdCodec
+        if (sourceKey.startsWith("xtream:")) {
+            return XtreamIdCodec.extractVodId(sourceKey)?.toString()
+                ?: XtreamIdCodec.extractSeriesId(sourceKey)?.toString()
+                ?: XtreamIdCodec.extractChannelId(sourceKey)?.toString()
+        }
+        
+        // Otherwise parse as sourceKey
         val parsed = parse(sourceKey) ?: return null
         
         // For simple numeric IDs (VOD, Live, Series)
@@ -217,16 +247,34 @@ object SourceKeyParser {
     /**
      * Extract Xtream episode ID from sourceKey.
      *
-     * Handles two formats:
-     * 1. Direct episode ID: `src:xtream:account:episode:12345` → 12345
-     * 2. Composite format: `src:xtream:account:episode:100_1_5` → 5 (episode number)
+     * Handles multiple formats:
+     * 1. Direct episode ID sourceId: `xtream:episode:12345` → 12345 (delegates to XtreamIdCodec)
+     * 2. Direct episode ID sourceKey: `src:xtream:account:episode:12345` → 12345
+     * 3. Composite format: `src:xtream:account:episode:100_1_5` → 5 (episode number)
+     * 4. Composite sourceId: `xtream:episode:series:100:s1:e5` → 5 (delegates to XtreamIdCodec)
      *
      * This replaces NxXtreamSeriesIndexRepository.extractEpisodeIdFromSourceKey().
      *
-     * @param sourceKey The source key string
+     * @param sourceKey The source key string or sourceId
      * @return Episode ID (stream ID or episode number) or null
      */
     fun extractXtreamEpisodeId(sourceKey: String?): Int? {
+        if (sourceKey.isNullOrBlank()) return null
+        
+        // If it's a sourceId format, delegate to XtreamIdCodec
+        if (sourceKey.startsWith("xtream:")) {
+            // Try direct episode ID first
+            XtreamIdCodec.extractEpisodeId(sourceKey)?.toInt()?.let { return it }
+            
+            // Try composite format
+            XtreamIdCodec.extractEpisodeComposite(sourceKey)?.let { (_, _, episode) ->
+                return episode
+            }
+            
+            return null
+        }
+        
+        // Parse as sourceKey
         val itemKey = extractItemKey(sourceKey) ?: return null
         
         // Try direct numeric ID first
@@ -244,12 +292,24 @@ object SourceKeyParser {
     /**
      * Extract Xtream series ID from episode sourceKey.
      *
-     * For composite episode format: `src:xtream:account:episode:100_1_5` → 100
+     * Handles multiple formats:
+     * 1. Composite sourceKey: `src:xtream:account:episode:100_1_5` → 100
+     * 2. Composite sourceId: `xtream:episode:series:100:s1:e5` → 100 (delegates to XtreamIdCodec)
      *
-     * @param sourceKey The source key string
+     * @param sourceKey The source key string or sourceId
      * @return Series ID or null
      */
     fun extractXtreamSeriesIdFromEpisode(sourceKey: String?): Int? {
+        if (sourceKey.isNullOrBlank()) return null
+        
+        // If it's a sourceId format, delegate to XtreamIdCodec
+        if (sourceKey.startsWith("xtream:")) {
+            return XtreamIdCodec.extractEpisodeComposite(sourceKey)?.let { (seriesId, _, _) ->
+                seriesId.toInt()
+            }
+        }
+        
+        // Parse as sourceKey
         val itemKey = extractItemKey(sourceKey) ?: return null
         
         // Composite format: seriesId_season_episode
