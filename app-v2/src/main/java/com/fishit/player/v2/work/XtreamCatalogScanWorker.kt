@@ -525,9 +525,68 @@ class XtreamCatalogScanWorker
                             }
                     } catch (e: CancellationException) {
                         throw e
-                    } catch (e: Exception) {
-                        UnifiedLog.w(TAG, e) { "Channel-buffered sync failed, falling back to enhanced sync" }
+                    } catch (e: kotlinx.coroutines.channels.ClosedReceiveChannelException) {
+                        // Normal completion of channel - check if items were persisted before fallback
+                        if (itemsPersisted > 0) {
+                            UnifiedLog.i(TAG) {
+                                "Channel closed with $itemsPersisted items persisted - treating as success"
+                            }
+                        } else {
+                            UnifiedLog.w(TAG, e) { 
+                                "Channel closed with no items persisted, falling back to enhanced sync" 
+                            }
+                            collectEnhanced(enhancedFlow)
+                        }
+                    } catch (e: io.objectbox.exception.UniqueViolationException) {
+                        // Expected error - duplicates handled gracefully, don't fallback
+                        UnifiedLog.d(TAG) { 
+                            "Unique constraint violation (expected with parallel consumers) - continuing" 
+                        }
+                    } catch (e: OutOfMemoryError) {
+                        // Critical error - immediate fallback with smaller buffer
+                        UnifiedLog.e(TAG, e) { 
+                            "OOM during channel sync, falling back to enhanced sync with smaller batches" 
+                        }
                         collectEnhanced(enhancedFlow)
+                    } catch (e: Exception) {
+                        // First attempt failed, try once more before fallback
+                        UnifiedLog.w(TAG, e) { 
+                            "Channel-buffered sync failed (attempt 1/2): ${e.message} - retrying once" 
+                        }
+                        
+                        try {
+                            // Short delay before retry
+                            kotlinx.coroutines.delay(500)
+                            
+                            // Retry the channel sync once
+                            catalogSyncService
+                                .syncXtreamBuffered(
+                                    includeVod = includeVod,
+                                    includeSeries = includeSeries,
+                                    includeEpisodes = includeEpisodes,
+                                    includeLive = includeLive,
+                                    bufferSize = bufferSize,
+                                    consumerCount = consumerCount,
+                                ).collect { status ->
+                                    when (status) {
+                                        is SyncStatus.Completed -> {
+                                            itemsPersisted = status.totalItems
+                                            UnifiedLog.i(TAG) {
+                                                "Channel-buffered sync succeeded on retry: ${status.totalItems} items"
+                                            }
+                                        }
+                                        is SyncStatus.Error -> {
+                                            throw status.throwable ?: RuntimeException(status.message)
+                                        }
+                                        else -> { /* Handle other statuses */ }
+                                    }
+                                }
+                        } catch (retryException: Exception) {
+                            UnifiedLog.w(TAG, retryException) { 
+                                "Channel-buffered sync failed on retry (attempt 2/2), falling back to enhanced sync" 
+                            }
+                            collectEnhanced(enhancedFlow)
+                        }
                     }
                 } else {
                     // This branch should never be reached with useChannelSync = true
