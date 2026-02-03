@@ -66,7 +66,7 @@ class DefaultXtreamApiClient(
     private val http: OkHttpClient,
     private val json: Json = Json { ignoreUnknownKeys = true },
     private val parallelism: XtreamParallelism,
-    private val categoryFallbackStrategy: CategoryFallbackStrategy,
+    private val categoryFallbackStrategy: CategoryFallbackStrategy = CategoryFallbackStrategy(),
     private val io: CoroutineDispatcher = Dispatchers.IO,
     private val capabilityStore: XtreamCapabilityStore? = null,
     private val portStore: XtreamPortStore? = null,
@@ -693,6 +693,8 @@ class DefaultXtreamApiClient(
      *
      * **Fallback:**
      * Uses [fetchStreamsWithCategoryFallback] if streaming parse fails.
+     * If a specific categoryId is provided, fetches only that category (no fallback).
+     * If categoryId is null, uses fallback strategy: * → 0 → null.
      *
      * @param action API action name (e.g., "get_vod_streams")
      * @param categoryId Optional category filter
@@ -705,8 +707,15 @@ class DefaultXtreamApiClient(
         categoryId: String?,
         streamingMapper: (JsonObjectReader) -> T?,
         fallbackMapper: (JsonObject) -> T,
-    ): List<T> =
-        categoryFallbackStrategy.fetchWithFallback(categoryId) { catId ->
+    ): List<T> {
+        // If specific category requested, fetch only that category (no fallback)
+        if (categoryId != null) {
+            val url = buildPlayerApiUrl(action, mapOf("category_id" to categoryId))
+            return fetchAndParseStreaming(url, action, streamingMapper, fallbackMapper)
+        }
+
+        // No specific category: use fallback strategy (* → 0 → null)
+        return categoryFallbackStrategy.fetchWithFallback(categoryId) { catId ->
             val url =
                 if (catId == null) {
                     buildPlayerApiUrl(action)
@@ -717,6 +726,7 @@ class DefaultXtreamApiClient(
                 fetchAndParseStreaming(url, action, streamingMapper, fallbackMapper)
             }.getOrElse { emptyList() }
         }
+    }
 
     /**
      * Fetch and parse JSON array using streaming (O(1) memory).
@@ -916,15 +926,13 @@ class DefaultXtreamApiClient(
         }
 
         // Use strategy for fallback: * → 0 → null
-        // But we need to try all aliases for each fallback attempt
-        // So we convert the Int result to a List<Int> with a single element
-        val results =
-            categoryFallbackStrategy.fetchWithFallback<Int>(null) { catId ->
-                val count = tryAllAliases(catId)
-                if (count > 0) listOf(count) else emptyList()
-            }
-
-        return results.firstOrNull() ?: 0
+        // Use scalar helper for cleaner control flow
+        return categoryFallbackStrategy.fetchScalarWithFallback(
+            categoryId = null,
+            isValidResult = { it != null && it > 0 },
+        ) { catId ->
+            tryAllAliases(catId)
+        } ?: 0
     }
 
     /**
