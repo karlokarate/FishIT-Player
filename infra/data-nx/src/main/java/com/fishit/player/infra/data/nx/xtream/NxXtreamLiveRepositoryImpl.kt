@@ -43,6 +43,7 @@ import com.fishit.player.core.persistence.obx.NX_Work
 import com.fishit.player.core.persistence.obx.NX_WorkSourceRef
 import com.fishit.player.core.persistence.obx.NX_WorkSourceRef_
 import com.fishit.player.core.persistence.obx.NX_Work_
+import com.fishit.player.infra.data.nx.mapper.SourceKeyParser
 import com.fishit.player.infra.data.xtream.XtreamLiveRepository
 import com.fishit.player.infra.logging.UnifiedLog
 import io.objectbox.BoxStore
@@ -207,7 +208,7 @@ class NxXtreamLiveRepositoryImpl
          * - sourceId format: "xtream:live:{streamId}"
          */
         private fun NX_Work.toRawMediaMetadataLive(sourceRef: NX_WorkSourceRef): RawMediaMetadata {
-            val streamId = extractStreamIdFromSourceKey(sourceRef.sourceKey)
+            val streamId = SourceKeyParser.extractXtreamStreamId(sourceRef.sourceKey)
 
             return RawMediaMetadata(
                 originalTitle = canonicalTitle,
@@ -218,16 +219,5 @@ class NxXtreamLiveRepositoryImpl
                 poster = poster,
                 thumbnail = poster, // Use poster as thumbnail for live channels
             )
-        }
-
-        /**
-         * Extract stream ID from NX sourceKey format.
-         *
-         * sourceKey format: "src:xtream:{accountKey}:live:{streamId}"
-         * Example: "src:xtream:myserver:live:12345"
-         */
-        private fun extractStreamIdFromSourceKey(sourceKey: String): String? {
-            val pattern = Regex(":live:([^:]+)")
-            return pattern.find(sourceKey)?.groupValues?.getOrNull(1)
         }
     }

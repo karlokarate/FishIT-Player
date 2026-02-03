@@ -26,6 +26,7 @@ import com.fishit.player.core.model.repository.NxWorkSourceRefRepository
 import com.fishit.player.core.telegrammedia.domain.TelegramMediaItem
 import com.fishit.player.core.telegrammedia.domain.TelegramMediaRepository
 import com.fishit.player.infra.data.nx.mapper.MediaTypeMapper
+import com.fishit.player.infra.data.nx.mapper.SourceKeyParser
 import com.fishit.player.infra.logging.UnifiedLog
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
@@ -151,17 +152,11 @@ class NxTelegramMediaRepositoryImpl @Inject constructor(
     }
 
     private fun extractChatIdFromSourceKey(sourceKey: String?): Long? {
-        if (sourceKey == null) return null
-        // Format: src:TELEGRAM:account:kind:chatId:messageId
-        val parts = sourceKey.split(":")
-        return parts.getOrNull(4)?.toLongOrNull()
+        return SourceKeyParser.extractTelegramChatId(sourceKey)
     }
 
     private fun extractMessageIdFromSourceKey(sourceKey: String?): Long? {
-        if (sourceKey == null) return null
-        // Format: src:TELEGRAM:account:kind:chatId:messageId
-        val parts = sourceKey.split(":")
-        return parts.getOrNull(5)?.toLongOrNull()
+        return SourceKeyParser.extractTelegramMessageId(sourceKey)
     }
 
     // Note: mapWorkTypeToMediaType removed - use MediaTypeMapper.toMediaType() instead

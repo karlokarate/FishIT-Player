@@ -24,6 +24,7 @@ import com.fishit.player.core.model.repository.NxWorkSourceRefRepository.SourceI
 import com.fishit.player.core.model.repository.NxWorkVariantRepository
 import com.fishit.player.infra.data.nx.mapper.MediaTypeMapper
 import com.fishit.player.infra.data.nx.mapper.SourceItemKindMapper
+import com.fishit.player.infra.data.nx.mapper.SourceKeyParser
 import com.fishit.player.infra.logging.UnifiedLog
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -104,7 +105,9 @@ class NxCatalogWriter @Inject constructor(
             val sourceItemKind = SourceItemKindMapper.fromMediaType(normalized.mediaType)
             val sourceKey = buildSourceKey(raw.sourceType, accountKey, sourceItemKind, raw.sourceId)
             // CRITICAL: Store just the numeric ID, not the full xtream:type:id format
-            val cleanSourceItemKey = extractNumericId(raw.sourceId)
+            val cleanSourceItemKey = SourceKeyParser.extractNumericItemKey(raw.sourceId)?.toString()
+                ?: SourceKeyParser.extractItemKey(raw.sourceId)
+                ?: raw.sourceId
             val sourceRef = NxWorkSourceRefRepository.SourceRef(
                 sourceKey = sourceKey,
                 workKey = workKey,
@@ -335,38 +338,10 @@ class NxCatalogWriter @Inject constructor(
         // CRITICAL FIX: Extract just the numeric ID from itemKey
         // Prevents: src:xtream:xtream:xtream:series:xtream:series:10452
         // Correct:  src:xtream:myaccount:series:10452
-        val cleanItemKey = extractNumericId(itemKey)
+        val cleanItemKey = SourceKeyParser.extractNumericItemKey(itemKey)?.toString()
+            ?: SourceKeyParser.extractItemKey(itemKey)
+            ?: itemKey
         return "src:${sourceType.name.lowercase()}:$accountKey:${itemKind.name.lowercase()}:$cleanItemKey"
-    }
-
-    /**
-     * Extract numeric ID from a sourceId that may be in various formats:
-     * - "xtream:vod:123" → "123"
-     * - "xtream:series:456" → "456"
-     * - "xtream:live:789" → "789"
-     * - "xtream:episode:series:100:s1:e5" → "series:100:s1:e5" (episode compound ID)
-     * - "123" → "123" (already just ID)
-     */
-    private fun extractNumericId(sourceId: String): String {
-        // If it's already just a number, return as-is
-        if (sourceId.toLongOrNull() != null) {
-            return sourceId
-        }
-
-        // Handle xtream:type:id format
-        if (sourceId.startsWith("xtream:")) {
-            val parts = sourceId.split(":", limit = 3)
-            return if (parts.size >= 3) {
-                // Return everything after "xtream:type:"
-                parts[2]
-            } else {
-                sourceId
-            }
-        }
-
-        // For other formats, try to extract trailing number
-        val lastPart = sourceId.split(":").lastOrNull()
-        return lastPart?.takeIf { it.toLongOrNull() != null } ?: sourceId
     }
 
     /**
