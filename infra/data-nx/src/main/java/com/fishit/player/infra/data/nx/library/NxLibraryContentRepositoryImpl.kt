@@ -44,6 +44,7 @@ import com.fishit.player.core.model.repository.NxWorkSourceRefRepository
 import com.fishit.player.core.model.sort.SortDirection
 import com.fishit.player.core.model.sort.SortField
 import com.fishit.player.core.model.sort.SortOption
+import com.fishit.player.infra.data.nx.mapper.MediaTypeMapper
 import com.fishit.player.infra.logging.UnifiedLog
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
@@ -174,7 +175,7 @@ class NxLibraryContentRepositoryImpl @Inject constructor(
             title = displayTitle,
             poster = ImageRef.fromString(posterRef),
             backdrop = ImageRef.fromString(backdropRef),
-            mediaType = mapWorkTypeToMediaType(type),
+            mediaType = MediaTypeMapper.toMediaType(type),
             sourceType = sourceType,
             year = year,
             rating = rating?.toFloat(),
@@ -202,18 +203,7 @@ class NxLibraryContentRepositoryImpl @Inject constructor(
         }
     }
 
-    private fun mapWorkTypeToMediaType(type: WorkType): MediaType {
-        return when (type) {
-            WorkType.MOVIE -> MediaType.MOVIE
-            WorkType.SERIES -> MediaType.SERIES
-            WorkType.EPISODE -> MediaType.SERIES_EPISODE
-            WorkType.LIVE_CHANNEL -> MediaType.LIVE
-            WorkType.CLIP -> MediaType.CLIP
-            WorkType.AUDIOBOOK -> MediaType.AUDIOBOOK
-            WorkType.MUSIC_TRACK -> MediaType.MUSIC
-            WorkType.UNKNOWN -> MediaType.UNKNOWN
-        }
-    }
+    // Note: mapWorkTypeToMediaType removed - use MediaTypeMapper.toMediaType() instead
 
     // ==================== Advanced Query (Sort/Filter) ====================
 

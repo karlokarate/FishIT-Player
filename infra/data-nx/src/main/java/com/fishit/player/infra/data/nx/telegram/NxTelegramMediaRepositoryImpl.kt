@@ -25,6 +25,7 @@ import com.fishit.player.core.model.repository.NxWorkRepository.WorkType
 import com.fishit.player.core.model.repository.NxWorkSourceRefRepository
 import com.fishit.player.core.telegrammedia.domain.TelegramMediaItem
 import com.fishit.player.core.telegrammedia.domain.TelegramMediaRepository
+import com.fishit.player.infra.data.nx.mapper.MediaTypeMapper
 import com.fishit.player.infra.logging.UnifiedLog
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
@@ -139,7 +140,7 @@ class NxTelegramMediaRepositoryImpl @Inject constructor(
             mediaId = workKey,
             title = displayTitle,
             sourceLabel = telegramSourceRef?.sourceTitle ?: "Telegram",
-            mediaType = mapWorkTypeToMediaType(type),
+            mediaType = MediaTypeMapper.toMediaType(type),
             durationMs = runtimeMs,
             posterUrl = posterRef?.let { serializeImageRefToUrl(it) },
             chatId = extractedChatId,
@@ -163,18 +164,7 @@ class NxTelegramMediaRepositoryImpl @Inject constructor(
         return parts.getOrNull(5)?.toLongOrNull()
     }
 
-    private fun mapWorkTypeToMediaType(type: WorkType): MediaType {
-        return when (type) {
-            WorkType.MOVIE -> MediaType.MOVIE
-            WorkType.SERIES -> MediaType.SERIES
-            WorkType.EPISODE -> MediaType.SERIES_EPISODE
-            WorkType.LIVE_CHANNEL -> MediaType.LIVE
-            WorkType.CLIP -> MediaType.CLIP
-            WorkType.AUDIOBOOK -> MediaType.AUDIOBOOK
-            WorkType.MUSIC_TRACK -> MediaType.MUSIC
-            WorkType.UNKNOWN -> MediaType.UNKNOWN
-        }
-    }
+    // Note: mapWorkTypeToMediaType removed - use MediaTypeMapper.toMediaType() instead
 
     private fun serializeImageRefToUrl(serialized: String): String? {
         val colonIndex = serialized.indexOf(':')
