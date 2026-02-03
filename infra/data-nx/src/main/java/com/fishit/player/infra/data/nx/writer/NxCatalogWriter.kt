@@ -381,7 +381,7 @@ class NxCatalogWriter @Inject constructor(
     // =========================================================================
     
     // Note: Type mapping functions removed - using centralized TypeMappers instead
-    // - MediaTypeMapper.toWorkType() → MediaTypeMapper.toWorkType()
+    // - mapWorkType() → MediaTypeMapper.toWorkType()
     // - SourceItemKindMapper.fromMediaType() → SourceItemKindMapper.fromMediaType()
     // - mapSourceType() → Inline conversion (no mapper needed for CoreSourceType)
 
