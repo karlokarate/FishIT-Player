@@ -554,11 +554,23 @@ class XtreamCatalogScanWorker
                             "Channel-buffered sync failed (attempt 1/2): ${e.message} - retrying once" 
                         }
                         
+                        // Create fresh enhanced flow for potential fallback after retry (declare before retry)
+                        val retryFallbackFlow =
+                            catalogSyncService.syncXtreamEnhanced(
+                                includeVod = includeVod,
+                                includeSeries = includeSeries,
+                                includeEpisodes = includeEpisodes,
+                                includeLive = includeLive,
+                                excludeSeriesIds = excludeSeriesIds,
+                                episodeParallelism = 4,
+                                config = enhancedConfig,
+                            )
+                        
                         try {
                             // Short delay before retry
                             kotlinx.coroutines.delay(500)
                             
-                            // Retry the channel sync once
+                            // Retry the channel sync once with same runtime checks
                             catalogSyncService
                                 .syncXtreamBuffered(
                                     includeVod = includeVod,
@@ -568,24 +580,66 @@ class XtreamCatalogScanWorker
                                     bufferSize = bufferSize,
                                     consumerCount = consumerCount,
                                 ).collect { status ->
+                                    // Check cancellation
+                                    if (!currentCoroutineContext().isActive) {
+                                        throw CancellationException("Worker cancelled during retry")
+                                    }
+
+                                    // Check runtime budget
+                                    val elapsedMs = System.currentTimeMillis() - startTimeMs
+                                    if (elapsedMs > input.maxRuntimeMs) {
+                                        budgetExceeded = true
+                                        return@collect
+                                    }
+
+                                    // Cooperative yielding for high-priority actions
+                                    if (priorityDispatcher.shouldYield()) {
+                                        UnifiedLog.d(TAG) { "Channel sync retry yielding for high-priority user action" }
+                                        priorityDispatcher.awaitHighPriorityComplete()
+                                        UnifiedLog.d(TAG) { "Channel sync retry resuming after high-priority completion" }
+                                    }
+
                                     when (status) {
+                                        is SyncStatus.Started -> {
+                                            UnifiedLog.i(TAG) { "Channel-buffered sync retry started" }
+                                        }
+                                        is SyncStatus.InProgress -> {
+                                            // Track intermediate progress during retry
+                                            val progressSoFar = status.itemsPersisted
+                                            if (progressSoFar > itemsPersisted) {
+                                                itemsPersisted = progressSoFar
+                                            }
+                                        }
                                         is SyncStatus.Completed -> {
                                             itemsPersisted = status.totalItems
                                             UnifiedLog.i(TAG) {
                                                 "Channel-buffered sync succeeded on retry: ${status.totalItems} items"
                                             }
                                         }
+                                        is SyncStatus.Cancelled -> {
+                                            itemsPersisted = status.itemsPersisted
+                                            UnifiedLog.w(TAG) { "Channel-buffered sync cancelled on retry" }
+                                            throw CancellationException("Sync cancelled")
+                                        }
                                         is SyncStatus.Error -> {
                                             throw status.throwable ?: RuntimeException(status.message)
                                         }
-                                        else -> { /* Handle other statuses */ }
+                                        is SyncStatus.SeriesEpisodeComplete -> {
+                                            currentCheckpoint = currentCheckpoint.withProcessedSeries(status.seriesId)
+                                        }
+                                        is SyncStatus.TelegramChatComplete -> {
+                                            // N/A for Xtream - ignore
+                                        }
                                     }
                                 }
+                        } catch (e: CancellationException) {
+                            // Always rethrow cancellation
+                            throw e
                         } catch (retryException: Exception) {
                             UnifiedLog.w(TAG, retryException) { 
                                 "Channel-buffered sync failed on retry (attempt 2/2), falling back to enhanced sync" 
                             }
-                            collectEnhanced(enhancedFlow)
+                            collectEnhanced(retryFallbackFlow)
                         }
                     }
                 } else {

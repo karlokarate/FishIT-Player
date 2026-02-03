@@ -482,11 +482,11 @@ class NxCatalogWriter @Inject constructor(
 
         // Declare outside try block so accessible in catch blocks
         val preparedWorks = mutableListOf<NxWorkRepository.Work>()
-        val preparedSourceRefs = mutableListOf<NxWorkSourceRefRepository.SourceRef>()
-        val preparedVariants = mutableListOf<NxWorkVariantRepository.Variant>()
 
         try {
             val now = System.currentTimeMillis()
+            val preparedSourceRefs = mutableListOf<NxWorkSourceRefRepository.SourceRef>()
+            val preparedVariants = mutableListOf<NxWorkVariantRepository.Variant>()
 
             // Phase 1: Prepare ALL entities (outside transaction for speed)
 
@@ -600,10 +600,10 @@ class NxCatalogWriter @Inject constructor(
             throw e
         } catch (e: io.objectbox.exception.UniqueViolationException) {
             // EXPECTED: Duplicate workKey from parallel consumers
-            // Log as warning since bulk operation failed, but return partial success count
-            UnifiedLog.w(TAG) { "Duplicate workKey in optimized batch (expected) - ${preparedWorks.size} items prepared" }
-            // Return number of items we attempted to ingest (repositories handle duplicates internally)
-            preparedWorks.size
+            // Bulk operation failed; no items from this batch were persisted
+            UnifiedLog.w(TAG) { "Duplicate workKey in optimized batch (expected) - ${preparedWorks.size} items prepared, 0 persisted" }
+            // Report failure (0 persisted) to avoid overstating success on a failed transaction
+            0
         } catch (e: Exception) {
             UnifiedLog.e(TAG, e) { "Failed to ingest batch" }
             0
