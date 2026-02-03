@@ -28,6 +28,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.supervisorScope
@@ -1246,7 +1247,16 @@ class DefaultCatalogSyncService
                     persistLive = { batch ->
                         persistXtreamLiveBatch(batch)
                     },
-                )
+                ).onEach { status ->
+                    // Update SyncActiveState on progress events for UI throttling (per core-catalog-sync.instructions.md Rule #6)
+                    if (status is SyncStatus.InProgress && status.currentPhase != null) {
+                        _syncActiveState.value = SyncActiveState(
+                            isActive = true,
+                            source = SOURCE_XTREAM,
+                            currentPhase = status.currentPhase,
+                        )
+                    }
+                }
             } finally {
                 // Always clear sync active state
                 _syncActiveState.value = SyncActiveState(isActive = false)

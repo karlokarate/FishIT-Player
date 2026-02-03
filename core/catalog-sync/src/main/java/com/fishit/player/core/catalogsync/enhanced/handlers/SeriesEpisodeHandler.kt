@@ -22,46 +22,46 @@ import javax.inject.Singleton
 class SeriesEpisodeHandler
     @Inject
     constructor() {
-        /**
-         * Handle SeriesEpisodeComplete event
-         *
-         * **CC: 0** (no conditionals)
-         */
-        suspend fun handleComplete(
-            event: XtreamCatalogEvent.SeriesEpisodeComplete,
-            state: EnhancedSyncState,
-            context: EnhancedSyncContext,
-        ): EnhancedSyncResult {
-            val emit =
-                SyncStatus.SeriesEpisodeComplete(
-                    source = "XTREAM",
-                    seriesId = event.seriesId,
-                    episodeCount = event.episodeCount,
-                )
-
-            return EnhancedSyncResult.Continue(state, emit)
-        }
-
-        /**
-         * Handle SeriesEpisodeFailed event
-         *
-         * **CC: 0** (no conditionals)
-         */
-        suspend fun handleFailed(
-            event: XtreamCatalogEvent.SeriesEpisodeFailed,
-            state: EnhancedSyncState,
-            context: EnhancedSyncContext,
-        ): EnhancedSyncResult {
-            UnifiedLog.w(
-                TAG,
-                "Series ${event.seriesId} episode load failed: ${event.reason}",
+    /**
+     * Handle SeriesEpisodeComplete event
+     *
+     * **CC: 0** (no conditionals)
+     */
+    suspend fun handleComplete(
+        event: XtreamCatalogEvent.SeriesEpisodeComplete,
+        state: EnhancedSyncState,
+        context: EnhancedSyncContext,
+    ): EnhancedSyncResult {
+        val emit =
+            SyncStatus.SeriesEpisodeComplete(
+                source = "XTREAM",
+                seriesId = event.seriesId,
+                episodeCount = event.episodeCount,
             )
 
-            // Continue sync - don't fail entire operation
-            return EnhancedSyncResult.Continue(state)
-        }
-
-        companion object {
-            private const val TAG = "SeriesEpisodeHandler"
-        }
+        return EnhancedSyncResult.Continue(state, emit)
     }
+
+    /**
+     * Handle SeriesEpisodeFailed event
+     *
+     * **CC: 0** (no conditionals)
+     */
+    suspend fun handleFailed(
+        event: XtreamCatalogEvent.SeriesEpisodeFailed,
+        state: EnhancedSyncState,
+        context: EnhancedSyncContext,
+    ): EnhancedSyncResult {
+        UnifiedLog.w(
+            TAG,
+            "Series ${event.seriesId} episode load failed: ${event.reason}",
+        )
+
+        // Continue sync - don't fail entire operation
+        return EnhancedSyncResult.Continue(state)
+    }
+
+    companion object {
+        private const val TAG = "SeriesEpisodeHandler"
+    }
+}

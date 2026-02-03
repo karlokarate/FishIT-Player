@@ -16,13 +16,15 @@ import javax.inject.Singleton
  * - flushBatch: 1 (kind check)
  *
  * Separates batch size decisions from persistence logic.
+ *
+ * **Config Handling:**
+ * Config is passed via EnhancedSyncContext (per-call) instead of constructor injection
+ * to support different batch sizes per sync operation (QUICK_SYNC, FIRETV_SAFE, etc.)
  */
 @Singleton
 class EnhancedBatchRouter
     @Inject
-    constructor(
-        private val config: EnhancedSyncConfig,
-    ) {
+    constructor() {
         /**
          * Flush batch if size limit reached
          *
@@ -35,7 +37,7 @@ class EnhancedBatchRouter
             kind: XtreamItemKind,
             context: EnhancedSyncContext,
         ): Pair<EnhancedSyncState, Int> {
-            val (batch, limit) = getBatchAndLimit(state, kind)
+            val (batch, limit) = getBatchAndLimit(state, kind, context)
 
             if (batch.size < limit) return state to 0
 
@@ -65,15 +67,18 @@ class EnhancedBatchRouter
          * Get batch and size limit for content kind
          *
          * **CC: 3** (when branches)
+         *
+         * Config comes from context (per-call) to support different batch sizes
          */
         private fun getBatchAndLimit(
             state: EnhancedSyncState,
             kind: XtreamItemKind,
+            context: EnhancedSyncContext,
         ): Pair<List<RawMediaMetadata>, Int> =
             when (kind) {
-                XtreamItemKind.LIVE -> state.liveBatch to config.liveConfig.batchSize
-                XtreamItemKind.SERIES, XtreamItemKind.EPISODE -> state.seriesBatch to config.seriesConfig.batchSize
-                else -> state.catalogBatch to config.moviesConfig.batchSize
+                XtreamItemKind.LIVE -> state.liveBatch to context.config.liveConfig.batchSize
+                XtreamItemKind.SERIES, XtreamItemKind.EPISODE -> state.seriesBatch to context.config.seriesConfig.batchSize
+                else -> state.catalogBatch to context.config.moviesConfig.batchSize
             }
 
         /**
@@ -86,7 +91,7 @@ class EnhancedBatchRouter
             kind: XtreamItemKind,
             context: EnhancedSyncContext,
         ): Pair<EnhancedSyncState, Int> {
-            val (batch, _) = getBatchAndLimit(state, kind)
+            val (batch, _) = getBatchAndLimit(state, kind, context)
 
             if (kind == XtreamItemKind.LIVE) {
                 context.persistLive(batch)
