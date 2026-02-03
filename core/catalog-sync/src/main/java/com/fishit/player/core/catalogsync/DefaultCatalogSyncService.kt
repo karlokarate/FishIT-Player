@@ -30,6 +30,7 @@ import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.supervisorScope
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -1901,7 +1902,7 @@ class DefaultCatalogSyncService
             }
 
             try {
-                coroutineScope {
+                supervisorScope {
                     // Producer: Pipeline → Buffer (with error isolation)
                     val producerJob =
                         launch {
@@ -1988,6 +1989,14 @@ class DefaultCatalogSyncService
                                             return true
                                         } catch (ce: CancellationException) {
                                             throw ce
+                                        } catch (e: io.objectbox.exception.UniqueViolationException) {
+                                            // EXPECTED: Duplicate items from parallel consumers (e.g., same item in VOD & Live)
+                                            // Log as debug and treat as success since duplicates are handled gracefully
+                                            UnifiedLog.d(TAG) {
+                                                "Consumer#$consumerId: Duplicate items in batch (expected) - continuing"
+                                            }
+                                            consecutiveErrors.set(0)
+                                            return true
                                         } catch (e: Exception) {
                                             lastError = e
                                             val backoffMs = retryBackoffMs.getOrElse(attempt) { 2000L }
