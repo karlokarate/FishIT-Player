@@ -1,0 +1,96 @@
+package com.fishit.player.infra.transport.xtream.client
+
+import com.fishit.player.infra.logging.UnifiedLog
+import com.fishit.player.infra.transport.xtream.XtreamCategory
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.intOrNull
+
+/**
+ * XtreamCategoryFetcher - Handles category operations.
+ *
+ * Extracted from DefaultXtreamApiClient to reduce cyclomatic complexity.
+ * Responsibilities:
+ * - Fetch live/VOD/series categories
+ * - Handle VOD alias resolution (vod/movie/movies)
+ *
+ * CC Target: ≤ 6 per function
+ */
+class XtreamCategoryFetcher(
+    private val json: Json,
+    private val io: CoroutineDispatcher = Dispatchers.IO,
+    private val buildPlayerApiUrl: (action: String) -> String,
+    private val fetchRaw: suspend (url: String, isEpg: Boolean) -> String?,
+) {
+    companion object {
+        private const val TAG = "XtreamCategoryFetcher"
+        private val VOD_ALIAS_CANDIDATES = listOf("vod", "movie", "movies")
+    }
+
+    /**
+     * Get live stream categories.
+     * CC: 2
+     */
+    suspend fun getLiveCategories(): List<XtreamCategory> =
+        fetchCategories("get_live_categories")
+
+    /**
+     * Get VOD categories with alias resolution.
+     * CC: 4 (alias loop)
+     */
+    suspend fun getVodCategories(currentVodKind: String): Pair<List<XtreamCategory>, String> {
+        // Try aliases in order
+        val candidates = listOf(currentVodKind) + VOD_ALIAS_CANDIDATES.filter { it != currentVodKind }
+        for (alias in candidates) {
+            val result = fetchCategories("get_${alias}_categories")
+            if (result.isNotEmpty()) {
+                return Pair(result, alias)
+            }
+        }
+        return Pair(emptyList(), currentVodKind)
+    }
+
+    /**
+     * Get series categories.
+     * CC: 2
+     */
+    suspend fun getSeriesCategories(): List<XtreamCategory> =
+        fetchCategories("get_series_categories")
+
+    /**
+     * Fetch categories for a given action.
+     * CC: 4 (parsing)
+     */
+    private suspend fun fetchCategories(action: String): List<XtreamCategory> =
+        withContext(io) {
+            val url = buildPlayerApiUrl(action)
+            val body = fetchRaw(url, false) ?: return@withContext emptyList()
+            parseCategories(body, action)
+        }
+
+    /**
+     * Parse category JSON array.
+     * CC: 3
+     */
+    private fun parseCategories(body: String, action: String): List<XtreamCategory> {
+        return try {
+            val jsonElement = json.parseToJsonElement(body)
+            jsonElement.jsonArray.mapNotNull { element ->
+                val obj = element.jsonObject
+                XtreamCategory(
+                    categoryId = obj["category_id"]?.jsonPrimitive?.content,
+                    categoryName = obj["category_name"]?.jsonPrimitive?.content,
+                    parentId = obj["parent_id"]?.jsonPrimitive?.intOrNull,
+                )
+            }
+        } catch (e: Exception) {
+            UnifiedLog.w(TAG, e) { "Failed to parse categories for $action" }
+            emptyList()
+        }
+    }
+}
