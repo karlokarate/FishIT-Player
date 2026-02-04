@@ -142,10 +142,10 @@ class XtreamUrlBuilder @Inject constructor() {
     fun panelApiUrl(
         action: String? = null,
         params: Map<String, String> = emptyMap(),
-    ): String =
-        HttpUrl
-            .Builder()
+    ): String {
         val cfg = config ?: error("XtreamUrlBuilder not configured - call configure() first")
+        return HttpUrl
+            .Builder()
             .scheme(cfg.scheme.lowercase())
             .host(cfg.host)
             .port(resolvedPort)
@@ -166,6 +166,7 @@ class XtreamUrlBuilder @Inject constructor() {
                 params.forEach { (key, value) -> addQueryParameter(key, value) }
             }.build()
             .toString()
+    }
 
     // =========================================================================
     // Playback URLs
@@ -180,12 +181,11 @@ class XtreamUrlBuilder @Inject constructor() {
         streamId: Int,
         extension: String? = null,
     ): String {
-        val ext =
-            normalizeExtension(
         val cfg = config ?: error("XtreamUrlBuilder not configured - call configure() first")
-                extension ?: cfg.liveExtPrefs.firstOrNull() ?: "m3u8",
-                isLive = true,
-            )
+        val ext = normalizeExtension(
+            extension ?: cfg.liveExtPrefs.firstOrNull() ?: "m3u8",
+            isLive = true,
+        )
         return playUrl("live", streamId, ext)
     }
 
@@ -314,10 +314,10 @@ class XtreamUrlBuilder @Inject constructor() {
     fun m3uUrl(
         type: String? = "m3u_plus",
         output: String? = null,
-    ): String =
-        HttpUrl
-            .Builder()
+    ): String {
         val cfg = config ?: error("XtreamUrlBuilder not configured - call configure() first")
+        return HttpUrl
+            .Builder()
             .scheme(cfg.scheme.lowercase())
             .host(cfg.host)
             .port(resolvedPort)
@@ -330,16 +330,17 @@ class XtreamUrlBuilder @Inject constructor() {
                 output?.let { addQueryParameter("output", it) }
             }.build()
             .toString()
+    }
 
     /**
      * Build xmltv.php URL for EPG data.
      *
      * Format: {base}/xmltv.php?username={user}&password={pass}
      */
-    fun xmltvUrl(): String =
-        HttpUrl
-            .Builder()
+    fun xmltvUrl(): String {
         val cfg = config ?: error("XtreamUrlBuilder not configured - call configure() first")
+        return HttpUrl
+            .Builder()
             .scheme(cfg.scheme.lowercase())
             .host(cfg.host)
             .port(resolvedPort)
@@ -350,6 +351,7 @@ class XtreamUrlBuilder @Inject constructor() {
                 addQueryParameter("password", cfg.password)
             }.build()
             .toString()
+    }
 
     // =========================================================================
     // Catchup / Timeshift URLs
@@ -369,10 +371,10 @@ class XtreamUrlBuilder @Inject constructor() {
         streamId: Int,
         startTimestamp: Long,
         durationMinutes: Int,
-    ): String =
-        HttpUrl
-            .Builder()
+    ): String {
         val cfg = config ?: error("XtreamUrlBuilder not configured - call configure() first")
+        return HttpUrl
+            .Builder()
             .scheme(cfg.scheme.lowercase())
             .host(cfg.host)
             .port(resolvedPort)
@@ -387,6 +389,7 @@ class XtreamUrlBuilder @Inject constructor() {
                 addQueryParameter("duration", durationMinutes.toString())
             }.build()
             .toString()
+    }
 
     /**
      * Alternative catchup format (some XUI.ONE panels).
@@ -398,11 +401,11 @@ class XtreamUrlBuilder @Inject constructor() {
         startIso: String,
         durationMinutes: Int,
         extension: String = "ts",
-    ): String =
-        buildString {
+    ): String {
+        val cfg = config ?: error("XtreamUrlBuilder not configured - call configure() first")
+        return buildString {
             append(baseUrl)
             append("/timeshift/")
-        val cfg = config ?: error("XtreamUrlBuilder not configured - call configure() first")
             append(urlEncode(cfg.username))
             append("/")
             append(urlEncode(cfg.password))
@@ -415,6 +418,7 @@ class XtreamUrlBuilder @Inject constructor() {
             append(".")
             append(sanitizeExtension(extension))
         }
+    }
 
     // =========================================================================
     // Credential Parsing (M3U URL → Config)
