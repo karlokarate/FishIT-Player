@@ -70,6 +70,9 @@ class DefaultXtreamApiClient(
     private val io: CoroutineDispatcher = Dispatchers.IO,
     private val capabilityStore: XtreamCapabilityStore? = null,
     private val portStore: XtreamPortStore? = null,
+    private val connectionManager: com.fishit.player.infra.transport.xtream.client.XtreamConnectionManager? = null,
+    private val categoryFetcher: com.fishit.player.infra.transport.xtream.client.XtreamCategoryFetcher? = null,
+    private val streamFetcher: com.fishit.player.infra.transport.xtream.client.XtreamStreamFetcher? = null,
 ) : XtreamApiClient {
     // =========================================================================
     // State
