@@ -34,6 +34,7 @@ dependencies {
     implementation(project(":core:device-api"))
     implementation(project(":infra:device-android"))  // For backward compat in deprecated method
     implementation(project(":infra:logging"))
+    implementation(project(":infra:http-client"))  // NEW: Generic HTTP client
 
     // Debug settings (for GatedChuckerInterceptor in debug builds)
     // This module is always included in debug builds for the gating infrastructure.
