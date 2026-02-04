@@ -68,7 +68,7 @@
 | `app-work.instructions.md` | `app-v2/src/main/java/*/work/**` | ✅ Active | 1.1 | core-catalog-sync, infra-work, infra-logging |
 | `catalog-sync.instructions.md` | `**/catalog-sync/**`, `**/work/**CatalogSync*`, `**/bootstrap/*Bootstrap*` | ✅ Active | 1.0 | core-catalog-sync, infra-work |
 
-**Total Files:** 23  
+**Total Files:** 22  
 **Last Audit:** 2026-02-04
 
 ---
