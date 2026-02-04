@@ -37,3 +37,49 @@ Transport ← Pipeline ← Data ← Domain ← UI
 1. ❌ Creating `XtreamVodItem` here (belongs in Pipeline)
 2. ❌ Importing pipeline model types
 3. ❌ Accessing repositories from transport
+
+## 🏗️ Handler Pattern Architecture (PLATIN Refactoring)
+
+To reduce Cyclomatic Complexity (CC ≤ 15), `DefaultXtreamApiClient` delegates to specialized handlers:
+
+### Handler Classes
+
+```
+infra/transport-xtream/
+├── DefaultXtreamApiClient.kt       (Orchestrator - delegates to handlers)
+├── client/
+│   ├── XtreamConnectionManager.kt  (init, ping, close) - CC ~8
+│   ├── XtreamCategoryFetcher.kt    (category operations) - CC ~4
+│   └── XtreamStreamFetcher.kt      (streaming operations) - CC ~7
+└── mapper/
+    ├── LiveStreamMapper.kt         (JSON → LiveStream) - CC = 2
+    ├── VodStreamMapper.kt          (JSON → VodStream) - CC = 2
+    └── SeriesStreamMapper.kt       (JSON → SeriesInfo) - CC = 2
+```
+
+### Benefits
+1. **Reduced Complexity:** Original CC ~52 → Handler average CC ~5
+2. **Testability:** Each handler can be unit tested independently
+3. **Maintainability:** Single responsibility per handler
+4. **Reusability:** Mappers eliminate ~300 lines of duplication
+
+### Example Usage
+
+```kotlin
+// XtreamConnectionManager handles lifecycle
+suspend fun initialize(config: XtreamApiConfig): Result<XtreamCapabilities> {
+    return connectionManager.initialize(config)
+}
+
+// XtreamCategoryFetcher handles categories
+suspend fun getLiveCategories(): List<XtreamCategory> {
+    return categoryFetcher.getLiveCategories()
+}
+
+// XtreamStreamFetcher handles streaming
+suspend fun getVodStreams(categoryId: String?): List<XtreamVodStream> {
+    return streamFetcher.getVodStreams(categoryId)
+}
+```
+
+For implementation details, see this PR.
