@@ -55,7 +55,7 @@ class DefaultXtreamApiClient @Inject constructor(
     override suspend fun initialize(
         source: XtreamApiConfig,
         forceDiscovery: Boolean
-    ): XtreamAuth =
+    ): Result<XtreamCapabilities> =
         connectionManager.initialize(source, forceDiscovery)
 
     override fun close() =
@@ -64,13 +64,13 @@ class DefaultXtreamApiClient @Inject constructor(
     override suspend fun ping(): Boolean =
         connectionManager.ping()
 
-    override suspend fun getServerInfo(): XtreamServerInfo? =
+    override suspend fun getServerInfo(): Result<XtreamServerInfo> =
         connectionManager.getServerInfo()
 
-    override suspend fun getPanelInfo(): XtreamPanelInfo? =
+    override suspend fun getPanelInfo(): String? =
         connectionManager.getPanelInfo()
 
-    override suspend fun getUserInfo(): XtreamUserInfo? =
+    override suspend fun getUserInfo(): Result<XtreamUserInfo> =
         connectionManager.getUserInfo()
 
     // =========================================================================
@@ -116,25 +116,25 @@ class DefaultXtreamApiClient @Inject constructor(
     // =========================================================================
 
     override suspend fun streamVodInBatches(
-        categoryId: String?,
         batchSize: Int,
+        categoryId: String?,
         onBatch: suspend (List<XtreamVodStream>) -> Unit,
-    ) =
-        streamFetcher.streamVodInBatches(categoryId, batchSize, onBatch)
+    ): Int =
+        streamFetcher.streamVodInBatches(batchSize, categoryId, onBatch)
 
     override suspend fun streamSeriesInBatches(
-        categoryId: String?,
         batchSize: Int,
+        categoryId: String?,
         onBatch: suspend (List<XtreamSeriesStream>) -> Unit,
-    ) =
-        streamFetcher.streamSeriesInBatches(categoryId, batchSize, onBatch)
+    ): Int =
+        streamFetcher.streamSeriesInBatches(batchSize, categoryId, onBatch)
 
     override suspend fun streamLiveInBatches(
-        categoryId: String?,
         batchSize: Int,
+        categoryId: String?,
         onBatch: suspend (List<XtreamLiveStream>) -> Unit,
-    ) =
-        streamFetcher.streamLiveInBatches(categoryId, batchSize, onBatch)
+    ): Int =
+        streamFetcher.streamLiveInBatches(batchSize, categoryId, onBatch)
 
     // =========================================================================
     // Count Methods (Delegated to StreamFetcher)
