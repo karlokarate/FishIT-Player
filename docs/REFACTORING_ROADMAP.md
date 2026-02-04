@@ -22,13 +22,13 @@ This document outlines the remaining high-complexity files that could benefit fr
 - ✅ **Documentation:** READMEs updated
 
 ### Sprint 3: Integration (Current PR #675)
-- ⏳ **DefaultXtreamApiClient:** 2312 → ~800 lines (in progress)
-- ⏳ **NxCatalogWriter:** 610 → ~300 lines (in progress)
+- ⏸️ **DefaultXtreamApiClient:** 2312 lines (blocked - circular dependency, requires HTTP infrastructure)
+- ✅ **NxCatalogWriter:** 610 → 250 lines (complete, runtime operational)
 
 **Total Impact So Far:**
-- Lines reduced: ~1,822 (62%)
-- Complexity reduced: CC 52/28 → CC ~8/6
-- Test coverage: +15 tests
+- Lines reduced: ~360 for NX (59%)
+- Complexity reduced: NxCatalogWriter CC 28 → 8
+- Test coverage: +15 tests (builders tested and operational)
 
 ---
 
