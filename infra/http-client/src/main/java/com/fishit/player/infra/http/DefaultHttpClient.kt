@@ -297,12 +297,40 @@ class DefaultHttpClient @Inject constructor(
         }
     }
 
+    /**
+     * Wrap stream in GZIPInputStream if GZIP compression is detected.
+     * 
+     * Detection methods (in order):
+     * 1. Content-Encoding: gzip header (standard HTTP)
+     * 2. Magic byte sniffing (0x1F 0x8B) for servers that don't set the header
+     * 
+     * This is important because many Xtream/IPTV servers send GZIP without
+     * the proper Content-Encoding header, causing parse failures.
+     */
     private fun wrapStreamIfGzipped(inputStream: InputStream, response: Response): InputStream {
         val contentEncoding = response.header("Content-Encoding")
-        return if (contentEncoding?.contains("gzip", ignoreCase = true) == true) {
-            GZIPInputStream(inputStream)
+        
+        // If Content-Encoding header says gzip, trust it
+        if (contentEncoding?.contains("gzip", ignoreCase = true) == true) {
+            return GZIPInputStream(inputStream)
+        }
+        
+        // Sniff magic bytes (0x1F8B) for servers that don't set Content-Encoding header
+        // Use PushbackInputStream to peek at first 2 bytes without consuming them
+        val pushback = PushbackInputStream(inputStream, 2)
+        val b1 = pushback.read()
+        val b2 = pushback.read()
+        
+        // Push bytes back (in reverse order) before returning
+        if (b2 != -1) pushback.unread(b2)
+        if (b1 != -1) pushback.unread(b1)
+        
+        // Check for GZIP magic bytes: 0x1F 0x8B
+        return if (b1 == 0x1F && b2 == 0x8B) {
+            UnifiedLog.d(TAG) { "Detected GZIP via magic bytes (no Content-Encoding header)" }
+            GZIPInputStream(pushback)
         } else {
-            inputStream
+            pushback
         }
     }
 
