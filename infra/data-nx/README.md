@@ -65,3 +65,82 @@ class WorkUserStateRepositoryImpl @Inject constructor(
 - `core:model` - Domain interfaces and models
 - `core:persistence` - ObjectBox entities and BoxStore
 - `infra:logging` - Logging infrastructure
+
+## 🏗️ Builder Pattern Architecture (PLATIN Refactoring)
+
+To reduce Cyclomatic Complexity in `NxCatalogWriter` (CC ~28 → target ≤ 15), entity construction logic has been extracted into specialized builder classes:
+
+### Builder Classes
+
+```
+infra/data-nx/writer/
+├── NxCatalogWriter.kt                    (Orchestrator - delegates to builders)
+└── builder/
+    ├── WorkEntityBuilder.kt              (NX_Work construction) - CC ~6
+    ├── SourceRefBuilder.kt               (NX_WorkSourceRef construction) - CC ~5
+    └── VariantBuilder.kt                 (NX_WorkVariant construction) - CC ~4
+```
+
+### Responsibilities
+
+| Builder | Creates | Handles |
+|---------|---------|---------|
+| `WorkEntityBuilder` | `NX_Work` | Recognition state, external IDs, timestamps |
+| `SourceRefBuilder` | `NX_WorkSourceRef` | Source key construction, clean item key extraction, live-specific fields |
+| `VariantBuilder` | `NX_WorkVariant` | Variant key construction, container extraction |
+
+### Benefits
+
+**When integrated** (target architecture for follow-up PR):
+
+1. **Reduced Complexity:** Original CC ~28 → Builder average CC ~5
+2. **Eliminates Duplication:** ~220 lines of repeated construction logic removed
+3. **Testability:** Each builder can be unit tested independently
+4. **Maintainability:** Single responsibility per builder
+
+**Current Status:** Builders are created and tested. Integration into NxCatalogWriter is planned for a follow-up PR.
+
+### Example Usage (Target Architecture)
+
+```kotlin
+@Singleton
+class NxCatalogWriter @Inject constructor(
+    private val workEntityBuilder: WorkEntityBuilder,
+    private val sourceRefBuilder: SourceRefBuilder,
+    private val variantBuilder: VariantBuilder,
+    // ...
+) {
+    suspend fun ingest(
+        raw: RawMediaMetadata,
+        normalized: NormalizedMediaMetadata,
+        accountKey: String,
+    ): String? {
+        val workKey = buildWorkKey(normalized)
+        
+        // 1. Build and upsert work entity
+        val work = workEntityBuilder.build(normalized, workKey)
+        workRepository.upsert(work)
+        
+        // 2. Build and upsert source reference
+        val sourceKey = buildSourceKey(...)
+        val sourceRef = sourceRefBuilder.build(raw, workKey, accountKey, sourceKey)
+        sourceRefRepository.upsert(sourceRef)
+        
+        // 3. Build and upsert variant (if applicable)
+        if (raw.playbackHints.isNotEmpty()) {
+            val variantKey = buildVariantKey(sourceKey)
+            val variant = variantBuilder.build(
+                variantKey, workKey, sourceKey,
+                raw.playbackHints, normalized.durationMs
+            )
+            variantRepository.upsert(variant)
+        }
+        
+        return workKey
+    }
+}
+```
+
+**Note:** This example shows the target architecture. Current NxCatalogWriter still performs inline construction.
+
+For implementation details, see this PR.
