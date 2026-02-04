@@ -6,6 +6,10 @@ lastUpdated: '2026-02-02'
 
 # Catalog Sync Architecture Instructions
 
+**Version:** 1.0  
+**Last Updated:** 2026-02-02  
+**Status:** Active
+
 > **BINDING CONTRACT** for all catalog synchronization code in v2.
 > This file is automatically applied by VS Code Copilot when editing matching paths.
 

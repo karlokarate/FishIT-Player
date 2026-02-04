@@ -5,6 +5,10 @@ applyTo:
 
 # 🏆 PLATIN Instructions: infra/transport-telegram
 
+**Version:** 1.0  
+**Last Updated:** 2026-02-04  
+**Status:** Active
+
 > **PLATIN STANDARD** - TDLib Transport Layer (Absolute Perfection).
 >
 > **Purpose:** Provides abstracted, typed access to Telegram via TDLib SDK.

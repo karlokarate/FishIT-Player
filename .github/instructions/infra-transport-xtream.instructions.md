@@ -5,6 +5,10 @@ applyTo:
 
 # 🏆 PLATIN Instructions: infra/transport-xtream
 
+**Version:** 1.0  
+**Last Updated:** 2026-02-04  
+**Status:** Active
+
 > **PLATIN STANDARD** - Xtream Codes API Transport Layer (Absolute Perfection).
 >
 > **Purpose:** Provides HTTP-based access to Xtream Codes panels with maximum compatibility.

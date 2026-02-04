@@ -5,6 +5,10 @@ applyTo:
 
 # 🏆 PLATIN Instructions: core/ui-imaging
 
+**Version:** 1.0  
+**Last Updated:** 2026-02-04  
+**Status:** Active
+
 > **PLATIN STANDARD** - Centralized image loading with Coil 3.
 >
 > **Purpose:** Provides GlobalImageLoader, custom Fetchers for ImageRef variants, and Compose integration.

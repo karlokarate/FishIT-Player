@@ -5,6 +5,10 @@ applyTo:
 
 # 🏆 PLATIN Instructions:  core/persistence
 
+**Version:** 1.0  
+**Last Updated:** 2026-02-04  
+**Status:** Active
+
 > **PLATIN STANDARD** - ObjectBox entities and store infrastructure.
 >
 > **Purpose:** Provides ObjectBox entities, store setup, converters, and reactive Flow extensions.

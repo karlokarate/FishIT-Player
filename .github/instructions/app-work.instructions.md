@@ -5,6 +5,10 @@ applyTo:
 
 # 🏆 PLATIN Instructions: app-v2/work (Catalog Sync Workers)
 
+**Version:** 1.0  
+**Last Updated:** 2026-02-04  
+**Status:** Active
+
 > **PLATIN STANDARD** - WorkManager Workers for Catalog Synchronization.
 >
 > **Purpose:** Background sync workers that orchestrate catalog synchronization
