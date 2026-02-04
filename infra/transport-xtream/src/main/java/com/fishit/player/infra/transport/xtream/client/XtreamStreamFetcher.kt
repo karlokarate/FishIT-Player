@@ -41,6 +41,7 @@ import javax.inject.Inject
 class XtreamStreamFetcher @Inject constructor(
     private val httpClient: HttpClient,
     private val json: Json,
+    private val urlBuilder: XtreamUrlBuilder,
     private val categoryFallbackStrategy: CategoryFallbackStrategy,
     private val io: CoroutineDispatcher = Dispatchers.IO,
 ) {
@@ -70,13 +71,11 @@ class XtreamStreamFetcher @Inject constructor(
      * CC: 3 (delegation to generic fetch)
      */
     suspend fun getVodStreams(
-        urlBuilder: XtreamUrlBuilder,
         vodKind: String,
         categoryId: String?,
     ): List<XtreamVodStream> =
         withContext(io) {
             fetchStreamsWithCategoryFallbackStreaming(
-                urlBuilder = urlBuilder,
                 action = "get_${vodKind}_streams",
                 categoryId = categoryId,
                 streamingMapper = VodStreamMapper::fromStreaming,
@@ -89,12 +88,10 @@ class XtreamStreamFetcher @Inject constructor(
      * CC: 3
      */
     suspend fun getLiveStreams(
-        urlBuilder: XtreamUrlBuilder,
         categoryId: String?,
     ): List<XtreamLiveStream> =
         withContext(io) {
             fetchStreamsWithCategoryFallbackStreaming(
-                urlBuilder = urlBuilder,
                 action = "get_live_streams",
                 categoryId = categoryId,
                 streamingMapper = LiveStreamMapper::fromStreaming,
@@ -107,12 +104,10 @@ class XtreamStreamFetcher @Inject constructor(
      * CC: 3
      */
     suspend fun getSeries(
-        urlBuilder: XtreamUrlBuilder,
         categoryId: String?,
     ): List<XtreamSeriesStream> =
         withContext(io) {
             fetchStreamsWithCategoryFallbackStreaming(
-                urlBuilder = urlBuilder,
                 action = "get_series",
                 categoryId = categoryId,
                 streamingMapper = SeriesStreamMapper::fromStreaming,
@@ -316,7 +311,6 @@ class XtreamStreamFetcher @Inject constructor(
      * CC: ~8 (category fallback + streaming + fallback)
      */
     private suspend fun <T> fetchStreamsWithCategoryFallbackStreaming(
-        urlBuilder: XtreamUrlBuilder,
         action: String,
         categoryId: String?,
         streamingMapper: (JsonObjectReader) -> T?,
