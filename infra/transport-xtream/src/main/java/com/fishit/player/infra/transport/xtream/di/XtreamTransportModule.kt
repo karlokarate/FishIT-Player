@@ -2,6 +2,7 @@ package com.fishit.player.infra.transport.xtream.di
 
 import android.content.Context
 import com.fishit.player.core.device.DeviceClassProvider
+import com.fishit.player.infra.http.HttpClient
 import com.fishit.player.infra.transport.xtream.DefaultXtreamApiClient
 import com.fishit.player.infra.transport.xtream.EncryptedXtreamCredentialsStore
 import com.fishit.player.infra.transport.xtream.XtreamApiClient
@@ -170,10 +171,10 @@ object XtreamTransportModule {
     @Provides
     @Singleton
     fun provideConnectionManager(
-        @XtreamHttpClient okHttpClient: OkHttpClient,
+        httpClient: HttpClient,
         json: Json,
         discovery: XtreamDiscovery,
-    ): XtreamConnectionManager = XtreamConnectionManager(okHttpClient, json, discovery)
+    ): XtreamConnectionManager = XtreamConnectionManager(httpClient, json, discovery)
 
     /**
      * Provides XtreamCategoryFetcher - handles category operations.
@@ -181,10 +182,9 @@ object XtreamTransportModule {
     @Provides
     @Singleton
     fun provideCategoryFetcher(
-        @XtreamHttpClient okHttpClient: OkHttpClient,
+        httpClient: HttpClient,
         json: Json,
-        fallbackStrategy: CategoryFallbackStrategy,
-    ): XtreamCategoryFetcher = XtreamCategoryFetcher(okHttpClient, json, fallbackStrategy)
+    ): XtreamCategoryFetcher = XtreamCategoryFetcher(httpClient, json)
 
     /**
      * Provides XtreamStreamFetcher - handles stream fetching and batch operations.
@@ -192,10 +192,10 @@ object XtreamTransportModule {
     @Provides
     @Singleton
     fun provideStreamFetcher(
-        @XtreamHttpClient okHttpClient: OkHttpClient,
+        httpClient: HttpClient,
         json: Json,
-        parallelism: XtreamParallelism,
-    ): XtreamStreamFetcher = XtreamStreamFetcher(okHttpClient, json, parallelism)
+        fallbackStrategy: CategoryFallbackStrategy,
+    ): XtreamStreamFetcher = XtreamStreamFetcher(httpClient, json, fallbackStrategy)
 
     /**
      * Provides XtreamApiClient with handler injection.

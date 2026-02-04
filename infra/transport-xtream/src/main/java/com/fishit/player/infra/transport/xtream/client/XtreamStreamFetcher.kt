@@ -1,10 +1,14 @@
 package com.fishit.player.infra.transport.xtream.client
 
 import android.os.SystemClock
+import com.fishit.player.infra.http.HttpClient
+import com.fishit.player.infra.http.RequestConfig
+import com.fishit.player.infra.http.CacheConfig
 import com.fishit.player.infra.logging.UnifiedLog
 import com.fishit.player.infra.transport.xtream.XtreamLiveStream
 import com.fishit.player.infra.transport.xtream.XtreamSeriesInfo
 import com.fishit.player.infra.transport.xtream.XtreamSeriesStream
+import com.fishit.player.infra.transport.xtream.XtreamUrlBuilder
 import com.fishit.player.infra.transport.xtream.XtreamVodInfo
 import com.fishit.player.infra.transport.xtream.XtreamVodStream
 import com.fishit.player.infra.transport.xtream.mapper.LiveStreamMapper
@@ -20,6 +24,7 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
+import javax.inject.Inject
 
 /**
  * XtreamStreamFetcher - Handles stream fetching operations.
@@ -33,14 +38,11 @@ import kotlinx.serialization.json.jsonObject
  *
  * CC Target: ≤ 10 per function
  */
-class XtreamStreamFetcher(
+class XtreamStreamFetcher @Inject constructor(
+    private val httpClient: HttpClient,
     private val json: Json,
-    private val io: CoroutineDispatcher = Dispatchers.IO,
     private val categoryFallbackStrategy: CategoryFallbackStrategy,
-    private val vodKindProvider: () -> String,
-    private val buildPlayerApiUrl: (action: String, params: Map<String, String>?) -> String,
-    private val fetchRaw: suspend (url: String, isEpg: Boolean) -> String?,
-    private val fetchRawAsStream: suspend (url: String) -> StreamResponse,
+    private val io: CoroutineDispatcher = Dispatchers.IO,
 ) {
     companion object {
         private const val TAG = "XtreamStreamFetcher"
@@ -67,10 +69,15 @@ class XtreamStreamFetcher(
      * Get VOD streams.
      * CC: 3 (delegation to generic fetch)
      */
-    suspend fun getVodStreams(categoryId: String?): List<XtreamVodStream> =
+    suspend fun getVodStreams(
+        urlBuilder: XtreamUrlBuilder,
+        vodKind: String,
+        categoryId: String?,
+    ): List<XtreamVodStream> =
         withContext(io) {
             fetchStreamsWithCategoryFallbackStreaming(
-                action = "get_${vodKindProvider()}_streams",
+                urlBuilder = urlBuilder,
+                action = "get_${vodKind}_streams",
                 categoryId = categoryId,
                 streamingMapper = VodStreamMapper::fromStreaming,
                 fallbackMapper = VodStreamMapper::fromJsonObject,
@@ -81,9 +88,13 @@ class XtreamStreamFetcher(
      * Get live streams.
      * CC: 3
      */
-    suspend fun getLiveStreams(categoryId: String?): List<XtreamLiveStream> =
+    suspend fun getLiveStreams(
+        urlBuilder: XtreamUrlBuilder,
+        categoryId: String?,
+    ): List<XtreamLiveStream> =
         withContext(io) {
             fetchStreamsWithCategoryFallbackStreaming(
+                urlBuilder = urlBuilder,
                 action = "get_live_streams",
                 categoryId = categoryId,
                 streamingMapper = LiveStreamMapper::fromStreaming,
@@ -95,9 +106,13 @@ class XtreamStreamFetcher(
      * Get series.
      * CC: 3
      */
-    suspend fun getSeries(categoryId: String?): List<XtreamSeriesStream> =
+    suspend fun getSeries(
+        urlBuilder: XtreamUrlBuilder,
+        categoryId: String?,
+    ): List<XtreamSeriesStream> =
         withContext(io) {
             fetchStreamsWithCategoryFallbackStreaming(
+                urlBuilder = urlBuilder,
                 action = "get_series",
                 categoryId = categoryId,
                 streamingMapper = SeriesStreamMapper::fromStreaming,
@@ -114,16 +129,19 @@ class XtreamStreamFetcher(
      * CC: 4 (batch processing)
      */
     suspend fun streamVodInBatches(
+        urlBuilder: XtreamUrlBuilder,
+        vodKind: String,
         batchSize: Int,
         categoryId: String?,
         onBatch: suspend (List<XtreamVodStream>) -> Unit,
     ): Int =
         withContext(io) {
             streamContentInBatches(
-                action = "get_${vodKindProvider()}_streams",
+                urlBuilder = urlBuilder,
+                action = "get_${vodKind}_streams",
                 categoryId = categoryId,
                 batchSize = batchSize,
-                aliases = listOf(vodKindProvider()) + VOD_ALIAS_CANDIDATES.filter { it != vodKindProvider() },
+                aliases = listOf(vodKind) + VOD_ALIAS_CANDIDATES.filter { it != vodKind },
                 mapper = VodStreamMapper::fromStreaming,
                 onBatch = onBatch,
             )
@@ -134,12 +152,14 @@ class XtreamStreamFetcher(
      * CC: 4
      */
     suspend fun streamSeriesInBatches(
+        urlBuilder: XtreamUrlBuilder,
         batchSize: Int,
         categoryId: String?,
         onBatch: suspend (List<XtreamSeriesStream>) -> Unit,
     ): Int =
         withContext(io) {
             streamContentInBatches(
+                urlBuilder = urlBuilder,
                 action = "get_series",
                 categoryId = categoryId,
                 batchSize = batchSize,
@@ -154,12 +174,14 @@ class XtreamStreamFetcher(
      * CC: 4
      */
     suspend fun streamLiveInBatches(
+        urlBuilder: XtreamUrlBuilder,
         batchSize: Int,
         categoryId: String?,
         onBatch: suspend (List<XtreamLiveStream>) -> Unit,
     ): Int =
         withContext(io) {
             streamContentInBatches(
+                urlBuilder = urlBuilder,
                 action = "get_live_streams",
                 categoryId = categoryId,
                 batchSize = batchSize,
@@ -177,9 +199,15 @@ class XtreamStreamFetcher(
      * Count VOD streams.
      * CC: 2
      */
-    suspend fun countVodStreams(categoryId: String?): Int =
+    suspend fun countVodStreams(
+        urlBuilder: XtreamUrlBuilder,
+        vodKind: String,
+        categoryId: String?,
+    ): Int =
         runCatching {
             streamVodInBatches(
+                urlBuilder = urlBuilder,
+                vodKind = vodKind,
                 batchSize = 1000,
                 categoryId = categoryId,
                 onBatch = { /* Discard items, just count */ },
@@ -193,9 +221,13 @@ class XtreamStreamFetcher(
      * Count series.
      * CC: 2
      */
-    suspend fun countSeries(categoryId: String?): Int =
+    suspend fun countSeries(
+        urlBuilder: XtreamUrlBuilder,
+        categoryId: String?,
+    ): Int =
         runCatching {
             streamSeriesInBatches(
+                urlBuilder = urlBuilder,
                 batchSize = 1000,
                 categoryId = categoryId,
                 onBatch = { /* Discard items, just count */ },
@@ -209,9 +241,13 @@ class XtreamStreamFetcher(
      * Count live streams.
      * CC: 2
      */
-    suspend fun countLiveStreams(categoryId: String?): Int =
+    suspend fun countLiveStreams(
+        urlBuilder: XtreamUrlBuilder,
+        categoryId: String?,
+    ): Int =
         runCatching {
             streamLiveInBatches(
+                urlBuilder = urlBuilder,
                 batchSize = 1000,
                 categoryId = categoryId,
                 onBatch = { /* Discard items, just count */ },
@@ -229,10 +265,13 @@ class XtreamStreamFetcher(
      * Get VOD info.
      * CC: 4 (parsing and error handling)
      */
-    suspend fun getVodInfo(vodId: Int): XtreamVodInfo? =
+    suspend fun getVodInfo(
+        urlBuilder: XtreamUrlBuilder,
+        vodId: Int,
+    ): XtreamVodInfo? =
         withContext(io) {
-            val url = buildPlayerApiUrl("get_vod_info", mapOf("vod_id" to vodId.toString()))
-            val body = runCatching { fetchRaw(url, false) }.getOrNull()
+            val url = urlBuilder.playerApiUrl("get_vod_info", mapOf("vod_id" to vodId.toString()))
+            val body = runCatching { fetchRaw(url) }.getOrNull()
             val trimmedBody = body?.trim { it.isWhitespace() || it == '\uFEFF' }
 
             if (trimmedBody.isNullOrEmpty() || !trimmedBody.startsWith("{")) {
@@ -249,10 +288,13 @@ class XtreamStreamFetcher(
      * Get series info.
      * CC: 4
      */
-    suspend fun getSeriesInfo(seriesId: Int): XtreamSeriesInfo? =
+    suspend fun getSeriesInfo(
+        urlBuilder: XtreamUrlBuilder,
+        seriesId: Int,
+    ): XtreamSeriesInfo? =
         withContext(io) {
-            val url = buildPlayerApiUrl("get_series_info", mapOf("series_id" to seriesId.toString()))
-            val body = runCatching { fetchRaw(url, false) }.getOrNull()
+            val url = urlBuilder.playerApiUrl("get_series_info", mapOf("series_id" to seriesId.toString()))
+            val body = runCatching { fetchRaw(url) }.getOrNull()
             val trimmedBody = body?.trim { it.isWhitespace() || it == '\uFEFF' }
 
             if (trimmedBody.isNullOrEmpty() || !trimmedBody.startsWith("{")) {
@@ -274,6 +316,7 @@ class XtreamStreamFetcher(
      * CC: ~8 (category fallback + streaming + fallback)
      */
     private suspend fun <T> fetchStreamsWithCategoryFallbackStreaming(
+        urlBuilder: XtreamUrlBuilder,
         action: String,
         categoryId: String?,
         streamingMapper: (JsonObjectReader) -> T?,
@@ -281,7 +324,7 @@ class XtreamStreamFetcher(
     ): List<T> {
         // If specific category requested, fetch only that category (no fallback)
         if (categoryId != null) {
-            val url = buildPlayerApiUrl(action, mapOf("category_id" to categoryId))
+            val url = urlBuilder.playerApiUrl(action, mapOf("category_id" to categoryId))
             return fetchAndParseStreaming(url, action, streamingMapper, fallbackMapper)
         }
 
@@ -289,9 +332,9 @@ class XtreamStreamFetcher(
         return categoryFallbackStrategy.fetchWithFallback(categoryId) { catId ->
             val url =
                 if (catId == null) {
-                    buildPlayerApiUrl(action, null)
+                    urlBuilder.playerApiUrl(action)
                 } else {
-                    buildPlayerApiUrl(action, mapOf("category_id" to catId))
+                    urlBuilder.playerApiUrl(action, mapOf("category_id" to catId))
                 }
             runCatching {
                 fetchAndParseStreaming(url, action, streamingMapper, fallbackMapper)
@@ -330,7 +373,7 @@ class XtreamStreamFetcher(
                     "StreamingParse($actionHint): Streaming failed, falling back to DOM: ${e.message}"
                 }
                 // Fallback to DOM parsing
-                val body = fetchRaw(url, false) ?: return@use emptyList()
+                val body = fetchRaw(url) ?: return@use emptyList()
                 parseJsonArray(body, fallbackMapper, actionHint)
             }
         }
@@ -361,6 +404,7 @@ class XtreamStreamFetcher(
      * CC: ~9 (alias retry, category fallback)
      */
     private suspend fun <T> streamContentInBatches(
+        urlBuilder: XtreamUrlBuilder,
         action: String,
         categoryId: String?,
         batchSize: Int,
@@ -374,9 +418,9 @@ class XtreamStreamFetcher(
                 val actualAction = if (alias == aliases.first()) action else "get_${alias}_streams"
                 val url =
                     if (catId == null) {
-                        buildPlayerApiUrl(actualAction, null)
+                        urlBuilder.playerApiUrl(actualAction)
                     } else {
-                        buildPlayerApiUrl(actualAction, mapOf("category_id" to catId))
+                        urlBuilder.playerApiUrl(actualAction, mapOf("category_id" to catId))
                     }
                 val count =
                     runCatching {
@@ -461,5 +505,34 @@ class XtreamStreamFetcher(
     private fun redactUrl(url: String): String {
         return url.replace(Regex("username=[^&]+"), "username=***")
             .replace(Regex("password=[^&]+"), "password=***")
+    }
+
+    /**
+     * Internal helper to fetch HTTP response using the generic HttpClient.
+     *
+     * @param url The URL to fetch
+     * @return Response body as string, or null if request failed
+     */
+    private suspend fun fetchRaw(url: String): String? {
+        val result = httpClient.fetch(url, RequestConfig(cache = CacheConfig.DEFAULT))
+        return result.getOrNull()
+    }
+
+    /**
+     * Internal helper to fetch HTTP response as stream.
+     *
+     * @param url The URL to fetch
+     * @return StreamResponse with input stream
+     */
+    private suspend fun fetchRawAsStream(url: String): StreamResponse {
+        val result = httpClient.fetchStream(url, RequestConfig(cache = CacheConfig.DISABLED))
+        return result.fold(
+            onSuccess = { inputStream ->
+                StreamResponse(isSuccessful = true, inputStream = inputStream)
+            },
+            onFailure = {
+                StreamResponse(isSuccessful = false, inputStream = null)
+            }
+        )
     }
 }

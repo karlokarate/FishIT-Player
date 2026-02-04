@@ -1,6 +1,9 @@
 package com.fishit.player.infra.transport.xtream.client
 
 import android.os.SystemClock
+import com.fishit.player.infra.http.HttpClient
+import com.fishit.player.infra.http.RequestConfig
+import com.fishit.player.infra.http.CacheConfig
 import com.fishit.player.infra.logging.UnifiedLog
 import com.fishit.player.infra.transport.xtream.PortKey
 import com.fishit.player.infra.transport.xtream.XtreamApiConfig
@@ -21,7 +24,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
-import okhttp3.OkHttpClient
+import javax.inject.Inject
 
 /**
  * XtreamConnectionManager - Handles connection lifecycle (init, ping, close).
@@ -35,14 +38,13 @@ import okhttp3.OkHttpClient
  *
  * CC Target: ≤ 10 per function
  */
-class XtreamConnectionManager(
-    private val http: OkHttpClient,
+class XtreamConnectionManager @Inject constructor(
+    private val httpClient: HttpClient,
     private val json: Json,
     private val discovery: XtreamDiscovery,
     private val io: CoroutineDispatcher = Dispatchers.IO,
     private val capabilityStore: XtreamCapabilityStore? = null,
     private val portStore: XtreamPortStore? = null,
-    private val fetchRaw: suspend (url: String, isEpg: Boolean) -> String?,
 ) {
     private val _authState = MutableStateFlow<XtreamAuthState>(XtreamAuthState.Unknown)
     val authState: StateFlow<XtreamAuthState> = _authState.asStateFlow()
@@ -346,5 +348,18 @@ class XtreamConnectionManager(
         val cfg = config ?: throw IllegalStateException("Client not initialized")
         val builder = urlBuilder ?: XtreamUrlBuilder(cfg, resolvedPort, vodKind)
         return builder.playerApiUrl(action)
+    }
+
+    /**
+     * Internal helper to fetch HTTP response using the generic HttpClient.
+     *
+     * @param url The URL to fetch
+     * @param isEpg Whether this is an EPG request (shorter cache TTL)
+     * @return Response body as string, or null if request failed
+     */
+    private suspend fun fetchRaw(url: String, isEpg: Boolean): String? {
+        val cache = if (isEpg) CacheConfig.EPG else CacheConfig.DEFAULT
+        val result = httpClient.fetch(url, RequestConfig(cache = cache))
+        return result.getOrNull()
     }
 }
