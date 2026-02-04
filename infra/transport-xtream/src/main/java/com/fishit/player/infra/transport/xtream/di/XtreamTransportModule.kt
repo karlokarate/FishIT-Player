@@ -9,6 +9,9 @@ import com.fishit.player.infra.transport.xtream.XtreamCredentialsStore
 import com.fishit.player.infra.transport.xtream.XtreamDiscovery
 import com.fishit.player.infra.transport.xtream.XtreamParallelism
 import com.fishit.player.infra.transport.xtream.XtreamTransportConfig
+import com.fishit.player.infra.transport.xtream.client.XtreamCategoryFetcher
+import com.fishit.player.infra.transport.xtream.client.XtreamConnectionManager
+import com.fishit.player.infra.transport.xtream.client.XtreamStreamFetcher
 import com.fishit.player.infra.transport.xtream.strategy.CategoryFallbackStrategy
 import dagger.Binds
 import dagger.Module
@@ -161,19 +164,66 @@ object XtreamTransportModule {
         parallelism: XtreamParallelism,
     ): XtreamDiscovery = XtreamDiscovery(okHttpClient, json, parallelism = parallelism)
 
+    /**
+     * Provides XtreamConnectionManager - handles init/ping/close lifecycle.
+     */
+    @Provides
+    @Singleton
+    fun provideConnectionManager(
+        @XtreamHttpClient okHttpClient: OkHttpClient,
+        json: Json,
+        discovery: XtreamDiscovery,
+    ): XtreamConnectionManager = XtreamConnectionManager(okHttpClient, json, discovery)
+
+    /**
+     * Provides XtreamCategoryFetcher - handles category operations.
+     */
+    @Provides
+    @Singleton
+    fun provideCategoryFetcher(
+        @XtreamHttpClient okHttpClient: OkHttpClient,
+        json: Json,
+        fallbackStrategy: CategoryFallbackStrategy,
+    ): XtreamCategoryFetcher = XtreamCategoryFetcher(okHttpClient, json, fallbackStrategy)
+
+    /**
+     * Provides XtreamStreamFetcher - handles stream fetching and batch operations.
+     */
+    @Provides
+    @Singleton
+    fun provideStreamFetcher(
+        @XtreamHttpClient okHttpClient: OkHttpClient,
+        json: Json,
+        parallelism: XtreamParallelism,
+    ): XtreamStreamFetcher = XtreamStreamFetcher(okHttpClient, json, parallelism)
+
+    /**
+     * Provides XtreamApiClient with handler injection.
+     *
+     * REFACTORED: Now delegates to specialized handlers:
+     * - connectionManager: init/ping/close lifecycle
+     * - categoryFetcher: category operations
+     * - streamFetcher: stream fetching and batch operations
+     *
+     * Target metrics: ~800 lines, CC ≤ 10 (down from 2312 lines, CC ~52)
+     */
     @Provides
     @Singleton
     fun provideXtreamApiClient(
         @XtreamHttpClient okHttpClient: OkHttpClient,
         json: Json,
         parallelism: XtreamParallelism,
-        categoryFallbackStrategy: CategoryFallbackStrategy,
+        connectionManager: XtreamConnectionManager,
+        categoryFetcher: XtreamCategoryFetcher,
+        streamFetcher: XtreamStreamFetcher,
     ): XtreamApiClient =
         DefaultXtreamApiClient(
             okHttpClient,
             json,
             parallelism = parallelism,
-            categoryFallbackStrategy = categoryFallbackStrategy,
+            connectionManager = connectionManager,
+            categoryFetcher = categoryFetcher,
+            streamFetcher = streamFetcher,
         )
 }
 
