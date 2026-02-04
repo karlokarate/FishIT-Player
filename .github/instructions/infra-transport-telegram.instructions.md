@@ -15,7 +15,7 @@ applyTo:
 > 1. `contracts/TELEGRAM_ID_ARCHITECTURE_CONTRACT.md` (v1.0) - remoteId-first design
 > 2. `contracts/GLOSSARY_v2_naming_and_modules.md` (Section 1.6) - Transport interfaces
 > 3. `contracts/LOGGING_CONTRACT_V2.md` (v1.1) - Logging rules
-> 4. `.github/tdlibAgent.md` - TDLib integration SSOT (legacy reference)
+> 4. `contracts/TELEGRAM_*.md (binding contracts)` - TDLib integration SSOT (legacy reference)
 >
 > **Core Principle: remoteId-First Architecture**
 > ```
@@ -762,7 +762,7 @@ suspend fun resolveRemoteId(remoteId: String): TgFile? {
 2. **`/contracts/GLOSSARY_v2_naming_and_modules.md`** - Section 1.6 (Transport interfaces)
 3. **`/contracts/LOGGING_CONTRACT_V2.md`** - Logging rules (v1.1)
 4. **`/AGENTS.md`** - Player Layer Isolation (TdlibClientProvider forbidden)
-5. **`/.github/tdlibAgent.md`** - TDLib integration SSOT (legacy reference)
+5. **`/contracts/TELEGRAM_*.md (binding contracts)`** - TDLib integration SSOT (legacy reference)
 6. **`/contracts/TELEGRAM_STRUCTURED_BUNDLES_CONTRACT.md`** - Bundle processing (pipeline responsibility)
 7. TDLib documentation (upstream reference)
 

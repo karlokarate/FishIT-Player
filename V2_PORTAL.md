@@ -87,9 +87,8 @@ Key docs:
 - `docs/v2/ARCHITECTURE_OVERVIEW_V2.md`
 - `docs/v2/APP_VISION_AND_SCOPE.md`
 - `docs/v2/CANONICAL_MEDIA_SYSTEM.md`
-- `docs/v2/MEDIA_NORMALIZATION_CONTRACT.md` ⚠️ **Binding Contract**
+- `contracts/MEDIA_NORMALIZATION_CONTRACT.md` ⚠️ **Binding Contract**
 - `docs/v2/MEDIA_NORMALIZER_DESIGN.md`
-- `docs/v2/MEDIA_NORMALIZATION_AND_UNIFICATION.md`
 - `docs/v2/MEDIA_PARSER_DELIVERY_SUMMARY.md`
 
 ### 3.2 Pipelines
