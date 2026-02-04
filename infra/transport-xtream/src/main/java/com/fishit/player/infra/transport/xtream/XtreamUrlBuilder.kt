@@ -61,6 +61,13 @@ class XtreamUrlBuilder @Inject constructor() {
         vodKind = kind
     }
 
+    /**
+     * Get current vodKind (for alias resolution in XtreamCategoryFetcher).
+     */
+    val currentVodKind: String
+        @Synchronized
+        get() = vodKind
+
     // =========================================================================
     // Base URL
     // =========================================================================

@@ -354,6 +354,36 @@ class XtreamConnectionManager @Inject constructor(
     }
 
     /**
+     * Get panel info (server details).
+     * CC: 2
+     */
+    suspend fun getPanelInfo(): XtreamPanelInfo? =
+        withContext(io) {
+            val url = buildPlayerApiUrl("panel_api")
+            val body = runCatching { fetchRaw(url, isEpg = false) }.getOrNull()
+            if (body.isNullOrEmpty()) return@withContext null
+            
+            runCatching { json.decodeFromString<XtreamPanelInfo>(body) }
+                .onFailure { e -> UnifiedLog.w(TAG, e) { "getPanelInfo: JSON parse failed" } }
+                .getOrNull()
+        }
+
+    /**
+     * Get user info (account details).
+     * CC: 2
+     */
+    suspend fun getUserInfo(): XtreamUserInfo? =
+        withContext(io) {
+            val url = buildPlayerApiUrl(null)
+            val body = runCatching { fetchRaw(url, isEpg = false) }.getOrNull()
+            if (body.isNullOrEmpty()) return@withContext null
+            
+            runCatching { json.decodeFromString<XtreamUserInfo>(body) }
+                .onFailure { e -> UnifiedLog.w(TAG, e) { "getUserInfo: JSON parse failed" } }
+                .getOrNull()
+        }
+
+    /**
      * Internal helper to fetch HTTP response using the generic HttpClient.
      *
      * @param url The URL to fetch
