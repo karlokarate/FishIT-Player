@@ -122,6 +122,7 @@ class XtreamUrlBuilder @Inject constructor() {
                 addQueryParameter("password", cfg.password)
             }.build()
             .toString()
+    }
 
     // =========================================================================
     // Panel API URLs (Premium Contract Section 2/8)
