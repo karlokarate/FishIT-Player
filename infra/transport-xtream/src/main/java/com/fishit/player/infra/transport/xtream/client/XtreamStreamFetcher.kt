@@ -76,7 +76,6 @@ class XtreamStreamFetcher @Inject constructor(
     ): List<XtreamVodStream> =
         withContext(io) {
             fetchStreamsWithCategoryFallbackStreaming(
-                urlBuilder = urlBuilder,
                 action = "get_${vodKind}_streams",
                 categoryId = categoryId,
                 streamingMapper = VodStreamMapper::fromStreaming,
@@ -93,7 +92,6 @@ class XtreamStreamFetcher @Inject constructor(
     ): List<XtreamLiveStream> =
         withContext(io) {
             fetchStreamsWithCategoryFallbackStreaming(
-                urlBuilder = urlBuilder,
                 action = "get_live_streams",
                 categoryId = categoryId,
                 streamingMapper = LiveStreamMapper::fromStreaming,
@@ -110,7 +108,6 @@ class XtreamStreamFetcher @Inject constructor(
     ): List<XtreamSeriesStream> =
         withContext(io) {
             fetchStreamsWithCategoryFallbackStreaming(
-                urlBuilder = urlBuilder,
                 action = "get_series",
                 categoryId = categoryId,
                 streamingMapper = SeriesStreamMapper::fromStreaming,
@@ -127,6 +124,7 @@ class XtreamStreamFetcher @Inject constructor(
      * CC: 4 (batch processing)
      */
     suspend fun streamVodInBatches(
+        urlBuilder: XtreamUrlBuilder,
         vodKind: String,
         batchSize: Int,
         categoryId: String?,
@@ -149,6 +147,7 @@ class XtreamStreamFetcher @Inject constructor(
      * CC: 4
      */
     suspend fun streamSeriesInBatches(
+        urlBuilder: XtreamUrlBuilder,
         batchSize: Int,
         categoryId: String?,
         onBatch: suspend (List<XtreamSeriesStream>) -> Unit,
@@ -170,6 +169,7 @@ class XtreamStreamFetcher @Inject constructor(
      * CC: 4
      */
     suspend fun streamLiveInBatches(
+        urlBuilder: XtreamUrlBuilder,
         batchSize: Int,
         categoryId: String?,
         onBatch: suspend (List<XtreamLiveStream>) -> Unit,
@@ -195,11 +195,13 @@ class XtreamStreamFetcher @Inject constructor(
      * CC: 2
      */
     suspend fun countVodStreams(
+        urlBuilder: XtreamUrlBuilder,
         vodKind: String,
         categoryId: String?,
     ): Int =
         runCatching {
             streamVodInBatches(
+                urlBuilder = urlBuilder,
                 vodKind = vodKind,
                 batchSize = 1000,
                 categoryId = categoryId,
@@ -215,10 +217,12 @@ class XtreamStreamFetcher @Inject constructor(
      * CC: 2
      */
     suspend fun countSeries(
+        urlBuilder: XtreamUrlBuilder,
         categoryId: String?,
     ): Int =
         runCatching {
             streamSeriesInBatches(
+                urlBuilder = urlBuilder,
                 batchSize = 1000,
                 categoryId = categoryId,
                 onBatch = { /* Discard items, just count */ },
@@ -233,10 +237,12 @@ class XtreamStreamFetcher @Inject constructor(
      * CC: 2
      */
     suspend fun countLiveStreams(
+        urlBuilder: XtreamUrlBuilder,
         categoryId: String?,
     ): Int =
         runCatching {
             streamLiveInBatches(
+                urlBuilder = urlBuilder,
                 batchSize = 1000,
                 categoryId = categoryId,
                 onBatch = { /* Discard items, just count */ },
@@ -255,6 +261,7 @@ class XtreamStreamFetcher @Inject constructor(
      * CC: 4 (parsing and error handling)
      */
     suspend fun getVodInfo(
+        urlBuilder: XtreamUrlBuilder,
         vodId: Int,
     ): XtreamVodInfo? =
         withContext(io) {
@@ -277,6 +284,7 @@ class XtreamStreamFetcher @Inject constructor(
      * CC: 4
      */
     suspend fun getSeriesInfo(
+        urlBuilder: XtreamUrlBuilder,
         seriesId: Int,
     ): XtreamSeriesInfo? =
         withContext(io) {
@@ -390,6 +398,7 @@ class XtreamStreamFetcher @Inject constructor(
      * CC: ~9 (alias retry, category fallback)
      */
     private suspend fun <T> streamContentInBatches(
+        urlBuilder: XtreamUrlBuilder,
         action: String,
         categoryId: String?,
         batchSize: Int,

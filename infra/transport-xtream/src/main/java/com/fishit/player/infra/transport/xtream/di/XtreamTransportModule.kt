@@ -157,14 +157,6 @@ object XtreamTransportModule {
             coerceInputValues = true
         }
 
-    /**
-     * Provides XtreamUrlBuilder for DI injection.
-     * Call configure() during XtreamConnectionManager.initialize() to set credentials.
-     */
-    @Provides
-    @Singleton
-    fun provideXtreamUrlBuilder(): XtreamUrlBuilder = XtreamUrlBuilder()
-
     @Provides
     @Singleton
     fun provideXtreamDiscovery(
@@ -182,8 +174,7 @@ object XtreamTransportModule {
         httpClient: HttpClient,
         json: Json,
         discovery: XtreamDiscovery,
-        urlBuilder: XtreamUrlBuilder,
-    ): XtreamConnectionManager = XtreamConnectionManager(httpClient, json, discovery, urlBuilder)
+    ): XtreamConnectionManager = XtreamConnectionManager(httpClient, json, discovery)
 
     /**
      * Provides XtreamCategoryFetcher - handles category operations.
@@ -193,8 +184,7 @@ object XtreamTransportModule {
     fun provideCategoryFetcher(
         httpClient: HttpClient,
         json: Json,
-        urlBuilder: XtreamUrlBuilder,
-    ): XtreamCategoryFetcher = XtreamCategoryFetcher(httpClient, json, urlBuilder)
+    ): XtreamCategoryFetcher = XtreamCategoryFetcher(httpClient, json)
 
     /**
      * Provides XtreamStreamFetcher - handles stream fetching and batch operations.
@@ -205,8 +195,7 @@ object XtreamTransportModule {
         httpClient: HttpClient,
         json: Json,
         fallbackStrategy: CategoryFallbackStrategy,
-        urlBuilder: XtreamUrlBuilder,
-    ): XtreamStreamFetcher = XtreamStreamFetcher(httpClient, json, fallbackStrategy, urlBuilder)
+    ): XtreamStreamFetcher = XtreamStreamFetcher(httpClient, json, fallbackStrategy)
 
     /**
      * Provides XtreamApiClient with handler injection.

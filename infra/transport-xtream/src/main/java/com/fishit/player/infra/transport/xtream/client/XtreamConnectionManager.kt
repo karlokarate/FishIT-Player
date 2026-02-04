@@ -41,8 +41,8 @@ import javax.inject.Inject
 class XtreamConnectionManager @Inject constructor(
     private val httpClient: HttpClient,
     private val json: Json,
-    private val discovery: XtreamDiscovery,
     private val urlBuilder: XtreamUrlBuilder,
+    private val discovery: XtreamDiscovery,
     private val io: CoroutineDispatcher = Dispatchers.IO,
     private val capabilityStore: XtreamCapabilityStore? = null,
     private val portStore: XtreamPortStore? = null,
@@ -86,26 +86,31 @@ class XtreamConnectionManager @Inject constructor(
             resolvedPort = config.port ?: resolvePort(config)
             UnifiedLog.d(TAG) { "Resolved port: $resolvedPort" }
 
-            // 2. Check cache
+            // 2. Configure urlBuilder EARLY (before cache check or capability discovery)
+            urlBuilder.configure(config, resolvedPort)
+
+            // 3. Check cache
             val cacheKey = buildCacheKey(config, resolvedPort)
             if (!forceDiscovery) {
                 capabilityStore?.get(cacheKey)?.let { cached ->
                     _capabilities = cached
                     vodKind = cached.resolvedAliases.vodKind ?: "vod"
+                    urlBuilder.updateVodKind(vodKind)
                     return@withContext validateAndComplete(config, cached)
                 }
             }
 
-            // 3. Discover capabilities
+            // 4. Discover capabilities
             val startTime = SystemClock.elapsedRealtime()
             val caps = discoverCapabilities(config, resolvedPort, cacheKey)
             val latency = SystemClock.elapsedRealtime() - startTime
 
             _capabilities = caps
             vodKind = caps.resolvedAliases.vodKind ?: "vod"
+            urlBuilder.updateVodKind(vodKind)
             capabilityStore?.put(caps)
 
-            // 4. Validate credentials
+            // 5. Validate credentials
             validateAndComplete(config, caps, latency)
         } catch (e: Exception) {
             UnifiedLog.e(TAG, e) { "Initialize failed for ${config.host}" }
@@ -134,6 +139,7 @@ class XtreamConnectionManager @Inject constructor(
 
     /**
      * Close connection and reset state.
+     * Note: urlBuilder instance persists (singleton), but state is reset on next initialize()
      * CC: 1
      */
     fun close() {
@@ -141,7 +147,7 @@ class XtreamConnectionManager @Inject constructor(
         _authState.value = XtreamAuthState.Unknown
         _capabilities = null
         config = null
-        // urlBuilder is injected and persists across connections
+        // urlBuilder is an injected singleton; its instance persists, but state is (re)configured on initialize()
     }
 
     /**
@@ -329,10 +335,7 @@ class XtreamConnectionManager @Inject constructor(
         port: Int,
         cacheKey: String,
     ): XtreamCapabilities {
-        // Configure the injected urlBuilder
-        urlBuilder.configure(config, port)
-        urlBuilder.updateVodKind("vod")
-
+        // urlBuilder already configured in initialize()
         return discovery.discoverCapabilities(
             config = config,
             port = port,
@@ -346,6 +349,7 @@ class XtreamConnectionManager @Inject constructor(
 
     private fun buildPlayerApiUrl(action: String?): String {
         val cfg = config ?: throw IllegalStateException("Client not initialized")
+        // urlBuilder is injected and configured in initialize()
         return urlBuilder.playerApiUrl(action)
     }
 
