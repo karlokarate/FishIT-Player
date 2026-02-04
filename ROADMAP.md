@@ -35,6 +35,16 @@ For v1 roadmap history, see `legacy/docs/ROADMAP_v1.md`.
 - [ ] Add comprehensive unit tests for each repository
 - [ ] **Category support:** Add NX_Category entity and NX_WorkCategoryRef linking table
   - Needed for Live/Library category grouping (see TODOs in NxLiveContentRepositoryImpl, NxLibraryContentRepositoryImpl)
+- [ ] **Enhanced NX_Work fields:**
+  - [ ] Add `channelNumber` field for live channels (NxLiveContentRepositoryImpl)
+  - [ ] Add `isAvailable` logic for availability checks (WorkDetailMapper)
+  - [ ] Add `lastSourceKey` and `lastVariantKey` to NX_WorkUserState (WorkDetailMapper, NxDetailMediaRepositoryImpl)
+  - [ ] Store Telegram-specific metadata: `remoteId`, `mimeType` (NxTelegramMediaRepositoryImpl)
+- [ ] **NX Repository optimizations:**
+  - [ ] Optimize NxWorkSourceRefRepository with proper ObjectBox link queries for large datasets
+  - [ ] Optimize NxWorkVariantRepository with proper ObjectBox link queries for large datasets
+  - [ ] Add `isDeleted` flag to NX_Work entity for soft delete support (NxWorkRepositoryImpl)
+- [ ] **EPG prefetch for favorites:** Implement background worker for periodic EPG updates (NxLiveContentRepositoryImpl)
 
 ### Phase 2: NX Ingest Path (4-5 days) 🔲 PLANNED
 
