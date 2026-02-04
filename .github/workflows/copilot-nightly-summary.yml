@@ -1,0 +1,385 @@
+name: Copilot Nightly Summary
+
+# Generates detailed programming diary entries
+# - Runs nightly at 00:00 UTC
+# - Analyzes all commits from the previous day
+# - Creates comprehensive diary entry in docs/diary/
+# - Documents what changed, why, and previous state
+
+on:
+  schedule:
+    # Run at midnight UTC every day
+    - cron: '0 0 * * *'
+  
+  # Allow manual trigger for testing
+  workflow_dispatch:
+    inputs:
+      target_date:
+        description: 'Target date (YYYY-MM-DD) - defaults to yesterday'
+        required: false
+        type: string
+      force_create:
+        description: 'Force create entry even if no commits'
+        required: false
+        default: 'false'
+        type: boolean
+
+permissions:
+  contents: write
+
+env:
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+jobs:
+  generate-diary:
+    name: Generate Programming Diary
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history for complete analysis
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Determine target date
+        id: date
+        run: |
+          if [ -n "${{ github.event.inputs.target_date }}" ]; then
+            TARGET_DATE="${{ github.event.inputs.target_date }}"
+          else
+            # Default to yesterday
+            TARGET_DATE=$(date -d "yesterday" +%Y-%m-%d)
+          fi
+          
+          YEAR=$(echo $TARGET_DATE | cut -d'-' -f1)
+          MONTH=$(echo $TARGET_DATE | cut -d'-' -f2)
+          DAY=$(echo $TARGET_DATE | cut -d'-' -f3)
+          
+          # Calculate start and end times for the day (in UTC)
+          START_DATE="${TARGET_DATE}T00:00:00Z"
+          END_DATE="${TARGET_DATE}T23:59:59Z"
+          
+          echo "target_date=${TARGET_DATE}" >> $GITHUB_OUTPUT
+          echo "year=${YEAR}" >> $GITHUB_OUTPUT
+          echo "month=${MONTH}" >> $GITHUB_OUTPUT
+          echo "day=${DAY}" >> $GITHUB_OUTPUT
+          echo "start_date=${START_DATE}" >> $GITHUB_OUTPUT
+          echo "end_date=${END_DATE}" >> $GITHUB_OUTPUT
+          
+          echo "Target date: ${TARGET_DATE}"
+          echo "Looking for commits between ${START_DATE} and ${END_DATE}"
+
+      - name: Collect commits for the day
+        id: commits
+        run: |
+          TARGET_DATE="${{ steps.date.outputs.target_date }}"
+          
+          # Get commits from the target date
+          # Using --since and --until with date boundaries
+          COMMITS=$(git log --all --oneline --since="${TARGET_DATE} 00:00:00" --until="${TARGET_DATE} 23:59:59" --format="%H|%s|%an|%ad" --date=format:'%Y-%m-%d %H:%M' 2>/dev/null || echo "")
+          
+          if [ -z "$COMMITS" ]; then
+            echo "No commits found for ${TARGET_DATE}"
+            echo "has_commits=false" >> $GITHUB_OUTPUT
+            echo "commit_count=0" >> $GITHUB_OUTPUT
+          else
+            COMMIT_COUNT=$(echo "$COMMITS" | wc -l)
+            echo "Found ${COMMIT_COUNT} commits for ${TARGET_DATE}"
+            echo "has_commits=true" >> $GITHUB_OUTPUT
+            echo "commit_count=${COMMIT_COUNT}" >> $GITHUB_OUTPUT
+            
+            # Save commits to file for later processing
+            echo "$COMMITS" > /tmp/commits.txt
+            cat /tmp/commits.txt
+          fi
+
+      - name: Check if diary entry already exists
+        id: check-existing
+        run: |
+          TARGET_DATE="${{ steps.date.outputs.target_date }}"
+          YEAR="${{ steps.date.outputs.year }}"
+          MONTH="${{ steps.date.outputs.month }}"
+          
+          DIARY_PATH="docs/diary/${YEAR}/${MONTH}/${TARGET_DATE}.md"
+          
+          if [ -f "$DIARY_PATH" ]; then
+            echo "Diary entry already exists: ${DIARY_PATH}"
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "No existing diary entry found"
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+          
+          echo "diary_path=${DIARY_PATH}" >> $GITHUB_OUTPUT
+
+      - name: Prepare diary directory
+        if: steps.commits.outputs.has_commits == 'true' || github.event.inputs.force_create == 'true'
+        run: |
+          YEAR="${{ steps.date.outputs.year }}"
+          MONTH="${{ steps.date.outputs.month }}"
+          
+          mkdir -p "docs/diary/${YEAR}/${MONTH}"
+          echo "Created directory: docs/diary/${YEAR}/${MONTH}"
+
+      - name: Analyze commits and generate diary
+        id: analyze
+        if: steps.commits.outputs.has_commits == 'true' || github.event.inputs.force_create == 'true'
+        run: |
+          TARGET_DATE="${{ steps.date.outputs.target_date }}"
+          DIARY_PATH="${{ steps.check-existing.outputs.diary_path }}"
+          
+          # Start diary entry
+          cat > "$DIARY_PATH" << 'HEADER'
+          # Programming Diary: ${TARGET_DATE}
+
+          > **Generated:** $(date -u +"%Y-%m-%d %H:%M UTC")
+          > **Repository:** FishIT-Player v2
+          > **Branch:** architecture/v2-bootstrap
+
+          ---
+
+          ## Summary
+
+          HEADER
+          
+          # Replace placeholders
+          sed -i "s/\${TARGET_DATE}/${TARGET_DATE}/g" "$DIARY_PATH"
+          
+          if [ ! -f /tmp/commits.txt ] || [ ! -s /tmp/commits.txt ]; then
+            echo "No changes recorded for this date." >> "$DIARY_PATH"
+            echo "" >> "$DIARY_PATH"
+            echo "---" >> "$DIARY_PATH"
+            echo "" >> "$DIARY_PATH"
+            echo "*This is a placeholder entry. No commits were detected for ${TARGET_DATE}.*" >> "$DIARY_PATH"
+            exit 0
+          fi
+          
+          # Count changes by type
+          FEAT_COUNT=0
+          FIX_COUNT=0
+          DOCS_COUNT=0
+          REFACTOR_COUNT=0
+          OTHER_COUNT=0
+          
+          # Categorize commits
+          while IFS='|' read -r sha msg author date; do
+            case "$msg" in
+              feat*) ((FEAT_COUNT++)) ;;
+              fix*) ((FIX_COUNT++)) ;;
+              docs*) ((DOCS_COUNT++)) ;;
+              refactor*) ((REFACTOR_COUNT++)) ;;
+              *) ((OTHER_COUNT++)) ;;
+            esac
+          done < /tmp/commits.txt
+          
+          TOTAL_COMMITS=${{ steps.commits.outputs.commit_count }}
+          
+          # Write summary
+          echo "This entry documents ${TOTAL_COMMITS} commit(s) made on ${TARGET_DATE}." >> "$DIARY_PATH"
+          echo "" >> "$DIARY_PATH"
+          echo "### Quick Stats" >> "$DIARY_PATH"
+          echo "| Category | Count |" >> "$DIARY_PATH"
+          echo "|----------|-------|" >> "$DIARY_PATH"
+          echo "| Features | ${FEAT_COUNT} |" >> "$DIARY_PATH"
+          echo "| Bug Fixes | ${FIX_COUNT} |" >> "$DIARY_PATH"
+          echo "| Documentation | ${DOCS_COUNT} |" >> "$DIARY_PATH"
+          echo "| Refactoring | ${REFACTOR_COUNT} |" >> "$DIARY_PATH"
+          echo "| Other | ${OTHER_COUNT} |" >> "$DIARY_PATH"
+          echo "| **Total** | **${TOTAL_COMMITS}** |" >> "$DIARY_PATH"
+          echo "" >> "$DIARY_PATH"
+          
+          # Write detailed changes section
+          echo "---" >> "$DIARY_PATH"
+          echo "" >> "$DIARY_PATH"
+          echo "## Changes Made" >> "$DIARY_PATH"
+          echo "" >> "$DIARY_PATH"
+          
+          # Process each commit
+          COMMIT_NUM=1
+          while IFS='|' read -r SHA MSG AUTHOR DATE; do
+            echo "### Change #${COMMIT_NUM}: ${MSG}" >> "$DIARY_PATH"
+            echo "" >> "$DIARY_PATH"
+            echo "**Commit:** \`${SHA:0:7}\`" >> "$DIARY_PATH"
+            echo "**Author:** ${AUTHOR}" >> "$DIARY_PATH"
+            echo "**Time:** ${DATE}" >> "$DIARY_PATH"
+            echo "" >> "$DIARY_PATH"
+            
+            # Get changed files for this commit
+            CHANGED_FILES=$(git diff-tree --no-commit-id --name-only -r ${SHA} 2>/dev/null | head -20)
+            FILE_COUNT=$(echo "$CHANGED_FILES" | wc -l)
+            
+            echo "**Files Modified:** ${FILE_COUNT} file(s)" >> "$DIARY_PATH"
+            echo "" >> "$DIARY_PATH"
+            
+            if [ -n "$CHANGED_FILES" ]; then
+              echo "<details>" >> "$DIARY_PATH"
+              echo "<summary>View changed files</summary>" >> "$DIARY_PATH"
+              echo "" >> "$DIARY_PATH"
+              echo "\`\`\`" >> "$DIARY_PATH"
+              echo "$CHANGED_FILES" >> "$DIARY_PATH"
+              echo "\`\`\`" >> "$DIARY_PATH"
+              echo "</details>" >> "$DIARY_PATH"
+              echo "" >> "$DIARY_PATH"
+            fi
+            
+            # Analyze what types of changes
+            echo "#### Analysis" >> "$DIARY_PATH"
+            echo "" >> "$DIARY_PATH"
+            
+            # Detect module areas affected
+            AREAS=""
+            if echo "$CHANGED_FILES" | grep -q "^core/"; then
+              AREAS="${AREAS}- Core layer changes\n"
+            fi
+            if echo "$CHANGED_FILES" | grep -q "^pipeline/"; then
+              AREAS="${AREAS}- Pipeline layer changes\n"
+            fi
+            if echo "$CHANGED_FILES" | grep -q "^infra/transport"; then
+              AREAS="${AREAS}- Transport layer changes\n"
+            fi
+            if echo "$CHANGED_FILES" | grep -q "^infra/data"; then
+              AREAS="${AREAS}- Data layer changes\n"
+            fi
+            if echo "$CHANGED_FILES" | grep -q "^player/\|^playback/"; then
+              AREAS="${AREAS}- Player/Playback layer changes\n"
+            fi
+            if echo "$CHANGED_FILES" | grep -q "^feature/"; then
+              AREAS="${AREAS}- Feature layer changes\n"
+            fi
+            if echo "$CHANGED_FILES" | grep -q "^docs/\|\.md$"; then
+              AREAS="${AREAS}- Documentation changes\n"
+            fi
+            if echo "$CHANGED_FILES" | grep -q "^contracts/"; then
+              AREAS="${AREAS}- Contract/Architecture changes\n"
+            fi
+            if echo "$CHANGED_FILES" | grep -q "^\.github/"; then
+              AREAS="${AREAS}- CI/Workflow changes\n"
+            fi
+            
+            if [ -n "$AREAS" ]; then
+              echo "**Areas Affected:**" >> "$DIARY_PATH"
+              echo -e "$AREAS" >> "$DIARY_PATH"
+            fi
+            
+            # Get commit diff stats
+            DIFF_STATS=$(git show ${SHA} --stat --format="" 2>/dev/null | tail -1)
+            if [ -n "$DIFF_STATS" ]; then
+              echo "**Diff Stats:** ${DIFF_STATS}" >> "$DIARY_PATH"
+              echo "" >> "$DIARY_PATH"
+            fi
+            
+            # Get commit body (extended message) if any
+            COMMIT_BODY=$(git log -1 --format="%b" ${SHA} 2>/dev/null | head -20)
+            if [ -n "$COMMIT_BODY" ] && [ "$COMMIT_BODY" != "" ]; then
+              echo "**Description:**" >> "$DIARY_PATH"
+              echo "> ${COMMIT_BODY}" >> "$DIARY_PATH"
+              echo "" >> "$DIARY_PATH"
+            fi
+            
+            echo "---" >> "$DIARY_PATH"
+            echo "" >> "$DIARY_PATH"
+            
+            ((COMMIT_NUM++))
+          done < /tmp/commits.txt
+          
+          # Write commits analyzed section
+          echo "## Commits Analyzed" >> "$DIARY_PATH"
+          echo "" >> "$DIARY_PATH"
+          echo "| SHA | Message | Author |" >> "$DIARY_PATH"
+          echo "|-----|---------|--------|" >> "$DIARY_PATH"
+          
+          while IFS='|' read -r SHA MSG AUTHOR DATE; do
+            echo "| \`${SHA:0:7}\` | ${MSG} | ${AUTHOR} |" >> "$DIARY_PATH"
+          done < /tmp/commits.txt
+          
+          echo "" >> "$DIARY_PATH"
+          
+          # Add footer
+          echo "---" >> "$DIARY_PATH"
+          echo "" >> "$DIARY_PATH"
+          echo "## Notes" >> "$DIARY_PATH"
+          echo "" >> "$DIARY_PATH"
+          echo "*This diary entry was automatically generated by the Copilot Nightly Summary workflow.*" >> "$DIARY_PATH"
+          echo "" >> "$DIARY_PATH"
+          echo "---" >> "$DIARY_PATH"
+          echo "" >> "$DIARY_PATH"
+          echo "**Next Steps:**" >> "$DIARY_PATH"
+          echo "- Review changes for completeness" >> "$DIARY_PATH"
+          echo "- Check for any pending documentation updates" >> "$DIARY_PATH"
+          echo "- Verify architecture compliance" >> "$DIARY_PATH"
+          echo "" >> "$DIARY_PATH"
+          echo "*End of diary entry for ${TARGET_DATE}*" >> "$DIARY_PATH"
+          
+          echo "Generated diary entry: ${DIARY_PATH}"
+          echo "diary_generated=true" >> $GITHUB_OUTPUT
+
+      - name: Commit and push diary entry
+        if: (steps.commits.outputs.has_commits == 'true' || github.event.inputs.force_create == 'true') && steps.check-existing.outputs.exists != 'true'
+        run: |
+          DIARY_PATH="${{ steps.check-existing.outputs.diary_path }}"
+          TARGET_DATE="${{ steps.date.outputs.target_date }}"
+          
+          # Stage diary entry
+          git add "${DIARY_PATH}"
+          git add "docs/diary/"
+          
+          # Check if there are changes
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+            exit 0
+          fi
+          
+          # Commit with skip-ci to prevent triggering other workflows
+          git commit -m "docs(diary): Add programming diary for ${TARGET_DATE} [skip ci]"
+          
+          # Push changes
+          git push origin HEAD
+          
+          echo "Committed and pushed diary entry: ${DIARY_PATH}"
+
+      - name: Update diary entry (if exists)
+        if: steps.commits.outputs.has_commits == 'true' && steps.check-existing.outputs.exists == 'true'
+        run: |
+          DIARY_PATH="${{ steps.check-existing.outputs.diary_path }}"
+          TARGET_DATE="${{ steps.date.outputs.target_date }}"
+          
+          echo "Diary entry already exists at ${DIARY_PATH}"
+          echo "To update, delete the existing file and re-run the workflow manually."
+          echo "::notice title=Diary Entry Exists::Entry for ${TARGET_DATE} already exists at ${DIARY_PATH}"
+
+      - name: Create summary
+        run: |
+          echo "## Nightly Summary Generation" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Target Date:** ${{ steps.date.outputs.target_date }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Commits Found:** ${{ steps.commits.outputs.commit_count }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [ "${{ steps.commits.outputs.has_commits }}" == "true" ]; then
+            echo "### ✅ Diary Entry Created" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**Path:** \`${{ steps.check-existing.outputs.diary_path }}\`" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "### ℹ️ No Commits Found" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "No commits were found for ${{ steps.date.outputs.target_date }}." >> $GITHUB_STEP_SUMMARY
+            echo "No diary entry was generated." >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "---" >> $GITHUB_STEP_SUMMARY
+          echo "*Automated by Copilot Nightly Summary workflow*" >> $GITHUB_STEP_SUMMARY
+
+      - name: Skip if no commits and not forced
+        if: steps.commits.outputs.has_commits != 'true' && github.event.inputs.force_create != 'true'
+        run: |
+          echo "No commits found for ${{ steps.date.outputs.target_date }} and force_create is not enabled."
+          echo "Skipping diary generation."
+          echo "::notice title=No Commits::No diary entry created - no commits found for ${{ steps.date.outputs.target_date }}"

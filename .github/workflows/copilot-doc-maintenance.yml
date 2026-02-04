@@ -1,0 +1,297 @@
+name: Copilot Documentation Maintenance
+
+# Automatically maintains documentation after each commit
+# - Updates CHANGELOG.md with commit information
+# - Updates ROADMAP.md if relevant changes detected
+# - Detects architecture/contract changes and flags them
+# - Fully automated - no user confirmation required
+
+on:
+  push:
+    branches:
+      - architecture/v2-bootstrap
+      - main
+    paths-ignore:
+      - 'docs/diary/**'  # Avoid infinite loops from diary updates
+      - '.github/workflows/copilot-nightly-summary.yml'
+
+  # Allow manual trigger for testing
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry run (no commits)'
+        required: false
+        default: 'false'
+        type: boolean
+
+permissions:
+  contents: write
+  pull-requests: write
+
+env:
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+jobs:
+  update-documentation:
+    name: Update Documentation
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 50  # Need history for commit analysis
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Get commit information
+        id: commit-info
+        run: |
+          # Get the commit SHA
+          COMMIT_SHA="${{ github.sha }}"
+          COMMIT_SHORT="${COMMIT_SHA:0:7}"
+          
+          # Get commit message
+          COMMIT_MSG=$(git log -1 --pretty=format:'%s' ${COMMIT_SHA})
+          
+          # Get commit author
+          COMMIT_AUTHOR=$(git log -1 --pretty=format:'%an' ${COMMIT_SHA})
+          
+          # Get changed files
+          CHANGED_FILES=$(git diff-tree --no-commit-id --name-only -r ${COMMIT_SHA} | head -50)
+          
+          # Get date
+          COMMIT_DATE=$(git log -1 --pretty=format:'%cd' --date=format:'%Y-%m-%d' ${COMMIT_SHA})
+          
+          # Check for specific change types
+          HAS_CONTRACT_CHANGES=false
+          HAS_ARCH_CHANGES=false
+          HAS_AGENT_CHANGES=false
+          HAS_PIPELINE_CHANGES=false
+          HAS_PLAYER_CHANGES=false
+          
+          echo "$CHANGED_FILES" | while read file; do
+            case "$file" in
+              contracts/*) echo "HAS_CONTRACT_CHANGES=true" >> $GITHUB_ENV ;;
+              AGENTS.md|.github/copilot-instructions.md|docs/meta/AGENT_RULES_CANONICAL.md) echo "HAS_AGENT_CHANGES=true" >> $GITHUB_ENV ;;
+              **/architecture/**|ARCHITECTURE*.md) echo "HAS_ARCH_CHANGES=true" >> $GITHUB_ENV ;;
+              pipeline/**) echo "HAS_PIPELINE_CHANGES=true" >> $GITHUB_ENV ;;
+              player/**|playback/**) echo "HAS_PLAYER_CHANGES=true" >> $GITHUB_ENV ;;
+            esac
+          done
+          
+          # Export for later steps
+          echo "sha=${COMMIT_SHA}" >> $GITHUB_OUTPUT
+          echo "short_sha=${COMMIT_SHORT}" >> $GITHUB_OUTPUT
+          echo "message=${COMMIT_MSG}" >> $GITHUB_OUTPUT
+          echo "author=${COMMIT_AUTHOR}" >> $GITHUB_OUTPUT
+          echo "date=${COMMIT_DATE}" >> $GITHUB_OUTPUT
+          
+          # Count changed files
+          FILE_COUNT=$(echo "$CHANGED_FILES" | wc -l)
+          echo "file_count=${FILE_COUNT}" >> $GITHUB_OUTPUT
+          
+          echo "Commit: ${COMMIT_SHORT} - ${COMMIT_MSG}"
+          echo "Author: ${COMMIT_AUTHOR}"
+          echo "Date: ${COMMIT_DATE}"
+          echo "Files changed: ${FILE_COUNT}"
+
+      - name: Analyze changes and prepare changelog entry
+        id: analyze
+        run: |
+          COMMIT_SHA="${{ steps.commit-info.outputs.sha }}"
+          COMMIT_MSG="${{ steps.commit-info.outputs.message }}"
+          COMMIT_DATE="${{ steps.commit-info.outputs.date }}"
+          
+          # Parse conventional commit format
+          # Format: type(scope): description
+          TYPE=""
+          SCOPE=""
+          DESC=""
+          
+          if [[ "$COMMIT_MSG" =~ ^([a-z]+)(\(([^\)]+)\))?:\ (.+)$ ]]; then
+            TYPE="${BASH_REMATCH[1]}"
+            SCOPE="${BASH_REMATCH[3]}"
+            DESC="${BASH_REMATCH[4]}"
+          else
+            # Not conventional commit, use full message
+            DESC="$COMMIT_MSG"
+          fi
+          
+          # Determine changelog section based on type
+          SECTION="Changed"
+          case "$TYPE" in
+            feat) SECTION="Added" ;;
+            fix) SECTION="Fixed" ;;
+            docs) SECTION="Documentation" ;;
+            refactor) SECTION="Changed" ;;
+            perf) SECTION="Performance" ;;
+            test) SECTION="Testing" ;;
+            chore) SECTION="Maintenance" ;;
+            build) SECTION="Build" ;;
+            ci) SECTION="CI/CD" ;;
+          esac
+          
+          echo "type=${TYPE}" >> $GITHUB_OUTPUT
+          echo "scope=${SCOPE}" >> $GITHUB_OUTPUT
+          echo "description=${DESC}" >> $GITHUB_OUTPUT
+          echo "section=${SECTION}" >> $GITHUB_OUTPUT
+          
+          echo "Parsed commit - Type: ${TYPE}, Scope: ${SCOPE}, Section: ${SECTION}"
+
+      - name: Update CHANGELOG.md
+        if: ${{ github.event.inputs.dry_run != 'true' }}
+        run: |
+          COMMIT_DATE="${{ steps.commit-info.outputs.date }}"
+          COMMIT_SHORT="${{ steps.commit-info.outputs.short_sha }}"
+          COMMIT_MSG="${{ steps.commit-info.outputs.message }}"
+          SECTION="${{ steps.analyze.outputs.section }}"
+          SCOPE="${{ steps.analyze.outputs.scope }}"
+          DESC="${{ steps.analyze.outputs.description }}"
+          
+          # Skip if this is a documentation-only update from this workflow
+          if [[ "$COMMIT_MSG" =~ ^docs\(auto\): ]]; then
+            echo "Skipping changelog update for automated doc commits"
+            exit 0
+          fi
+          
+          # Create changelog entry
+          if [ -n "$SCOPE" ]; then
+            ENTRY="- **${SECTION}(${SCOPE})**: ${DESC} (\`${COMMIT_SHORT}\`)"
+          else
+            ENTRY="- **${SECTION}**: ${DESC} (\`${COMMIT_SHORT}\`)"
+          fi
+          
+          # Check if there's already an entry for today in CHANGELOG.md
+          if grep -q "### ${SECTION} (${COMMIT_DATE})" CHANGELOG.md; then
+            # Add to existing section
+            sed -i "/### ${SECTION} (${COMMIT_DATE})/a\\${ENTRY}" CHANGELOG.md
+          elif grep -q "## \[Unreleased\]" CHANGELOG.md; then
+            # Check if section exists under Unreleased
+            if grep -q "### ${SECTION}" CHANGELOG.md | head -1; then
+              # Add to existing section (first occurrence after Unreleased)
+              sed -i "/## \[Unreleased\]/,/## \[/{/### ${SECTION}/a\\${ENTRY}
+              }" CHANGELOG.md 2>/dev/null || true
+            else
+              # Add new section after Unreleased header
+              sed -i "/## \[Unreleased\]/a\\\\n### ${SECTION} (${COMMIT_DATE})\\n${ENTRY}" CHANGELOG.md
+            fi
+          fi
+          
+          echo "Added changelog entry: ${ENTRY}"
+
+      - name: Check for ROADMAP updates
+        id: roadmap-check
+        run: |
+          # Check if any TODO/FIXME items were resolved
+          COMMIT_SHA="${{ steps.commit-info.outputs.sha }}"
+          
+          # Get diff to look for completed items
+          DIFF=$(git show ${COMMIT_SHA} --no-color 2>/dev/null || echo "")
+          
+          # Look for patterns that indicate completed work
+          COMPLETED_ITEMS=""
+          
+          # Check for removed TODO/FIXME comments
+          if echo "$DIFF" | grep -E "^-.*// TODO:|^-.*// FIXME:" | head -5; then
+            COMPLETED_ITEMS="true"
+          fi
+          
+          # Check for test additions (indicates feature completion)
+          if echo "$DIFF" | grep -E "^\+.*@Test|^\+.*fun test" | head -5; then
+            HAS_NEW_TESTS="true"
+            echo "has_new_tests=true" >> $GITHUB_OUTPUT
+          fi
+          
+          echo "completed_items=${COMPLETED_ITEMS}" >> $GITHUB_OUTPUT
+
+      - name: Detect architecture/contract changes
+        id: arch-changes
+        run: |
+          COMMIT_SHA="${{ steps.commit-info.outputs.sha }}"
+          CHANGED_FILES=$(git diff-tree --no-commit-id --name-only -r ${COMMIT_SHA})
+          
+          WARNINGS=""
+          
+          # Check for contract changes
+          if echo "$CHANGED_FILES" | grep -q "^contracts/"; then
+            WARNINGS="${WARNINGS}\n⚠️ CONTRACT CHANGE: Contract files were modified. Ensure all dependent code is updated."
+          fi
+          
+          # Check for AGENTS.md changes
+          if echo "$CHANGED_FILES" | grep -q "AGENTS.md\|AGENT_RULES_CANONICAL.md"; then
+            WARNINGS="${WARNINGS}\n⚠️ AGENT RULES CHANGE: Agent rules were modified. Run scripts/verify-agent-rules.sh"
+          fi
+          
+          # Check for architecture document changes
+          if echo "$CHANGED_FILES" | grep -q "ARCHITECTURE"; then
+            WARNINGS="${WARNINGS}\n⚠️ ARCHITECTURE CHANGE: Architecture documentation was modified."
+          fi
+          
+          # Check for layer boundary violations (basic check)
+          if echo "$CHANGED_FILES" | grep -q "^pipeline/.*transport\|^infra/transport/.*pipeline"; then
+            WARNINGS="${WARNINGS}\n🚨 POTENTIAL LAYER VIOLATION: Cross-layer imports detected. Review AGENTS.md Section 4."
+          fi
+          
+          if [ -n "$WARNINGS" ]; then
+            echo "has_warnings=true" >> $GITHUB_OUTPUT
+            echo -e "Detected warnings:${WARNINGS}"
+          fi
+          
+          echo "warnings=${WARNINGS}" >> $GITHUB_OUTPUT
+
+      - name: Commit documentation updates
+        if: ${{ github.event.inputs.dry_run != 'true' }}
+        run: |
+          # Check if there are changes to commit
+          if git diff --quiet CHANGELOG.md ROADMAP.md 2>/dev/null; then
+            echo "No documentation changes to commit"
+            exit 0
+          fi
+          
+          # Stage changes
+          git add CHANGELOG.md ROADMAP.md 2>/dev/null || true
+          
+          # Check if there are staged changes
+          if git diff --cached --quiet; then
+            echo "No staged changes to commit"
+            exit 0
+          fi
+          
+          # Commit with skip-ci to prevent infinite loops
+          git commit -m "docs(auto): Update documentation for ${{ steps.commit-info.outputs.short_sha }} [skip ci]"
+          
+          # Push changes
+          git push origin HEAD
+
+      - name: Create summary
+        run: |
+          echo "## Documentation Maintenance Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit Analyzed:** \`${{ steps.commit-info.outputs.short_sha }}\` - ${{ steps.commit-info.outputs.message }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Author:** ${{ steps.commit-info.outputs.author }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Date:** ${{ steps.commit-info.outputs.date }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Files Changed:** ${{ steps.commit-info.outputs.file_count }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [ "${{ steps.analyze.outputs.type }}" != "" ]; then
+            echo "### Commit Classification" >> $GITHUB_STEP_SUMMARY
+            echo "- **Type:** ${{ steps.analyze.outputs.type }}" >> $GITHUB_STEP_SUMMARY
+            echo "- **Scope:** ${{ steps.analyze.outputs.scope }}" >> $GITHUB_STEP_SUMMARY
+            echo "- **Section:** ${{ steps.analyze.outputs.section }}" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          if [ "${{ steps.arch-changes.outputs.has_warnings }}" == "true" ]; then
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### ⚠️ Warnings" >> $GITHUB_STEP_SUMMARY
+            echo "${{ steps.arch-changes.outputs.warnings }}" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "---" >> $GITHUB_STEP_SUMMARY
+          echo "*Automated by Copilot Documentation Maintenance workflow*" >> $GITHUB_STEP_SUMMARY
