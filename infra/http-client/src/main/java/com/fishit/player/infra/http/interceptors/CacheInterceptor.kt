@@ -1,9 +1,6 @@
 package com.fishit.player.infra.http.interceptors
 
 import android.os.SystemClock
-import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 import okhttp3.Interceptor
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.Protocol
@@ -16,11 +13,13 @@ import okhttp3.ResponseBody.Companion.toResponseBody
  * This provides in-memory caching with configurable TTL,
  * independent of HTTP cache headers.
  *
+ * Fix for Finding #2: Use synchronized blocks instead of runBlocking.
+ * This avoids blocking OkHttp's I/O threads with coroutine overhead.
+ *
  * Note: This is intended for API responses, not for general HTTP caching.
  * For HTTP caching, use OkHttp's built-in Cache.
  */
 class CacheInterceptor : Interceptor {
-    private val mutex = Mutex()
     private val cache = object : LinkedHashMap<String, CacheEntry>(512, 0.75f, true) {
         override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, CacheEntry>?): Boolean {
             return size > 512
@@ -41,13 +40,11 @@ class CacheInterceptor : Interceptor {
         val ttlSeconds = request.tag(CacheTtlTag::class.java)?.ttlSeconds ?: 0
 
         if (ttlSeconds > 0) {
-            // Check cache first
-            val cached = runBlocking {
-                mutex.withLock {
-                    cache[url]?.let { entry ->
-                        val age = (SystemClock.elapsedRealtime() - entry.timestamp) / 1000
-                        if (age <= ttlSeconds) entry else null
-                    }
+            // Check cache first using synchronized block
+            val cached = synchronized(cache) {
+                cache[url]?.let { entry ->
+                    val age = (SystemClock.elapsedRealtime() - entry.timestamp) / 1000
+                    if (age <= ttlSeconds) entry else null
                 }
             }
 
@@ -72,14 +69,12 @@ class CacheInterceptor : Interceptor {
             val bodyString = responseBody?.string() ?: ""
             val contentType = responseBody?.contentType()?.toString() ?: "application/json"
 
-            runBlocking {
-                mutex.withLock {
-                    cache[url] = CacheEntry(
-                        timestamp = SystemClock.elapsedRealtime(),
-                        body = bodyString,
-                        contentType = contentType,
-                    )
-                }
+            synchronized(cache) {
+                cache[url] = CacheEntry(
+                    timestamp = SystemClock.elapsedRealtime(),
+                    body = bodyString,
+                    contentType = contentType,
+                )
             }
 
             // Return new response with cached body
