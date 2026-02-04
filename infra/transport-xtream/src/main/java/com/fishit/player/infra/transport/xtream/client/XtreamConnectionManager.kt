@@ -2,6 +2,7 @@ package com.fishit.player.infra.transport.xtream.client
 
 import android.os.SystemClock
 import com.fishit.player.infra.logging.UnifiedLog
+import com.fishit.player.infra.transport.xtream.PortKey
 import com.fishit.player.infra.transport.xtream.XtreamApiConfig
 import com.fishit.player.infra.transport.xtream.XtreamAuthState
 import com.fishit.player.infra.transport.xtream.XtreamCapabilities
@@ -37,6 +38,7 @@ import okhttp3.OkHttpClient
 class XtreamConnectionManager(
     private val http: OkHttpClient,
     private val json: Json,
+    private val discovery: XtreamDiscovery,
     private val io: CoroutineDispatcher = Dispatchers.IO,
     private val capabilityStore: XtreamCapabilityStore? = null,
     private val portStore: XtreamPortStore? = null,
@@ -106,7 +108,7 @@ class XtreamConnectionManager(
             validateAndComplete(config, caps, latency)
         } catch (e: Exception) {
             UnifiedLog.e(TAG, e) { "Initialize failed for ${config.host}" }
-            val error = XtreamError.NetworkError
+            val error = XtreamError.Network(e.message ?: "Unknown error", e)
             _connectionState.value = XtreamConnectionState.Error(error, retryable = true)
             _authState.value = XtreamAuthState.Failed(error)
             Result.failure(e)
@@ -302,18 +304,23 @@ class XtreamConnectionManager(
     // =========================================================================
 
     private suspend fun resolvePort(config: XtreamApiConfig): Int {
-        portStore?.get(config.host)?.let { cached ->
+        val portKey = PortKey(
+            scheme = config.scheme,
+            host = config.host,
+            username = config.username,
+        )
+        
+        portStore?.getResolvedPort(portKey)?.let { cached ->
             UnifiedLog.d(TAG) { "Using cached port: $cached" }
             return cached
         }
 
-        val discovered = XtreamDiscovery.discoverPort(http, config.host, config.username, config.password)
-        if (discovered != null) {
-            portStore?.put(config.host, discovered)
-            return discovered
+        val discovered = discovery.resolvePort(config)
+        if (discovered != config.port) {
+            portStore?.putResolvedPort(portKey, discovered)
         }
 
-        return 80 // Default
+        return discovered
     }
 
     private suspend fun discoverCapabilities(
@@ -324,11 +331,10 @@ class XtreamConnectionManager(
         val builder = XtreamUrlBuilder(config, port, "vod")
         urlBuilder = builder
 
-        return XtreamDiscovery.discoverCapabilities(
-            http = http,
+        return discovery.discoverCapabilities(
             config = config,
             port = port,
-            cacheKey = cacheKey,
+            forceRefresh = false,
         )
     }
 

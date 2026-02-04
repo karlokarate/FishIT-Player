@@ -73,13 +73,13 @@ suspend fun initialize(config: XtreamApiConfig): Result<XtreamCapabilities> {
 
 // XtreamCategoryFetcher handles categories
 suspend fun getLiveCategories(): List<XtreamCategory> {
-    return categoryFetcher.fetchLiveCategories()
+    return categoryFetcher.getLiveCategories()
 }
 
 // XtreamStreamFetcher handles streaming
 suspend fun getVodStreams(categoryId: String?): List<XtreamVodStream> {
-    return streamFetcher.fetchVodStreams(categoryId)
+    return streamFetcher.getVodStreams(categoryId)
 }
 ```
 
-For implementation details, see PR #[issue_number].
+For implementation details, see this PR.

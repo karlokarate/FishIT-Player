@@ -76,9 +76,23 @@ class SourceRefBuilder @Inject constructor() {
      * - "msg:123:456" → "msg:123:456" (Telegram format preserved)
      */
     private fun extractCleanItemKey(sourceId: String): String {
-        return SourceKeyParser.extractNumericItemKey(sourceId)?.toString()
-            ?: SourceKeyParser.extractItemKey(sourceId)
-            ?: sourceId
+        // Handle legacy sourceId format (not sourceKey format)
+        // xtream:vod:12345 → 12345
+        // xtream:live:67890 → 67890
+        val parts = sourceId.split(":")
+        
+        // For Xtream legacy format: xtream:vod:12345
+        if (parts.size >= 3 && parts[0] == "xtream") {
+            return parts[2]
+        }
+        
+        // For Telegram format: msg:chatId:messageId
+        if (parts.size >= 3 && parts[0] == "msg") {
+            return sourceId  // Keep full format
+        }
+        
+        // Already numeric or other format
+        return sourceId
     }
 
     /**
@@ -89,7 +103,10 @@ class SourceRefBuilder @Inject constructor() {
             CoreSourceType.TELEGRAM -> NxWorkSourceRefRepository.SourceType.TELEGRAM
             CoreSourceType.XTREAM -> NxWorkSourceRefRepository.SourceType.XTREAM
             CoreSourceType.IO -> NxWorkSourceRefRepository.SourceType.IO
-            CoreSourceType.AUDIOBOOK -> NxWorkSourceRefRepository.SourceType.AUDIOBOOK
+            CoreSourceType.AUDIOBOOK -> NxWorkSourceRefRepository.SourceType.UNKNOWN  // No AUDIOBOOK in NX
+            CoreSourceType.LOCAL -> NxWorkSourceRefRepository.SourceType.LOCAL
+            CoreSourceType.PLEX -> NxWorkSourceRefRepository.SourceType.PLEX
+            CoreSourceType.OTHER -> NxWorkSourceRefRepository.SourceType.UNKNOWN
             CoreSourceType.UNKNOWN -> NxWorkSourceRefRepository.SourceType.UNKNOWN
         }
     }

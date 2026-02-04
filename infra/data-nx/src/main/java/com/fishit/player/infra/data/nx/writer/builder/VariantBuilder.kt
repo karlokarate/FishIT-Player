@@ -56,11 +56,25 @@ class VariantBuilder @Inject constructor() {
     /**
      * Extract container format from playback hints.
      *
-     * Common keys: "container", "container_extension", "format"
+     * Matches NxCatalogWriter logic with proper key mapping and normalization.
+     * Common keys: "xtream.containerExtension", "containerExtension", "extension"
      */
     private fun extractContainerFromHints(hints: Map<String, String>): String? {
-        return hints["container"]
-            ?: hints["container_extension"]
-            ?: hints["format"]
+        // Check all possible keys (Xtream uses "xtream.containerExtension")
+        val ext = hints["xtream.containerExtension"]
+            ?: hints["containerExtension"]
+            ?: hints["extension"]
+        return when (ext?.lowercase()) {
+            "mp4" -> "mp4"
+            "mkv" -> "mkv"
+            "avi" -> "avi"
+            "webm" -> "webm"
+            "ts" -> "ts"
+            "m3u8" -> "hls"  // Normalize m3u8 to hls
+            "mov" -> "mov"
+            "wmv" -> "wmv"
+            "flv" -> "flv"
+            else -> ext?.lowercase()?.takeIf { it.isNotBlank() }  // Pass through unknown formats
+        }
     }
 }

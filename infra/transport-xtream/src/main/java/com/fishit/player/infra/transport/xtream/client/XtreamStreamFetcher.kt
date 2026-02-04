@@ -10,7 +10,7 @@ import com.fishit.player.infra.transport.xtream.XtreamVodStream
 import com.fishit.player.infra.transport.xtream.mapper.LiveStreamMapper
 import com.fishit.player.infra.transport.xtream.mapper.SeriesStreamMapper
 import com.fishit.player.infra.transport.xtream.mapper.VodStreamMapper
-import com.fishit.player.infra.transport.xtream.streaming.CategoryFallbackStrategy
+import com.fishit.player.infra.transport.xtream.strategy.CategoryFallbackStrategy
 import com.fishit.player.infra.transport.xtream.streaming.JsonObjectReader
 import com.fishit.player.infra.transport.xtream.streaming.StreamingJsonParser
 import kotlinx.coroutines.CoroutineDispatcher

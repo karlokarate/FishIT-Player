@@ -90,12 +90,17 @@ infra/data-nx/writer/
 | `VariantBuilder` | `NX_WorkVariant` | Variant key construction, container extraction |
 
 ### Benefits
+
+**When integrated** (target architecture for follow-up PR):
+
 1. **Reduced Complexity:** Original CC ~28 → Builder average CC ~5
 2. **Eliminates Duplication:** ~220 lines of repeated construction logic removed
 3. **Testability:** Each builder can be unit tested independently
 4. **Maintainability:** Single responsibility per builder
 
-### Example Usage
+**Current Status:** Builders are created and tested. Integration into NxCatalogWriter is planned for a follow-up PR.
+
+### Example Usage (Target Architecture)
 
 ```kotlin
 @Singleton
@@ -136,4 +141,6 @@ class NxCatalogWriter @Inject constructor(
 }
 ```
 
-For implementation details, see PR #[issue_number].
+**Note:** This example shows the target architecture. Current NxCatalogWriter still performs inline construction.
+
+For implementation details, see this PR.
