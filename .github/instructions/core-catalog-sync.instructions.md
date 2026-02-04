@@ -5,6 +5,10 @@ applyTo:
 
 # 🏆 PLATIN Instructions: core/catalog-sync
 
+**Version:** 1.0  
+**Last Updated:** 2026-02-04  
+**Status:** Active
+
 > **PLATIN STANDARD** - Catalog Sync Orchestration Layer.
 >
 > **Purpose:** Central orchestrator between Pipeline and Data layers.

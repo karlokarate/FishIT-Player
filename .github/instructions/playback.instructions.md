@@ -9,6 +9,10 @@ applyTo:
 
 # 🏆 PLATIN Instructions:  playback/*
 
+**Version:** 1.0  
+**Last Updated:** 2026-02-04  
+**Status:** Active
+
 > **PLATIN STANDARD** - Playback Source Resolution & Factory Pattern. 
 >
 > **Purpose:** Transform `PlaybackContext` into playable `PlaybackSource` via source-specific factories.

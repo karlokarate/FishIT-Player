@@ -11,6 +11,10 @@ applyTo:
 
 # 🏆 PLATIN Instructions:   infra/data-*
 
+**Version:** 1.0  
+**Last Updated:** 2026-02-04  
+**Status:** Active
+
 > **PLATIN STANDARD** - Repository Implementation Layer.  
 >
 > **Purpose:** Implements repository interfaces for domain layer consumption.  Bridges between

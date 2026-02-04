@@ -5,6 +5,10 @@ applyTo:
 
 # 🏆 PLATIN Instructions:  feature/settings
 
+**Version:** 1.0  
+**Last Updated:** 2026-02-04  
+**Status:** Active
+
 > **PLATIN STANDARD** - Settings Screen with Debug UI.
 >
 > **Purpose:** Settings UI with source status, sync controls, cache management, and debug diagnostics.

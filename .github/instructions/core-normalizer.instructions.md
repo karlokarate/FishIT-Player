@@ -5,6 +5,10 @@ applyTo:
 
 # 🏆 PLATIN Instructions: core/metadata-normalizer
 
+**Version:** 1.0  
+**Last Updated:** 2026-02-04  
+**Status:** Active
+
 > **PLATIN STANDARD** - The ONLY place for normalization logic. 
 >
 > **Purpose:** Normalizes `RawMediaMetadata` into enriched domain models via heuristics and TMDB lookups.

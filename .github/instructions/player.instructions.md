@@ -9,6 +9,10 @@ applyTo:
 
 # 🏆 PLATIN Instructions:  player/*
 
+**Version:** 1.0  
+**Last Updated:** 2026-02-04  
+**Status:** Active
+
 > **PLATIN STANDARD** - Internal Player (SIP) & Player UI Layer. 
 >
 > **Purpose:** Source-agnostic player engine with ExoPlayer/Media3 integration.
