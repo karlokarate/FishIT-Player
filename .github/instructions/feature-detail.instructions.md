@@ -5,6 +5,10 @@ applyTo:
 
 # 🏆 PLATIN Instructions:  feature/detail
 
+**Version:** 1.0  
+**Last Updated:** 2026-02-04  
+**Status:** Active
+
 > **PLATIN STANDARD** - Detail Screen (Unified Detail for All Media Types).
 >
 > **Purpose:** Unified detail screen with race-free source selection and async enrichment.

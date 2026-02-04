@@ -7,6 +7,10 @@ applyTo:
 
 # 🏆 PLATIN Instructions: infra/transport-* (Common Rules)
 
+**Version:** 1.0  
+**Last Updated:** 2026-02-04  
+**Status:** Active
+
 > **PLATIN STANDARD** - External API Integration Layer (Common Rules).
 >
 > **Purpose:** This document defines the COMMON rules for ALL transport modules.

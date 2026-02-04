@@ -10,6 +10,10 @@ applyTo:
 
 # 🏆 PLATIN Instructions: core/*-domain Modules
 
+**Version:** 1.0  
+**Last Updated:** 2026-02-04  
+**Status:** Active
+
 > **PLATIN STANDARD** - Domain Use Cases and Business Logic.
 >
 > **Purpose:** Domain layer containing use cases that orchestrate repositories and services.
