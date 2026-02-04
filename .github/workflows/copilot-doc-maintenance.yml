@@ -167,23 +167,8 @@ jobs:
             ENTRY="- **${SECTION}**: ${DESC} (\`${COMMIT_SHORT}\`)"
           fi
           
-          # Check if there's already an entry for today in CHANGELOG.md
-          if grep -q "### ${SECTION} (${COMMIT_DATE})" CHANGELOG.md; then
-            # Add to existing section
-            sed -i "/### ${SECTION} (${COMMIT_DATE})/a\\${ENTRY}" CHANGELOG.md
-          elif grep -q "## \[Unreleased\]" CHANGELOG.md; then
-            # Check if section exists under Unreleased
-            if grep -q "### ${SECTION}" CHANGELOG.md | head -1; then
-              # Add to existing section (first occurrence after Unreleased)
-              sed -i "/## \[Unreleased\]/,/## \[/{/### ${SECTION}/a\\${ENTRY}
-              }" CHANGELOG.md 2>/dev/null || true
-            else
-              # Add new section after Unreleased header
-              sed -i "/## \[Unreleased\]/a\\\\n### ${SECTION} (${COMMIT_DATE})\\n${ENTRY}" CHANGELOG.md
-            fi
-          fi
-          
-          echo "Added changelog entry: ${ENTRY}"
+          # Use the standalone Python script for reliability
+          python3 .github/scripts/update-changelog.py "${SECTION}" "${COMMIT_DATE}" "${ENTRY}"
 
       - name: Check for ROADMAP updates
         id: roadmap-check

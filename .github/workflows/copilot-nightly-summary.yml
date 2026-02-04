@@ -134,23 +134,19 @@ jobs:
         run: |
           TARGET_DATE="${{ steps.date.outputs.target_date }}"
           DIARY_PATH="${{ steps.check-existing.outputs.diary_path }}"
+          GENERATED_TIME=$(date -u +"%Y-%m-%d %H:%M UTC")
           
-          # Start diary entry
-          cat > "$DIARY_PATH" << 'HEADER'
-          # Programming Diary: ${TARGET_DATE}
-
-          > **Generated:** $(date -u +"%Y-%m-%d %H:%M UTC")
-          > **Repository:** FishIT-Player v2
-          > **Branch:** architecture/v2-bootstrap
-
-          ---
-
-          ## Summary
-
-          HEADER
-          
-          # Replace placeholders
-          sed -i "s/\${TARGET_DATE}/${TARGET_DATE}/g" "$DIARY_PATH"
+          # Start diary entry using echo statements to avoid YAML parsing issues
+          echo "# Programming Diary: ${TARGET_DATE}" > "$DIARY_PATH"
+          echo "" >> "$DIARY_PATH"
+          echo "> **Generated:** ${GENERATED_TIME}" >> "$DIARY_PATH"
+          echo "> **Repository:** FishIT-Player v2" >> "$DIARY_PATH"
+          echo "> **Branch:** architecture/v2-bootstrap" >> "$DIARY_PATH"
+          echo "" >> "$DIARY_PATH"
+          echo "---" >> "$DIARY_PATH"
+          echo "" >> "$DIARY_PATH"
+          echo "## Summary" >> "$DIARY_PATH"
+          echo "" >> "$DIARY_PATH"
           
           if [ ! -f /tmp/commits.txt ] || [ ! -s /tmp/commits.txt ]; then
             echo "No changes recorded for this date." >> "$DIARY_PATH"
@@ -211,23 +207,40 @@ jobs:
             echo "**Time:** ${DATE}" >> "$DIARY_PATH"
             echo "" >> "$DIARY_PATH"
             
-            # Get changed files for this commit
-            CHANGED_FILES=$(git diff-tree --no-commit-id --name-only -r ${SHA} 2>/dev/null | head -20)
-            FILE_COUNT=$(echo "$CHANGED_FILES" | wc -l)
+            # Get all changed files for this commit
+            ALL_CHANGED_FILES=$(git diff-tree --no-commit-id --name-only -r ${SHA} 2>/dev/null)
+            if [ -n "$ALL_CHANGED_FILES" ]; then
+              TOTAL_FILE_COUNT=$(echo "$ALL_CHANGED_FILES" | wc -l)
+            else
+              TOTAL_FILE_COUNT=0
+            fi
             
-            echo "**Files Modified:** ${FILE_COUNT} file(s)" >> "$DIARY_PATH"
+            # Show first 50 files (reasonable limit for diary readability)
+            DISPLAYED_FILES=$(echo "$ALL_CHANGED_FILES" | head -50)
+            
+            if [ "$TOTAL_FILE_COUNT" -gt 50 ]; then
+              echo "**Files Modified:** ${TOTAL_FILE_COUNT} file(s) _(showing first 50)_" >> "$DIARY_PATH"
+            else
+              echo "**Files Modified:** ${TOTAL_FILE_COUNT} file(s)" >> "$DIARY_PATH"
+            fi
             echo "" >> "$DIARY_PATH"
             
-            if [ -n "$CHANGED_FILES" ]; then
+            if [ -n "$DISPLAYED_FILES" ]; then
               echo "<details>" >> "$DIARY_PATH"
               echo "<summary>View changed files</summary>" >> "$DIARY_PATH"
               echo "" >> "$DIARY_PATH"
               echo "\`\`\`" >> "$DIARY_PATH"
-              echo "$CHANGED_FILES" >> "$DIARY_PATH"
+              echo "$DISPLAYED_FILES" >> "$DIARY_PATH"
+              if [ "$TOTAL_FILE_COUNT" -gt 50 ]; then
+                echo "... and $((TOTAL_FILE_COUNT - 50)) more files" >> "$DIARY_PATH"
+              fi
               echo "\`\`\`" >> "$DIARY_PATH"
               echo "</details>" >> "$DIARY_PATH"
               echo "" >> "$DIARY_PATH"
             fi
+            
+            # Use all files for area analysis (not truncated)
+            CHANGED_FILES="$ALL_CHANGED_FILES"
             
             # Analyze what types of changes
             echo "#### Analysis" >> "$DIARY_PATH"
@@ -265,7 +278,7 @@ jobs:
             
             if [ -n "$AREAS" ]; then
               echo "**Areas Affected:**" >> "$DIARY_PATH"
-              echo -e "$AREAS" >> "$DIARY_PATH"
+              printf '%b' "$AREAS" >> "$DIARY_PATH"
             fi
             
             # Get commit diff stats
@@ -276,10 +289,24 @@ jobs:
             fi
             
             # Get commit body (extended message) if any
-            COMMIT_BODY=$(git log -1 --format="%b" ${SHA} 2>/dev/null | head -20)
-            if [ -n "$COMMIT_BODY" ] && [ "$COMMIT_BODY" != "" ]; then
+            FULL_COMMIT_BODY=$(git log -1 --format="%b" ${SHA} 2>/dev/null)
+            BODY_LINE_COUNT=$(echo "$FULL_COMMIT_BODY" | wc -l)
+            
+            if [ -n "$FULL_COMMIT_BODY" ] && [ "$FULL_COMMIT_BODY" != "" ]; then
               echo "**Description:**" >> "$DIARY_PATH"
-              echo "> ${COMMIT_BODY}" >> "$DIARY_PATH"
+              if [ "$BODY_LINE_COUNT" -gt 50 ]; then
+                # Truncate very long bodies with note, preserving newlines
+                echo "$FULL_COMMIT_BODY" | head -50 | while IFS= read -r line; do
+                  printf '> %s\n' "$line" >> "$DIARY_PATH"
+                done
+                echo "> " >> "$DIARY_PATH"
+                echo "> _... (truncated, $((BODY_LINE_COUNT - 50)) more lines)_" >> "$DIARY_PATH"
+              else
+                # Preserve newlines in body by processing line by line
+                echo "$FULL_COMMIT_BODY" | while IFS= read -r line; do
+                  printf '> %s\n' "$line" >> "$DIARY_PATH"
+                done
+              fi
               echo "" >> "$DIARY_PATH"
             fi
             
