@@ -63,11 +63,9 @@ class DefaultHttpClient @Inject constructor(
         config: RequestConfig,
     ): Result<String?> = withContext(io) {
         try {
-            // Rate limit (always, independent of cache config) - Fix for Finding #7
-            takeRateSlot(extractHost(url))
-
-            // Check cache (interceptor handles this, manual cache removed)
-            // Note: Manual cache removed to avoid duplication (Finding #10)
+            // Fix for Finding #7: Rate limiting is now always enforced at interceptor level
+            // Fix for Finding #10: Caching is now handled at interceptor level
+            // Both are independent concerns and handled by OkHttp interceptors
 
             // Build request
             val requestBuilder = Request.Builder().url(url)
