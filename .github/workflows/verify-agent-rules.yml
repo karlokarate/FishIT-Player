@@ -1,0 +1,40 @@
+name: Verify Agent Rules Sync
+
+on:
+  pull_request:
+    paths:
+      - 'AGENTS.md'
+      - '.github/copilot-instructions.md'
+      - 'docs/meta/AGENT_RULES_CANONICAL.md'
+  push:
+    branches:
+      - architecture/v2-bootstrap
+    paths:
+      - 'AGENTS.md'
+      - '.github/copilot-instructions.md'
+      - 'docs/meta/AGENT_RULES_CANONICAL.md'
+
+jobs:
+  verify:
+    name: Verify Agent Rules Are Synchronized
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Run verification script
+        run: bash scripts/verify-agent-rules.sh
+      
+      - name: Show drift prevention instructions
+        if: failure()
+        run: |
+          echo "::error::Agent rules files are not synchronized!"
+          echo ""
+          echo "To fix this, run:"
+          echo "  bash scripts/sync-agent-rules.sh"
+          echo ""
+          echo "Then commit the changes."
+          echo ""
+          echo "Remember: Only edit docs/meta/AGENT_RULES_CANONICAL.md"
+          echo "AGENTS.md and .github/copilot-instructions.md are generated files."
