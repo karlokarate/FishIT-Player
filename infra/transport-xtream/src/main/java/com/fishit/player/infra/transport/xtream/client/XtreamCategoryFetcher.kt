@@ -29,6 +29,7 @@ import javax.inject.Inject
 class XtreamCategoryFetcher @Inject constructor(
     private val httpClient: HttpClient,
     private val json: Json,
+    private val urlBuilder: XtreamUrlBuilder,
     private val io: CoroutineDispatcher = Dispatchers.IO,
 ) {
     companion object {
@@ -40,21 +41,20 @@ class XtreamCategoryFetcher @Inject constructor(
      * Get live stream categories.
      * CC: 2
      */
-    suspend fun getLiveCategories(urlBuilder: XtreamUrlBuilder): List<XtreamCategory> =
-        fetchCategories(urlBuilder, "get_live_categories")
+    suspend fun getLiveCategories(): List<XtreamCategory> =
+        fetchCategories("get_live_categories")
 
     /**
      * Get VOD categories with alias resolution.
      * CC: 4 (alias loop)
      */
     suspend fun getVodCategories(
-        urlBuilder: XtreamUrlBuilder,
         currentVodKind: String,
     ): Pair<List<XtreamCategory>, String> {
         // Try aliases in order
         val candidates = listOf(currentVodKind) + VOD_ALIAS_CANDIDATES.filter { it != currentVodKind }
         for (alias in candidates) {
-            val result = fetchCategories(urlBuilder, "get_${alias}_categories")
+            val result = fetchCategories("get_${alias}_categories")
             if (result.isNotEmpty()) {
                 return Pair(result, alias)
             }
@@ -66,14 +66,14 @@ class XtreamCategoryFetcher @Inject constructor(
      * Get series categories.
      * CC: 2
      */
-    suspend fun getSeriesCategories(urlBuilder: XtreamUrlBuilder): List<XtreamCategory> =
-        fetchCategories(urlBuilder, "get_series_categories")
+    suspend fun getSeriesCategories(): List<XtreamCategory> =
+        fetchCategories("get_series_categories")
 
     /**
      * Fetch categories for a given action.
      * CC: 4 (parsing)
      */
-    private suspend fun fetchCategories(urlBuilder: XtreamUrlBuilder, action: String): List<XtreamCategory> =
+    private suspend fun fetchCategories(action: String): List<XtreamCategory> =
         withContext(io) {
             val url = urlBuilder.playerApiUrl(action)
             val body = fetchRaw(url) ?: return@withContext emptyList()
