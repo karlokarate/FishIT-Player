@@ -2,6 +2,8 @@ package com.fishit.player.infra.transport.xtream
 
 import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
+import javax.inject.Inject
+import javax.inject.Singleton
 
 /**
  * XtreamUrlBuilder – URL Factory für Xtream Codes API
@@ -13,12 +15,25 @@ import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
  * - Catchup/Timeshift URLs
  *
  * Basiert auf v1 XtreamConfig.kt mit PathKind-Logik.
+ *
+ * **DI-Injectable:** Use configure() to set connection parameters after initialization.
  */
-class XtreamUrlBuilder(
-    private val config: XtreamApiConfig,
-    private var resolvedPort: Int = config.port ?: 80,
-    private var vodKind: String = "vod",
-) {
+@Singleton
+class XtreamUrlBuilder @Inject constructor() {
+    private var config: XtreamApiConfig? = null
+    private var resolvedPort: Int = 80
+    private var vodKind: String = "vod"
+
+    /**
+     * Configure URL builder with connection credentials.
+     * Called once during XtreamApiClient.initialize().
+     */
+    fun configure(config: XtreamApiConfig, resolvedPort: Int) {
+        this.config = config
+        this.resolvedPort = resolvedPort
+        this.vodKind = "vod"
+    }
+
     // =========================================================================
     // Configuration Updates
     // =========================================================================
@@ -40,18 +55,20 @@ class XtreamUrlBuilder(
      * "https://example.com:8080/panel"
      */
     val baseUrl: String
-        get() =
-            buildString {
-                append(config.scheme.lowercase())
+        get() {
+            requireNotNull(config) { "XtreamUrlBuilder not configured - call configure() first" }
+            return buildString {
+                append(config!!.scheme.lowercase())
                 append("://")
-                append(config.host)
+                append(config!!.host)
                 append(":")
                 append(resolvedPort)
-                config.basePath?.let { bp ->
+                config!!.basePath?.let { bp ->
                     val normalized = normalizeBasePath(bp)
                     if (normalized.isNotEmpty()) append(normalized)
                 }
             }
+        }
 
     // =========================================================================
     // Player API URLs
@@ -66,11 +83,12 @@ class XtreamUrlBuilder(
     fun playerApiUrl(
         action: String?,
         params: Map<String, String> = emptyMap(),
-    ): String =
-        HttpUrl
+    ): String {
+        requireNotNull(config) { "XtreamUrlBuilder not configured - call configure() first" }
+        return HttpUrl
             .Builder()
-            .scheme(config.scheme.lowercase())
-            .host(config.host)
+            .scheme(config!!.scheme.lowercase())
+            .host(config!!.host)
             .port(resolvedPort)
             .apply {
                 addBasePathSegments()
@@ -85,10 +103,11 @@ class XtreamUrlBuilder(
                 params.forEach { (key, value) -> addQueryParameter(key, value) }
 
                 // Credentials last
-                addQueryParameter("username", config.username)
-                addQueryParameter("password", config.password)
+                addQueryParameter("username", config!!.username)
+                addQueryParameter("password", config!!.password)
             }.build()
             .toString()
+    }
 
     // =========================================================================
     // Panel API URLs (Premium Contract Section 2/8)
@@ -109,19 +128,20 @@ class XtreamUrlBuilder(
     fun panelApiUrl(
         action: String? = null,
         params: Map<String, String> = emptyMap(),
-    ): String =
-        HttpUrl
+    ): String {
+        requireNotNull(config) { "XtreamUrlBuilder not configured - call configure() first" }
+        return HttpUrl
             .Builder()
-            .scheme(config.scheme.lowercase())
-            .host(config.host)
+            .scheme(config!!.scheme.lowercase())
+            .host(config!!.host)
             .port(resolvedPort)
             .apply {
                 addBasePathSegments()
                 addPathSegment("panel_api.php")
 
                 // Credentials first for panel_api
-                addQueryParameter("username", config.username)
-                addQueryParameter("password", config.password)
+                addQueryParameter("username", config!!.username)
+                addQueryParameter("password", config!!.password)
 
                 // Action if specified
                 if (!action.isNullOrBlank()) {
@@ -132,6 +152,7 @@ class XtreamUrlBuilder(
                 params.forEach { (key, value) -> addQueryParameter(key, value) }
             }.build()
             .toString()
+    }
 
     // =========================================================================
     // Playback URLs
@@ -146,9 +167,10 @@ class XtreamUrlBuilder(
         streamId: Int,
         extension: String? = null,
     ): String {
+        requireNotNull(config) { "XtreamUrlBuilder not configured - call configure() first" }
         val ext =
             normalizeExtension(
-                extension ?: config.liveExtPrefs.firstOrNull() ?: "m3u8",
+                extension ?: config!!.liveExtPrefs.firstOrNull() ?: "m3u8",
                 isLive = true,
             )
         return playUrl("live", streamId, ext)
@@ -163,7 +185,8 @@ class XtreamUrlBuilder(
         vodId: Int,
         containerExtension: String? = null,
     ): String {
-        val ext = sanitizeExtension(containerExtension ?: config.vodExtPrefs.firstOrNull() ?: "m3u8")
+        requireNotNull(config) { "XtreamUrlBuilder not configured - call configure() first" }
+        val ext = sanitizeExtension(containerExtension ?: config!!.vodExtPrefs.firstOrNull() ?: "m3u8")
         return playUrl(vodKind, vodId, ext)
     }
 
@@ -200,13 +223,14 @@ class XtreamUrlBuilder(
         episodeId: Int? = null,
         containerExtension: String? = null,
     ): String {
+        requireNotNull(config) { "XtreamUrlBuilder not configured - call configure() first" }
         // SSOT: Use containerExtension if provided
         val ext =
             if (!containerExtension.isNullOrBlank()) {
                 sanitizeSeriesExtension(containerExtension)
             } else {
                 // Minimal fallback: mkv only (consistent with DefaultXtreamApiClient)
-                config.seriesExtPrefs.firstOrNull()?.let { sanitizeSeriesExtension(it) }
+                config!!.seriesExtPrefs.firstOrNull()?.let { sanitizeSeriesExtension(it) }
                     ?: "mkv" // First fallback: mkv
             }
 
@@ -215,9 +239,9 @@ class XtreamUrlBuilder(
             return buildString {
                 append(baseUrl)
                 append("/series/")
-                append(urlEncode(config.username))
+                append(urlEncode(config!!.username))
                 append("/")
-                append(urlEncode(config.password))
+                append(urlEncode(config!!.password))
                 append("/")
                 append(episodeId)
                 append(".")
@@ -229,9 +253,9 @@ class XtreamUrlBuilder(
         return buildString {
             append(baseUrl)
             append("/series/")
-            append(urlEncode(config.username))
+            append(urlEncode(config!!.username))
             append("/")
-            append(urlEncode(config.password))
+            append(urlEncode(config!!.password))
             append("/")
             append(seriesId)
             append("/")
@@ -247,20 +271,22 @@ class XtreamUrlBuilder(
         kind: String,
         id: Int,
         ext: String,
-    ): String =
-        buildString {
+    ): String {
+        requireNotNull(config) { "XtreamUrlBuilder not configured - call configure() first" }
+        return buildString {
             append(baseUrl)
             append("/")
             append(kind)
             append("/")
-            append(urlEncode(config.username))
+            append(urlEncode(config!!.username))
             append("/")
-            append(urlEncode(config.password))
+            append(urlEncode(config!!.password))
             append("/")
             append(id)
             append(".")
             append(ext)
         }
+    }
 
     // =========================================================================
     // M3U / XMLTV URLs
@@ -277,40 +303,44 @@ class XtreamUrlBuilder(
     fun m3uUrl(
         type: String? = "m3u_plus",
         output: String? = null,
-    ): String =
-        HttpUrl
+    ): String {
+        requireNotNull(config) { "XtreamUrlBuilder not configured - call configure() first" }
+        return HttpUrl
             .Builder()
-            .scheme(config.scheme.lowercase())
-            .host(config.host)
+            .scheme(config!!.scheme.lowercase())
+            .host(config!!.host)
             .port(resolvedPort)
             .apply {
                 addBasePathSegments()
                 addPathSegment("get.php")
-                addQueryParameter("username", config.username)
-                addQueryParameter("password", config.password)
+                addQueryParameter("username", config!!.username)
+                addQueryParameter("password", config!!.password)
                 type?.let { addQueryParameter("type", it) }
                 output?.let { addQueryParameter("output", it) }
             }.build()
             .toString()
+    }
 
     /**
      * Build xmltv.php URL for EPG data.
      *
      * Format: {base}/xmltv.php?username={user}&password={pass}
      */
-    fun xmltvUrl(): String =
-        HttpUrl
+    fun xmltvUrl(): String {
+        requireNotNull(config) { "XtreamUrlBuilder not configured - call configure() first" }
+        return HttpUrl
             .Builder()
-            .scheme(config.scheme.lowercase())
-            .host(config.host)
+            .scheme(config!!.scheme.lowercase())
+            .host(config!!.host)
             .port(resolvedPort)
             .apply {
                 addBasePathSegments()
                 addPathSegment("xmltv.php")
-                addQueryParameter("username", config.username)
-                addQueryParameter("password", config.password)
+                addQueryParameter("username", config!!.username)
+                addQueryParameter("password", config!!.password)
             }.build()
             .toString()
+    }
 
     // =========================================================================
     // Catchup / Timeshift URLs
@@ -330,23 +360,25 @@ class XtreamUrlBuilder(
         streamId: Int,
         startTimestamp: Long,
         durationMinutes: Int,
-    ): String =
-        HttpUrl
+    ): String {
+        requireNotNull(config) { "XtreamUrlBuilder not configured - call configure() first" }
+        return HttpUrl
             .Builder()
-            .scheme(config.scheme.lowercase())
-            .host(config.host)
+            .scheme(config!!.scheme.lowercase())
+            .host(config!!.host)
             .port(resolvedPort)
             .apply {
                 addBasePathSegments()
                 addPathSegment("streaming")
                 addPathSegment("timeshift.php")
-                addQueryParameter("username", config.username)
-                addQueryParameter("password", config.password)
+                addQueryParameter("username", config!!.username)
+                addQueryParameter("password", config!!.password)
                 addQueryParameter("stream", streamId.toString())
                 addQueryParameter("start", startTimestamp.toString())
                 addQueryParameter("duration", durationMinutes.toString())
             }.build()
             .toString()
+    }
 
     /**
      * Alternative catchup format (some XUI.ONE panels).
@@ -358,13 +390,14 @@ class XtreamUrlBuilder(
         startIso: String,
         durationMinutes: Int,
         extension: String = "ts",
-    ): String =
-        buildString {
+    ): String {
+        requireNotNull(config) { "XtreamUrlBuilder not configured - call configure() first" }
+        return buildString {
             append(baseUrl)
             append("/timeshift/")
-            append(urlEncode(config.username))
+            append(urlEncode(config!!.username))
             append("/")
-            append(urlEncode(config.password))
+            append(urlEncode(config!!.password))
             append("/")
             append(durationMinutes)
             append("/")
@@ -374,6 +407,7 @@ class XtreamUrlBuilder(
             append(".")
             append(sanitizeExtension(extension))
         }
+    }
 
     // =========================================================================
     // Credential Parsing (M3U URL → Config)
@@ -466,7 +500,8 @@ class XtreamUrlBuilder(
     // =========================================================================
 
     private fun HttpUrl.Builder.addBasePathSegments() {
-        config.basePath?.let { bp ->
+        requireNotNull(config) { "XtreamUrlBuilder not configured - call configure() first" }
+        config!!.basePath?.let { bp ->
             val normalized = normalizeBasePath(bp).removePrefix("/")
             if (normalized.isNotEmpty()) {
                 normalized.split('/').filter { it.isNotBlank() }.forEach { seg ->

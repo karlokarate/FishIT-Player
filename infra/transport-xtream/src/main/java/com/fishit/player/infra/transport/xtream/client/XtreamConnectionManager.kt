@@ -42,6 +42,7 @@ class XtreamConnectionManager @Inject constructor(
     private val httpClient: HttpClient,
     private val json: Json,
     private val discovery: XtreamDiscovery,
+    private val urlBuilder: XtreamUrlBuilder,
     private val io: CoroutineDispatcher = Dispatchers.IO,
     private val capabilityStore: XtreamCapabilityStore? = null,
     private val portStore: XtreamPortStore? = null,
@@ -62,8 +63,6 @@ class XtreamConnectionManager @Inject constructor(
         private set
     var vodKind: String = "vod"
         internal set
-    var urlBuilder: XtreamUrlBuilder? = null
-        private set
 
     companion object {
         private const val TAG = "XtreamConnectionMgr"
@@ -142,7 +141,7 @@ class XtreamConnectionManager @Inject constructor(
         _authState.value = XtreamAuthState.Unknown
         _capabilities = null
         config = null
-        urlBuilder = null
+        // urlBuilder is injected and persists across connections
     }
 
     /**
@@ -330,8 +329,9 @@ class XtreamConnectionManager @Inject constructor(
         port: Int,
         cacheKey: String,
     ): XtreamCapabilities {
-        val builder = XtreamUrlBuilder(config, port, "vod")
-        urlBuilder = builder
+        // Configure the injected urlBuilder
+        urlBuilder.configure(config, port)
+        urlBuilder.updateVodKind("vod")
 
         return discovery.discoverCapabilities(
             config = config,
@@ -346,8 +346,7 @@ class XtreamConnectionManager @Inject constructor(
 
     private fun buildPlayerApiUrl(action: String?): String {
         val cfg = config ?: throw IllegalStateException("Client not initialized")
-        val builder = urlBuilder ?: XtreamUrlBuilder(cfg, resolvedPort, vodKind)
-        return builder.playerApiUrl(action)
+        return urlBuilder.playerApiUrl(action)
     }
 
     /**
