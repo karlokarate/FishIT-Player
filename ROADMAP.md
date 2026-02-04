@@ -137,28 +137,38 @@ For v1 roadmap history, see `legacy/docs/ROADMAP_v1.md`.
 **Status:** 🚧 In progress  
 **Goal:** Complete all main UI screens with v2 architecture.
 
+### 🔴 Navigation Blockers (HIGH PRIORITY)
+
+- [ ] **Settings navigation:** Wire Settings-Button action (app-v2/navigation/AppNavHost.kt:88)
+- [ ] **Player navigation:** Wire Play-Button to player route (app-v2/navigation/AppNavHost.kt:119)
+
 ### Home Screen 🚧 PARTIAL
 
 - [x] Basic structure with debug content
-- [ ] Wire catalog data from NxWorkRepository
-- [ ] Implement Continue Watching row
-- [ ] Implement Recently Added row
-- [ ] Add genre/category rows
-- [ ] Navigate to detail screen (feature/home/HomeViewModel.kt:415)
-- [ ] Implement full genre list (feature/home/HomeViewModel.kt:485)
+- [x] Wire catalog data from NxWorkRepository
+- [x] Implement Continue Watching row
+- [x] Implement Recently Added row
+- [x] Add genre/category rows
+- [ ] Navigate to detail screen on item click (feature/home/HomeViewModel.kt:415)
+- [ ] Implement full genre list query (feature/home/HomeViewModel.kt:485 - currently limited list)
 
 ### Detail Screen 🚧 PARTIAL
 
 - [x] Basic unified detail for all media types
 - [ ] Load resume position from ResumeRepository (feature/detail/UnifiedDetailViewModel.kt:665)
-- [ ] Build quality/language/format info from variant metadata (feature/detail/DetailSourceInfo.kt:101-103)
+- [ ] Build quality/language/format info from variant metadata:
+  - [ ] Extract quality from qualityTag/width/height (feature/detail/DetailSourceInfo.kt:101)
+  - [ ] Extract languages from language field (feature/detail/DetailSourceInfo.kt:102)
+  - [ ] Extract format from containerFormat (feature/detail/DetailSourceInfo.kt:103)
 - [ ] Series episode list with progress indicators
 - [ ] Related content recommendations
 
 ### Telegram Media Browser 🚧 PARTIAL
 
 - [x] Basic chat list + media grid
+- [ ] Add thumbnail image loading with Coil (feature/telegram-media/TelegramMediaScreen.kt:174)
 - [ ] Add resume support for tap-to-play (feature/telegram-media/TelegramTapToPlayUseCase.kt:83)
+- [ ] Implement Telegram context loading from repository for deep link playback (app-v2/navigation/PlayerNavViewModel.kt:217)
 
 ### Library Screen 🔲 PLANNED
 
@@ -175,6 +185,7 @@ For v1 roadmap history, see `legacy/docs/ROADMAP_v1.md`.
 
 ### Settings 🔲 PLANNED
 
+- [ ] **Navigation:** Wire Settings navigation (app-v2/navigation/AppNavHost.kt:88)
 - [ ] Profile management (create/edit/delete profiles)
 - [ ] Playback preferences (language, quality, subtitles)
 - [ ] Cache management (TDLib, Coil, HTTP)
@@ -213,9 +224,11 @@ For v1 roadmap history, see `legacy/docs/ROADMAP_v1.md`.
 
 ### IO Pipeline 🔲 PLANNED
 
+- [ ] **Full implementation needed:** Currently stub only (app-v2/work/IoQuickScanWorker.kt:82)
 - [ ] Local file scanning
 - [ ] Metadata extraction (MediaMetadataRetriever)
 - [ ] Integration with Android MediaStore
+- [ ] Implement CatalogSyncService.syncIo()
 
 ### Audiobook Pipeline 🔲 FUTURE
 
@@ -249,7 +262,8 @@ For v1 roadmap history, see `legacy/docs/ROADMAP_v1.md`.
 
 ### TMDB Integration 🚧 PARTIAL
 
-- [ ] Read TMDB API key from BuildConfig (core/metadata-normalizer/TmdbConfig.kt:71)
+- [ ] **TMDB API Key Configuration:** Configure BuildConfig.TMDB_API_KEY and update DefaultTmdbConfigProvider (core/metadata-normalizer/TmdbConfig.kt:71)
+- [ ] **TmdbEnrichmentBatchWorker:** Implement full search resolution via TmdbMetadataResolver (app-v2/work/TmdbEnrichmentBatchWorker.kt:285, 312)
 - [ ] Implement TmdbMetadataResolver.resolveByTmdbId() (infra/data-detail/DetailEnrichmentServiceImpl.kt:*)
 - [ ] Background enrichment worker
 - [ ] Retry logic for failed lookups
@@ -326,6 +340,7 @@ For v1 roadmap history, see `legacy/docs/ROADMAP_v1.md`.
 
 ### User State 🔲 PLANNED
 
+- [ ] **DefaultResumeManager:** Replace in-memory storage with ObjectBox persistence (playback/domain/DefaultResumeManager.kt:34)
 - [ ] Per-profile resume positions (via NX_WorkUserState)
 - [ ] Per-profile favorites/watchlist
 - [ ] lastSourceKey/lastVariantKey tracking (infra/data-nx TODOs)
