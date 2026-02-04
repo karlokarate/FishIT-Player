@@ -137,11 +137,6 @@ For v1 roadmap history, see `legacy/docs/ROADMAP_v1.md`.
 **Status:** 🚧 In progress  
 **Goal:** Complete all main UI screens with v2 architecture.
 
-### 🔴 Navigation Blockers (HIGH PRIORITY)
-
-- [ ] **Settings navigation:** Wire Settings-Button action (app-v2/navigation/AppNavHost.kt:88)
-- [ ] **Player navigation:** Wire Play-Button to player route (app-v2/navigation/AppNavHost.kt:119)
-
 ### Home Screen 🚧 PARTIAL
 
 - [x] Basic structure with debug content
@@ -149,7 +144,7 @@ For v1 roadmap history, see `legacy/docs/ROADMAP_v1.md`.
 - [x] Implement Continue Watching row
 - [x] Implement Recently Added row
 - [x] Add genre/category rows
-- [ ] Navigate to detail screen on item click (feature/home/HomeViewModel.kt:415)
+- [x] Navigation to detail/player screens (AppNavHost.kt:135-152, 203-214)
 - [ ] Implement full genre list query (feature/home/HomeViewModel.kt:485 - currently limited list)
 
 ### Detail Screen 🚧 PARTIAL
