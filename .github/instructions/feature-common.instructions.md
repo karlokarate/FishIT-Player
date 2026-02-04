@@ -5,6 +5,10 @@ applyTo:
 
 # 🏆 PLATIN Instructions:  feature/* (Common Rules)
 
+**Version:** 1.0  
+**Last Updated:** 2026-02-04  
+**Status:** Active
+
 > **PLATIN STANDARD** - Feature Layer (UI + ViewModel) - Gemeinsame Regeln. 
 >
 > **Purpose:** Diese Rules gelten für ALLE feature-Module ohne Ausnahme. 

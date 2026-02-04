@@ -5,6 +5,10 @@ applyTo:
 
 # 🏆 PLATIN Instructions: infra/work
 
+**Version:** 1.0  
+**Last Updated:** 2026-02-04  
+**Status:** Active
+
 > **PLATIN STANDARD** - WorkManager Infrastructure & Source Activation Store.
 >
 > **Purpose:** Provides the infrastructure layer for background sync scheduling

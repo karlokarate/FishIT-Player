@@ -6,6 +6,10 @@ applyTo:
 
 # 🏆 PLATIN Instructions:  core/ui-layout + core/ui-theme
 
+**Version:** 1.0  
+**Last Updated:** 2026-02-04  
+**Status:** Active
+
 > **PLATIN STANDARD** - FishUI Design System.
 >
 > **Purpose:** Provides the unified UI component library (FishTile, FishRow) and theme tokens

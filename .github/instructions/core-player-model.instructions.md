@@ -5,6 +5,10 @@ applyTo:
 
 # Copilot Instructions: core/player-model
 
+**Version:** 1.0  
+**Last Updated:** 2026-02-04  
+**Status:** Active
+
 > **Module Purpose:** Primitive, source-agnostic types for the player system.
 > This is the BOTTOM of the player layer stack - all player modules depend on this.
 
