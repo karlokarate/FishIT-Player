@@ -315,8 +315,8 @@ abstract class NxDataModule {
     /**
      * Binds the NX-based TelegramMediaRepository implementation.
      *
-     * This replaces the legacy TelegramMediaRepositoryAdapter from infra:data-telegram.
-     * The TelegramDataModule binding MUST be removed to avoid duplicate bindings.
+     * This is the ONLY implementation for TelegramMediaRepository.
+     * Legacy TelegramMediaRepositoryAdapter has been removed per AUDIT_LEGACY_WILDWUCHS_2026.md.
      */
     @Binds
     @Singleton

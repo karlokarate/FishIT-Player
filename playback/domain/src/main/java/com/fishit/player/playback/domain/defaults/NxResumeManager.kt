@@ -18,12 +18,8 @@ import javax.inject.Singleton
  * - Profile-aware: each profile has independent resume positions via profileKey
  * - Cloud-sync ready: cloudSyncState is automatically managed by repository
  *
- * **Migration from ObxResumeManager:**
- * - Replaces CanonicalMediaRepository with NxWorkUserStateRepository
- * - Uses workKey (NX canonical key) instead of CanonicalMediaId
- * - Simpler implementation: no MediaSourceRef handling needed (NX graph handles it)
- *
- * @see ObxResumeManager for deprecated OBX-based implementation
+ * **Note:** This is the ONLY ResumeManager implementation. Legacy stub implementations
+ * (DefaultResumeManager, ObxResumeManager) have been removed per AUDIT_LEGACY_WILDWUCHS_2026.md.
  */
 @Singleton
 class NxResumeManager
