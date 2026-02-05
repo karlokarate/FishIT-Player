@@ -716,6 +716,12 @@ data class XtreamAudioInfo(
 // EPG (Electronic Program Guide)
 // =============================================================================
 
+/** EPG response wrapper for get_short_epg and get_simple_data_table. */
+@Serializable
+data class XtreamEpgResponse(
+    @SerialName("epg_listings") val epgListings: List<XtreamEpgProgramme>? = null,
+)
+
 /** EPG programme from get_short_epg. */
 @Serializable
 data class XtreamEpgProgramme(

@@ -1,5 +1,15 @@
 {
   "servers": {
+    "scope-guard": {
+      "type": "stdio",
+      "command": "node",
+      "args": [
+        "${workspaceFolder}/tools/scope-guard-mcp/dist/index.js"
+      ],
+      "env": {
+        "WORKSPACE_ROOT": "${workspaceFolder}"
+      }
+    },
     "sequential-thinking": {
       "type": "stdio",
       "command": "npx",

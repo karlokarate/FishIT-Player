@@ -392,6 +392,159 @@ For v1 roadmap history, see `legacy/docs/ROADMAP_v1.md`.
 
 ---
 
+## 11. Xtream Category-Based Selective Sync
+
+**Status:** ✅ PHASE 1-4 COMPLETE (Issue #669)
+**Goal:** Let users choose which Xtream categories to sync instead of downloading everything.
+
+**User Story:**
+> After entering Xtream credentials, instead of immediately starting a full catalog sync,
+> the user sees all available categories from the server and selects which VOD, Series,
+> and Live categories to download. Only selected categories are then synced and persisted.
+
+**Dependencies:**
+- Transport layer: Category fetchers ✅ READY (`XtreamCategoryFetcher`)
+- Persistence: `NX_Category` entity ✅ EXISTS (but unused)
+- Persistence: `NX_WorkCategoryRef` linking table ✅ EXISTS (but unused)
+
+### Phase 1: Category Fetch on Credential Entry ✅ COMPLETE
+
+**Trigger:** After user enters Xtream credentials on Startscreen, before worker starts.
+
+- [x] **Create `XtreamCategoryPreloader`** in `core/catalog-sync`:
+  - Calls `getLiveCategories()`, `getVodCategories()`, `getSeriesCategories()` via transport
+  - Returns `CategoryPreloadResult` sealed class with all three lists
+  - Holds results in memory (categories are small, ~1-5 KB typical)
+- [x] **Add CategoryPreloadResult sealed class:**
+  - `Success(liveCategories, vodCategories, seriesCategories)`
+  - `Error(message, cause)`
+  - For UI state handling
+- [ ] **Enhance `NxKeyGenerator.xtreamAccountKey()` for readable format:**
+  - Current: `xtream:<hex_hash>` (e.g., `xtream:7f3a2b1c`) – works but opaque
+  - Proposed: `xtream:<normalized_host>:<short_hash>` (e.g., `xtream:iptv.server.com:7f3a`)
+  - Benefits: Human-readable (which server), still unique (hash differentiates multi-account)
+  - Location: `core/persistence/obx/NxKeyGenerator.kt`
+  - Add `extractHost(serverUrl)` helper (strips `http://`, `www.`, port, path)
+  - Use short hash (4-6 hex chars) to keep key length reasonable
+- [ ] **Generate accountKey at credential validation (before sync):**
+  - After successful `get_account_info` API call, immediately:
+    1. Call `NxKeyGenerator.xtreamAccountKey(host, username)`
+    2. Create `NX_SourceAccount` with accountKey, host, username, encrypted credential
+  - accountKey must exist BEFORE any category fetch or sync
+  - All subsequent NX_* entities will reference this accountKey
+- [ ] **Modify Settings/Onboarding flow:**
+  - After credential validation succeeds, do NOT start sync worker immediately
+  - Instead navigate to Category Selection screen
+
+### Phase 2: Category Selection UI ✅ COMPLETE
+
+**New screen:** `feature/settings` `CategorySelectionScreen`
+
+- [x] **Three collapsible sections:**
+  - VOD Categories (expandable)
+  - Series Categories (expandable)
+  - Live Categories (expandable)
+- [x] **Per-section controls:**
+  - "Select All" checkbox at top of each section
+  - Toggling "Select All" checks/unchecks all children
+- [x] **Individual category checkboxes:**
+  - Display `categoryName` from API
+  - Store `categoryId` for sync filtering
+- [x] **Save/Cancel buttons:**
+  - "Save" persists selection via `NxCategorySelectionRepository`
+  - "Cancel" returns to previous screen without syncing
+- [x] **Loading state:**
+  - Show spinner while categories are being fetched
+  - Handle empty category lists gracefully
+- [x] **Empty state:**
+  - "No categories available" message if lists empty
+- [x] **ViewModel:**
+  - `CategorySelectionViewModel` uses `XtreamCategoryPreloader`
+  - Handles preloading, selection state, persistence
+
+### Phase 3: Category Selection Persistence ✅ COMPLETE
+
+**Storage:** Per-account category selection in `NX_XtreamCategorySelection` entity.
+
+- [x] **Create `NX_XtreamCategorySelection` entity** in `core/persistence`:
+  - Uses JSON-encoded lists for selected category IDs
+  - References `accountKey` for per-account storage
+  - Includes `selectAll*` flags for each content type
+- [x] **Create `CategorySelectionMapper`** for domain ↔ entity mapping:
+  - Converts between entity format and domain `CategorySelection`
+  - Handles JSON serialization/deserialization
+- [x] **Create `NxCategorySelectionRepository`** interface in `core/model`:
+  - `saveSelection(accountKey, type, selectedIds)`
+  - `getSelectedCategoryIds(accountKey, type): List<String>`
+  - `clearSelection(accountKey, type)`
+  - `setSelectAll(accountKey, type, value: Boolean)`
+- [x] **Create `NxCategorySelectionRepositoryImpl`** in `infra/data-nx`:
+  - ObjectBox-backed implementation
+
+### Phase 4: Selective Sync Worker Modification ✅ COMPLETE
+
+**Goal:** Modify `CatalogSyncService.syncXtreamBuffered()` to filter by selected categories.
+
+- [x] **Add category filter parameters to `XtreamCatalogConfig`:**
+  - `vodCategoryIds: Set<String>` (empty = all)
+  - `seriesCategoryIds: Set<String>` (empty = all)
+  - `liveCategoryIds: Set<String>` (empty = all)
+- [x] **Update pipeline phases with filtering:**
+  - `VodItemPhase`: Filters by `vodItem.categoryId`
+  - `SeriesItemPhase`: Filters by `seriesItem.categoryId`
+  - `LiveChannelPhase`: Filters by `liveChannel.categoryId`
+  - Empty filter set = include all (backward compatible)
+- [x] **Update `CatalogSyncService.syncXtreamBuffered()` interface:**
+  - Added `vodCategoryIds`, `seriesCategoryIds`, `liveCategoryIds` parameters
+- [x] **Update `DefaultCatalogSyncService` implementation:**
+  - Passes category IDs to `XtreamCatalogConfig`
+- [x] **Wire `XtreamCatalogScanWorker` to read selections:**
+  - Injects `NxCategorySelectionRepository`
+  - Reads selections using `accountKey` from `xtreamApiClient.capabilities`
+  - Passes to `syncXtreamBuffered()` call
+
+### Phase 5: Re-Selection & Settings Access 🔲 PLANNED
+
+**Allow users to change category selection after initial setup.**
+
+- [ ] **Add "Manage Categories" in Settings:**
+  - Per Xtream account, show "Edit Categories" option
+  - Re-opens `XtreamCategorySelectionScreen` with current selection pre-checked
+- [ ] **Re-sync after selection change:**
+  - When user changes selection and saves:
+  - Optionally delete items from now-unselected categories
+  - Trigger incremental sync for newly-selected categories
+- [ ] **Show category count in settings:**
+  - "VOD: 5/12 categories selected"
+  - "Series: All (8 categories)"
+  - "Live: 3/20 categories selected"
+
+### Implementation Notes
+
+**API Calls (per Xtream API spec):**
+```
+GET /player_api.php?action=get_live_categories
+GET /player_api.php?action=get_vod_categories
+GET /player_api.php?action=get_series_categories
+
+GET /player_api.php?action=get_live_streams&category_id=X
+GET /player_api.php?action=get_vod_streams&category_id=X
+GET /player_api.php?action=get_series&category_id=X
+```
+
+**Benefits:**
+- Reduces initial sync time dramatically (only download relevant content)
+- Reduces storage usage (no unwanted categories)
+- Gives users control over what appears in their library
+- Enables "kids-friendly" setups by excluding adult categories
+
+**Risk Mitigation:**
+- If category fetch fails, offer "Sync All" fallback button
+- Store category selection separately from content sync state
+- Allow skipping category selection (default = all categories)
+
+---
+
 ## Notes
 
 **Theme-Based Structure:**

@@ -1,0 +1,161 @@
+{
+  "maxFilesPerScope": 50,
+  "maxLOCPerScope": 15000,
+  "freshnessWarningDays": 30,
+  "requireUserConfirmation": true,
+  "auditLogPath": ".scope/audit.log",
+  "globalExcludes": [
+    "**/build/**",
+    "**/.gradle/**",
+    "**/.idea/**",
+    "**/*.iml",
+    "**/.git/**",
+    "**/node_modules/**",
+    "**/*.log",
+    "**/*.tmp",
+    "**/*.bak",
+    "**/.DS_Store",
+    "**/Thumbs.db",
+    "**/local.properties",
+    "**/*.keystore",
+    "**/*.jks",
+    "**/generated/**",
+    "**/.kotlin/**",
+    "**/dist/**"
+  ],
+  "readOnlyPaths": [
+    "legacy/**",
+    "app/**",
+    "AGENTS.md",
+    ".github/copilot-instructions.md"
+  ],
+  "bundles": {
+    "gradle-config": {
+      "description": "Gradle build configuration - highly interdependent",
+      "patterns": [
+        "build.gradle.kts",
+        "settings.gradle.kts",
+        "gradle.properties",
+        "gradle/**",
+        "**/build.gradle.kts",
+        "detekt-config.yml"
+      ],
+      "invariants": [
+        "Use libs.* from version catalog for ALL dependencies",
+        "Register new modules in settings.gradle.kts",
+        "No hardcoded versions in build.gradle.kts",
+        "Detekt rules apply project-wide"
+      ],
+      "mandatoryReadBeforeEdit": [
+        "gradle/libs.versions.toml",
+        "settings.gradle.kts"
+      ]
+    },
+    "agent-governance": {
+      "description": "Agent instruction files - controls ALL agent behavior",
+      "patterns": [
+        "AGENTS.md",
+        ".github/copilot-instructions.md",
+        ".github/instructions/**",
+        "docs/meta/AGENT_RULES_CANONICAL*.md",
+        "contracts/GLOSSARY_v2_naming_and_modules.md"
+      ],
+      "ssot": "docs/meta/AGENT_RULES_CANONICAL.md",
+      "generated": [
+        "AGENTS.md",
+        ".github/copilot-instructions.md"
+      ],
+      "invariants": [
+        "AGENTS.md is GENERATED - edit AGENT_RULES_CANONICAL.md instead",
+        "Sync via scripts/sync-agent-rules.sh",
+        "Path-scoped instructions must match AGENTS.md",
+        "GLOSSARY defines all naming conventions"
+      ],
+      "mandatoryReadBeforeEdit": [
+        "docs/meta/AGENT_RULES_CANONICAL.md",
+        "contracts/GLOSSARY_v2_naming_and_modules.md"
+      ]
+    },
+    "scope-system": {
+      "description": "Scope Guard system itself - self-referential protection",
+      "patterns": [
+        ".scope/**",
+        "tools/scope-guard-mcp/**",
+        ".github/instructions/scope-guard.instructions.md"
+      ],
+      "invariants": [
+        "Schema must cover all features",
+        "Server code must validate against schema",
+        "Instructions must document all tools",
+        "Config changes require server rebuild"
+      ],
+      "mandatoryReadBeforeEdit": [
+        ".scope/scope-guard.schema.json",
+        ".scope/scope-guard.config.json"
+      ]
+    },
+    "contracts": {
+      "description": "Architecture contracts - BINDING for all code",
+      "patterns": [
+        "contracts/*.md"
+      ],
+      "invariants": [
+        "Contracts are BINDING - code must comply",
+        "Changes require impact analysis on all scopes",
+        "GLOSSARY is SSOT for naming",
+        "Player contracts (7 files) must be consistent"
+      ],
+      "mandatoryReadBeforeEdit": [
+        "contracts/GLOSSARY_v2_naming_and_modules.md"
+      ]
+    },
+    "ci-infra": {
+      "description": "CI/CD and development environment",
+      "patterns": [
+        ".github/workflows/**",
+        ".devcontainer/**",
+        ".vscode/mcp.json",
+        ".vscode/tasks.json",
+        "scripts/build/**"
+      ],
+      "invariants": [
+        "Workflows must match Gradle tasks",
+        "Devcontainer must configure all MCP servers",
+        "Post-create/start scripts must be idempotent"
+      ]
+    }
+  },
+  "scopeFileSchema": {
+    "required": [
+      "scopeId",
+      "version",
+      "modules"
+    ],
+    "properties": {
+      "scopeId": "Unique identifier (kebab-case, e.g., 'catalog-sync')",
+      "version": "Semver version of the scope definition",
+      "description": "Human-readable description of what this scope covers",
+      "modules": "Object mapping module paths to their metadata",
+      "mandatoryReadBeforeEdit": "Array of documents that MUST be read first",
+      "globalInvariants": "Rules that apply to ALL files in this scope",
+      "forbiddenPatterns": "Array of {pattern, reason} for code validation",
+      "relatedScopes": "Array of scope IDs that should also be read",
+      "lastVerified": "ISO date when scope was last verified accurate",
+      "auditedBy": "Who verified the scope"
+    },
+    "moduleProperties": {
+      "fileCount": "Number of files in module",
+      "totalLOC": "Lines of code in module",
+      "criticalFiles": "Array of files with specific invariants",
+      "diModules": "Dagger/Hilt modules in this scope",
+      "handlers": "Handler classes in this scope"
+    },
+    "criticalFileProperties": {
+      "path": "File path relative to module",
+      "loc": "Lines of code",
+      "purpose": "What this file does",
+      "invariants": "Rules specific to this file",
+      "knownBugs": "Known issues in this file"
+    }
+  }
+}

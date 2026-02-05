@@ -1,6 +1,6 @@
 package com.fishit.player.infra.transport.xtream
 
-import com.fishit.player.infra.transport.xtream.model.XtreamCapabilities
+// XtreamCapabilities is in XtreamApiModels.kt (same package)
 
 /**
  * Interface for caching Xtream API capabilities.

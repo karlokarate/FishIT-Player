@@ -27,6 +27,7 @@ android {
 dependencies {
     // Core dependencies
     implementation(project(":core:model"))
+    implementation(project(":core:sync-common")) // Shared sync infrastructure
     implementation(project(":core:source-activation-api"))
     implementation(project(":core:feature-api")) // For TelegramAuthRepository (userId validation)
     implementation(project(":core:metadata-normalizer"))

@@ -5,7 +5,6 @@ import com.fishit.player.infra.http.HttpClient
 import com.fishit.player.infra.http.RequestConfig
 import com.fishit.player.infra.http.CacheConfig
 import com.fishit.player.infra.logging.UnifiedLog
-import com.fishit.player.infra.transport.xtream.PortKey
 import com.fishit.player.infra.transport.xtream.XtreamApiConfig
 import com.fishit.player.infra.transport.xtream.XtreamAuthState
 import com.fishit.player.infra.transport.xtream.XtreamCapabilities
@@ -306,25 +305,40 @@ class XtreamConnectionManager @Inject constructor(
         }
     }
 
+    /**
+     * Get panel info (server URL/name).
+     * CC: 2
+     */
+    suspend fun getPanelInfo(): String? =
+        getServerInfo().getOrNull()?.serverInfo?.url
+
+    /**
+     * Get normalized user info.
+     * CC: 3
+     */
+    suspend fun getUserInfo(): Result<XtreamUserInfo> =
+        getServerInfo().mapCatching { serverInfo ->
+            val raw = serverInfo.userInfo
+                ?: throw Exception("No user info in server response")
+            XtreamUserInfo.fromRaw(raw)
+        }
+
     // =========================================================================
     // Private helpers
     // =========================================================================
 
     private suspend fun resolvePort(config: XtreamApiConfig): Int {
-        val portKey = PortKey(
-            scheme = config.scheme,
-            host = config.host,
-            username = config.username,
-        )
+        // Use host as cache key for port resolution
+        val cacheKey = config.host
         
-        portStore?.getResolvedPort(portKey)?.let { cached ->
+        portStore?.get(cacheKey)?.let { cached ->
             UnifiedLog.d(TAG) { "Using cached port: $cached" }
             return cached
         }
 
         val discovered = discovery.resolvePort(config)
         if (discovered != config.port) {
-            portStore?.putResolvedPort(portKey, discovered)
+            portStore?.put(cacheKey, discovered)
         }
 
         return discovered
@@ -365,4 +379,46 @@ class XtreamConnectionManager @Inject constructor(
         val result = httpClient.fetch(url, RequestConfig(cache = cache))
         return result.getOrNull()
     }
+
+    // =========================================================================
+    // URL Building (Delegating to XtreamUrlBuilder)
+    // =========================================================================
+
+    /**
+     * Build live stream playback URL.
+     */
+    fun buildLiveUrl(streamId: Int, extension: String? = null): String =
+        urlBuilder.liveUrl(streamId, extension)
+
+    /**
+     * Build VOD playback URL.
+     */
+    fun buildVodUrl(vodId: Int, containerExtension: String?): String =
+        urlBuilder.vodUrl(vodId, containerExtension)
+
+    /**
+     * Build series episode playback URL.
+     */
+    fun buildSeriesEpisodeUrl(
+        seriesId: Int,
+        seasonNumber: Int,
+        episodeNumber: Int,
+        episodeId: Int? = null,
+        containerExtension: String? = null,
+    ): String = urlBuilder.seriesEpisodeUrl(seriesId, seasonNumber, episodeNumber, episodeId, containerExtension)
+
+    /**
+     * Build catchup/timeshift URL.
+     */
+    fun buildCatchupUrl(streamId: Int, start: Long, duration: Int): String? =
+        urlBuilder.catchupUrl(streamId, start, duration)
+
+    /**
+     * Raw API call using player_api.php.
+     */
+    suspend fun rawApiCall(action: String, params: Map<String, String>): String? =
+        withContext(io) {
+            val url = urlBuilder.playerApiUrl(action, params)
+            fetchRaw(url, isEpg = false)
+        }
 }

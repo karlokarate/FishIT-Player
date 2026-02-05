@@ -23,10 +23,24 @@ class XtreamSeriesEpisodeUrlTest {
             seriesExtPrefs = listOf("mkv"),
         )
 
+    /**
+     * Helper to create a configured XtreamUrlBuilder.
+     * Uses the new configure() + updateVodKind() API pattern.
+     */
+    private fun createBuilder(
+        cfg: XtreamApiConfig = config,
+        resolvedPort: Int = 8080,
+        vodKind: String = "vod",
+    ): XtreamUrlBuilder =
+        XtreamUrlBuilder().apply {
+            configure(cfg, resolvedPort)
+            updateVodKind(vodKind)
+        }
+
     @Test
     fun `series episode URL uses series path for direct episodeId`() {
         // Given a URL builder with vodKind = "movie"
-        val builder = XtreamUrlBuilder(config, resolvedPort = 8080, vodKind = "movie")
+        val builder = createBuilder(vodKind = "movie")
 
         // When building series episode URL with episodeId
         val url =
@@ -48,7 +62,7 @@ class XtreamSeriesEpisodeUrlTest {
     @Test
     fun `series episode URL always uses series path regardless of vodKind`() {
         // Given a URL builder with vodKind = "vod"
-        val builder = XtreamUrlBuilder(config, resolvedPort = 8080, vodKind = "vod")
+        val builder = createBuilder(vodKind = "vod")
 
         // When building series episode URL with episodeId
         val url =
@@ -69,7 +83,7 @@ class XtreamSeriesEpisodeUrlTest {
     @Test
     fun `series episode URL uses series path for legacy format`() {
         // Given a URL builder with vodKind = "movie"
-        val builder = XtreamUrlBuilder(config, resolvedPort = 8080, vodKind = "movie")
+        val builder = createBuilder(vodKind = "movie")
 
         // When building series episode URL without episodeId (legacy format)
         val url =
@@ -91,7 +105,7 @@ class XtreamSeriesEpisodeUrlTest {
     @Test
     fun `series episode URL respects container extension as SSOT`() {
         // Given a URL builder
-        val builder = XtreamUrlBuilder(config, resolvedPort = 8080, vodKind = "movie")
+        val builder = createBuilder(vodKind = "movie")
 
         // When building URL with mkv container extension (even though config prefers mp4)
         val url =
@@ -111,7 +125,7 @@ class XtreamSeriesEpisodeUrlTest {
     @Test
     fun `XtreamUrlBuilder uses series path for episode URLs`() {
         // Given a URL builder with vodKind = "movie"
-        val builder = XtreamUrlBuilder(config, resolvedPort = 8080, vodKind = "movie")
+        val builder = createBuilder(vodKind = "movie")
 
         // When building series episode URL
         val url =
@@ -135,7 +149,7 @@ class XtreamSeriesEpisodeUrlTest {
     @Test
     fun `series episode URL format differs from VOD URL format`() {
         // Given a URL builder
-        val builder = XtreamUrlBuilder(config, resolvedPort = 8080, vodKind = "movie")
+        val builder = createBuilder(vodKind = "movie")
 
         // When building VOD URL and series episode URL with same ID
         val vodUrl = builder.vodUrl(vodId = 456, containerExtension = "mkv")
@@ -174,7 +188,7 @@ class XtreamSeriesEpisodeUrlTest {
                 password = "pass+word",
             )
 
-        val builder = XtreamUrlBuilder(specialConfig, resolvedPort = 8080, vodKind = "movie")
+        val builder = createBuilder(cfg = specialConfig, vodKind = "movie")
 
         // When building series episode URL
         val url =

@@ -42,13 +42,23 @@ internal class LiveChannelPhase @Inject constructor(
         if (!config.includeLive) return
 
         val phaseStart = System.currentTimeMillis()
-        UnifiedLog.d(TAG, "[LIVE] Starting parallel scan (streaming)...")
+        val categoryFilter = config.liveCategoryIds
+        val hasFilter = categoryFilter.isNotEmpty()
+        UnifiedLog.d(TAG, "[LIVE] Starting parallel scan (streaming)${if (hasFilter) " with ${categoryFilter.size} category filter(s)" else ""}...")
         
         try {
             source.streamLiveChannels(batchSize = config.batchSize) { batch ->
                 for (liveChannel in batch) {
                     // Check cancellation
                     if (!currentCoroutineContext().isActive) return@streamLiveChannels
+                    
+                    // Issue #669: Filter by category if filter is configured
+                    if (hasFilter) {
+                        val itemCategoryId = liveChannel.categoryId
+                        if (itemCategoryId == null || itemCategoryId !in categoryFilter) {
+                            continue
+                        }
+                    }
 
                     // Map and emit
                     val catalogItem = mapper.fromChannel(liveChannel, headers, config.accountName)

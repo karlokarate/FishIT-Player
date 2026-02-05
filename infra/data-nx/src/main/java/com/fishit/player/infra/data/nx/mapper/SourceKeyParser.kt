@@ -39,6 +39,8 @@
  */
 package com.fishit.player.infra.data.nx.mapper
 
+import com.fishit.player.core.model.SourceType
+
 /**
  * Parsed representation of a sourceKey.
  *
@@ -68,6 +70,34 @@ data class ParsedSourceKey(
  * 4. Null-safe extraction with clear fallback behavior
  */
 object SourceKeyParser {
+
+    // =========================================================================
+    // Builder Functions
+    // =========================================================================
+
+    /**
+     * Build a sourceKey from components.
+     *
+     * SourceKey format: `src:{sourceType}:{accountKey}:{sourceId}`
+     * where sourceId contains `{itemKind}:{itemKey}`
+     *
+     * Examples:
+     * - `src:xtream:user@iptv.server:vod:12345`
+     * - `src:telegram:+491234567890:file:123456789:987654321`
+     *
+     * @param sourceType The source type enum
+     * @param accountKey The account identifier (readable format per NX_SSOT_CONTRACT)
+     * @param sourceId The item-specific identifier containing kind and key
+     * @return Complete sourceKey string
+     */
+    fun buildSourceKey(sourceType: SourceType, accountKey: String, sourceId: String): String {
+        return "src:${sourceType.name.lowercase()}:$accountKey:$sourceId"
+    }
+
+    // =========================================================================
+    // Parser Functions
+    // =========================================================================
+
     /**
      * Parse a sourceKey into structured components.
      *

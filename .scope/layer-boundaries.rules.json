@@ -1,0 +1,212 @@
+{
+  "$schema": "./scope-guard.schema.json",
+  "scopeId": "layer-boundaries",
+  "version": "1.0.0",
+  "description": "Detailed layer boundary rules and responsibilities for v2 architecture",
+  "modules": [
+    "all"
+  ],
+  "layerHierarchy": [
+    "UI/Feature → Domain → Data → Pipeline → Transport → core:model"
+  ],
+  "layers": {
+    "core:model": {
+      "path": "core/model/**",
+      "responsibility": "Central source-agnostic models",
+      "allowed": [
+        "RawMediaMetadata",
+        "MediaType",
+        "SourceType",
+        "ImageRef",
+        "ExternalIds",
+        "Simple value types (IDs, Timestamps, Enums)"
+      ],
+      "forbidden": [
+        "Network logic",
+        "Database code",
+        "Source-specific code",
+        "ExoPlayer/Playback types"
+      ]
+    },
+    "transport": {
+      "path": "infra/transport-*/**",
+      "responsibility": "External API integration (TDLib, HTTP)",
+      "produces": [
+        "TgMessage",
+        "TgContent",
+        "TgChat",
+        "API responses"
+      ],
+      "allowed": [
+        "TDLib/Xtream API integration",
+        "Auth state machine",
+        "Connection state management",
+        "Mapping raw DTOs to wrappers"
+      ],
+      "forbidden": [
+        "RawMediaMetadata creation",
+        "Normalization logic",
+        "UI code",
+        "Repository access",
+        "Pipeline imports"
+      ]
+    },
+    "pipeline": {
+      "path": "pipeline/*/**",
+      "responsibility": "Catalog production",
+      "produces": [
+        "RawMediaMetadata via toRawMediaMetadata()"
+      ],
+      "allowed": [
+        "Catalog pipeline interfaces",
+        "Internal DTOs (not exported)",
+        "toRawMediaMetadata() extensions",
+        "CatalogItem events"
+      ],
+      "forbidden": [
+        "Direct TDLib DTOs (TdApi.*)",
+        "Network/download code",
+        "ExoPlayer imports",
+        "Database access",
+        "TMDB lookups",
+        "Persistence imports"
+      ]
+    },
+    "normalizer": {
+      "path": "core/metadata-normalizer/**",
+      "responsibility": "Metadata enrichment",
+      "input": "RawMediaMetadata",
+      "output": "NormalizedMedia",
+      "allowed": [
+        "Title cleanup",
+        "Season/episode parsing",
+        "Adult/family detection",
+        "TMDB/IMDB lookups",
+        "Language detection"
+      ],
+      "forbidden": [
+        "Direct transport access",
+        "Pipeline calls",
+        "Player/Playback imports",
+        "Database writes"
+      ]
+    },
+    "data": {
+      "path": "infra/data-*/**",
+      "responsibility": "Persistence and repository pattern",
+      "allowed": [
+        "Repository implementations",
+        "ObjectBox entities (Obx*, NX_*)",
+        "Consume RawMediaMetadata from pipeline events",
+        "Provide Flows for UI/Domain"
+      ],
+      "forbidden": [
+        "Pipeline DTOs (TelegramMediaItem, XtreamVodItem)",
+        "Transport implementation details",
+        "ExoPlayer imports"
+      ]
+    },
+    "domain": {
+      "path": "core/*-domain/**",
+      "responsibility": "Business logic and use cases",
+      "allowed": [
+        "Use cases",
+        "Coordinate pipelines, repos, player",
+        "Build PlaybackContext",
+        "Profile/policy management"
+      ],
+      "forbidden": [
+        "Direct transport calls",
+        "TDLib/Xtream API",
+        "UI framework imports"
+      ]
+    },
+    "playback": {
+      "path": "playback/*/**",
+      "responsibility": "Source-specific playback factories",
+      "allowed": [
+        "PlaybackSourceFactory implementations",
+        "DataSource implementations",
+        "Transport interface consumption"
+      ],
+      "forbidden": [
+        "Pipeline DTOs",
+        "Direct repository manipulation",
+        "Pipeline imports"
+      ]
+    },
+    "player": {
+      "path": "player/*/**",
+      "responsibility": "Media3/ExoPlayer internal player",
+      "allowed": [
+        "InternalPlayerSession",
+        "PlaybackContext consumption",
+        "Set<PlaybackSourceFactory> via @Multibinds"
+      ],
+      "forbidden": [
+        "Pipeline imports",
+        "Data/Repository imports",
+        "Transport implementation imports",
+        "Source-specific logic"
+      ]
+    },
+    "ui": {
+      "path": "feature/*/**",
+      "responsibility": "Screens and ViewModels",
+      "allowed": [
+        "Consume NxWorkRepository",
+        "Use cases from domain",
+        "Navigation"
+      ],
+      "forbidden": [
+        "Obx* entities",
+        "Transport imports",
+        "Pipeline imports",
+        "Normalizer direct access"
+      ]
+    }
+  },
+  "forbiddenCrossLayerImports": [
+    {
+      "from": "pipeline",
+      "to": "data/obx/*",
+      "reason": "Pipeline cannot access persistence"
+    },
+    {
+      "from": "pipeline",
+      "to": "playback",
+      "reason": "Pipeline cannot access playback"
+    },
+    {
+      "from": "transport",
+      "to": "pipeline",
+      "reason": "Transport cannot access pipeline"
+    },
+    {
+      "from": "data",
+      "to": "TelegramMediaItem|XtreamVodItem",
+      "reason": "Data cannot use pipeline DTOs"
+    },
+    {
+      "from": "playback",
+      "to": "pipeline DTOs",
+      "reason": "Playback uses RawMediaMetadata only"
+    },
+    {
+      "from": "player",
+      "to": "pipeline|data",
+      "reason": "Player is source-agnostic"
+    },
+    {
+      "from": "ui/feature",
+      "to": "Obx*Entity",
+      "reason": "UI uses NX_* only (INV-6)"
+    }
+  ],
+  "verificationCommands": [
+    "grep -rn 'import.*data\\.obx\\|import.*ObxTelegram\\|import.*ObxXtream' pipeline/",
+    "grep -rn 'import.*TelegramMediaItem\\|import.*XtreamVodItem' infra/data-*/",
+    "grep -rn 'import.*TelegramMediaItem\\|import.*XtreamVodItem' playback/",
+    "grep -rn 'import.*pipeline\\|import.*data' player/"
+  ]
+}

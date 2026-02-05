@@ -812,3 +812,64 @@ data class NX_EpgEntry(
         return (elapsed.toFloat() / durationMs).coerceIn(0f, 1f)
     }
 }
+
+// =============================================================================
+// 18. NX_XtreamCategorySelection - User Category Selections for Sync
+// =============================================================================
+
+/**
+ * Tracks which Xtream categories are selected for synchronization.
+ *
+ * Part of Issue #669 - Sync by Category Implementation.
+ *
+ * **Purpose:**
+ * - Allows users to select specific categories to include in catalog sync
+ * - Reduces sync time by only syncing selected categories
+ * - Persists selections across app restarts
+ *
+ * **Key format:** `xtream:<accountKey>:<categoryType>:<sourceCategoryId>`
+ *
+ * **Usage:**
+ * - UI displays all categories from [XtreamCategoryPreloader]
+ * - User toggles categories on/off
+ * - Selections are saved here
+ * - Catalog sync reads selections to filter categories
+ *
+ * @property selectionKey Unique key for this selection
+ * @property accountKey Xtream account key
+ * @property categoryType VOD, SERIES, or LIVE
+ * @property sourceCategoryId Category ID from Xtream server
+ * @property categoryName Display name (cached for UI)
+ * @property isSelected Whether this category is selected for sync
+ */
+@Entity
+data class NX_XtreamCategorySelection(
+    @Id var id: Long = 0,
+    /** Unique selection key: `xtream:<accountKey>:<categoryType>:<sourceCategoryId>` */
+    @Unique @Index var selectionKey: String = "",
+    /** Xtream account key */
+    @Index var accountKey: String = "",
+    /** Category type: VOD, SERIES, LIVE */
+    @Index var categoryType: String = "VOD",
+    /** Category ID from Xtream server */
+    @Index var sourceCategoryId: String = "",
+    /** Display name (cached from server) */
+    var categoryName: String = "",
+    /** Whether this category is selected for sync */
+    @Index var isSelected: Boolean = true,
+    /** Parent category ID (for hierarchy display) */
+    var parentId: Int? = null,
+    /** Sort order (from server) */
+    var sortOrder: Int = 0,
+    var createdAt: Long = System.currentTimeMillis(),
+    var updatedAt: Long = System.currentTimeMillis(),
+) {
+    companion object {
+        /**
+         * Generate selection key from components.
+         */
+        fun generateKey(accountKey: String, categoryType: String, sourceCategoryId: String): String =
+            "xtream:$accountKey:$categoryType:$sourceCategoryId"
+    }
+}
+

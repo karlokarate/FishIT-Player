@@ -80,8 +80,12 @@ class DefaultXtreamApiClient @Inject constructor(
     override suspend fun getLiveCategories(): List<XtreamCategory> =
         categoryFetcher.getLiveCategories()
 
-    override suspend fun getVodCategories(): List<XtreamCategory> =
-        categoryFetcher.getVodCategories()
+    override suspend fun getVodCategories(): List<XtreamCategory> {
+        // categoryFetcher returns Pair<List, vodKind> - extract list only
+        val currentVodKind = connectionManager.vodKind
+        val (categories, _) = categoryFetcher.getVodCategories(currentVodKind)
+        return categories
+    }
 
     override suspend fun getSeriesCategories(): List<XtreamCategory> =
         categoryFetcher.getSeriesCategories()
@@ -159,6 +163,53 @@ class DefaultXtreamApiClient @Inject constructor(
     override suspend fun getSeriesInfo(seriesId: Int): XtreamSeriesInfo? =
         streamFetcher.getSeriesInfo(seriesId)
 
-    override suspend fun getEpgForStream(streamId: Int, limit: Int?): List<XtreamEpgEntry> =
-        streamFetcher.getEpgForStream(streamId, limit)
+    // =========================================================================
+    // EPG Methods (Delegated to StreamFetcher)
+    // =========================================================================
+
+    override suspend fun getShortEpg(streamId: Int, limit: Int): List<XtreamEpgProgramme> =
+        streamFetcher.getShortEpg(streamId, limit)
+
+    override suspend fun getFullEpg(streamId: Int): List<XtreamEpgProgramme> =
+        streamFetcher.getFullEpg(streamId)
+
+    override suspend fun prefetchEpg(streamIds: List<Int>, perStreamLimit: Int) =
+        streamFetcher.prefetchEpg(streamIds, perStreamLimit)
+
+    // =========================================================================
+    // URL Building Methods (Delegated to ConnectionManager)
+    // =========================================================================
+
+    override fun buildLiveUrl(streamId: Int, extension: String?): String =
+        connectionManager.buildLiveUrl(streamId, extension)
+
+    override fun buildVodUrl(vodId: Int, containerExtension: String?): String =
+        connectionManager.buildVodUrl(vodId, containerExtension)
+
+    override fun buildSeriesEpisodeUrl(
+        seriesId: Int,
+        seasonNumber: Int,
+        episodeNumber: Int,
+        episodeId: Int?,
+        containerExtension: String?,
+    ): String = connectionManager.buildSeriesEpisodeUrl(
+        seriesId, seasonNumber, episodeNumber, episodeId, containerExtension,
+    )
+
+    override fun buildCatchupUrl(streamId: Int, start: Long, duration: Int): String? =
+        connectionManager.buildCatchupUrl(streamId, start, duration)
+
+    // =========================================================================
+    // Search and Raw API
+    // =========================================================================
+
+    override suspend fun search(
+        query: String,
+        types: Set<XtreamContentType>,
+        limit: Int,
+    ): XtreamSearchResults =
+        streamFetcher.search(query, types, limit)
+
+    override suspend fun rawApiCall(action: String, params: Map<String, String>): String? =
+        connectionManager.rawApiCall(action, params)
 }

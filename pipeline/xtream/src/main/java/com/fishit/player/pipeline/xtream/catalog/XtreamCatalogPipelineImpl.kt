@@ -1,6 +1,7 @@
 package com.fishit.player.pipeline.xtream.catalog
 
 import com.fishit.player.infra.logging.UnifiedLog
+import com.fishit.player.pipeline.xtream.adapter.XtreamPipelineAdapter
 import com.fishit.player.pipeline.xtream.catalog.phase.PhaseScanOrchestrator
 import com.fishit.player.pipeline.xtream.debug.XtcLogger
 import kotlinx.coroutines.CancellationException
@@ -17,6 +18,7 @@ import javax.inject.Inject
  * - Delegates phase execution to [PhaseScanOrchestrator]
  * - Emits [XtreamCatalogEvent] through a cold Flow
  * - Handles completion and error states
+ * - Provides category fetching for selective sync
  *
  * **Architecture:**
  * - No DB writes, no UI interaction, no playback URL generation
@@ -50,11 +52,13 @@ import javax.inject.Inject
  * - Incremental updates don't require re-sorting everything
  *
  * @param orchestrator Coordinator for parallel phase execution
+ * @param adapter Pipeline adapter for category fetching
  */
 internal class XtreamCatalogPipelineImpl
     @Inject
     constructor(
         private val orchestrator: PhaseScanOrchestrator,
+        private val adapter: XtreamPipelineAdapter,
     ) : XtreamCatalogPipeline {
         override fun scanCatalog(config: XtreamCatalogConfig): Flow<XtreamCatalogEvent> =
             channelFlow {
@@ -135,7 +139,72 @@ internal class XtreamCatalogPipelineImpl
                 }
             }
 
+        // =========================================================================
+        // Category Discovery (for Selective Sync)
+        // =========================================================================
+
+        override suspend fun fetchCategories(config: XtreamCatalogConfig): XtreamCategoryResult =
+            try {
+                val vodCategories = adapter.getVodCategories().map { it.toCategoryInfo(XtreamCategoryType.VOD) }
+                val seriesCategories = adapter.getSeriesCategories().map { it.toCategoryInfo(XtreamCategoryType.SERIES) }
+                val liveCategories = adapter.getLiveCategories().map { it.toCategoryInfo(XtreamCategoryType.LIVE) }
+
+                UnifiedLog.i(TAG) {
+                    "Fetched categories: vod=${vodCategories.size}, " +
+                        "series=${seriesCategories.size}, live=${liveCategories.size}"
+                }
+
+                XtreamCategoryResult.Success(
+                    vodCategories = vodCategories,
+                    seriesCategories = seriesCategories,
+                    liveCategories = liveCategories,
+                )
+            } catch (e: Exception) {
+                UnifiedLog.e(TAG, "Failed to fetch categories", e)
+                XtreamCategoryResult.Error(
+                    message = e.message ?: "Unknown error fetching categories",
+                    cause = e,
+                )
+            }
+
+        override suspend fun fetchVodCategories(config: XtreamCatalogConfig): List<XtreamCategoryInfo> =
+            try {
+                adapter.getVodCategories().map { it.toCategoryInfo(XtreamCategoryType.VOD) }
+            } catch (e: Exception) {
+                UnifiedLog.e(TAG, "Failed to fetch VOD categories", e)
+                emptyList()
+            }
+
+        override suspend fun fetchSeriesCategories(config: XtreamCatalogConfig): List<XtreamCategoryInfo> =
+            try {
+                adapter.getSeriesCategories().map { it.toCategoryInfo(XtreamCategoryType.SERIES) }
+            } catch (e: Exception) {
+                UnifiedLog.e(TAG, "Failed to fetch series categories", e)
+                emptyList()
+            }
+
+        override suspend fun fetchLiveCategories(config: XtreamCatalogConfig): List<XtreamCategoryInfo> =
+            try {
+                adapter.getLiveCategories().map { it.toCategoryInfo(XtreamCategoryType.LIVE) }
+            } catch (e: Exception) {
+                UnifiedLog.e(TAG, "Failed to fetch live categories", e)
+                emptyList()
+            }
+
         companion object {
             private const val TAG = "XtreamCatalogPipeline"
         }
     }
+
+/**
+ * Map transport-layer XtreamCategory to pipeline-layer XtreamCategoryInfo.
+ */
+private fun com.fishit.player.infra.transport.xtream.XtreamCategory.toCategoryInfo(
+    type: XtreamCategoryType,
+): XtreamCategoryInfo =
+    XtreamCategoryInfo(
+        categoryId = id, // Uses safe accessor (categoryId.orEmpty())
+        categoryName = name, // Uses safe accessor (categoryName.orEmpty())
+        parentId = parentId,
+        categoryType = type,
+    )

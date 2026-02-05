@@ -198,6 +198,31 @@ class XtreamPipelineAdapter
                 episodeId = episodeId,
                 containerExtension = containerExtension,
             )
+
+        // ============================================================================
+        // Category Methods (for Selective Sync)
+        // ============================================================================
+
+        /**
+         * Fetch all VOD categories.
+         * @return List of VOD categories (empty on error)
+         */
+        suspend fun getVodCategories(): List<com.fishit.player.infra.transport.xtream.XtreamCategory> =
+            apiClient.getVodCategories()
+
+        /**
+         * Fetch all series categories.
+         * @return List of series categories (empty on error)
+         */
+        suspend fun getSeriesCategories(): List<com.fishit.player.infra.transport.xtream.XtreamCategory> =
+            apiClient.getSeriesCategories()
+
+        /**
+         * Fetch all live TV categories.
+         * @return List of live categories (empty on error)
+         */
+        suspend fun getLiveCategories(): List<com.fishit.player.infra.transport.xtream.XtreamCategory> =
+            apiClient.getLiveCategories()
     }
 
 // ============================================================================

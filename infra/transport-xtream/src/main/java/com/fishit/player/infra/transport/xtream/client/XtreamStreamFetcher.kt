@@ -5,7 +5,11 @@ import com.fishit.player.infra.http.HttpClient
 import com.fishit.player.infra.http.RequestConfig
 import com.fishit.player.infra.http.CacheConfig
 import com.fishit.player.infra.logging.UnifiedLog
+import com.fishit.player.infra.transport.xtream.XtreamContentType
+import com.fishit.player.infra.transport.xtream.XtreamEpgProgramme
+import com.fishit.player.infra.transport.xtream.XtreamEpgResponse
 import com.fishit.player.infra.transport.xtream.XtreamLiveStream
+import com.fishit.player.infra.transport.xtream.XtreamSearchResults
 import com.fishit.player.infra.transport.xtream.XtreamSeriesInfo
 import com.fishit.player.infra.transport.xtream.XtreamSeriesStream
 import com.fishit.player.infra.transport.xtream.XtreamUrlBuilder
@@ -48,6 +52,7 @@ class XtreamStreamFetcher @Inject constructor(
     companion object {
         private const val TAG = "XtreamStreamFetcher"
         private val VOD_ALIAS_CANDIDATES = listOf("vod", "movie", "movies")
+        private const val DEFAULT_VOD_KIND = "vod"
     }
 
     /**
@@ -63,56 +68,65 @@ class XtreamStreamFetcher @Inject constructor(
     }
 
     // =========================================================================
-    // List Endpoints (returns full list)
+    // List Endpoints (returns full list with client-side pagination)
     // =========================================================================
 
     /**
-     * Get VOD streams.
-     * CC: 3 (delegation to generic fetch)
+     * Get VOD streams with client-side pagination.
+     * Uses alias fallback (vod → movie → movies) for panel compatibility.
+     * CC: 4 (delegation + pagination)
      */
     suspend fun getVodStreams(
-        vodKind: String,
-        categoryId: String?,
+        categoryId: String? = null,
+        limit: Int = 500,
+        offset: Int = 0,
     ): List<XtreamVodStream> =
         withContext(io) {
-            fetchStreamsWithCategoryFallbackStreaming(
-                action = "get_${vodKind}_streams",
+            val all = fetchStreamsWithCategoryFallbackStreaming(
+                action = "get_${DEFAULT_VOD_KIND}_streams",
                 categoryId = categoryId,
                 streamingMapper = VodStreamMapper::fromStreaming,
                 fallbackMapper = VodStreamMapper::fromJsonObject,
             )
+            all.drop(offset).take(limit)
         }
 
     /**
-     * Get live streams.
-     * CC: 3
+     * Get live streams with client-side pagination.
+     * CC: 4 (delegation + pagination)
      */
     suspend fun getLiveStreams(
-        categoryId: String?,
+        categoryId: String? = null,
+        limit: Int = 500,
+        offset: Int = 0,
     ): List<XtreamLiveStream> =
         withContext(io) {
-            fetchStreamsWithCategoryFallbackStreaming(
+            val all = fetchStreamsWithCategoryFallbackStreaming(
                 action = "get_live_streams",
                 categoryId = categoryId,
                 streamingMapper = LiveStreamMapper::fromStreaming,
                 fallbackMapper = LiveStreamMapper::fromJsonObject,
             )
+            all.drop(offset).take(limit)
         }
 
     /**
-     * Get series.
-     * CC: 3
+     * Get series with client-side pagination.
+     * CC: 4 (delegation + pagination)
      */
     suspend fun getSeries(
-        categoryId: String?,
+        categoryId: String? = null,
+        limit: Int = 500,
+        offset: Int = 0,
     ): List<XtreamSeriesStream> =
         withContext(io) {
-            fetchStreamsWithCategoryFallbackStreaming(
+            val all = fetchStreamsWithCategoryFallbackStreaming(
                 action = "get_series",
                 categoryId = categoryId,
                 streamingMapper = SeriesStreamMapper::fromStreaming,
                 fallbackMapper = SeriesStreamMapper::fromJsonObject,
             )
+            all.drop(offset).take(limit)
         }
 
     // =========================================================================
@@ -120,41 +134,37 @@ class XtreamStreamFetcher @Inject constructor(
     // =========================================================================
 
     /**
-     * Stream VOD in batches.
+     * Stream VOD in batches with constant memory usage.
+     * Uses injected urlBuilder and alias fallback for panel compatibility.
      * CC: 4 (batch processing)
      */
     suspend fun streamVodInBatches(
-        urlBuilder: XtreamUrlBuilder,
-        vodKind: String,
-        batchSize: Int,
-        categoryId: String?,
+        batchSize: Int = 500,
+        categoryId: String? = null,
         onBatch: suspend (List<XtreamVodStream>) -> Unit,
     ): Int =
         withContext(io) {
             streamContentInBatches(
-                urlBuilder = urlBuilder,
-                action = "get_${vodKind}_streams",
+                action = "get_${DEFAULT_VOD_KIND}_streams",
                 categoryId = categoryId,
                 batchSize = batchSize,
-                aliases = listOf(vodKind) + VOD_ALIAS_CANDIDATES.filter { it != vodKind },
+                aliases = VOD_ALIAS_CANDIDATES,
                 mapper = VodStreamMapper::fromStreaming,
                 onBatch = onBatch,
             )
         }
 
     /**
-     * Stream series in batches.
+     * Stream series in batches with constant memory usage.
      * CC: 4
      */
     suspend fun streamSeriesInBatches(
-        urlBuilder: XtreamUrlBuilder,
-        batchSize: Int,
-        categoryId: String?,
+        batchSize: Int = 500,
+        categoryId: String? = null,
         onBatch: suspend (List<XtreamSeriesStream>) -> Unit,
     ): Int =
         withContext(io) {
             streamContentInBatches(
-                urlBuilder = urlBuilder,
                 action = "get_series",
                 categoryId = categoryId,
                 batchSize = batchSize,
@@ -165,18 +175,16 @@ class XtreamStreamFetcher @Inject constructor(
         }
 
     /**
-     * Stream live in batches.
+     * Stream live in batches with constant memory usage.
      * CC: 4
      */
     suspend fun streamLiveInBatches(
-        urlBuilder: XtreamUrlBuilder,
-        batchSize: Int,
-        categoryId: String?,
+        batchSize: Int = 500,
+        categoryId: String? = null,
         onBatch: suspend (List<XtreamLiveStream>) -> Unit,
     ): Int =
         withContext(io) {
             streamContentInBatches(
-                urlBuilder = urlBuilder,
                 action = "get_live_streams",
                 categoryId = categoryId,
                 batchSize = batchSize,
@@ -191,18 +199,14 @@ class XtreamStreamFetcher @Inject constructor(
     // =========================================================================
 
     /**
-     * Count VOD streams.
+     * Count VOD streams efficiently using streaming internals.
      * CC: 2
      */
     suspend fun countVodStreams(
-        urlBuilder: XtreamUrlBuilder,
-        vodKind: String,
-        categoryId: String?,
+        categoryId: String? = null,
     ): Int =
         runCatching {
             streamVodInBatches(
-                urlBuilder = urlBuilder,
-                vodKind = vodKind,
                 batchSize = 1000,
                 categoryId = categoryId,
                 onBatch = { /* Discard items, just count */ },
@@ -213,16 +217,14 @@ class XtreamStreamFetcher @Inject constructor(
         }
 
     /**
-     * Count series.
+     * Count series efficiently using streaming internals.
      * CC: 2
      */
     suspend fun countSeries(
-        urlBuilder: XtreamUrlBuilder,
-        categoryId: String?,
+        categoryId: String? = null,
     ): Int =
         runCatching {
             streamSeriesInBatches(
-                urlBuilder = urlBuilder,
                 batchSize = 1000,
                 categoryId = categoryId,
                 onBatch = { /* Discard items, just count */ },
@@ -233,16 +235,14 @@ class XtreamStreamFetcher @Inject constructor(
         }
 
     /**
-     * Count live streams.
+     * Count live streams efficiently using streaming internals.
      * CC: 2
      */
     suspend fun countLiveStreams(
-        urlBuilder: XtreamUrlBuilder,
-        categoryId: String?,
+        categoryId: String? = null,
     ): Int =
         runCatching {
             streamLiveInBatches(
-                urlBuilder = urlBuilder,
                 batchSize = 1000,
                 categoryId = categoryId,
                 onBatch = { /* Discard items, just count */ },
@@ -257,11 +257,10 @@ class XtreamStreamFetcher @Inject constructor(
     // =========================================================================
 
     /**
-     * Get VOD info.
+     * Get VOD info for a specific item.
      * CC: 4 (parsing and error handling)
      */
     suspend fun getVodInfo(
-        urlBuilder: XtreamUrlBuilder,
         vodId: Int,
     ): XtreamVodInfo? =
         withContext(io) {
@@ -280,11 +279,10 @@ class XtreamStreamFetcher @Inject constructor(
         }
 
     /**
-     * Get series info.
+     * Get series info including episodes.
      * CC: 4
      */
     suspend fun getSeriesInfo(
-        urlBuilder: XtreamUrlBuilder,
         seriesId: Int,
     ): XtreamSeriesInfo? =
         withContext(io) {
@@ -395,10 +393,10 @@ class XtreamStreamFetcher @Inject constructor(
 
     /**
      * Generic streaming batch method with category fallback.
+     * Uses injected urlBuilder and tries alias fallback for panel compatibility.
      * CC: ~9 (alias retry, category fallback)
      */
     private suspend fun <T> streamContentInBatches(
-        urlBuilder: XtreamUrlBuilder,
         action: String,
         categoryId: String?,
         batchSize: Int,
@@ -528,5 +526,89 @@ class XtreamStreamFetcher @Inject constructor(
                 StreamResponse(isSuccessful = false, inputStream = null)
             }
         )
+    }
+
+    // =========================================================================
+    // EPG Methods
+    // =========================================================================
+
+    /**
+     * Get short EPG for a stream.
+     * CC: 3
+     */
+    suspend fun getShortEpg(streamId: Int, limit: Int): List<XtreamEpgProgramme> =
+        withContext(io) {
+            val url = urlBuilder.playerApiUrl(
+                "get_short_epg",
+                mapOf("stream_id" to streamId.toString(), "limit" to limit.toString()),
+            )
+            fetchAndParseEpg(url)
+        }
+
+    /**
+     * Get full EPG for a stream.
+     * CC: 3
+     */
+    suspend fun getFullEpg(streamId: Int): List<XtreamEpgProgramme> =
+        withContext(io) {
+            val url = urlBuilder.playerApiUrl(
+                "get_simple_data_table",
+                mapOf("stream_id" to streamId.toString()),
+            )
+            fetchAndParseEpg(url)
+        }
+
+    /**
+     * Prefetch EPG for multiple streams (fire-and-forget).
+     * CC: 2
+     */
+    suspend fun prefetchEpg(streamIds: List<Int>, perStreamLimit: Int) {
+        // Fire and forget - just start the requests
+        streamIds.forEach { streamId ->
+            runCatching { getShortEpg(streamId, perStreamLimit) }
+        }
+    }
+
+    private suspend fun fetchAndParseEpg(url: String): List<XtreamEpgProgramme> {
+        val body = fetchRaw(url) ?: return emptyList()
+        return runCatching {
+            json.decodeFromString<XtreamEpgResponse>(body).epgListings ?: emptyList()
+        }.getOrElse { emptyList() }
+    }
+
+    // =========================================================================
+    // Search Methods
+    // =========================================================================
+
+    /**
+     * Search across content types (client-side filtering).
+     * CC: 5
+     */
+    suspend fun search(
+        query: String,
+        types: Set<XtreamContentType>,
+        limit: Int,
+    ): XtreamSearchResults = withContext(io) {
+        val lowerQuery = query.lowercase()
+
+        val live = if (XtreamContentType.LIVE in types) {
+            getLiveStreams(null, Int.MAX_VALUE, 0)
+                .filter { it.name?.lowercase()?.contains(lowerQuery) == true }
+                .take(limit)
+        } else emptyList()
+
+        val vod = if (XtreamContentType.VOD in types) {
+            getVodStreams(null, Int.MAX_VALUE, 0)
+                .filter { it.name?.lowercase()?.contains(lowerQuery) == true }
+                .take(limit)
+        } else emptyList()
+
+        val series = if (XtreamContentType.SERIES in types) {
+            getSeries(null, Int.MAX_VALUE, 0)
+                .filter { it.name?.lowercase()?.contains(lowerQuery) == true }
+                .take(limit)
+        } else emptyList()
+
+        XtreamSearchResults(live, vod, series)
     }
 }

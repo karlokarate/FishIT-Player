@@ -1,0 +1,104 @@
+{
+  "$schema": "./scope-guard.schema.json",
+  "scopeId": "persistence",
+  "version": "1.0.0",
+  "description": "ObjectBox entities and repositories. NX_* entities are UI SSOT.",
+  "mandatoryReadBeforeEdit": [
+    "AGENTS.md Section 4.3.3 (NX_Work UI SSOT)",
+    "contracts/NX_SSOT_CONTRACT.md",
+    ".github/instructions/infra-data.instructions.md",
+    ".github/instructions/core-persistence.instructions.md"
+  ],
+  "modules": {
+    "core/persistence": {
+      "fileCount": 20,
+      "totalLOC": 4500,
+      "entityPrefix": "NX_",
+      "criticalFiles": [
+        {
+          "path": "core/persistence/.../entity/nx/SyncTrackingEntities.kt",
+          "loc": 280,
+          "purpose": "NX_SyncCheckpoint + NX_ItemFingerprint",
+          "invariants": [
+            "NX_SyncCheckpoint tracks last sync time per source",
+            "NX_ItemFingerprint stores computed fingerprints"
+          ],
+          "notes": [
+            "Fingerprint COMPUTATION is NOT in this file - only storage",
+            "FingerprintComputation.kt needs to be created in catalog-sync"
+          ]
+        },
+        {
+          "path": "core/persistence/.../repository/FingerprintRepository.kt",
+          "loc": 320,
+          "purpose": "CRUD for NX_ItemFingerprint",
+          "invariants": [
+            "getFingerprintsAsMap() for efficient lookup",
+            "putFingerprints() for bulk insert",
+            "markStaleItems() for cleanup"
+          ]
+        },
+        {
+          "path": "core/persistence/.../repository/SyncCheckpointRepository.kt",
+          "loc": 284,
+          "purpose": "CRUD for NX_SyncCheckpoint",
+          "invariants": [
+            "getCheckpoint() returns null if first sync",
+            "recordSyncComplete() must be called after successful sync"
+          ]
+        }
+      ],
+      "entityTypes": [
+        "NX_Work (UI SSOT)",
+        "NX_WorkSourceRef (Source origin)",
+        "NX_WorkVariant (Playback info)",
+        "NX_WorkRelation (Series↔Episodes)",
+        "NX_WorkUserState (Resume per profile)",
+        "NX_SyncCheckpoint (Sync tracking)",
+        "NX_ItemFingerprint (Incremental sync)"
+      ]
+    }
+  },
+  "relatedScopes": [
+    "catalog-sync.scope.json"
+  ],
+  "globalInvariants": [
+    "UI screens MUST read from NX_* entities only - NEVER Obx* entities",
+    "No UI code may import from infra/data-obx",
+    "FingerprintRepository is in core/persistence - allowed in core/catalog-sync"
+  ],
+  "forbiddenPatterns": [
+    {
+      "pattern": "ObxCanonicalMediaRepository in feature/*",
+      "reason": "Use NxWorkRepository instead (INV-6)"
+    },
+    {
+      "pattern": "import.*ObxTelegram.*from feature/*",
+      "reason": "Use NX_* entities only"
+    }
+  ],
+  "consumers": [
+    {
+      "file": "core/catalog-sync/.../DefaultXtreamSyncService.kt",
+      "callsMethod": "SyncCheckpointRepository"
+    },
+    {
+      "file": "feature/home/.../HomeRepository.kt",
+      "callsMethod": "NxWorkRepository"
+    },
+    {
+      "file": "feature/detail/.../DetailRepository.kt",
+      "callsMethod": "NxWorkRepository + NxWorkRelationRepository"
+    }
+  ],
+  "testCoverage": {
+    "status": "CRITICAL_GAP",
+    "existingTests": [],
+    "missingTests": [
+      "FingerprintRepositoryTest.kt (0 tests for 320 LOC)",
+      "SyncCheckpointRepositoryTest.kt (0 tests for 284 LOC)"
+    ]
+  },
+  "lastVerified": "2025-02-05",
+  "auditedBy": "Multi-Agent Audit (5 parallel subagents)"
+}

@@ -10,6 +10,7 @@ import com.fishit.player.infra.transport.xtream.XtreamCredentialsStore
 import com.fishit.player.infra.transport.xtream.XtreamDiscovery
 import com.fishit.player.infra.transport.xtream.XtreamParallelism
 import com.fishit.player.infra.transport.xtream.XtreamTransportConfig
+import com.fishit.player.infra.transport.xtream.XtreamUrlBuilder
 import com.fishit.player.infra.transport.xtream.client.XtreamCategoryFetcher
 import com.fishit.player.infra.transport.xtream.client.XtreamConnectionManager
 import com.fishit.player.infra.transport.xtream.client.XtreamStreamFetcher
@@ -159,6 +160,10 @@ object XtreamTransportModule {
 
     @Provides
     @Singleton
+    fun provideXtreamUrlBuilder(): XtreamUrlBuilder = XtreamUrlBuilder()
+
+    @Provides
+    @Singleton
     fun provideXtreamDiscovery(
         @XtreamHttpClient okHttpClient: OkHttpClient,
         json: Json,
@@ -173,8 +178,9 @@ object XtreamTransportModule {
     fun provideConnectionManager(
         httpClient: HttpClient,
         json: Json,
+        urlBuilder: XtreamUrlBuilder,
         discovery: XtreamDiscovery,
-    ): XtreamConnectionManager = XtreamConnectionManager(httpClient, json, discovery)
+    ): XtreamConnectionManager = XtreamConnectionManager(httpClient, json, urlBuilder, discovery)
 
     /**
      * Provides XtreamCategoryFetcher - handles category operations.
@@ -184,7 +190,8 @@ object XtreamTransportModule {
     fun provideCategoryFetcher(
         httpClient: HttpClient,
         json: Json,
-    ): XtreamCategoryFetcher = XtreamCategoryFetcher(httpClient, json)
+        urlBuilder: XtreamUrlBuilder,
+    ): XtreamCategoryFetcher = XtreamCategoryFetcher(httpClient, json, urlBuilder)
 
     /**
      * Provides XtreamStreamFetcher - handles stream fetching and batch operations.
@@ -194,8 +201,9 @@ object XtreamTransportModule {
     fun provideStreamFetcher(
         httpClient: HttpClient,
         json: Json,
+        urlBuilder: XtreamUrlBuilder,
         fallbackStrategy: CategoryFallbackStrategy,
-    ): XtreamStreamFetcher = XtreamStreamFetcher(httpClient, json, fallbackStrategy)
+    ): XtreamStreamFetcher = XtreamStreamFetcher(httpClient, json, urlBuilder, fallbackStrategy)
 
     /**
      * Provides XtreamApiClient with handler injection.
@@ -210,20 +218,14 @@ object XtreamTransportModule {
     @Provides
     @Singleton
     fun provideXtreamApiClient(
-        @XtreamHttpClient okHttpClient: OkHttpClient,
-        json: Json,
-        parallelism: XtreamParallelism,
         connectionManager: XtreamConnectionManager,
         categoryFetcher: XtreamCategoryFetcher,
         streamFetcher: XtreamStreamFetcher,
     ): XtreamApiClient =
         DefaultXtreamApiClient(
-            okHttpClient,
-            json,
-            parallelism = parallelism,
-            connectionManager = connectionManager,
-            categoryFetcher = categoryFetcher,
-            streamFetcher = streamFetcher,
+            connectionManager,
+            categoryFetcher,
+            streamFetcher,
         )
 }
 

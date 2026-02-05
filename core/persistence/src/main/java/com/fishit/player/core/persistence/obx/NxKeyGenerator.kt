@@ -245,27 +245,88 @@ object NxKeyGenerator {
 
     /**
      * Generate Telegram account key from phone number.
+     *
+     * Format per NX_SSOT_CONTRACT Section 3.3: `telegram:{phoneNumber}`
+     * Example: `telegram:+491234567890`
+     *
+     * @param phoneNumber Phone number with country code (e.g., +491234567890)
+     * @return Account key in format `telegram:+491234567890`
      */
     fun telegramAccountKey(phoneNumber: String): String {
-        // Hash the phone number for privacy
-        val hash =
-            phoneNumber
-                .filter { it.isDigit() }
-                .hashCode()
-                .toUInt()
-                .toString(16)
-        return accountKey(SourceType.TELEGRAM, hash)
+        // Normalize: keep only digits and leading +
+        val normalized = phoneNumber
+            .trim()
+            .let { if (it.startsWith("+")) "+" + it.filter { c -> c.isDigit() } else it.filter { c -> c.isDigit() } }
+        require(normalized.isNotBlank()) { "Phone number required for Telegram account key" }
+        return accountKey(SourceType.TELEGRAM, normalized)
+    }
+
+    /**
+     * Generate Telegram account key from user ID.
+     *
+     * Alternative to [telegramAccountKey] for cases where phone number
+     * is not available (e.g., after login when only userId is cached).
+     *
+     * Format: `telegram:user:{userId}`
+     * Example: `telegram:user:123456789`
+     *
+     * @param userId Telegram user ID (from TDLib)
+     * @return Account key in format `telegram:user:{userId}`
+     */
+    fun telegramAccountKeyFromUserId(userId: Long): String {
+        require(userId > 0) { "Valid user ID required for Telegram account key" }
+        return accountKey(SourceType.TELEGRAM, "user:$userId")
     }
 
     /**
      * Generate Xtream account key from server URL and username.
+     *
+     * Format per NX_SSOT_CONTRACT Section 3.3: `xtream:{username}@{server}`
+     * Example: `xtream:user@iptv.server.com`
+     *
+     * @param serverUrl Server URL (http://iptv.server.com:8080/...)
+     * @param username Xtream username
+     * @return Account key in format `xtream:username@server.host`
      */
     fun xtreamAccountKey(
         serverUrl: String,
         username: String,
     ): String {
-        val hash = "$serverUrl:$username".hashCode().toUInt().toString(16)
-        return accountKey(SourceType.XTREAM, hash)
+        require(username.isNotBlank()) { "Username required for Xtream account key" }
+        val host = extractHost(serverUrl)
+        require(host.isNotBlank()) { "Valid server URL required for Xtream account key" }
+        return accountKey(SourceType.XTREAM, "$username@$host")
+    }
+
+    /**
+     * Generate Local/IO account key.
+     *
+     * Format per NX_SSOT_CONTRACT Section 3.3: `local:default`
+     * There's only one "local" source per device.
+     *
+     * @return Account key `local:default`
+     */
+    fun localAccountKey(): String = accountKey(SourceType.LOCAL, "default")
+
+    /**
+     * Extract normalized host from a URL.
+     *
+     * Strips protocol (http://, https://), www. prefix, port, and path.
+     * Example: "http://www.iptv.server.com:8080/path" → "iptv.server.com"
+     *
+     * @param url Full URL or host string
+     * @return Normalized host (lowercase, no protocol/port/path)
+     */
+    fun extractHost(url: String): String {
+        return url
+            .trim()
+            .lowercase(Locale.ROOT)
+            .removePrefix("https://")
+            .removePrefix("http://")
+            .removePrefix("www.")
+            .substringBefore(":")  // Remove port
+            .substringBefore("/")  // Remove path
+            .trim()
     }
 
     // =========================================================================

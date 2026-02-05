@@ -1,0 +1,175 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "scope-guard.schema.json",
+  "title": "Scope Guard",
+  "description": "Schema for Scope Guard files that enforce context retention during LLM editing sessions",
+  "type": "object",
+  "required": [
+    "scopeId",
+    "version",
+    "modules"
+  ],
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "scopeId": {
+      "type": "string",
+      "description": "Unique identifier for this scope (e.g., 'catalog-sync', 'persistence')"
+    },
+    "version": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "mandatoryReadBeforeEdit": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Documents/sections that MUST be read before any edit in this scope"
+    },
+    "modules": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "fileCount": {
+            "type": "integer"
+          },
+          "totalLOC": {
+            "type": "integer"
+          },
+          "criticalFiles": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "path",
+                "purpose"
+              ],
+              "properties": {
+                "path": {
+                  "type": "string"
+                },
+                "loc": {
+                  "type": "integer"
+                },
+                "purpose": {
+                  "type": "string"
+                },
+                "invariants": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "knownBugs": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          },
+          "diModules": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "handlers": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "relatedScopes": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Other scope files that should be considered together"
+    },
+    "globalInvariants": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Rules that apply to ALL files in this scope"
+    },
+    "forbiddenPatterns": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "pattern",
+          "reason"
+        ],
+        "properties": {
+          "pattern": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "consumers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "file"
+        ],
+        "properties": {
+          "file": {
+            "type": "string"
+          },
+          "callsMethod": {
+            "type": "string"
+          }
+        }
+      },
+      "description": "Files outside this scope that depend on it"
+    },
+    "testCoverage": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": [
+            "ADEQUATE",
+            "PARTIAL",
+            "CRITICAL_GAP"
+          ]
+        },
+        "existingTests": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "missingTests": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "lastVerified": {
+      "type": "string",
+      "format": "date"
+    },
+    "auditedBy": {
+      "type": "string"
+    }
+  }
+}

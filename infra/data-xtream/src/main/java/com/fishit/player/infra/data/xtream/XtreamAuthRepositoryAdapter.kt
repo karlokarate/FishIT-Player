@@ -1,6 +1,11 @@
 package com.fishit.player.infra.data.xtream
 
+import com.fishit.player.core.model.repository.NxSourceAccountRepository
+import com.fishit.player.core.model.repository.NxSourceAccountRepository.AccountStatus
+import com.fishit.player.core.model.repository.NxSourceAccountRepository.SourceAccount
+import com.fishit.player.core.model.repository.NxWorkSourceRefRepository.SourceType
 import com.fishit.player.core.onboarding.domain.XtreamAuthRepository
+import com.fishit.player.core.persistence.obx.NxKeyGenerator
 import com.fishit.player.core.sourceactivation.SourceActivationStore
 import com.fishit.player.core.sourceactivation.SourceErrorReason
 import com.fishit.player.infra.logging.UnifiedLog
@@ -58,6 +63,7 @@ class XtreamAuthRepositoryAdapter
         private val apiClient: XtreamApiClient,
         private val credentialsStore: XtreamCredentialsStore,
         private val sourceActivationStore: SourceActivationStore,
+        private val nxSourceAccountRepository: NxSourceAccountRepository,
         @Named("AppLifecycleScope") private val appScope: CoroutineScope,
     ) : XtreamAuthRepository {
         private val _connectionState = MutableStateFlow<DomainConnectionState>(DomainConnectionState.Disconnected)
@@ -128,16 +134,46 @@ class XtreamAuthRepositoryAdapter
             UnifiedLog.i(TAG) { "close: XTREAM source deactivated" }
         }
 
-        override suspend fun saveCredentials(config: DomainConfig) {
-            val storedConfig =
-                XtreamStoredConfig(
-                    scheme = config.scheme,
-                    host = config.host,
-                    port = config.port,
-                    username = config.username,
-                    password = config.password,
-                )
-            credentialsStore.write(storedConfig)
+/**
+     * Saves credentials and creates/updates the NX_SourceAccount entry.
+     *
+     * **SSOT (Single Source of Truth):**
+     * This method is the ONLY place where accountKey is generated for Xtream sources.
+     * The accountKey is deterministic: `xtream:<normalizedHost>:<shortHash>`.
+     *
+     * All downstream code (pipelines, sync, repositories) should receive the accountKey
+     * via NxSourceAccountRepository or the saved config - never regenerate it.
+     */
+    override suspend fun saveCredentials(config: DomainConfig) {
+        // SSOT: Generate accountKey here and only here for Xtream
+        val serverUrl = "${config.scheme}://${config.host}:${config.port}"
+        val accountKey = NxKeyGenerator.xtreamAccountKey(serverUrl, config.username)
+
+        UnifiedLog.d(TAG) { "saveCredentials: Generated accountKey=$accountKey for host=${config.host}" }
+
+        // Persist NX_SourceAccount (SSOT for account metadata)
+        val sourceAccount = SourceAccount(
+            accountKey = accountKey,
+            sourceType = SourceType.XTREAM,
+            label = "${config.username}@${config.host}",
+            status = AccountStatus.ACTIVE,
+            createdAtMs = System.currentTimeMillis(),
+            updatedAtMs = System.currentTimeMillis(),
+        )
+        nxSourceAccountRepository.upsert(sourceAccount)
+
+        // Persist transport-layer credentials
+        val storedConfig =
+            XtreamStoredConfig(
+                scheme = config.scheme,
+                host = config.host,
+                port = config.port,
+                username = config.username,
+                password = config.password,
+            )
+        credentialsStore.write(storedConfig)
+
+        UnifiedLog.i(TAG) { "saveCredentials: Xtream account persisted with key=$accountKey" }
         }
 
         override suspend fun clearCredentials() {

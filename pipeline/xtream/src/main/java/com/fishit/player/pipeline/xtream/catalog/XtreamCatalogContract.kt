@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.Flow
  * - Fetch VOD / Series / Episodes / Live channels from XtreamCatalogSource
  * - Map items to RawMediaMetadata (no normalization)
  * - Emit catalog events for higher-level CatalogSync modules
+ * - Fetch categories for category-based selective sync
  *
  * Non-responsibilities:
  * - No DB or search index writes
@@ -36,6 +37,112 @@ interface XtreamCatalogPipeline {
      * @return Cold Flow of catalog events
      */
     fun scanCatalog(config: XtreamCatalogConfig): Flow<XtreamCatalogEvent>
+
+    // =========================================================================
+    // Category Discovery (for Selective Sync)
+    // =========================================================================
+
+    /**
+     * Fetch all available categories from the Xtream server.
+     *
+     * Used for category selection UI before starting a full catalog sync.
+     * Categories are lightweight (typically 1-5 KB total).
+     *
+     * @param config Configuration with API credentials
+     * @return All categories grouped by type
+     */
+    suspend fun fetchCategories(config: XtreamCatalogConfig): XtreamCategoryResult
+
+    /**
+     * Fetch only VOD categories.
+     * @param config Configuration with API credentials
+     * @return List of VOD categories
+     */
+    suspend fun fetchVodCategories(config: XtreamCatalogConfig): List<XtreamCategoryInfo>
+
+    /**
+     * Fetch only Series categories.
+     * @param config Configuration with API credentials
+     * @return List of Series categories
+     */
+    suspend fun fetchSeriesCategories(config: XtreamCatalogConfig): List<XtreamCategoryInfo>
+
+    /**
+     * Fetch only Live categories.
+     * @param config Configuration with API credentials
+     * @return List of Live categories
+     */
+    suspend fun fetchLiveCategories(config: XtreamCatalogConfig): List<XtreamCategoryInfo>
+}
+
+// =============================================================================
+// Category Models (for Selective Sync)
+// =============================================================================
+
+/**
+ * Category information from Xtream API.
+ *
+ * Domain model for category - used in UI and sync logic.
+ * Decoupled from transport-layer XtreamCategory.
+ *
+ * @property categoryId Unique category ID from server
+ * @property categoryName Display name
+ * @property parentId Optional parent category ID (for hierarchy)
+ * @property categoryType VOD, SERIES, or LIVE
+ */
+data class XtreamCategoryInfo(
+    val categoryId: String,
+    val categoryName: String,
+    val parentId: Int? = null,
+    val categoryType: XtreamCategoryType,
+)
+
+/**
+ * Type of Xtream category.
+ */
+enum class XtreamCategoryType {
+    VOD,
+    SERIES,
+    LIVE,
+}
+
+/**
+ * Result of fetching all categories from Xtream server.
+ *
+ * Used by XtreamCategoryPreloader and category selection UI.
+ */
+sealed interface XtreamCategoryResult {
+    /**
+     * Categories fetched successfully.
+     *
+     * @property vodCategories VOD/Movie categories
+     * @property seriesCategories Series categories
+     * @property liveCategories Live TV categories
+     */
+    data class Success(
+        val vodCategories: List<XtreamCategoryInfo>,
+        val seriesCategories: List<XtreamCategoryInfo>,
+        val liveCategories: List<XtreamCategoryInfo>,
+    ) : XtreamCategoryResult {
+        /** Total category count across all types */
+        val totalCount: Int
+            get() = vodCategories.size + seriesCategories.size + liveCategories.size
+
+        /** Check if any categories are available */
+        val isEmpty: Boolean
+            get() = totalCount == 0
+    }
+
+    /**
+     * Category fetch failed.
+     *
+     * @property message Error description
+     * @property cause Optional underlying exception
+     */
+    data class Error(
+        val message: String,
+        val cause: Throwable? = null,
+    ) : XtreamCategoryResult
 }
 
 /**
@@ -50,6 +157,9 @@ interface XtreamCatalogPipeline {
  * @property batchSize Batch size for streaming (memory-efficient loading)
  * @property imageAuthHeaders Optional headers for authenticated image access
  * @property accountName Xtream account identifier (e.g., "konigtv") used for sourceLabel in RawMediaMetadata
+ * @property vodCategoryIds VOD category IDs to include (empty = all)
+ * @property seriesCategoryIds Series category IDs to include (empty = all)
+ * @property liveCategoryIds Live category IDs to include (empty = all)
  */
 data class XtreamCatalogConfig(
     val includeVod: Boolean = true,
@@ -61,6 +171,10 @@ data class XtreamCatalogConfig(
     val batchSize: Int = DEFAULT_BATCH_SIZE,
     val imageAuthHeaders: Map<String, String> = emptyMap(),
     val accountName: String = "xtream",
+    // Issue #669: Category filters for selective sync
+    val vodCategoryIds: Set<String> = emptySet(),
+    val seriesCategoryIds: Set<String> = emptySet(),
+    val liveCategoryIds: Set<String> = emptySet(),
 ) {
     companion object {
         /** Default parallelism for episode loading (4 concurrent series). */

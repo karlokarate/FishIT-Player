@@ -13,7 +13,9 @@
       "installJupyterlab": true
     }
   },
-  "forwardPorts": [8888],
+  "forwardPorts": [
+    8888
+  ],
   "portsAttributes": {
     "8888": {
       "label": "JupyterLab",
@@ -65,6 +67,15 @@
                 "-y",
                 "@modelcontextprotocol/server-sequential-thinking"
               ]
+            },
+            "scope-guard": {
+              "command": "node",
+              "args": [
+                "${containerWorkspaceFolder}/tools/scope-guard-mcp/dist/index.js"
+              ],
+              "env": {
+                "WORKSPACE_ROOT": "${containerWorkspaceFolder}"
+              }
             }
           }
         }

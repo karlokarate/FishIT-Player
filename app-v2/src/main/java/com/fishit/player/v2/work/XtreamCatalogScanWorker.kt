@@ -11,7 +11,9 @@ import com.fishit.player.core.catalogsync.SyncStatus
 import com.fishit.player.core.catalogsync.XtreamSyncCheckpoint
 import com.fishit.player.core.catalogsync.XtreamSyncPhase
 import com.fishit.player.core.model.MediaType
+import com.fishit.player.core.model.repository.NxCategorySelectionRepository
 import com.fishit.player.core.persistence.cache.HomeCacheInvalidator
+import com.fishit.player.core.persistence.obx.NxKeyGenerator
 import com.fishit.player.infra.data.xtream.XtreamCatalogRepository
 import com.fishit.player.infra.data.xtream.XtreamLiveRepository
 import com.fishit.player.infra.logging.UnifiedLog
@@ -69,6 +71,7 @@ class XtreamCatalogScanWorker
         private val xtreamApiClient: XtreamApiClient,
         private val homeCacheInvalidator: HomeCacheInvalidator, // ✅ Phase 2: Cache invalidation
         private val priorityDispatcher: ApiPriorityDispatcher, // ✅ Priority cooperation
+        private val categorySelectionRepository: NxCategorySelectionRepository, // Issue #669: Category-based sync
     ) : CoroutineWorker(context, workerParams) {
         companion object {
             private const val TAG = "XtreamCatalogScanWorker"
@@ -361,6 +364,41 @@ class XtreamCatalogScanWorker
                 val bufferSize = if (input.isFireTvLowRam) 500 else 1000
                 val consumerCount = if (input.isFireTvLowRam) 2 else 3
 
+                // =================================================================
+                // Issue #669: Category-Based Selective Sync
+                // Read user's category selections to filter sync to only selected categories.
+                // Empty set = include all categories (backward compatible)
+                // =================================================================
+                val capabilities = xtreamApiClient.capabilities
+                val (vodCategoryIds, seriesCategoryIds, liveCategoryIds) = if (capabilities != null) {
+                    val accountKey = NxKeyGenerator.xtreamAccountKey(
+                        serverUrl = capabilities.baseUrl,
+                        username = capabilities.username,
+                    )
+                    Triple(
+                        categorySelectionRepository.getSelectedCategoryIds(
+                            accountKey,
+                            NxCategorySelectionRepository.XtreamCategoryType.VOD,
+                        ).toSet(),
+                        categorySelectionRepository.getSelectedCategoryIds(
+                            accountKey,
+                            NxCategorySelectionRepository.XtreamCategoryType.SERIES,
+                        ).toSet(),
+                        categorySelectionRepository.getSelectedCategoryIds(
+                            accountKey,
+                            NxCategorySelectionRepository.XtreamCategoryType.LIVE,
+                        ).toSet(),
+                    )
+                } else {
+                    Triple(emptySet<String>(), emptySet<String>(), emptySet<String>())
+                }
+
+                if (vodCategoryIds.isNotEmpty() || seriesCategoryIds.isNotEmpty() || liveCategoryIds.isNotEmpty()) {
+                    UnifiedLog.i(TAG) {
+                        "Category filter active: vod=${vodCategoryIds.size} series=${seriesCategoryIds.size} live=${liveCategoryIds.size}"
+                    }
+                }
+
                 suspend fun collectEnhanced(flow: kotlinx.coroutines.flow.Flow<SyncStatus>) {
                     flow.collect { status ->
                         if (!currentCoroutineContext().isActive) {
@@ -457,6 +495,9 @@ class XtreamCatalogScanWorker
                                 includeLive = includeLive,
                                 bufferSize = bufferSize,
                                 consumerCount = consumerCount,
+                                vodCategoryIds = vodCategoryIds,
+                                seriesCategoryIds = seriesCategoryIds,
+                                liveCategoryIds = liveCategoryIds,
                             ).collect { status ->
                                 if (!currentCoroutineContext().isActive) {
                                     throw CancellationException("Worker cancelled")
@@ -579,6 +620,9 @@ class XtreamCatalogScanWorker
                                     includeLive = includeLive,
                                     bufferSize = bufferSize,
                                     consumerCount = consumerCount,
+                                    vodCategoryIds = vodCategoryIds,
+                                    seriesCategoryIds = seriesCategoryIds,
+                                    liveCategoryIds = liveCategoryIds,
                                 ).collect { status ->
                                     // Check cancellation
                                     if (!currentCoroutineContext().isActive) {
@@ -1176,7 +1220,7 @@ class XtreamCatalogScanWorker
 
             try {
                 val capabilities = xtreamApiClient.capabilities
-                val accountKey = capabilities?.cacheKey ?: run {
+                if (capabilities == null) {
                     UnifiedLog.w(TAG) { "No capabilities - incremental sync not possible" }
                     val durationMs = System.currentTimeMillis() - startTimeMs
                     return Result.success(
@@ -1187,6 +1231,12 @@ class XtreamCatalogScanWorker
                         ),
                     )
                 }
+
+                // SSOT: Use NxKeyGenerator for accountKey format consistency
+                val accountKey = NxKeyGenerator.xtreamAccountKey(
+                    serverUrl = capabilities.baseUrl,
+                    username = capabilities.username,
+                )
 
                 UnifiedLog.d(TAG) { "Using accountKey=$accountKey for incremental sync" }
 

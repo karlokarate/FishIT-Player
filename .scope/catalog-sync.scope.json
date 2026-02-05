@@ -1,0 +1,131 @@
+{
+  "$schema": "./scope-guard.schema.json",
+  "scopeId": "catalog-sync",
+  "version": "1.0.0",
+  "description": "SSOT for all sync orchestration. READ THIS BEFORE ANY CHANGE.",
+  "mandatoryReadBeforeEdit": [
+    "AGENTS.md Section 4.8 (Global Sync Orchestration SSOT)",
+    "contracts/CATALOG_SYNC_WORKERS_CONTRACT_V2.md",
+    ".github/instructions/catalog-sync.instructions.md",
+    ".github/instructions/core-catalog-sync.instructions.md"
+  ],
+  "modules": {
+    "core/catalog-sync": {
+      "fileCount": 27,
+      "totalLOC": 5400,
+      "criticalFiles": [
+        {
+          "path": "core/catalog-sync/src/main/java/com/fishit/player/core/catalogsync/DefaultCatalogSyncService.kt",
+          "loc": 693,
+          "purpose": "Central sync orchestrator",
+          "invariants": [
+            "All sync triggers go through CatalogSyncWorkScheduler",
+            "Never call pipelines directly from workers"
+          ]
+        },
+        {
+          "path": "core/catalog-sync/src/main/java/com/fishit/player/core/catalogsync/sources/xtream/DefaultXtreamSyncService.kt",
+          "loc": 492,
+          "purpose": "Xtream-specific sync",
+          "invariants": [
+            "Must respect SyncStrategy from IncrementalSyncDecider",
+            "Must inject FingerprintRepository for Tier 4"
+          ],
+          "knownBugs": [
+            "executePhase() ignores SyncStrategy - FIX PENDING"
+          ]
+        },
+        {
+          "path": "core/catalog-sync/src/main/java/com/fishit/player/core/catalogsync/IncrementalSyncDecider.kt",
+          "loc": 240,
+          "purpose": "4-tier sync decision logic",
+          "invariants": [
+            "Returns SyncStrategy that MUST be used by callers",
+            "Tier order: ETag → Count → Timestamp → Fingerprint"
+          ]
+        },
+        {
+          "path": "core/catalog-sync/src/main/java/com/fishit/player/core/catalogsync/ChannelSyncBuffer.kt",
+          "loc": 244,
+          "purpose": "Batch buffer for memory efficiency",
+          "invariants": [
+            "FireTV batch cap = 35 items (memory constraint)"
+          ]
+        },
+        {
+          "path": "core/catalog-sync/src/main/java/com/fishit/player/core/catalogsync/SyncCheckpointStore.kt",
+          "loc": 248,
+          "purpose": "Checkpoint persistence",
+          "invariants": [
+            "Must update checkpoint AFTER successful sync"
+          ]
+        }
+      ],
+      "diModules": [
+        "core/catalog-sync/src/main/java/com/fishit/player/core/catalogsync/di/CatalogSyncModule.kt",
+        "core/catalog-sync/src/main/java/com/fishit/player/core/catalogsync/sources/xtream/di/XtreamSyncModule.kt",
+        "core/catalog-sync/src/main/java/com/fishit/player/core/catalogsync/enhanced/di/EnhancedSyncModule.kt"
+      ],
+      "handlers": [
+        "core/catalog-sync/src/main/java/com/fishit/player/core/catalogsync/enhanced/handlers/ItemDiscoveredHandler.kt",
+        "core/catalog-sync/src/main/java/com/fishit/player/core/catalogsync/enhanced/handlers/ScanCompletedHandler.kt",
+        "core/catalog-sync/src/main/java/com/fishit/player/core/catalogsync/enhanced/handlers/ScanErrorHandler.kt",
+        "core/catalog-sync/src/main/java/com/fishit/player/core/catalogsync/enhanced/handlers/ScanProgressHandler.kt",
+        "core/catalog-sync/src/main/java/com/fishit/player/core/catalogsync/enhanced/handlers/ScanCancelledHandler.kt",
+        "core/catalog-sync/src/main/java/com/fishit/player/core/catalogsync/enhanced/handlers/SeriesEpisodeHandler.kt"
+      ]
+    }
+  },
+  "relatedScopes": [
+    "persistence.scope.json",
+    "xtream-pipeline.scope.json"
+  ],
+  "globalInvariants": [
+    "Workers MUST call CatalogSyncWorkScheduler - NEVER direct pipeline",
+    "ViewModels MUST call CatalogSyncWorkScheduler - NEVER direct CatalogSyncService",
+    "core/catalog-sync NEVER touches transport directly - only via pipeline abstractions"
+  ],
+  "forbiddenPatterns": [
+    {
+      "pattern": "XtreamCatalogPipeline injected in Worker",
+      "reason": "Workers must use CatalogSyncWorkScheduler"
+    },
+    {
+      "pattern": "CatalogSyncService injected in ViewModel",
+      "reason": "Use CatalogSyncWorkScheduler instead"
+    }
+  ],
+  "consumers": [
+    {
+      "file": "app-v2/src/main/.../work/XtreamCatalogSyncWorker.kt",
+      "callsMethod": "syncService.syncCatalog()"
+    },
+    {
+      "file": "app-v2/src/main/.../work/XtreamPeriodicSyncWorker.kt",
+      "callsMethod": "syncService.syncCatalog()"
+    },
+    {
+      "file": "app-v2/src/main/.../bootstrap/SourceActivationBootstrap.kt",
+      "callsMethod": "Triggers initial sync"
+    },
+    {
+      "file": "feature/settings/.../SettingsSourceViewModel.kt",
+      "callsMethod": "Manual sync trigger"
+    }
+  ],
+  "testCoverage": {
+    "status": "CRITICAL_GAP",
+    "existingTests": [
+      "core/catalog-sync/src/test/.../CatalogSyncContractTest.kt",
+      "core/catalog-sync/src/test/.../SyncCheckpointStoreTest.kt",
+      "core/catalog-sync/src/test/.../ChannelSyncBufferTest.kt",
+      "core/catalog-sync/src/test/.../SyncBatchManagerTest.kt"
+    ],
+    "missingTests": [
+      "IncrementalSyncDeciderTest.kt (0 tests for 240 LOC)",
+      "DefaultXtreamSyncServiceTest.kt (0 tests for 492 LOC)"
+    ]
+  },
+  "lastVerified": "2025-02-05",
+  "auditedBy": "Multi-Agent Audit (5 parallel subagents)"
+}

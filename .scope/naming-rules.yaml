@@ -1,0 +1,95 @@
+# Naming Rules (v2)
+# Machine-parseable naming conventions for FishIT-Player v2
+
+authority:
+  document: /contracts/GLOSSARY_v2_naming_and_modules.md
+  status: binding
+
+namespace:
+  v2: com.fishit.player.*
+  v1_forbidden: com.chris.m3usuite  # Only allowed in /legacy/**
+
+module_patterns:
+  pipeline_capability:
+    package: pipeline.<name>.capability
+    class: "*CapabilityProvider"
+    example: TelegramCapabilityProvider
+    
+  app_feature:
+    package: feature.<name>
+    class: "*FeatureProvider"
+    example: HomeFeatureProvider
+    
+  pipeline_mapper:
+    package: pipeline.<name>.mapper
+    class: "*Mapper, *Extensions"
+    example: TelegramMediaMapper
+    
+  transport:
+    package: infra.transport.<name>
+    class: "*Client, *Adapter"
+    example: XtreamApiClient, TelegramPipelineAdapter
+    
+  data:
+    package: infra.data.<name>
+    class: "*Repository, Obx*Entity, NX_*"
+    example: NxWorkRepository, ObxXtreamVod, NX_Work
+
+vocabulary:
+  AppFeature:
+    definition: User-visible product capability in feature/* modules
+    location: UI/Feature modules only
+    
+  AppShell:
+    definition: Application entry point, main activity, navigation host
+    location: app-v2 infrastructure only
+    
+  PipelineCapability:
+    definition: Technical capability in pipeline/*/capability/
+    location: Pipeline modules only
+    
+  FeatureId:
+    definition: Unique identifier for AppFeatures and PipelineCapabilities
+    location: core/feature-api
+    
+  RawMediaMetadata:
+    definition: Canonical data class produced by all pipelines
+    location: core/model
+    
+  NormalizedMedia:
+    definition: Aggregated normalized media after enrichment
+    location: core/model
+
+forbidden_patterns:
+  - pattern: "*FeatureProvider"
+    in: "pipeline/*"
+    use_instead: "*CapabilityProvider"
+    
+  - pattern: "feature/ package"
+    in: "pipeline/*"
+    use_instead: "capability/ package"
+    
+  - pattern: "com.chris.m3usuite"
+    in: "anywhere except legacy/"
+    use_instead: "com.fishit.player.*"
+    
+  - pattern: "Ad-hoc capability names"
+    in: "anywhere"
+    use_instead: "Glossary-defined terms"
+
+entity_naming:
+  nx_entities:
+    prefix: "NX_"
+    purpose: "UI SSOT entities"
+    examples: [NX_Work, NX_WorkSourceRef, NX_WorkVariant, NX_WorkRelation, NX_WorkUserState]
+    
+  obx_entities:
+    prefix: "Obx"
+    purpose: "Internal persistence (NOT for UI)"
+    forbidden_in: [feature/*, ViewModel, UI screens]
+    examples: [ObxCanonicalMedia, ObxXtreamVod, ObxTelegramVideo]
+
+detekt_enforcement:
+  ForbiddenImport:
+    - value: "com.chris.m3usuite.*"
+      reason: "v1 namespace forbidden in v2 modules"

@@ -46,13 +46,23 @@ internal class VodItemPhase @Inject constructor(
         delay(STARTUP_DELAY_MS)
 
         val phaseStart = System.currentTimeMillis()
-        UnifiedLog.d(TAG, "[VOD] Starting parallel scan (streaming)...")
+        val categoryFilter = config.vodCategoryIds
+        val hasFilter = categoryFilter.isNotEmpty()
+        UnifiedLog.d(TAG, "[VOD] Starting parallel scan (streaming)${if (hasFilter) " with ${categoryFilter.size} category filter(s)" else ""}...")
         
         try {
             source.streamVodItems(batchSize = config.batchSize) { batch ->
                 for (vodItem in batch) {
                     // Check cancellation
                     if (!currentCoroutineContext().isActive) return@streamVodItems
+                    
+                    // Issue #669: Filter by category if filter is configured
+                    if (hasFilter) {
+                        val itemCategoryId = vodItem.categoryId
+                        if (itemCategoryId == null || itemCategoryId !in categoryFilter) {
+                            continue
+                        }
+                    }
 
                     // Map and emit
                     val catalogItem = mapper.fromVod(vodItem, headers, config.accountName)

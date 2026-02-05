@@ -31,8 +31,9 @@ import javax.inject.Singleton
 @Singleton
 class DefaultHttpClient @Inject constructor(
     private val baseHttpClient: OkHttpClient,
-    private val io: CoroutineDispatcher = Dispatchers.IO,
 ) : HttpClient {
+    // Hardcode IO dispatcher - no real need to inject it; tests mock HttpClient interface
+    private val io: CoroutineDispatcher = Dispatchers.IO
     // Manual rate limiting and caching removed (Fix for Finding #10, #11)
     // All rate limiting and caching now handled by OkHttp interceptors
 

@@ -12,6 +12,7 @@ import com.fishit.player.core.model.repository.NxIngestLedgerRepository
 import com.fishit.player.core.model.repository.NxProfileRepository
 import com.fishit.player.core.model.repository.NxProfileRuleRepository
 import com.fishit.player.core.model.repository.NxProfileUsageRepository
+import com.fishit.player.core.model.repository.NxCategorySelectionRepository
 import com.fishit.player.core.model.repository.NxSourceAccountRepository
 import com.fishit.player.core.model.repository.NxWorkAuthorityRepository
 import com.fishit.player.core.model.repository.NxWorkDiagnostics
@@ -35,6 +36,7 @@ import com.fishit.player.infra.data.nx.repository.NxIngestLedgerRepositoryImpl
 import com.fishit.player.infra.data.nx.repository.NxProfileRepositoryImpl
 import com.fishit.player.infra.data.nx.repository.NxProfileRuleRepositoryImpl
 import com.fishit.player.infra.data.nx.repository.NxProfileUsageRepositoryImpl
+import com.fishit.player.infra.data.nx.repository.NxCategorySelectionRepositoryImpl
 import com.fishit.player.infra.data.nx.repository.NxSourceAccountRepositoryImpl
 import com.fishit.player.infra.data.nx.repository.NxWorkAuthorityRepositoryImpl
 import com.fishit.player.infra.data.nx.repository.NxWorkDiagnosticsImpl
@@ -223,6 +225,12 @@ abstract class NxDataModule {
     abstract fun bindNxSourceAccountRepository(
         impl: NxSourceAccountRepositoryImpl,
     ): NxSourceAccountRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindNxCategorySelectionRepository(
+        impl: NxCategorySelectionRepositoryImpl,
+    ): NxCategorySelectionRepository
 
     // ────────────────────────────────────────────────────────────────────
     // Priority 3: Cloud & Sync

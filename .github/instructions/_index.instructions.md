@@ -11,6 +11,12 @@
 
 ## 📋 Instruction Files Overview
 
+### Global (All Files)
+
+| File | Applies To | Status | Version | Dependencies |
+|------|------------|--------|---------|--------------|
+| `scope-guard.instructions.md` | `**` (all files) | ✅ Active | 1.0 | `.scope/*.scope.json` files |
+
 ### Core Layer
 
 | File | Applies To | Status | Version | Dependencies |
@@ -68,7 +74,7 @@
 | `app-work.instructions.md` | `app-v2/src/main/java/*/work/**` | ✅ Active | 1.1 | core-catalog-sync, infra-work, infra-logging |
 | `catalog-sync.instructions.md` | `**/catalog-sync/**`, `**/work/**CatalogSync*`, `**/bootstrap/*Bootstrap*` | ✅ Active | 1.0 | core-catalog-sync, infra-work |
 
-**Total Files:** 22  
+**Total Files:** 23  
 **Last Audit:** 2026-02-04
 
 ---
@@ -115,6 +121,7 @@ All instruction files MUST comply with these authoritative contracts:
 | Contract | Location | Scope |
 |----------|----------|-------|
 | **AGENTS.md** | `/AGENTS.md` | PRIMARY AUTHORITY - All architecture rules |
+| **SCOPE_GUARDS** | `/.scope/*.scope.json` | Bounded contexts, file inventories, invariants |
 | **GLOSSARY** | `/contracts/GLOSSARY_v2_naming_and_modules.md` | Naming conventions, module taxonomy |
 | **NX_SSOT** | `/contracts/NX_SSOT_CONTRACT.md` | NX entity schema, invariants (INV-01 to INV-13) |
 | **LOGGING** | `/contracts/LOGGING_CONTRACT_V2.md` | UnifiedLog usage (v1.1) |

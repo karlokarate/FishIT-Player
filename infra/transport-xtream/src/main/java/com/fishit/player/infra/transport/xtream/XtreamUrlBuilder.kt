@@ -6,9 +6,9 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * XtreamUrlBuilder – URL Factory für Xtream Codes API
+ * XtreamUrlBuilder  URL Factory fr Xtream Codes API
  *
- * Zentrale URL-Generierung für:
+ * Zentrale URL-Generierung fr:
  * - player_api.php Calls (Kategorien, Streams, Details, EPG)
  * - Playback URLs (Live/VOD/Series)
  * - M3U Playlist URLs (get.php, xmltv.php)
@@ -122,6 +122,7 @@ class XtreamUrlBuilder @Inject constructor() {
                 addQueryParameter("password", cfg.password)
             }.build()
             .toString()
+    }
 
     // =========================================================================
     // Panel API URLs (Premium Contract Section 2/8)
@@ -217,7 +218,7 @@ class XtreamUrlBuilder @Inject constructor() {
      * - Using /movie/ or /vod/ path fails with 404 or wrong content
      *
      * **Extension Resolution (containerExtension-first, minimal fallback):**
-     * 1. If containerExtension provided and valid → USE IT (SSOT)
+     * 1. If containerExtension provided and valid -> USE IT (SSOT)
      * 2. If missing, fallback to mkv (consistent with DefaultXtreamApiClient)
      * 3. No m3u8/ts forcing for series (file-based, not adaptive streams)
      *
@@ -236,13 +237,13 @@ class XtreamUrlBuilder @Inject constructor() {
         episodeId: Int? = null,
         containerExtension: String? = null,
     ): String {
+        val cfg = config ?: error("XtreamUrlBuilder not configured - call configure() first")
         // SSOT: Use containerExtension if provided
         val ext =
             if (!containerExtension.isNullOrBlank()) {
                 sanitizeSeriesExtension(containerExtension)
             } else {
                 // Minimal fallback: mkv only (consistent with DefaultXtreamApiClient)
-        val cfg = config ?: error("XtreamUrlBuilder not configured - call configure() first")
                 cfg.seriesExtPrefs.firstOrNull()?.let { sanitizeSeriesExtension(it) }
                     ?: "mkv" // First fallback: mkv
             }
@@ -284,8 +285,9 @@ class XtreamUrlBuilder @Inject constructor() {
         kind: String,
         id: Int,
         ext: String,
-    ): String =
-        buildString {
+    ): String {
+        val cfg = config ?: error("XtreamUrlBuilder not configured - call configure() first")
+        return buildString {
             append(baseUrl)
             append("/")
             append(kind)
@@ -298,6 +300,7 @@ class XtreamUrlBuilder @Inject constructor() {
             append(".")
             append(ext)
         }
+    }
 
     // =========================================================================
     // M3U / XMLTV URLs
@@ -421,7 +424,7 @@ class XtreamUrlBuilder @Inject constructor() {
     }
 
     // =========================================================================
-    // Credential Parsing (M3U URL → Config)
+    // Credential Parsing (M3U URL -> Config)
     // =========================================================================
 
     companion object {
@@ -511,6 +514,7 @@ class XtreamUrlBuilder @Inject constructor() {
     // =========================================================================
 
     private fun HttpUrl.Builder.addBasePathSegments() {
+        val cfg = config ?: return // Skip basePath if not configured
         cfg.basePath?.let { bp ->
             val normalized = normalizeBasePath(bp).removePrefix("/")
             if (normalized.isNotEmpty()) {
@@ -565,8 +569,8 @@ class XtreamUrlBuilder @Inject constructor() {
      * Sanitize extension for SERIES episode playback URL building.
      *
      * **containerExtension-first with minimal fallback:**
-     * 1. If extension is valid container format → USE IT (SSOT)
-     * 2. Otherwise → FAIL with IllegalArgumentException
+     * 1. If extension is valid container format -> USE IT (SSOT)
+     * 2. Otherwise -> FAIL with IllegalArgumentException
      *
      * **Valid container formats for series (file-based, NOT adaptive streams):**
      * - mkv, mp4, avi, mov, wmv, flv, webm

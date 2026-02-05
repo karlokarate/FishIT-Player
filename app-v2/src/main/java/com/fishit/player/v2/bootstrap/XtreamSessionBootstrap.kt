@@ -1,5 +1,6 @@
 package com.fishit.player.v2.bootstrap
 
+import com.fishit.player.core.catalogsync.XtreamCategoryPreloader
 import com.fishit.player.core.sourceactivation.SourceActivationStore
 import com.fishit.player.core.sourceactivation.SourceErrorReason
 import com.fishit.player.infra.logging.UnifiedLog
@@ -32,6 +33,7 @@ class XtreamSessionBootstrap
         private val xtreamApiClient: XtreamApiClient,
         private val xtreamCredentialsStore: XtreamCredentialsStore,
         private val sourceActivationStore: SourceActivationStore,
+        private val xtreamCategoryPreloader: XtreamCategoryPreloader,
         @Named(AppScopeModule.APP_LIFECYCLE_SCOPE)
         private val appScope: CoroutineScope,
     ) {
@@ -75,6 +77,10 @@ class XtreamSessionBootstrap
                         if (result.isSuccess) {
                             UnifiedLog.i(TAG) { "Xtream session validation succeeded" }
                             // Already active, nothing to do
+
+                            // Preload categories for UI (Issue #669 - Sync by Category)
+                            // This runs in background, UI can observe XtreamCategoryPreloader.state
+                            xtreamCategoryPreloader.preloadCategories()
                         } else {
                             val error = result.exceptionOrNull()
                             UnifiedLog.w(TAG, error) {
@@ -82,6 +88,8 @@ class XtreamSessionBootstrap
                             }
                             // Deactivate on validation failure
                             sourceActivationStore.setXtreamInactive(SourceErrorReason.INVALID_CREDENTIALS)
+                            // Clear cached categories since credentials are invalid
+                            xtreamCategoryPreloader.clearCache()
                         }
                     } else {
                         UnifiedLog.d(TAG) { "No stored Xtream credentials found" }

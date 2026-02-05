@@ -1,0 +1,195 @@
+{
+  "scopeId": "agent-checklists",
+  "version": "1.0.0",
+  "description": "Full pre-change and post-change checklists for agent operations",
+  "preChangeChecklist": {
+    "0_instructions_read": {
+      "priority": "CRITICAL",
+      "items": [
+        "Read instruction index: .github/instructions/_index.instructions.md",
+        "Identify ALL path-scoped instruction files for planned changes",
+        "Read and understand ALL applicable instructions",
+        "Verify planned changes comply with path-scoped rules",
+        "Check if file is in .scope/*.scope.json - if yes, read scope file first"
+      ]
+    },
+    "1_branch_and_scope": {
+      "priority": "HIGH",
+      "items": [
+        "Working on architecture/v2-bootstrap or v2-derived feature branch",
+        "No intention to merge to main"
+      ]
+    },
+    "2_paths": {
+      "priority": "HIGH",
+      "items": [
+        "All planned edits are under allowed v2 paths",
+        "No writes planned under /legacy/** or /app/**"
+      ]
+    },
+    "3_module_readme": {
+      "priority": "HIGH",
+      "items": [
+        "Read module's README.md before modifying any file in that module",
+        "Confirm change respects module's Allowed and Forbidden sections"
+      ],
+      "readme_locations": [
+        "infra/transport-telegram/README.md",
+        "infra/transport-xtream/README.md",
+        "pipeline/telegram/README.md",
+        "pipeline/xtream/README.md",
+        "infra/data-telegram/README.md",
+        "infra/data-xtream/README.md",
+        "playback/telegram/README.md",
+        "playback/xtream/README.md",
+        "playback/domain/README.md",
+        "core/model/README.md",
+        "core/metadata-normalizer/README.md"
+      ]
+    },
+    "4_naming_contract": {
+      "priority": "HIGH",
+      "items": [
+        "Read /contracts/GLOSSARY_v2_naming_and_modules.md before creating new classes/packages",
+        "All new classes follow naming patterns in Glossary Section 5.2",
+        "All new packages follow patterns in Glossary Section 5.1",
+        "No forbidden patterns from Glossary Section 5.3 are introduced",
+        "Terminology in comments/docs matches Glossary Section 1"
+      ]
+    },
+    "5_contracts": {
+      "priority": "HIGH",
+      "items": [
+        "All relevant contracts from /contracts/ have been read",
+        "For pipeline changes: Read MEDIA_NORMALIZATION_CONTRACT.md",
+        "For player changes: Read all INTERNAL_PLAYER_* contracts",
+        "For logging changes: Read LOGGING_CONTRACT_V2.md"
+      ]
+    },
+    "6_docs": {
+      "priority": "MEDIUM",
+      "items": [
+        "Relevant v2 docs under docs/v2/** have been read",
+        "Canonical Media / Normalizer docs for pipeline/metadata changes",
+        "Internal Player docs for player changes",
+        "Logging/Telemetry/Cache docs for infra changes"
+      ]
+    },
+    "7_architecture_rules": {
+      "priority": "HIGH",
+      "items": [
+        "No pipeline-local normalization or TMDB lookups",
+        "No new global mutable singletons",
+        "Logging and telemetry integration identified"
+      ]
+    },
+    "8_bridge_duplicate_detection": {
+      "priority": "HIGH",
+      "applies_to": "transport/pipeline changes",
+      "items": [
+        "Verify no aliased imports (import ... as ApiXxx)",
+        "Verify no bridge/conversion functions (toApi*, fromApi*)",
+        "Verify single DTO definition location (all in api/ package)"
+      ],
+      "detection_commands": [
+        "grep -rn 'import.*as Api\\|import.*as Transport' pipeline/ infra/",
+        "grep -rn 'toApi\\|fromApi\\|toTransport\\|fromTransport' pipeline/ infra/",
+        "grep -rn '^sealed class Tg\\|^sealed interface Tg' infra/transport-*/"
+      ]
+    },
+    "9_plan": {
+      "priority": "MEDIUM",
+      "items": [
+        "Intended changes are scoped and incremental",
+        "Large refactors or tool upgrades have been discussed with user"
+      ]
+    }
+  },
+  "postChangeChecklist": {
+    "1_code_and_structure": {
+      "priority": "HIGH",
+      "items": [
+        "No accidental edits in /legacy/** or /app/**",
+        "No new com.chris.m3usuite references outside legacy/",
+        "New modules (if any) are wired into settings.gradle.kts correctly"
+      ]
+    },
+    "2_naming_contract_compliance": {
+      "priority": "HIGH",
+      "items": [
+        "All new classes follow Glossary naming patterns",
+        "No *FeatureProvider in pipeline/* modules (use *CapabilityProvider)",
+        "No feature/ package in pipeline/* modules (use capability/)",
+        "All vocabulary in code/comments matches Glossary definitions"
+      ]
+    },
+    "3_bridge_duplicate_verification": {
+      "priority": "HIGH",
+      "applies_to": "transport/pipeline changes",
+      "items": [
+        "No new duplicate DTO definitions introduced",
+        "All bridge functions removed (no toApi*, fromApi*)",
+        "All aliased imports removed",
+        "DTOs are in canonical api/ package locations"
+      ]
+    },
+    "4_quality": {
+      "priority": "HIGH",
+      "items": [
+        "Code compiles",
+        "Relevant tests added/updated and passing",
+        "No new obvious Lint/Detekt violations"
+      ]
+    },
+    "5_logging_and_telemetry": {
+      "priority": "MEDIUM",
+      "items": [
+        "New feature paths emit appropriate logs",
+        "Telemetry events are integrated where sensible"
+      ]
+    },
+    "6_docs_and_changelog": {
+      "priority": "MEDIUM",
+      "items": [
+        "Behavioral change is reflected in docs/v2/**",
+        "Significant changes recorded in CHANGELOG.md",
+        "Roadmap updated if change affects roadmap items"
+      ]
+    },
+    "7_user_proposal": {
+      "priority": "MEDIUM",
+      "applies_to": "tool/dependency changes",
+      "items": [
+        "If new tool or dependency: proposal written and user confirmed"
+      ]
+    },
+    "8_instruction_compliance": {
+      "priority": "HIGH",
+      "items": [
+        "All changes comply with applicable path-scoped instructions",
+        "No forbidden imports introduced (per module instructions)",
+        "Naming conventions followed",
+        "Architecture patterns followed",
+        "Self-audit completed against instruction checklists"
+      ]
+    }
+  },
+  "contractReadingRequirements": {
+    "any_change": [
+      "/contracts/GLOSSARY_v2_naming_and_modules.md"
+    ],
+    "pipeline_modules": [
+      "docs/v2/MEDIA_NORMALIZATION_CONTRACT.md"
+    ],
+    "logging_code": [
+      "/contracts/LOGGING_CONTRACT_V2.md"
+    ],
+    "player_playback": [
+      "/contracts/INTERNAL_PLAYER_*.md"
+    ],
+    "telegram_features": [
+      "/contracts/TELEGRAM_PARSER_CONTRACT.md",
+      "/contracts/TELEGRAM_STRUCTURED_BUNDLES_CONTRACT.md"
+    ]
+  }
+}

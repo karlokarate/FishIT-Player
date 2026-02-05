@@ -89,3 +89,4 @@ __pycache__/
 .Python
 
 test-r8-filter.sh
+tools/scope-guard-mcp/node_modules/

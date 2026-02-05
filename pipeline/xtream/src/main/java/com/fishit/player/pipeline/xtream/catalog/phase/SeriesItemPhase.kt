@@ -45,13 +45,23 @@ internal class SeriesItemPhase @Inject constructor(
         if (!config.includeSeries) return
 
         val phaseStart = System.currentTimeMillis()
-        UnifiedLog.d(TAG, "[SERIES] Starting scan (after slot available)...")
+        val categoryFilter = config.seriesCategoryIds
+        val hasFilter = categoryFilter.isNotEmpty()
+        UnifiedLog.d(TAG, "[SERIES] Starting scan (after slot available)${if (hasFilter) " with ${categoryFilter.size} category filter(s)" else ""}...")
         
         try {
             source.streamSeriesItems(batchSize = config.batchSize) { batch ->
                 for (seriesItem in batch) {
                     // Check cancellation
                     if (!currentCoroutineContext().isActive) return@streamSeriesItems
+                    
+                    // Issue #669: Filter by category if filter is configured
+                    if (hasFilter) {
+                        val itemCategoryId = seriesItem.categoryId
+                        if (itemCategoryId == null || itemCategoryId !in categoryFilter) {
+                            continue
+                        }
+                    }
 
                     // Map and emit
                     val catalogItem = mapper.fromSeries(seriesItem, headers, config.accountName)

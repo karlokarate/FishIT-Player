@@ -144,10 +144,10 @@ class NxCatalogWriter @Inject constructor(
 
         // Batch upsert
         try {
-            workRepository.upsertAll(works)
-            sourceRefRepository.upsertAll(sourceRefs)
+            workRepository.upsertBatch(works)
+            sourceRefRepository.upsertBatch(sourceRefs)
             if (variants.isNotEmpty()) {
-                variantRepository.upsertAll(variants)
+                variantRepository.upsertBatch(variants)
             }
         } catch (e: Exception) {
             UnifiedLog.e(TAG, e) { "Failed to batch upsert" }
@@ -169,34 +169,30 @@ class NxCatalogWriter @Inject constructor(
         var successCount = 0
         val now = System.currentTimeMillis()
 
-        try {
-            boxStore.runInTx {
-                for ((raw, normalized, accountKey) in items) {
-                    try {
-                        // Build entities using builders
-                        val workKey = buildWorkKey(normalized)
-                        val work = workEntityBuilder.build(normalized, workKey, now)
-                        workRepository.upsert(work)
+        // TODO: Consider using ObjectBox callInTx with runBlocking for true transactions 
+        //       once performance becomes critical. Current approach calls suspend functions
+        //       sequentially which is correct for coroutines.
+        for ((raw, normalized, accountKey) in items) {
+            try {
+                // Build entities using builders
+                val workKey = buildWorkKey(normalized)
+                val work = workEntityBuilder.build(normalized, workKey, now)
+                workRepository.upsert(work)
 
-                        val sourceKey = buildSourceKey(raw, accountKey)
-                        val sourceRef = sourceRefBuilder.build(raw, workKey, accountKey, sourceKey, now)
-                        sourceRefRepository.upsert(sourceRef)
+                val sourceKey = buildSourceKey(raw, accountKey)
+                val sourceRef = sourceRefBuilder.build(raw, workKey, accountKey, sourceKey, now)
+                sourceRefRepository.upsert(sourceRef)
 
-                        if (raw.playbackHints.isNotEmpty()) {
-                            val variantKey = buildVariantKey(sourceKey)
-                            val variant = variantBuilder.build(variantKey, workKey, sourceKey, raw.playbackHints, normalized.durationMs, now)
-                            variantRepository.upsert(variant)
-                        }
-
-                        successCount++
-                    } catch (e: Exception) {
-                        UnifiedLog.e(TAG, e) { "Failed to ingest item: ${normalized.canonicalTitle}" }
-                    }
+                if (raw.playbackHints.isNotEmpty()) {
+                    val variantKey = buildVariantKey(sourceKey)
+                    val variant = variantBuilder.build(variantKey, workKey, sourceKey, raw.playbackHints, normalized.durationMs, now)
+                    variantRepository.upsert(variant)
                 }
+
+                successCount++
+            } catch (e: Exception) {
+                UnifiedLog.e(TAG, e) { "Failed to ingest item: ${normalized.canonicalTitle}" }
             }
-        } catch (e: Exception) {
-            UnifiedLog.e(TAG, e) { "Transaction failed" }
-            return 0
         }
 
         return successCount
@@ -213,7 +209,8 @@ class NxCatalogWriter @Inject constructor(
      */
     private fun buildWorkKey(normalized: NormalizedMediaMetadata): String {
         val authority = if (normalized.tmdb != null) "tmdb" else "heuristic"
-        val id = normalized.tmdb?.id?.toString() ?: normalized.globalId.substringAfterLast(":")
+        val id = normalized.tmdb?.id?.toString()
+            ?: "${toSlug(normalized.canonicalTitle)}-${normalized.year ?: "unknown"}"
         val workType = when {
             normalized.mediaType.name.contains("SERIES") -> "series"
             normalized.mediaType.name.contains("EPISODE") -> "episode"
@@ -222,6 +219,17 @@ class NxCatalogWriter @Inject constructor(
             else -> "movie"
         }
         return "$workType:$authority:$id"
+    }
+
+    /**
+     * Convert title to URL-safe slug for heuristic work keys.
+     */
+    private fun toSlug(title: String): String {
+        return title
+            .lowercase(java.util.Locale.ROOT)
+            .replace(Regex("[^a-z0-9]+"), "-")
+            .trim('-')
+            .take(50)
     }
 
     /**
@@ -245,5 +253,21 @@ class NxCatalogWriter @Inject constructor(
      */
     private fun buildVariantKey(sourceKey: String): String {
         return "$sourceKey#original"
+    }
+
+    // =========================================================================
+    // Bulk Operations
+    // =========================================================================
+
+    /**
+     * Clear all source refs for a given source type.
+     *
+     * Used for clearing entire pipelines (e.g., "clear all Telegram sources").
+     *
+     * @param sourceType Source type to clear (TELEGRAM, XTREAM, etc.)
+     * @return Number of source refs deleted
+     */
+    suspend fun clearSourceType(sourceType: NxWorkSourceRefRepository.SourceType): Int {
+        return sourceRefRepository.deleteBySourceType(sourceType)
     }
 }

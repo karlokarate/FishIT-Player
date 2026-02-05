@@ -392,6 +392,9 @@ interface CatalogSyncService {
      * @param includeLive Whether to sync live channels
      * @param bufferSize Channel buffer capacity (default: 1000 phone, 500 FireTV)
      * @param consumerCount Number of parallel DB writers (default: 3 phone, 2 FireTV)
+     * @param vodCategoryIds VOD category IDs to include (empty = all)
+     * @param seriesCategoryIds Series category IDs to include (empty = all)
+     * @param liveCategoryIds Live category IDs to include (empty = all)
      * @return Flow of SyncStatus with buffer metrics
      */
     fun syncXtreamBuffered(
@@ -401,6 +404,9 @@ interface CatalogSyncService {
         includeLive: Boolean = true,
         bufferSize: Int = ChannelSyncBuffer.DEFAULT_CAPACITY,
         consumerCount: Int = 3,
+        vodCategoryIds: Set<String> = emptySet(),
+        seriesCategoryIds: Set<String> = emptySet(),
+        liveCategoryIds: Set<String> = emptySet(),
     ): Flow<SyncStatus>
 
     /**

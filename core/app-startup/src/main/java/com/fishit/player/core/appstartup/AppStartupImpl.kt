@@ -1,11 +1,18 @@
 package com.fishit.player.core.appstartup
 
+import com.fishit.player.infra.http.DefaultHttpClient
 import com.fishit.player.infra.logging.UnifiedLog
 import com.fishit.player.infra.transport.telegram.TelegramClient
 import com.fishit.player.infra.transport.telegram.TelegramClientFactory
 import com.fishit.player.infra.transport.xtream.DefaultXtreamApiClient
 import com.fishit.player.infra.transport.xtream.XtreamApiClient
+import com.fishit.player.infra.transport.xtream.XtreamDiscovery
 import com.fishit.player.infra.transport.xtream.XtreamParallelism
+import com.fishit.player.infra.transport.xtream.XtreamUrlBuilder
+import com.fishit.player.infra.transport.xtream.client.XtreamCategoryFetcher
+import com.fishit.player.infra.transport.xtream.client.XtreamConnectionManager
+import com.fishit.player.infra.transport.xtream.client.XtreamStreamFetcher
+import com.fishit.player.infra.transport.xtream.strategy.CategoryFallbackStrategy
 import com.fishit.player.pipeline.telegram.adapter.TelegramPipelineAdapter
 import com.fishit.player.pipeline.telegram.grouper.TelegramMessageBundler
 import com.fishit.player.pipeline.telegram.grouper.TelegramStructuredMetadataExtractor
@@ -14,6 +21,7 @@ import com.fishit.player.pipeline.xtream.adapter.XtreamPipelineAdapter
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.serialization.json.Json
 import okhttp3.OkHttpClient
 import java.util.concurrent.TimeUnit
 
@@ -99,8 +107,8 @@ class AppStartupImpl(
         return try {
             UnifiedLog.d(TAG, "Initializing Xtream pipeline: ${config.baseUrl}")
 
-            // Create HTTP client with reasonable timeouts
-            val httpClient =
+            // Create base OkHttpClient with reasonable timeouts for CLI usage
+            val okHttpClient =
                 OkHttpClient
                     .Builder()
                     .connectTimeout(30, TimeUnit.SECONDS)
@@ -108,13 +116,43 @@ class AppStartupImpl(
                     .writeTimeout(30, TimeUnit.SECONDS)
                     .build()
 
-            // Create API client with default parallelism (conservative for startup)
+            // Create shared dependencies for handler-based architecture (Sprint 5 refactor)
+            val json = Json { ignoreUnknownKeys = true }
+            val httpClient = DefaultHttpClient(okHttpClient)
+            val urlBuilder = XtreamUrlBuilder()
+            val parallelism = XtreamParallelism(DEFAULT_PARALLELISM)
+            val discovery = XtreamDiscovery(okHttpClient, json, parallelism, Dispatchers.IO)
+            val categoryFallback = CategoryFallbackStrategy()
+
+            // Create handlers (Sprint 5 handler refactoring)
+            val connectionManager = XtreamConnectionManager(
+                httpClient = httpClient,
+                json = json,
+                urlBuilder = urlBuilder,
+                discovery = discovery,
+                io = Dispatchers.IO,
+            )
+            val categoryFetcher = XtreamCategoryFetcher(
+                httpClient = httpClient,
+                json = json,
+                urlBuilder = urlBuilder,
+                io = Dispatchers.IO,
+            )
+            val streamFetcher = XtreamStreamFetcher(
+                httpClient = httpClient,
+                json = json,
+                urlBuilder = urlBuilder,
+                categoryFallbackStrategy = categoryFallback,
+                io = Dispatchers.IO,
+            )
+
+            // Create API client with handler injection
             val apiConfig = config.toApiConfig()
-            val apiClient =
-                DefaultXtreamApiClient(
-                    http = httpClient,
-                    parallelism = XtreamParallelism(DEFAULT_PARALLELISM),
-                )
+            val apiClient = DefaultXtreamApiClient(
+                connectionManager = connectionManager,
+                categoryFetcher = categoryFetcher,
+                streamFetcher = streamFetcher,
+            )
             xtreamClient = apiClient
 
             // Initialize and authenticate
