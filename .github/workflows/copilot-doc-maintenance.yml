@@ -2,7 +2,6 @@ name: Copilot Documentation Maintenance
 
 # Automatically maintains documentation after each commit
 # - Updates CHANGELOG.md with commit information
-# - Updates ROADMAP.md if relevant changes detected
 # - Detects architecture/contract changes and flags them
 # - Fully automated - no user confirmation required
 
@@ -12,8 +11,9 @@ on:
       - architecture/v2-bootstrap
       - main
     paths-ignore:
-      - 'docs/diary/**'  # Avoid infinite loops from diary updates
+      - 'docs/v2/diary/**'  # Avoid infinite loops from diary updates
       - '.github/workflows/copilot-nightly-summary.yml'
+      - '.github/workflows/copilot-doc-maintenance.yml'  # Prevent self-triggering
 
   # Allow manual trigger for testing
   workflow_dispatch:
@@ -62,11 +62,17 @@ jobs:
           # Get commit author
           COMMIT_AUTHOR=$(git log -1 --pretty=format:'%an' ${COMMIT_SHA})
           
-          # Get changed files
-          CHANGED_FILES=$(git diff-tree --no-commit-id --name-only -r ${COMMIT_SHA} | head -50)
+          # Get changed files (full list for accurate area analysis)
+          CHANGED_FILES=$(git diff-tree --no-commit-id --name-only -r ${COMMIT_SHA})
           
-          # Get date
-          COMMIT_DATE=$(git log -1 --pretty=format:'%cd' --date=format:'%Y-%m-%d' ${COMMIT_SHA})
+          # Get date (cross-platform: GNU and BSD date support)
+          if date --version &>/dev/null 2>&1; then
+            # GNU date
+            COMMIT_DATE=$(git log -1 --pretty=format:'%cd' --date=format:'%Y-%m-%d' ${COMMIT_SHA})
+          else
+            # BSD date (macOS)
+            COMMIT_DATE=$(git log -1 --pretty=format:'%ci' ${COMMIT_SHA} | cut -d' ' -f1)
+          fi
           
           # Check for specific change types
           HAS_CONTRACT_CHANGES=false
@@ -75,15 +81,23 @@ jobs:
           HAS_PIPELINE_CHANGES=false
           HAS_PLAYER_CHANGES=false
           
-          echo "$CHANGED_FILES" | while read file; do
+          # Detect change types (export AFTER loop to avoid subshell issue)
+          while read file; do
             case "$file" in
-              contracts/*) echo "HAS_CONTRACT_CHANGES=true" >> $GITHUB_ENV ;;
-              AGENTS.md|.github/copilot-instructions.md|docs/meta/AGENT_RULES_CANONICAL.md) echo "HAS_AGENT_CHANGES=true" >> $GITHUB_ENV ;;
-              **/architecture/**|ARCHITECTURE*.md) echo "HAS_ARCH_CHANGES=true" >> $GITHUB_ENV ;;
-              pipeline/**) echo "HAS_PIPELINE_CHANGES=true" >> $GITHUB_ENV ;;
-              player/**|playback/**) echo "HAS_PLAYER_CHANGES=true" >> $GITHUB_ENV ;;
+              contracts/*) HAS_CONTRACT_CHANGES=true ;;
+              AGENTS.md|.github/copilot-instructions.md|docs/meta/AGENT_RULES_CANONICAL.md) HAS_AGENT_CHANGES=true ;;
+              **/architecture/**|ARCHITECTURE*.md) HAS_ARCH_CHANGES=true ;;
+              pipeline/**) HAS_PIPELINE_CHANGES=true ;;
+              player/**|playback/**) HAS_PLAYER_CHANGES=true ;;
             esac
-          done
+          done <<< "$CHANGED_FILES"
+          
+          # Export environment variables after loop
+          echo "HAS_CONTRACT_CHANGES=${HAS_CONTRACT_CHANGES}" >> $GITHUB_ENV
+          echo "HAS_AGENT_CHANGES=${HAS_AGENT_CHANGES}" >> $GITHUB_ENV
+          echo "HAS_ARCH_CHANGES=${HAS_ARCH_CHANGES}" >> $GITHUB_ENV
+          echo "HAS_PIPELINE_CHANGES=${HAS_PIPELINE_CHANGES}" >> $GITHUB_ENV
+          echo "HAS_PLAYER_CHANGES=${HAS_PLAYER_CHANGES}" >> $GITHUB_ENV
           
           # Export for later steps
           echo "sha=${COMMIT_SHA}" >> $GITHUB_OUTPUT
@@ -170,30 +184,24 @@ jobs:
           # Use the standalone Python script for reliability
           python3 .github/scripts/update-changelog.py "${SECTION}" "${COMMIT_DATE}" "${ENTRY}"
 
-      - name: Check for ROADMAP updates
+      - name: Check ROADMAP.md for completed work
         id: roadmap-check
         run: |
-          # Check if any TODO/FIXME items were resolved
-          COMMIT_SHA="${{ steps.commit-info.outputs.sha }}"
+          # Check if ROADMAP.md contains any completed items that should be removed
+          COMPLETED_IN_ROADMAP=""
           
-          # Get diff to look for completed items
-          DIFF=$(git show ${COMMIT_SHA} --no-color 2>/dev/null || echo "")
-          
-          # Look for patterns that indicate completed work
-          COMPLETED_ITEMS=""
-          
-          # Check for removed TODO/FIXME comments
-          if echo "$DIFF" | grep -E "^-.*// TODO:|^-.*// FIXME:" | head -5; then
-            COMPLETED_ITEMS="true"
+          if [ -f ROADMAP.md ]; then
+            # Look for checked items: - [x] pattern
+            CHECKED_ITEMS=$(grep -n "^- \[x\]" ROADMAP.md || true)
+            
+            if [ -n "$CHECKED_ITEMS" ]; then
+              COMPLETED_IN_ROADMAP="true"
+              echo "⚠️ ROADMAP.md contains completed items that should be removed:"
+              echo "$CHECKED_ITEMS"
+            fi
           fi
           
-          # Check for test additions (indicates feature completion)
-          if echo "$DIFF" | grep -E "^\+.*@Test|^\+.*fun test" | head -5; then
-            HAS_NEW_TESTS="true"
-            echo "has_new_tests=true" >> $GITHUB_OUTPUT
-          fi
-          
-          echo "completed_items=${COMPLETED_ITEMS}" >> $GITHUB_OUTPUT
+          echo "has_completed_items=${COMPLETED_IN_ROADMAP}" >> $GITHUB_OUTPUT
 
       - name: Detect architecture/contract changes
         id: arch-changes
@@ -234,13 +242,13 @@ jobs:
         if: ${{ github.event.inputs.dry_run != 'true' }}
         run: |
           # Check if there are changes to commit
-          if git diff --quiet CHANGELOG.md ROADMAP.md 2>/dev/null; then
+          if git diff --quiet CHANGELOG.md 2>/dev/null; then
             echo "No documentation changes to commit"
             exit 0
           fi
           
           # Stage changes
-          git add CHANGELOG.md ROADMAP.md 2>/dev/null || true
+          git add CHANGELOG.md 2>/dev/null || true
           
           # Check if there are staged changes
           if git diff --cached --quiet; then
@@ -248,8 +256,10 @@ jobs:
             exit 0
           fi
           
-          # Commit with skip-ci to prevent infinite loops
-          git commit -m "docs(auto): Update documentation for ${{ steps.commit-info.outputs.short_sha }} [skip ci]"
+          # Commit with skip-checks trailer to prevent infinite loops
+          git commit -m "docs(auto): Update documentation for ${{ steps.commit-info.outputs.short_sha }}
+
+skip-checks: true"
           
           # Push changes
           git push origin HEAD
@@ -275,6 +285,13 @@ jobs:
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "### ⚠️ Warnings" >> $GITHUB_STEP_SUMMARY
             echo "${{ steps.arch-changes.outputs.warnings }}" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          if [ "${{ steps.roadmap-check.outputs.has_completed_items }}" == "true" ]; then
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### ⚠️ ROADMAP Maintenance Required" >> $GITHUB_STEP_SUMMARY
+            echo "ROADMAP.md contains completed items marked with \`- [x]\` that should be removed." >> $GITHUB_STEP_SUMMARY
+            echo "Per AGENTS.md meta-rules, completed work must be removed from the roadmap." >> $GITHUB_STEP_SUMMARY
           fi
           
           echo "" >> $GITHUB_STEP_SUMMARY

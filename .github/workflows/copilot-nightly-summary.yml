@@ -3,7 +3,7 @@ name: Copilot Nightly Summary
 # Generates detailed programming diary entries
 # - Runs nightly at 00:00 UTC
 # - Analyzes all commits from the previous day
-# - Creates comprehensive diary entry in docs/diary/
+# - Creates comprehensive diary entry in docs/v2/diary/
 # - Documents what changed, why, and previous state
 
 on:
@@ -81,9 +81,9 @@ jobs:
         run: |
           TARGET_DATE="${{ steps.date.outputs.target_date }}"
           
-          # Get commits from the target date
+          # Get commits from the target date (filter to v2 branches only)
           # Using --since and --until with date boundaries
-          COMMITS=$(git log --all --oneline --since="${TARGET_DATE} 00:00:00" --until="${TARGET_DATE} 23:59:59" --format="%H|%s|%an|%ad" --date=format:'%Y-%m-%d %H:%M' 2>/dev/null || echo "")
+          COMMITS=$(git log architecture/v2-bootstrap main --oneline --since="${TARGET_DATE} 00:00:00" --until="${TARGET_DATE} 23:59:59" --format="%H|%s|%an|%ad" --date=format:'%Y-%m-%d %H:%M' 2>/dev/null || echo "")
           
           if [ -z "$COMMITS" ]; then
             echo "No commits found for ${TARGET_DATE}"
@@ -107,7 +107,7 @@ jobs:
           YEAR="${{ steps.date.outputs.year }}"
           MONTH="${{ steps.date.outputs.month }}"
           
-          DIARY_PATH="docs/diary/${YEAR}/${MONTH}/${TARGET_DATE}.md"
+          DIARY_PATH="docs/v2/diary/${YEAR}/${MONTH}/${TARGET_DATE}.md"
           
           if [ -f "$DIARY_PATH" ]; then
             echo "Diary entry already exists: ${DIARY_PATH}"
@@ -125,8 +125,8 @@ jobs:
           YEAR="${{ steps.date.outputs.year }}"
           MONTH="${{ steps.date.outputs.month }}"
           
-          mkdir -p "docs/diary/${YEAR}/${MONTH}"
-          echo "Created directory: docs/diary/${YEAR}/${MONTH}"
+          mkdir -p "docs/v2/diary/${YEAR}/${MONTH}"
+          echo "Created directory: docs/v2/diary/${YEAR}/${MONTH}"
 
       - name: Analyze commits and generate diary
         id: analyze
@@ -355,7 +355,7 @@ jobs:
           
           # Stage diary entry
           git add "${DIARY_PATH}"
-          git add "docs/diary/"
+          git add "docs/v2/diary/"
           
           # Check if there are changes
           if git diff --cached --quiet; then
@@ -364,7 +364,9 @@ jobs:
           fi
           
           # Commit with skip-ci to prevent triggering other workflows
-          git commit -m "docs(diary): Add programming diary for ${TARGET_DATE} [skip ci]"
+          git commit -m "docs(diary): Add programming diary for ${TARGET_DATE}
+
+skip-checks: true"
           
           # Push changes
           git push origin HEAD
