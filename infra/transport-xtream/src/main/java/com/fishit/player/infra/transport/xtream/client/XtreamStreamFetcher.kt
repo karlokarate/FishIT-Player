@@ -70,6 +70,13 @@ class XtreamStreamFetcher @Inject constructor(
      * Get VOD streams.
      * CC: 3 (delegation to generic fetch)
      */
+    /**
+     * Fetch VOD streams with client-side pagination.
+     * 
+     * Note: This fetches ALL streams from the API and applies pagination client-side via
+     * drop(offset).take(limit). For large catalogs (10k+ items), this is inefficient.
+     * Consider using streamVodInBatches() for better performance when full pagination is needed.
+     */
     suspend fun getVodStreams(
         categoryId: String? = null,
         limit: Int = 500,
@@ -83,7 +90,7 @@ class XtreamStreamFetcher @Inject constructor(
                 streamingMapper = VodStreamMapper::fromStreaming,
                 fallbackMapper = VodStreamMapper::fromJsonObject,
             )
-            // Apply pagination
+            // Apply pagination (client-side - fetches all before slicing)
             allStreams.drop(offset).take(limit)
         }
 
@@ -549,19 +556,19 @@ class XtreamStreamFetcher @Inject constructor(
         }
 
     /**
-     * Prefetch EPG for multiple streams (fire-and-forget).
-     * CC: 2
+     * Prefetch EPG data for multiple streams concurrently.
+     * Launches parallel fetch operations and awaits all completions before returning.
      */
     suspend fun prefetchEpg(
         streamIds: List<Int>,
         perStreamLimit: Int = 10,
     ) {
         withContext(io) {
-            streamIds.forEach { streamId ->
-                launch {
+            streamIds.map { streamId ->
+                async {
                     runCatching { getShortEpg(streamId, perStreamLimit) }
                 }
-            }
+            }.awaitAll()
         }
     }
 
