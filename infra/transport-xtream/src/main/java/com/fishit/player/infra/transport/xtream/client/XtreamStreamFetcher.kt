@@ -70,17 +70,28 @@ class XtreamStreamFetcher @Inject constructor(
      * Get VOD streams.
      * CC: 3 (delegation to generic fetch)
      */
+    /**
+     * Fetch VOD streams with client-side pagination.
+     * 
+     * Note: This fetches ALL streams from the API and applies pagination client-side via
+     * drop(offset).take(limit). For large catalogs (10k+ items), this is inefficient.
+     * Consider using streamVodInBatches() for better performance when full pagination is needed.
+     */
     suspend fun getVodStreams(
-        vodKind: String,
-        categoryId: String?,
+        categoryId: String? = null,
+        limit: Int = 500,
+        offset: Int = 0,
     ): List<XtreamVodStream> =
         withContext(io) {
-            fetchStreamsWithCategoryFallbackStreaming(
+            val vodKind = urlBuilder.currentVodKind
+            val allStreams = fetchStreamsWithCategoryFallbackStreaming(
                 action = "get_${vodKind}_streams",
                 categoryId = categoryId,
                 streamingMapper = VodStreamMapper::fromStreaming,
                 fallbackMapper = VodStreamMapper::fromJsonObject,
             )
+            // Apply pagination (client-side - fetches all before slicing)
+            allStreams.drop(offset).take(limit)
         }
 
     /**
@@ -88,15 +99,19 @@ class XtreamStreamFetcher @Inject constructor(
      * CC: 3
      */
     suspend fun getLiveStreams(
-        categoryId: String?,
+        categoryId: String? = null,
+        limit: Int = 500,
+        offset: Int = 0,
     ): List<XtreamLiveStream> =
         withContext(io) {
-            fetchStreamsWithCategoryFallbackStreaming(
+            val allStreams = fetchStreamsWithCategoryFallbackStreaming(
                 action = "get_live_streams",
                 categoryId = categoryId,
                 streamingMapper = LiveStreamMapper::fromStreaming,
                 fallbackMapper = LiveStreamMapper::fromJsonObject,
             )
+            // Apply pagination
+            allStreams.drop(offset).take(limit)
         }
 
     /**
@@ -104,15 +119,19 @@ class XtreamStreamFetcher @Inject constructor(
      * CC: 3
      */
     suspend fun getSeries(
-        categoryId: String?,
+        categoryId: String? = null,
+        limit: Int = 500,
+        offset: Int = 0,
     ): List<XtreamSeriesStream> =
         withContext(io) {
-            fetchStreamsWithCategoryFallbackStreaming(
+            val allStreams = fetchStreamsWithCategoryFallbackStreaming(
                 action = "get_series",
                 categoryId = categoryId,
                 streamingMapper = SeriesStreamMapper::fromStreaming,
                 fallbackMapper = SeriesStreamMapper::fromJsonObject,
             )
+            // Apply pagination
+            allStreams.drop(offset).take(limit)
         }
 
     // =========================================================================
@@ -124,13 +143,12 @@ class XtreamStreamFetcher @Inject constructor(
      * CC: 4 (batch processing)
      */
     suspend fun streamVodInBatches(
-        urlBuilder: XtreamUrlBuilder,
-        vodKind: String,
-        batchSize: Int,
-        categoryId: String?,
+        batchSize: Int = 500,
+        categoryId: String? = null,
         onBatch: suspend (List<XtreamVodStream>) -> Unit,
     ): Int =
         withContext(io) {
+            val vodKind = urlBuilder.currentVodKind
             streamContentInBatches(
                 urlBuilder = urlBuilder,
                 action = "get_${vodKind}_streams",
@@ -147,9 +165,8 @@ class XtreamStreamFetcher @Inject constructor(
      * CC: 4
      */
     suspend fun streamSeriesInBatches(
-        urlBuilder: XtreamUrlBuilder,
-        batchSize: Int,
-        categoryId: String?,
+        batchSize: Int = 500,
+        categoryId: String? = null,
         onBatch: suspend (List<XtreamSeriesStream>) -> Unit,
     ): Int =
         withContext(io) {
@@ -169,9 +186,8 @@ class XtreamStreamFetcher @Inject constructor(
      * CC: 4
      */
     suspend fun streamLiveInBatches(
-        urlBuilder: XtreamUrlBuilder,
-        batchSize: Int,
-        categoryId: String?,
+        batchSize: Int = 500,
+        categoryId: String? = null,
         onBatch: suspend (List<XtreamLiveStream>) -> Unit,
     ): Int =
         withContext(io) {
@@ -499,6 +515,61 @@ class XtreamStreamFetcher @Inject constructor(
     private fun redactUrl(url: String): String {
         return url.replace(Regex("username=[^&]+"), "username=***")
             .replace(Regex("password=[^&]+"), "password=***")
+    }
+
+    /**
+     * Get short EPG for a stream.
+     * CC: 2
+     */
+    suspend fun getShortEpg(
+        streamId: Int,
+        limit: Int = 20,
+    ): List<XtreamEpgProgramme> =
+        withContext(io) {
+            val url = urlBuilder.playerApiUrl(
+                "get_short_epg",
+                mapOf("stream_id" to streamId.toString(), "limit" to limit.toString())
+            )
+            val body = runCatching { fetchRaw(url) }.getOrNull()
+            if (body.isNullOrEmpty()) return@withContext emptyList()
+            
+            runCatching { 
+                json.decodeFromString<Map<String, List<XtreamEpgProgramme>>>(body)
+                    .values.flatten().take(limit)
+            }.getOrElse { emptyList() }
+        }
+
+    /**
+     * Get full EPG for a stream.
+     * CC: 2
+     */
+    suspend fun getFullEpg(streamId: Int): List<XtreamEpgProgramme> =
+        withContext(io) {
+            val url = urlBuilder.playerApiUrl("get_simple_data_table", mapOf("stream_id" to streamId.toString()))
+            val body = runCatching { fetchRaw(url) }.getOrNull()
+            if (body.isNullOrEmpty()) return@withContext emptyList()
+            
+            runCatching {
+                json.decodeFromString<Map<String, List<XtreamEpgProgramme>>>(body)
+                    .values.flatten()
+            }.getOrElse { emptyList() }
+        }
+
+    /**
+     * Prefetch EPG data for multiple streams concurrently.
+     * Launches parallel fetch operations and awaits all completions before returning.
+     */
+    suspend fun prefetchEpg(
+        streamIds: List<Int>,
+        perStreamLimit: Int = 10,
+    ) {
+        withContext(io) {
+            streamIds.map { streamId ->
+                async {
+                    runCatching { getShortEpg(streamId, perStreamLimit) }
+                }
+            }.awaitAll()
+        }
     }
 
     /**

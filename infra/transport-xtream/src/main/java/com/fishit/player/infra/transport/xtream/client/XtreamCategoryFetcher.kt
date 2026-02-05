@@ -48,18 +48,21 @@ class XtreamCategoryFetcher @Inject constructor(
      * Get VOD categories with alias resolution.
      * CC: 4 (alias loop)
      */
-    suspend fun getVodCategories(
-        currentVodKind: String,
-    ): Pair<List<XtreamCategory>, String> {
+    suspend fun getVodCategories(): List<XtreamCategory> {
+        // Get current vodKind from urlBuilder (managed by ConnectionManager)
+        val currentVodKind = urlBuilder.currentVodKind
+        
         // Try aliases in order
         val candidates = listOf(currentVodKind) + VOD_ALIAS_CANDIDATES.filter { it != currentVodKind }
         for (alias in candidates) {
             val result = fetchCategories("get_${alias}_categories")
             if (result.isNotEmpty()) {
-                return Pair(result, alias)
+                // Update urlBuilder with resolved alias
+                urlBuilder.updateVodKind(alias)
+                return result
             }
         }
-        return Pair(emptyList(), currentVodKind)
+        return emptyList()
     }
 
     /**

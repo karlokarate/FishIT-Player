@@ -61,6 +61,13 @@ class XtreamUrlBuilder @Inject constructor() {
         vodKind = kind
     }
 
+    /**
+     * Get current vodKind (for alias resolution in XtreamCategoryFetcher).
+     */
+    val currentVodKind: String
+        @Synchronized
+        get() = vodKind
+
     // =========================================================================
     // Base URL
     // =========================================================================
@@ -122,6 +129,7 @@ class XtreamUrlBuilder @Inject constructor() {
                 addQueryParameter("password", cfg.password)
             }.build()
             .toString()
+    }
 
     // =========================================================================
     // Panel API URLs (Premium Contract Section 2/8)
