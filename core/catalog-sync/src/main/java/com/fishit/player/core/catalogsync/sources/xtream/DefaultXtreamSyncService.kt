@@ -9,6 +9,8 @@ import com.fishit.player.core.model.RawMediaMetadata
 import com.fishit.player.core.model.sync.DeviceProfile
 import com.fishit.player.core.model.sync.SyncPhase
 import com.fishit.player.core.model.sync.SyncStatus
+import com.fishit.player.core.persistence.repository.FingerprintRepository
+import com.fishit.player.core.persistence.repository.SyncCheckpointRepository
 import com.fishit.player.core.synccommon.buffer.ChannelSyncBuffer
 import com.fishit.player.core.synccommon.checkpoint.SyncCheckpoint
 import com.fishit.player.core.synccommon.checkpoint.SyncCheckpointStore
@@ -55,6 +57,8 @@ class DefaultXtreamSyncService @Inject constructor(
     private val incrementalSyncDecider: IncrementalSyncDecider,
     private val deviceProfileDetector: DeviceProfileDetector,
     private val syncPerfMetrics: SyncPerfMetrics,
+    private val fingerprintRepository: FingerprintRepository,
+    private val syncCheckpointRepository: SyncCheckpointRepository,
 ) : XtreamSyncService {
 
     private var activeJob: Job? = null
@@ -149,15 +153,17 @@ class DefaultXtreamSyncService @Inject constructor(
                     processedItems = 0,
                     totalItems = null,
                 ))
-                val liveCount = executeLivePhase(config, buffer, scope)
-                totalItems += liveCount
+                val lastSyncTimeMs = getLastSyncTimeForContentType(config.accountKey, "live")
+                val result = executeLivePhase(config, buffer, scope, syncStrategy, lastSyncTimeMs)
+                totalItems += result.processedCount
                 saveCheckpointIfEnabled(config, SyncPhase.LIVE_CHANNELS, totalItems)
                 syncPerfMetrics.endPhase(SyncPhase.LIVE_CHANNELS)
+                log("Live phase: processed=${result.processedCount}, skippedByTimestamp=${result.skippedByTimestamp}, skippedByFingerprint=${result.skippedByFingerprint}")
                 emit(SyncStatus.InProgress(
                     source = SYNC_SOURCE,
                     phase = SyncPhase.LIVE_CHANNELS,
-                    processedItems = liveCount,
-                    totalItems = liveCount,
+                    processedItems = result.processedCount,
+                    totalItems = result.processedCount,
                 ))
             }
 
@@ -170,15 +176,17 @@ class DefaultXtreamSyncService @Inject constructor(
                     processedItems = 0,
                     totalItems = null,
                 ))
-                val vodCount = executeVodPhase(config, buffer, scope)
-                totalItems += vodCount
+                val lastSyncTimeMs = getLastSyncTimeForContentType(config.accountKey, "vod")
+                val result = executeVodPhase(config, buffer, scope, syncStrategy, lastSyncTimeMs)
+                totalItems += result.processedCount
                 saveCheckpointIfEnabled(config, SyncPhase.VOD_MOVIES, totalItems)
                 syncPerfMetrics.endPhase(SyncPhase.VOD_MOVIES)
+                log("VOD phase: processed=${result.processedCount}, skippedByTimestamp=${result.skippedByTimestamp}, skippedByFingerprint=${result.skippedByFingerprint}")
                 emit(SyncStatus.InProgress(
                     source = SYNC_SOURCE,
                     phase = SyncPhase.VOD_MOVIES,
-                    processedItems = vodCount,
-                    totalItems = vodCount,
+                    processedItems = result.processedCount,
+                    totalItems = result.processedCount,
                 ))
             }
 
@@ -191,15 +199,17 @@ class DefaultXtreamSyncService @Inject constructor(
                     processedItems = 0,
                     totalItems = null,
                 ))
-                val seriesCount = executeSeriesPhase(config, buffer, scope)
-                totalItems += seriesCount
+                val lastSyncTimeMs = getLastSyncTimeForContentType(config.accountKey, "series")
+                val result = executeSeriesPhase(config, buffer, scope, syncStrategy, lastSyncTimeMs)
+                totalItems += result.processedCount
                 saveCheckpointIfEnabled(config, SyncPhase.SERIES_INDEX, totalItems)
                 syncPerfMetrics.endPhase(SyncPhase.SERIES_INDEX)
+                log("Series phase: processed=${result.processedCount}, skippedByTimestamp=${result.skippedByTimestamp}, skippedByFingerprint=${result.skippedByFingerprint}")
                 emit(SyncStatus.InProgress(
                     source = SYNC_SOURCE,
                     phase = SyncPhase.SERIES_INDEX,
-                    processedItems = seriesCount,
-                    totalItems = seriesCount,
+                    processedItems = result.processedCount,
+                    totalItems = result.processedCount,
                 ))
             }
 
@@ -212,15 +222,17 @@ class DefaultXtreamSyncService @Inject constructor(
                     processedItems = 0,
                     totalItems = null,
                 ))
-                val episodeCount = executeEpisodesPhase(config, buffer, scope)
-                totalItems += episodeCount
+                val lastSyncTimeMs = getLastSyncTimeForContentType(config.accountKey, "episodes")
+                val result = executeEpisodesPhase(config, buffer, scope, syncStrategy, lastSyncTimeMs)
+                totalItems += result.processedCount
                 saveCheckpointIfEnabled(config, SyncPhase.SERIES_EPISODES, totalItems)
                 syncPerfMetrics.endPhase(SyncPhase.SERIES_EPISODES)
+                log("Episodes phase: processed=${result.processedCount}, skippedByTimestamp=${result.skippedByTimestamp}, skippedByFingerprint=${result.skippedByFingerprint}")
                 emit(SyncStatus.InProgress(
                     source = SYNC_SOURCE,
                     phase = SyncPhase.SERIES_EPISODES,
-                    processedItems = episodeCount,
-                    totalItems = episodeCount,
+                    processedItems = result.processedCount,
+                    totalItems = result.processedCount,
                 ))
             }
 
@@ -352,13 +364,29 @@ class DefaultXtreamSyncService @Inject constructor(
 
     private fun checkpointKey(accountKey: String): String = "xtream_$accountKey"
 
+    private suspend fun getLastSyncTimeForContentType(accountKey: String, contentType: String): Long? {
+        return syncCheckpointRepository.getLastSyncTimestamp(SYNC_SOURCE, accountKey, contentType)
+            .takeIf { it > 0 }
+    }
+
+    /**
+     * Result from a phase execution with incremental sync metrics.
+     */
+    private data class PhaseResult(
+        val processedCount: Int,
+        val skippedByTimestamp: Int,
+        val skippedByFingerprint: Int,
+    )
+
     // === Phase Execution ===
 
     private suspend fun executeVodPhase(
         config: XtreamSyncConfig,
         buffer: ChannelSyncBuffer<XtreamSyncItem>,
         scope: CoroutineScope,
-    ): Int {
+        syncStrategy: SyncStrategy,
+        lastSyncTimeMs: Long?,
+    ): PhaseResult {
         val pipelineConfig = XtreamCatalogConfig(
             accountName = config.accountKey,
             includeVod = true,
@@ -367,14 +395,16 @@ class DefaultXtreamSyncService @Inject constructor(
             includeLive = false,
             vodCategoryIds = config.vodCategoryIds,
         )
-        return executePhase(pipelineConfig, buffer, scope, "VOD")
+        return executePhase(pipelineConfig, buffer, scope, "VOD", syncStrategy, lastSyncTimeMs, "vod")
     }
 
     private suspend fun executeSeriesPhase(
         config: XtreamSyncConfig,
         buffer: ChannelSyncBuffer<XtreamSyncItem>,
         scope: CoroutineScope,
-    ): Int {
+        syncStrategy: SyncStrategy,
+        lastSyncTimeMs: Long?,
+    ): PhaseResult {
         val pipelineConfig = XtreamCatalogConfig(
             accountName = config.accountKey,
             includeVod = false,
@@ -383,14 +413,16 @@ class DefaultXtreamSyncService @Inject constructor(
             includeLive = false,
             seriesCategoryIds = config.seriesCategoryIds,
         )
-        return executePhase(pipelineConfig, buffer, scope, "Series")
+        return executePhase(pipelineConfig, buffer, scope, "Series", syncStrategy, lastSyncTimeMs, "series")
     }
 
     private suspend fun executeEpisodesPhase(
         config: XtreamSyncConfig,
         buffer: ChannelSyncBuffer<XtreamSyncItem>,
         scope: CoroutineScope,
-    ): Int {
+        syncStrategy: SyncStrategy,
+        lastSyncTimeMs: Long?,
+    ): PhaseResult {
         val pipelineConfig = XtreamCatalogConfig(
             accountName = config.accountKey,
             includeVod = false,
@@ -400,14 +432,16 @@ class DefaultXtreamSyncService @Inject constructor(
             excludeSeriesIds = config.excludeSeriesIds,
             episodeParallelism = config.episodeParallelism,
         )
-        return executePhase(pipelineConfig, buffer, scope, "Episodes")
+        return executePhase(pipelineConfig, buffer, scope, "Episodes", syncStrategy, lastSyncTimeMs, "episodes")
     }
 
     private suspend fun executeLivePhase(
         config: XtreamSyncConfig,
         buffer: ChannelSyncBuffer<XtreamSyncItem>,
         scope: CoroutineScope,
-    ): Int {
+        syncStrategy: SyncStrategy,
+        lastSyncTimeMs: Long?,
+    ): PhaseResult {
         val pipelineConfig = XtreamCatalogConfig(
             accountName = config.accountKey,
             includeVod = false,
@@ -416,27 +450,90 @@ class DefaultXtreamSyncService @Inject constructor(
             includeLive = true,
             liveCategoryIds = config.liveCategoryIds,
         )
-        return executePhase(pipelineConfig, buffer, scope, "Live")
+        return executePhase(pipelineConfig, buffer, scope, "Live", syncStrategy, lastSyncTimeMs, "live")
     }
 
+    /**
+     * Execute a sync phase with Tier 3/4 incremental filtering.
+     *
+     * **Tier 3 (Timestamp Filter):** Skip items where addedTimestamp < lastSyncTimeMs
+     * **Tier 4 (Fingerprint Check):** Skip items where fingerprint matches stored value
+     *
+     * @param pipelineConfig Pipeline configuration
+     * @param buffer Channel buffer for producer/consumer
+     * @param scope Coroutine scope for jobs
+     * @param phaseName Phase name for logging
+     * @param syncStrategy The strategy (Full/Incremental) - filtering only for Incremental
+     * @param lastSyncTimeMs Last successful sync timestamp (for Tier 3)
+     * @param contentType Content type key ("vod", "series", "live", "episodes")
+     * @return Phase result with processed/skipped counts
+     */
     private suspend fun executePhase(
         pipelineConfig: XtreamCatalogConfig,
         buffer: ChannelSyncBuffer<XtreamSyncItem>,
         scope: CoroutineScope,
         phaseName: String,
-    ): Int {
-        var count = 0
+        syncStrategy: SyncStrategy,
+        lastSyncTimeMs: Long?,
+        contentType: String,
+    ): PhaseResult {
+        var processedCount = 0
+        var skippedByTimestamp = 0
+        var skippedByFingerprint = 0
+        
+        // Tier 4: Load fingerprints for incremental sync
+        val fingerprintMap: Map<String, Int> = if (syncStrategy is SyncStrategy.IncrementalSync) {
+            fingerprintRepository.getFingerprintsAsMap(
+                sourceType = SYNC_SOURCE,
+                accountId = pipelineConfig.accountName,
+                contentType = contentType,
+            )
+        } else {
+            emptyMap()
+        }
+        
+        // Track new fingerprints to update after successful sync
+        val newFingerprints = mutableMapOf<String, Int>()
 
-        // Producer: emit items from pipeline
+        // Producer: emit items from pipeline with Tier 3/4 filtering
         val producerJob = scope.launch {
             try {
                 pipeline.scanCatalog(pipelineConfig).collect { event ->
                     if (!scope.isActive) return@collect
                     when (event) {
                         is XtreamCatalogEvent.ItemDiscovered -> {
-                            val item = XtreamSyncItem(event.item.raw)
+                            val raw = event.item.raw
+                            
+                            // === Tier 3: Timestamp Filter (only for incremental) ===
+                            if (syncStrategy is SyncStrategy.IncrementalSync && lastSyncTimeMs != null) {
+                                val itemAddedTimestamp = raw.addedTimestamp
+                                if (itemAddedTimestamp != null) {
+                                    // addedTimestamp is in seconds, lastSyncTimeMs is in milliseconds
+                                    val itemAddedMs = itemAddedTimestamp * 1000L
+                                    if (itemAddedMs < lastSyncTimeMs) {
+                                        skippedByTimestamp++
+                                        return@collect  // Skip old item
+                                    }
+                                }
+                            }
+                            
+                            // === Tier 4: Fingerprint Check (only for incremental) ===
+                            if (syncStrategy is SyncStrategy.IncrementalSync) {
+                                val currentFingerprint = computeFingerprint(raw)
+                                val storedFingerprint = fingerprintMap[raw.sourceId]
+                                
+                                if (storedFingerprint != null && storedFingerprint == currentFingerprint) {
+                                    skippedByFingerprint++
+                                    return@collect  // Skip unchanged item
+                                }
+                                
+                                // Track for later update
+                                newFingerprints[raw.sourceId] = currentFingerprint
+                            }
+                            
+                            val item = XtreamSyncItem(raw)
                             buffer.send(item)
-                            count++
+                            processedCount++
                         }
                         is XtreamCatalogEvent.ScanProgress -> {
                             // Log progress
@@ -463,9 +560,49 @@ class DefaultXtreamSyncService @Inject constructor(
         // Wait for completion
         producerJob.join()
         consumerJob.join()
+        
+        // Update fingerprints after successful phase completion
+        if (newFingerprints.isNotEmpty()) {
+            val syncGeneration = System.currentTimeMillis()
+            fingerprintRepository.putFingerprints(
+                sourceType = SYNC_SOURCE,
+                accountId = pipelineConfig.accountName,
+                contentType = contentType,
+                fingerprints = newFingerprints,
+                syncGeneration = syncGeneration,
+            )
+            log("Updated ${newFingerprints.size} fingerprints for $contentType")
+        }
 
-        log("Phase $phaseName completed: $count items")
-        return count
+        log("Phase $phaseName completed: processed=$processedCount, skippedTimestamp=$skippedByTimestamp, skippedFingerprint=$skippedByFingerprint")
+        return PhaseResult(processedCount, skippedByTimestamp, skippedByFingerprint)
+    }
+    
+    /**
+     * Compute a stable fingerprint for a RawMediaMetadata item.
+     *
+     * The fingerprint is a hash of key identifying fields that if changed,
+     * indicate the item needs to be re-processed.
+     *
+     * **Fields included:**
+     * - originalTitle
+     * - year
+     * - season/episode (for episodes)
+     * - durationMs
+     * - poster (presence/change via hashCode)
+     * - externalIds (TMDB, IMDB)
+     */
+    private fun computeFingerprint(raw: RawMediaMetadata): Int {
+        return listOf(
+            raw.originalTitle,
+            raw.year?.toString() ?: "",
+            raw.season?.toString() ?: "",
+            raw.episode?.toString() ?: "",
+            raw.durationMs?.toString() ?: "",
+            raw.poster?.hashCode()?.toString() ?: "",
+            raw.externalIds.effectiveTmdbId?.toString() ?: "",
+            raw.externalIds.imdbId ?: "",
+        ).joinToString("|").hashCode()
     }
 
     private fun log(message: String, error: Throwable? = null) {
