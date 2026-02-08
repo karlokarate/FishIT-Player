@@ -80,3 +80,6 @@
 {"timestamp": "2026-02-08T16:28:54.221835", "source": "cli", "action": "cli_check_batch", "filePath": "tools/scope-guard-mcp/src/index.ts", "status": "BUNDLE", "details": "In bundle 'scope-system': Scope Guard system itself - self-referential protection"}
 {"timestamp": "2026-02-08T16:28:54.221975", "source": "cli", "action": "cli_check_batch", "filePath": "tools/scope-guard-watcher.py", "status": "UNTRACKED", "details": "Not in any scope or bundle"}
 {"timestamp": "2026-02-08T16:28:54.222099", "source": "cli", "action": "cli_check_batch", "filePath": "tools/scope-manager.py", "status": "UNTRACKED", "details": "Not in any scope or bundle"}
+{"timestamp": "2026-02-08T16:58:51.389316", "source": "cli", "action": "cli_check_batch", "filePath": ".scope/audit.log", "status": "EXCLUDED", "details": "Build artifact - auto-allowed"}
+{"timestamp": "2026-02-08T16:58:51.390270", "source": "cli", "action": "cli_check_batch", "filePath": "app-v2/src/main/java/com/fishit/player/v2/work/CatalogSyncOrchestratorWorker.kt", "status": "READ_ONLY", "details": "Protected by readOnlyPaths: app/**"}
+{"timestamp": "2026-02-08T16:58:51.390404", "source": "cli", "action": "cli_check_batch", "filePath": "app-v2/src/main/java/com/fishit/player/v2/work/XtreamCatalogScanWorker.kt", "status": "READ_ONLY", "details": "Protected by readOnlyPaths: app/**"}

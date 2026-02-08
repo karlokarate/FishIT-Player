@@ -207,12 +207,12 @@ class CatalogSyncOrchestratorWorker
                     // Track progress
                     when (status) {
                         is SyncStatus.InProgress -> {
-                            itemsPersisted = status.totalProcessed
+                            itemsPersisted = status.processedItems.toLong()
                         }
                         is SyncStatus.Completed -> {
-                            val vodCount = status.itemCounts.vodCount
-                            val seriesCount = status.itemCounts.seriesCount
-                            val liveCount = status.itemCounts.liveCount
+                            val vodCount = status.itemCounts.vodMovies
+                            val seriesCount = status.itemCounts.seriesShows
+                            val liveCount = status.itemCounts.liveChannels
 
                             UnifiedLog.i(TAG) {
                                 "Xtream SUCCESS: vod=$vodCount series=$seriesCount live=$liveCount"
@@ -224,7 +224,7 @@ class CatalogSyncOrchestratorWorker
                             )
                         }
                         is SyncStatus.Error -> {
-                            throw status.throwable ?: RuntimeException(status.message)
+                            throw status.exception ?: RuntimeException(status.message)
                         }
                         else -> {}
                     }
@@ -284,8 +284,11 @@ class CatalogSyncOrchestratorWorker
         private suspend fun buildXtreamSyncConfig(input: WorkerInputData): XtreamSyncConfig {
             val deviceProfile = when {
                 input.isFireTvLowRam -> DeviceProfile.FIRETV_STICK
-                input.deviceClass.contains("FIRETV", ignoreCase = true) -> DeviceProfile.ANDROID_TV
-                else -> DeviceProfile.PHONE_TABLET
+                input.deviceClass.contains("FIRETV", ignoreCase = true) -> DeviceProfile.FIRETV_CUBE
+                input.deviceClass.contains("SHIELD", ignoreCase = true) -> DeviceProfile.SHIELD_TV
+                input.deviceClass.contains("CHROMECAST", ignoreCase = true) -> DeviceProfile.CHROMECAST_GTV
+                input.deviceClass.contains("TV", ignoreCase = true) -> DeviceProfile.ANDROID_TV_GENERIC
+                else -> DeviceProfile.PHONE_HIGH_RAM
             }
 
             val capabilities = xtreamApiClient.capabilities

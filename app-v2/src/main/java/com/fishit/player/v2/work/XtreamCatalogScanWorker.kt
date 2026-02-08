@@ -73,13 +73,13 @@ class XtreamCatalogScanWorker
             var itemsPersisted = 0L
 
             UnifiedLog.i(TAG) {
-                "START sync_run_id=\${input.syncRunId} mode=\${input.syncMode} source=XTREAM"
+                "START sync_run_id=${input.syncRunId} mode=${input.syncMode} source=XTREAM"
             }
 
             // Step 1: Runtime guards check
             val guardReason = RuntimeGuards.checkGuards(applicationContext, input.syncMode)
             if (guardReason != null) {
-                UnifiedLog.w(TAG) { "GUARD_DEFER reason=\$guardReason mode=\${input.syncMode}" }
+                UnifiedLog.w(TAG) { "GUARD_DEFER reason=$guardReason mode=${input.syncMode}" }
                 return Result.retry()
             }
 
@@ -88,9 +88,9 @@ class XtreamCatalogScanWorker
                 val config = buildSyncConfig(input)
 
                 UnifiedLog.d(TAG) {
-                    "Sync config: vod=\${config.syncVod} series=\${config.syncSeries} " +
-                        "live=\${config.syncLive} profile=\${config.deviceProfile} " +
-                        "forceFullSync=\${config.forceFullSync}"
+                    "Sync config: vod=${config.syncVod} series=${config.syncSeries} " +
+                        "live=${config.syncLive} profile=${config.deviceProfile} " +
+                        "forceFullSync=${config.forceFullSync}"
                 }
 
                 // Step 3: Execute sync via service
@@ -105,7 +105,7 @@ class XtreamCatalogScanWorker
                     val elapsedMs = System.currentTimeMillis() - startTimeMs
                     if (elapsedMs > input.maxRuntimeMs) {
                         UnifiedLog.w(TAG) {
-                            "Max runtime exceeded (\${elapsedMs}ms > \${input.maxRuntimeMs}ms)"
+                            "Max runtime exceeded (${elapsedMs}ms > ${input.maxRuntimeMs}ms)"
                         }
                         xtreamSyncService.cancel()
                         return@collect
@@ -115,27 +115,27 @@ class XtreamCatalogScanWorker
                     when (status) {
                         is SyncStatus.Started -> {
                             UnifiedLog.d(TAG) {
-                                "Sync started: fullSync=\${status.isFullSync} " +
-                                    "phases=\${status.estimatedPhases.size}"
+                                "Sync started: fullSync=${status.isFullSync} " +
+                                    "phases=${status.estimatedPhases.size}"
                             }
                         }
                         is SyncStatus.InProgress -> {
-                            itemsPersisted = status.totalProcessed
+                            itemsPersisted = status.processedItems.toLong()
                             UnifiedLog.d(TAG) {
-                                "PROGRESS: persisted=\${status.totalProcessed} " +
-                                    "phase=\${status.currentPhase}"
+                                "PROGRESS: persisted=${status.processedItems} " +
+                                    "phase=${status.phase}"
                             }
                         }
                         is SyncStatus.Completed -> {
                             val durationMs = System.currentTimeMillis() - startTimeMs
-                            val vodCount = status.itemCounts.vodCount
-                            val seriesCount = status.itemCounts.seriesCount
-                            val liveCount = status.itemCounts.liveCount
+                            val vodCount = status.itemCounts.vodMovies
+                            val seriesCount = status.itemCounts.seriesShows
+                            val liveCount = status.itemCounts.liveChannels
 
                             UnifiedLog.i(TAG) {
-                                "SUCCESS duration_ms=\$durationMs | " +
-                                    "vod=\$vodCount series=\$seriesCount live=\$liveCount | " +
-                                    "incremental=\${status.wasIncremental}"
+                                "SUCCESS duration_ms=$durationMs | " +
+                                    "vod=$vodCount series=$seriesCount live=$liveCount | " +
+                                    "incremental=${status.wasIncremental}"
                             }
 
                             // Step 4: Invalidate cache on success
@@ -146,13 +146,13 @@ class XtreamCatalogScanWorker
                         }
                         is SyncStatus.Error -> {
                             UnifiedLog.e(TAG) {
-                                "Sync error: \${status.message}"
+                                "Sync error: ${status.message}"
                             }
-                            throw status.throwable ?: RuntimeException(status.message)
+                            throw status.exception ?: RuntimeException(status.message)
                         }
                         is SyncStatus.Cancelled -> {
-                            itemsPersisted = status.itemsProcessed
-                            UnifiedLog.w(TAG) { "Sync cancelled: \$itemsPersisted items persisted" }
+                            itemsPersisted = status.processedItems.toLong()
+                            UnifiedLog.w(TAG) { "Sync cancelled: $itemsPersisted items persisted" }
                         }
                         else -> {
                             // Ignore other status types (Telegram-specific, etc.)
@@ -167,9 +167,9 @@ class XtreamCatalogScanWorker
                         durationMs = durationMs,
                     ),
                 )
-            } catch (_: Cancellation Exception) {
+            } catch (_: CancellationException) {
                 val durationMs = System.currentTimeMillis() - startTimeMs
-                UnifiedLog.w(TAG) { "Cancelled after \${durationMs}ms, persisted \$itemsPersisted items" }
+                UnifiedLog.w(TAG) { "Cancelled after ${durationMs}ms, persisted $itemsPersisted items" }
                 // Return success to preserve state
                 return Result.success(
                     WorkerOutputData.success(
@@ -180,7 +180,7 @@ class XtreamCatalogScanWorker
             } catch (e: Exception) {
                 val durationMs = System.currentTimeMillis() - startTimeMs
                 UnifiedLog.e(TAG, e) {
-                    "FAILURE reason=\${e.javaClass.simpleName} duration_ms=\$durationMs"
+                    "FAILURE reason=${e.javaClass.simpleName} duration_ms=$durationMs"
                 }
                 return Result.retry()
             }
@@ -198,8 +198,11 @@ class XtreamCatalogScanWorker
             // Detect device profile
             val deviceProfile = when {
                 input.isFireTvLowRam -> DeviceProfile.FIRETV_STICK
-                input.deviceClass.contains("FIRETV", ignoreCase = true) -> DeviceProfile.ANDROID_TV
-                else -> DeviceProfile.PHONE_TABLET
+                input.deviceClass.contains("FIRETV", ignoreCase = true) -> DeviceProfile.FIRETV_CUBE
+                input.deviceClass.contains("SHIELD", ignoreCase = true) -> DeviceProfile.SHIELD_TV
+                input.deviceClass.contains("CHROMECAST", ignoreCase = true) -> DeviceProfile.CHROMECAST_GTV
+                input.deviceClass.contains("TV", ignoreCase = true) -> DeviceProfile.ANDROID_TV_GENERIC
+                else -> DeviceProfile.PHONE_HIGH_RAM
             }
 
             // Get accountKey from capabilities
