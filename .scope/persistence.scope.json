@@ -60,7 +60,8 @@
     }
   },
   "relatedScopes": [
-    "catalog-sync.scope.json"
+    "catalog-sync",
+    "xtream-data"
   ],
   "globalInvariants": [
     "UI screens MUST read from NX_* entities only - NEVER Obx* entities",

@@ -2,9 +2,47 @@
 applyTo: '**'
 ---
 
-# Scope Guard System v3.0 – Mandatory Pre-Edit Check
+# Scope Guard System v3.2 – Mandatory Pre-Edit Check
 
 > **⚠️ HARD RULE:** Before ANY file modification, agents MUST check the Scope Guard system.
+
+---
+
+## 🚨 MANDATORY: Request Classification (EVERY User Message)
+
+Before responding to ANY user request, the agent MUST:
+
+### Step 1: Classify the Request
+
+| Type | Description | Scope Guard Required? |
+|------|-------------|----------------------|
+| **QUESTION** | User asks for information, explanation, analysis | ❌ No - respond directly |
+| **CODE_CHANGE** | User wants to create, edit, delete, refactor code | ✅ **YES - MUST call scope_guard_start_session FIRST** |
+| **CODE_REVIEW** | User wants code analyzed for issues | ⚠️ Optional - helps understand context |
+| **PLANNING** | User wants to discuss approach before coding | ❌ No - but mention which scopes will be affected |
+
+### Step 2: For CODE_CHANGE Requests
+
+```
+1. Call scope_guard_start_session(agent_mode="interactive")
+2. Identify which files will be modified
+3. For EACH file: call scope_guard_check(file_path="...")
+4. If ANY check returns BLOCKED/READ_ONLY → STOP and inform user
+5. Only then proceed with code changes
+```
+
+### Step 3: Quick Classification Examples
+
+| User Says | Classification | Action |
+|-----------|----------------|--------|
+| "Was macht diese Funktion?" | QUESTION | Respond directly |
+| "Füge einen Logger hinzu" | CODE_CHANGE | → scope_guard_start_session |
+| "Refactore XYZ" | CODE_CHANGE | → scope_guard_start_session |
+| "Prüfe den Code auf Bugs" | CODE_REVIEW | Optional scope check |
+| "Wie sollten wir das implementieren?" | PLANNING | Discuss, mention scopes |
+| "Erstelle eine neue Klasse" | CODE_CHANGE | → scope_guard_start_session |
+
+---
 
 ## Quick Reference
 
@@ -12,8 +50,12 @@ applyTo: '**'
 .scope/
 ├── catalog-sync.scope.json    # core/catalog-sync/** 
 ├── persistence.scope.json     # core/persistence/**
+├── xtream-*.scope.json        # Xtream source scopes (7 total)
 ├── scope-guard.config.json    # Server configuration with bundles
 └── scope-guard.schema.json    # Scope file schema
+
+tools/
+└── scope-manager.py           # MANDATORY for scope creation/modification
 ```
 
 ---
@@ -32,6 +74,67 @@ applyTo: '**'
 **Start every session with:**
 ```
 scope_guard_start_session(agent_mode="interactive")  // or "unattended"
+```
+
+---
+
+## 🆕 Working Scope Boundaries (v3.1)
+
+When working on a focused task, agents can declare a **working scope** to prevent scope creep:
+
+```
+scope_guard_start_session(
+  agent_mode="interactive",
+  working_scope="xtream-transport-core",    // Focus on this scope
+  allow_related_scopes=true                  // Allow edits in related scopes
+)
+```
+
+### Boundary Enforcement
+
+When `working_scope` is set:
+- Edits **inside** working scope: `ALLOWED`
+- Edits in **related scopes**: `IN_RELATED` (if `allow_related_scopes=true`)
+- Edits **outside** boundaries: `BOUNDARY_VIOLATION` → **HARD BLOCK**
+
+### When to Use
+
+| Scenario | Use working_scope? |
+|----------|-------------------|
+| Focused refactoring task | ✅ Yes |
+| Cross-cutting changes | ❌ No |
+| Bug fix in specific module | ✅ Yes |
+| General exploration | ❌ No |
+
+---
+
+## 🆕 File Ownership Model (v3.1)
+
+Files can exist in **multiple scopes** with different ownership roles:
+
+| Ownership | Meaning | Allowed Changes |
+|-----------|---------|-----------------|
+| `OWNER` | Primary scope, full control | Any structural changes |
+| `CONSUMER` | Uses file, limited changes | Call sites only, no signatures |
+| `SHARED` | Co-owned by multiple scopes | Coordinate with other owners |
+
+### Multi-Scope Resolution
+
+When a file is in multiple scopes:
+1. If `working_scope` is set → use that scope's rules
+2. If exactly one scope has `OWNER` → use that scope
+3. Otherwise → `MULTI_SCOPE` status, agent must choose
+
+### Setting Ownership
+
+```bash
+# Add file with ownership
+python3 tools/scope-manager.py add-files xtream-transport-core \
+  path/to/file.kt --ownership CONSUMER --shared-with xtream-data,xtream-pipeline-catalog
+
+# Update existing file ownership
+python3 tools/scope-manager.py set-ownership xtream-transport-core \
+  path/to/file.kt SHARED --shared-with xtream-data
 ```
 
 ---
@@ -58,6 +161,9 @@ Possible responses:
 | `BLOCKED` | In scope but not read | Read scope first |
 | `UNTRACKED` | Not in any scope | Assign to scope |
 | `ALLOWED` | Ready to edit | Proceed with invariants |
+| `BOUNDARY_VIOLATION` | Outside working_scope | **HARD BLOCK** - cannot edit |
+| `MULTI_SCOPE` | File in multiple scopes | Choose scope context |
+| `IN_RELATED` | In related scope (allowed) | Proceed with caution |
 
 ### Step 3: Read Scope/Bundle (if blocked)
 ```
@@ -137,11 +243,11 @@ scope_guard_check(file_path="legacy/SomeFile.kt")
 
 ---
 
-## Available Tools (v3.0)
+## Available Tools (v3.2)
 
 | Tool | Purpose | Required |
 |------|---------|----------|
-| `scope_guard_start_session` | Start session with mode | **First call** |
+| `scope_guard_start_session` | Start session with mode & working scope | **First call** |
 | `scope_guard_check` | Check file access | **Before every edit** |
 | `scope_guard_get` | View scope/bundle details | When blocked |
 | `scope_guard_read` | Acknowledge scope | After reviewing |
@@ -153,6 +259,57 @@ scope_guard_check(file_path="legacy/SomeFile.kt")
 | `scope_guard_validate_code` | Check forbidden patterns | Pre-commit |
 | `scope_guard_audit_log` | View history | Debugging |
 | `scope_guard_summary` | End session report | **Unattended mode** |
+| `scope_guard_reload` | Reload scopes from disk | After scope-manager.py changes |
+| `scope_guard_set_context` | Change working scope mid-session | Resolve MULTI_SCOPE |
+
+---
+
+## 🆕 Session Health Monitoring (v3.2)
+
+Every response includes **session health metrics** that help agents maintain focus:
+
+```json
+{
+  "_scopeGuard": {
+    "version": "3.2",
+    "sessionHealth": {
+      "durationMinutes": 15,
+      "filesChecked": 12,
+      "scopesTouched": 3,
+      "healthy": true
+    },
+    "guidance": {
+      "warnings": []
+    }
+  }
+}
+```
+
+### Focus Drift Detection
+
+If you touch **more than 5 different scopes** in one session, you'll see:
+
+```
+⚠️ Focus drift: Touched 6 different scopes. Consider narrowing focus with working_scope.
+```
+
+**Action:** Call `scope_guard_summary` to consolidate, then start new session with `working_scope`.
+
+### Session Duration Warnings
+
+After **30+ minutes**, you'll see:
+
+```
+⏰ Session running 35 minutes. Consider periodic scope_guard_summary.
+```
+
+**Action:** Summarize progress with `scope_guard_summary`, then continue with fresh session.
+
+### Why This Matters
+
+- **Prevents scope creep:** Long sessions without boundaries lead to sprawling changes
+- **Improves visibility:** User/parent agent sees what scopes were touched
+- **Catches drift early:** Before too many files are modified outside focus area
 
 ---
 
@@ -179,6 +336,91 @@ If you are a **background agent** or **subagent**:
 
 ---
 
+## 🛠️ Scope Manager Script (MANDATORY for scope changes)
+
+When creating new scopes or adding files to scopes, agents **MUST use the scope-manager.py script** instead of manually editing JSON files.
+
+### Location
+```
+tools/scope-manager.py
+```
+
+### Commands
+
+**List all scopes:**
+```bash
+python3 tools/scope-manager.py list
+```
+
+**Show scope info:**
+```bash
+python3 tools/scope-manager.py info <scope-id>
+```
+
+**Validate all scopes:**
+```bash
+python3 tools/scope-manager.py validate
+```
+
+**Create new scope:**
+```bash
+# Non-interactive (specify all params)
+python3 tools/scope-manager.py create <scope-id> "<description>" \
+  --module <module-path> --files <file1> <file2>
+
+# Interactive wizard
+python3 tools/scope-manager.py create --interactive
+```
+
+**Add files to existing scope:**
+```bash
+# Single files
+python3 tools/scope-manager.py add-files <scope-id> <file1> <file2>
+
+# From file list
+python3 tools/scope-manager.py add-files <scope-id> --from-file files.txt
+
+# Add as handlers (not criticalFiles)
+python3 tools/scope-manager.py add-files <scope-id> --as-handlers <files>
+
+# Add with ownership (v3.1)
+python3 tools/scope-manager.py add-files <scope-id> <files> \
+  --ownership CONSUMER --shared-with scope1,scope2
+```
+
+**Set file ownership (v3.1):**
+```bash
+python3 tools/scope-manager.py set-ownership <scope-id> <file-path> <OWNER|CONSUMER|SHARED> \
+  --shared-with scope1,scope2
+```
+
+**Add new module to scope:**
+```bash
+python3 tools/scope-manager.py add-module <scope-id> <module-path> <files>
+```
+
+### Why Use the Script?
+
+| Manual Edit Risk | Script Benefit |
+|------------------|----------------|
+| Missing required fields | Auto-includes all schema fields |
+| Invalid JSON syntax | Validates before saving |
+| Duplicate files | Checks and skips duplicates |
+| Overwriting existing data | Merges safely |
+| Inconsistent format | Consistent indentation |
+| Wrong timestamps | Auto-updates lastVerified |
+
+### HARD RULE
+
+> **⚠️ Agents MUST use `scope-manager.py` for ALL scope modifications.**
+> 
+> Do NOT manually edit `.scope/*.scope.json` files directly unless:
+> 1. Script cannot handle the specific change
+> 2. User explicitly requests manual edit
+> 3. Debugging script-generated output
+
+---
+
 ## Server Unavailability
 
 If Scope Guard MCP server is not available:
@@ -200,7 +442,7 @@ Every tool response includes:
 ```json
 {
   "_scopeGuard": {
-    "version": "3.0",
+    "version": "3.1",
     "timestamp": "...",
     "guidance": {
       "status": "BLOCKED",

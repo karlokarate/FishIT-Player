@@ -77,8 +77,10 @@
     }
   },
   "relatedScopes": [
-    "persistence.scope.json",
-    "xtream-pipeline.scope.json"
+    "persistence",
+    "xtream-transport-core",
+    "xtream-pipeline-catalog",
+    "xtream-data"
   ],
   "globalInvariants": [
     "Workers MUST call CatalogSyncWorkScheduler - NEVER direct pipeline",

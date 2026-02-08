@@ -1,0 +1,47 @@
+{
+  "$schema": "./scope-guard.schema.json",
+  "scopeId": "io-pipeline",
+  "version": "1.0.0",
+  "description": "IO/Local file scanning - stub implementation for local media sources",
+  "mandatoryReadBeforeEdit": [
+    ".github/instructions/pipeline.instructions.md"
+  ],
+  "modules": {
+    "pipeline/io/src/main/java/com/fishit/player/pipeline/io": {
+      "fileCount": 5,
+      "totalLOC": 0,
+      "criticalFiles": [
+        {
+          "path": "pipeline/io/src/main/java/com/fishit/player/pipeline/io/IoSource.kt",
+          "purpose": "Part of io-pipeline scope"
+        },
+        {
+          "path": "pipeline/io/src/main/java/com/fishit/player/pipeline/io/IoContentRepository.kt",
+          "purpose": "Part of io-pipeline scope"
+        },
+        {
+          "path": "pipeline/io/src/main/java/com/fishit/player/pipeline/io/IoMediaItem.kt",
+          "purpose": "Part of io-pipeline scope"
+        },
+        {
+          "path": "pipeline/io/src/main/java/com/fishit/player/pipeline/io/IoPlaybackSourceFactory.kt",
+          "purpose": "Part of io-pipeline scope"
+        },
+        {
+          "path": "pipeline/io/src/main/java/com/fishit/player/pipeline/io/StubIoContentRepository.kt",
+          "purpose": "Part of io-pipeline scope"
+        }
+      ]
+    }
+  },
+  "relatedScopes": [
+    "catalog-sync"
+  ],
+  "globalInvariants": [
+    "Currently STUB implementation - no actual file scanning",
+    "Follow pipeline layer boundaries"
+  ],
+  "forbiddenPatterns": [],
+  "lastVerified": "2026-02-06",
+  "auditedBy": "scope-manager.py"
+}

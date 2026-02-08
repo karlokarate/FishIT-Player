@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Scope Guard MCP Server v3.0
+ * Scope Guard MCP Server v3.2
  *
  * Features:
  * - Schema & guidance delivery in every response
@@ -9,12 +9,27 @@
  * - globalExcludes for build artifacts
  * - readOnlyPaths for legacy protection
  * - Audit trail with persistent logging
+ * - Session statistics with focus drift detection (v3.2)
+ * - Duration warnings for long sessions (v3.2)
  */
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { CallToolRequestSchema, ListToolsRequestSchema, } from "@modelcontextprotocol/sdk/types.js";
 import * as fs from "fs";
 import * as path from "path";
+// ============================================================================
+// Constants
+// ============================================================================
+const SCOPE_MANAGER_SCRIPT = "tools/scope-manager.py";
+const SCOPE_MANAGER_COMMANDS = {
+    addFiles: (scopeId, file) => `python3 ${SCOPE_MANAGER_SCRIPT} add-files ${scopeId} ${file}`,
+    create: (scopeId, description, modulePath) => `python3 ${SCOPE_MANAGER_SCRIPT} create ${scopeId} "${description}" --module ${modulePath}`,
+    validate: () => `python3 ${SCOPE_MANAGER_SCRIPT} validate`,
+    list: () => `python3 ${SCOPE_MANAGER_SCRIPT} list`,
+};
+// Session duration thresholds
+const SESSION_DURATION_WARNING_MS = 30 * 60 * 1000; // 30 minutes
+const FOCUS_DRIFT_THRESHOLD = 5; // Warn if > 5 different scopes touched
 // ============================================================================
 // Global State
 // ============================================================================
@@ -152,13 +167,99 @@ function findScopeForFile(filePath) {
         ? filePath.slice(WORKSPACE_ROOT.length + 1)
         : filePath;
     for (const [scopeId, scope] of scopes) {
+        // Check module paths first
         for (const modulePath of Object.keys(scope.modules)) {
             if (relativePath.startsWith(modulePath) || relativePath.startsWith(modulePath + "/")) {
                 return { scopeId, scope };
             }
         }
+        // Check file patterns if defined (for files not in their own subfolder)
+        const filePatterns = scope.filePatterns;
+        if (filePatterns) {
+            for (const pattern of filePatterns) {
+                if (matchesGlob(relativePath, pattern)) {
+                    return { scopeId, scope };
+                }
+            }
+        }
     }
     return null;
+}
+/**
+ * Find ALL scopes that reference a file, with ownership information.
+ * A file can be in multiple scopes with different roles (OWNER, CONSUMER, SHARED).
+ */
+function findAllScopesForFile(filePath) {
+    const relativePath = filePath.startsWith(WORKSPACE_ROOT)
+        ? filePath.slice(WORKSPACE_ROOT.length + 1)
+        : filePath;
+    const matches = [];
+    for (const [scopeId, scope] of scopes) {
+        // Check if file is in any module of this scope
+        for (const [modulePath, moduleConfig] of Object.entries(scope.modules)) {
+            if (relativePath.startsWith(modulePath) || relativePath.startsWith(modulePath + "/")) {
+                // Check if file is explicitly listed in criticalFiles with ownership
+                let ownership = "OWNER"; // Default
+                let sharedWith;
+                if (moduleConfig.criticalFiles) {
+                    const criticalFile = moduleConfig.criticalFiles.find(cf => relativePath.endsWith(cf.path) || cf.path === relativePath);
+                    if (criticalFile) {
+                        ownership = criticalFile.ownership || "OWNER";
+                        sharedWith = criticalFile.sharedWith;
+                    }
+                }
+                matches.push({ scopeId, ownership, sharedWith });
+                break; // Found in this scope, move to next
+            }
+        }
+        // Check file patterns
+        const filePatterns = scope.filePatterns;
+        if (filePatterns) {
+            for (const pattern of filePatterns) {
+                if (matchesGlob(relativePath, pattern)) {
+                    matches.push({ scopeId, ownership: "OWNER" });
+                    break;
+                }
+            }
+        }
+    }
+    return matches;
+}
+/**
+ * Check if file is within working scope boundaries.
+ * Returns null if no boundary is set, or status object.
+ */
+function checkBoundary(filePath, workingScope, allowRelated) {
+    if (!workingScope)
+        return null;
+    const primaryScope = scopes.get(workingScope);
+    if (!primaryScope)
+        return null;
+    const fileScopes = findAllScopesForFile(filePath);
+    // Check if file is in working scope
+    const inWorkingScope = fileScopes.find(fs => fs.scopeId === workingScope);
+    if (inWorkingScope) {
+        return { allowed: true, status: "IN_SCOPE", scopeId: workingScope };
+    }
+    // Check if file is in a related scope
+    if (allowRelated && primaryScope.relatedScopes) {
+        const relatedScopeIds = primaryScope.relatedScopes.map(r => r.replace(/\.scope\.json$/, ""));
+        const inRelatedScope = fileScopes.find(fs => relatedScopeIds.includes(fs.scopeId));
+        if (inRelatedScope) {
+            return {
+                allowed: true,
+                status: "IN_RELATED",
+                scopeId: inRelatedScope.scopeId,
+                reason: `File is in related scope '${inRelatedScope.scopeId}', not primary working scope '${workingScope}'`
+            };
+        }
+    }
+    // File is outside boundaries
+    return {
+        allowed: false,
+        status: "BOUNDARY_VIOLATION",
+        reason: `File is outside working scope '${workingScope}' and its related scopes`
+    };
 }
 function suggestScopeForFile(filePath) {
     const relativePath = filePath.startsWith(WORKSPACE_ROOT)
@@ -191,7 +292,11 @@ function getUnreadRelatedScopes(scopeId) {
     const scope = scopes.get(scopeId);
     if (!scope?.relatedScopes)
         return [];
-    return scope.relatedScopes.filter(id => !scopesRead.has(id));
+    // Normalize: relatedScopes may contain either scopeId ("persistence") 
+    // or filename ("persistence.scope.json") - handle both
+    return scope.relatedScopes
+        .map(ref => ref.replace(/\.scope\.json$/, "")) // Strip suffix if present
+        .filter(id => !scopesRead.has(id) && scopes.has(id)); // Only include valid, unread scopes
 }
 function checkScopeFreshness(scope) {
     if (!scope.lastVerified) {
@@ -218,11 +323,22 @@ function createGuidance(status, agentMode, nextSteps, warnings = [], includeSche
     return guidance;
 }
 function formatResponse(data, guidance) {
+    const sessionHealth = getSessionHealth();
+    // Add session health warning to guidance if relevant
+    if (sessionHealth?.reminderMessage && !guidance.warnings.includes(sessionHealth.reminderMessage)) {
+        guidance.warnings.push(sessionHealth.reminderMessage);
+    }
     return JSON.stringify({
         _scopeGuard: {
-            version: "3.0",
+            version: "3.2",
             timestamp: new Date().toISOString(),
             guidance,
+            sessionHealth: sessionHealth ? {
+                durationMinutes: sessionHealth.durationMinutes,
+                filesChecked: sessionHealth.filesChecked,
+                scopesTouched: sessionHealth.scopesTouched,
+                healthy: !sessionHealth.durationWarning && !sessionHealth.focusDrift,
+            } : undefined,
         },
         ...data,
     }, null, 2);
@@ -230,18 +346,66 @@ function formatResponse(data, guidance) {
 // ============================================================================
 // Session Management (for unattended agents)
 // ============================================================================
-function startSession(agentMode) {
+function startSession(agentMode, workingScope, allowRelatedScopes = true) {
     currentSession = {
         sessionId: `session-${Date.now()}`,
         agentMode,
         startTime: new Date().toISOString(),
+        lastActivityTime: new Date().toISOString(),
+        workingScope,
+        allowRelatedScopes,
         scopesRead: [],
+        scopesTouched: [],
         filesChecked: [],
         filesEdited: [],
         autoAssignments: [],
         bundlesUsed: [],
+        boundaryViolations: [],
     };
     return currentSession;
+}
+/**
+ * Get session health metrics for inclusion in responses.
+ * Detects focus drift and long-running sessions.
+ */
+function getSessionHealth() {
+    if (!currentSession)
+        return null;
+    const startTime = new Date(currentSession.startTime).getTime();
+    const now = Date.now();
+    const durationMs = now - startTime;
+    const durationMinutes = Math.floor(durationMs / 60000);
+    const durationWarning = durationMs > SESSION_DURATION_WARNING_MS;
+    const focusDrift = currentSession.scopesTouched.length > FOCUS_DRIFT_THRESHOLD;
+    let reminderMessage;
+    if (durationWarning && focusDrift) {
+        reminderMessage = `⚠️ SESSION HEALTH: Running ${durationMinutes}min, touched ${currentSession.scopesTouched.length} scopes. Consider calling scope_guard_summary to consolidate.`;
+    }
+    else if (durationWarning) {
+        reminderMessage = `⏰ Session running ${durationMinutes} minutes. Consider periodic scope_guard_summary.`;
+    }
+    else if (focusDrift) {
+        reminderMessage = `🎯 Focus drift: Touched ${currentSession.scopesTouched.length} different scopes. Consider narrowing focus with working_scope.`;
+    }
+    return {
+        durationMinutes,
+        durationWarning,
+        focusDrift,
+        scopesTouched: currentSession.scopesTouched.length,
+        filesChecked: currentSession.filesChecked.length,
+        reminderMessage,
+    };
+}
+/**
+ * Track which scope a file belongs to (for focus drift detection)
+ */
+function trackScopeTouched(scopeId) {
+    if (!currentSession)
+        return;
+    if (!currentSession.scopesTouched.includes(scopeId)) {
+        currentSession.scopesTouched.push(scopeId);
+    }
+    currentSession.lastActivityTime = new Date().toISOString();
 }
 function trackSessionAction(action, value) {
     if (!currentSession) {
@@ -291,7 +455,8 @@ function handleScopeGuardCheck(args) {
             reason: "File matches globalExcludes pattern - no scope check needed",
         }, createGuidance("EXCLUDED", agent_mode, ["Proceed with edit - file is excluded from scope system"]));
     }
-    // 2. Check if read-only
+    // 2. Check if read-only FIRST (before boundary check)
+    // A READ_ONLY file should NEVER be edited, regardless of scope boundaries
     const readOnlyCheck = isReadOnly(file_path);
     if (readOnlyCheck.readOnly) {
         audit({ action: "check", filePath: relativePath, status: "READ_ONLY", agentMode: agent_mode });
@@ -306,7 +471,96 @@ function handleScopeGuardCheck(args) {
                 : "This path is protected by architecture rules",
         ], ["Editing this file violates architecture rules"]));
     }
-    // 3. Check if matches a bundle
+    // 3. Check working scope boundaries (HARD BLOCK if outside)
+    if (currentSession?.workingScope) {
+        const boundaryCheck = checkBoundary(relativePath, currentSession.workingScope, currentSession.allowRelatedScopes);
+        if (boundaryCheck && !boundaryCheck.allowed) {
+            // Record boundary violation
+            currentSession.boundaryViolations.push({
+                file: relativePath,
+                attempted: currentSession.workingScope,
+                reason: boundaryCheck.reason || "Outside working scope"
+            });
+            audit({
+                action: "check",
+                filePath: relativePath,
+                status: "BOUNDARY_VIOLATION",
+                agentMode: agent_mode,
+                details: `workingScope=${currentSession.workingScope}`
+            });
+            return formatResponse({
+                status: "BOUNDARY_VIOLATION",
+                file_path: relativePath,
+                working_scope: currentSession.workingScope,
+                reason: boundaryCheck.reason,
+                allowed_scopes: [
+                    currentSession.workingScope,
+                    ...(currentSession.allowRelatedScopes
+                        ? (scopes.get(currentSession.workingScope)?.relatedScopes || [])
+                        : [])
+                ],
+            }, createGuidance("BOUNDARY_VIOLATION", agent_mode, [
+                `🚫 HARD BLOCK: File is outside working scope '${currentSession.workingScope}'`,
+                "You MUST NOT edit files outside your assigned working scope",
+                "If this file is required, end current session and start new one with correct scope",
+                "Or ask user to expand working scope boundaries",
+            ], [`Agent attempted to access file outside boundary: ${relativePath}`]));
+        }
+        // Warn if in related scope (but allow)
+        if (boundaryCheck?.status === "IN_RELATED") {
+            audit({
+                action: "check",
+                filePath: relativePath,
+                status: "IN_RELATED_SCOPE",
+                agentMode: agent_mode,
+                details: `related to ${currentSession.workingScope}`
+            });
+        }
+    }
+    // 1.6 Check if file is in multiple scopes (MULTI_SCOPE handling)
+    const allScopes = findAllScopesForFile(file_path);
+    if (allScopes.length > 1) {
+        // File exists in multiple scopes - need context resolution
+        const ownerScope = allScopes.find(s => s.ownership === "OWNER");
+        const workingScopeId = currentSession?.workingScope;
+        const recommendedScope = workingScopeId
+            ? allScopes.find(s => s.scopeId === workingScopeId)
+            : ownerScope;
+        // If current working scope is one of the scopes, use that context
+        if (workingScopeId && allScopes.find(s => s.scopeId === workingScopeId)) {
+            // Working scope matches - continue with normal flow but add context
+            // (Don't block, just add info to response later)
+        }
+        else {
+            // No clear context - inform agent about multi-scope situation
+            audit({
+                action: "check",
+                filePath: relativePath,
+                status: "MULTI_SCOPE",
+                agentMode: agent_mode,
+                details: allScopes.map(s => `${s.scopeId}(${s.ownership})`).join(", ")
+            });
+            return formatResponse({
+                status: "MULTI_SCOPE",
+                file_path: relativePath,
+                scopes: allScopes.map(s => ({
+                    scope_id: s.scopeId,
+                    ownership: s.ownership,
+                    shared_with: s.sharedWith,
+                })),
+                recommendation: recommendedScope?.scopeId || ownerScope?.scopeId,
+                owner_scope: ownerScope?.scopeId,
+            }, createGuidance("MULTI_SCOPE", agent_mode, [
+                `File exists in ${allScopes.length} scopes with different roles`,
+                ownerScope
+                    ? `OWNER scope is '${ownerScope.scopeId}' - use for structural changes`
+                    : "No clear OWNER - file is SHARED",
+                "Set working_scope in session to establish context",
+                "Or call scope_guard_read with the scope you intend to work in",
+            ], ["Clarify which scope context applies before editing"]));
+        }
+    }
+    // 4. Check if matches a bundle
     const bundleMatch = findMatchingBundle(file_path);
     if (bundleMatch) {
         const { bundleId, bundle } = bundleMatch;
@@ -385,6 +639,8 @@ function handleScopeGuardCheck(args) {
         if (!freshness.fresh) {
             warnings.push(`Scope not verified for ${freshness.daysSinceVerified || "unknown"} days - may be outdated`);
         }
+        // Track scope touched for focus drift detection
+        trackScopeTouched(scopeId);
         audit({ action: "check", filePath: relativePath, status: "ALLOWED", agentMode: agent_mode, scopeId });
         return formatResponse({
             status: "ALLOWED",
@@ -618,11 +874,13 @@ function handleScopeGuardAssign(args) {
             file_path: relativePath,
             scope_id,
             note: "UNATTENDED MODE: Assignment recorded. MUST report in scope_guard_summary.",
+            persist_command: SCOPE_MANAGER_COMMANDS.addFiles(scope_id, relativePath),
         }, createGuidance("AUTO_ASSIGNED", agent_mode, [
             "Assignment recorded in session",
             "Proceed with reading the scope",
             "MUST call scope_guard_summary at end of session",
-        ], ["Document this auto-assignment in final summary"]));
+            `⚠️ To persist: Run \`${SCOPE_MANAGER_COMMANDS.addFiles(scope_id, relativePath)}\``,
+        ], ["Document this auto-assignment in final summary", "Use scope-manager.py to persist changes"]));
     }
     // Interactive: require user confirmation
     pendingAssignments.set(relativePath, {
@@ -698,11 +956,12 @@ function handleScopeGuardConfirm(args) {
         status: "CONFIRMED",
         file_path: relativePath,
         scope_id: pending.scopeId,
-        message: "Assignment confirmed. Update the scope file manually.",
-        instruction: `Add '${relativePath}' to .scope/${pending.scopeId}.scope.json`,
+        message: "Assignment confirmed. Use scope-manager.py to persist.",
+        command: SCOPE_MANAGER_COMMANDS.addFiles(pending.scopeId, relativePath),
     }, createGuidance("CONFIRMED", "interactive", [
-        `Manually add file to .scope/${pending.scopeId}.scope.json`,
-        "Then restart scope-guard server or reload scopes",
+        `⚠️ MANDATORY: Run \`${SCOPE_MANAGER_COMMANDS.addFiles(pending.scopeId, relativePath)}\``,
+        "Do NOT manually edit .scope/*.scope.json files",
+        "Validate with: " + SCOPE_MANAGER_COMMANDS.validate(),
         "Then call scope_guard_check again",
     ]));
 }
@@ -760,16 +1019,19 @@ function handleScopeGuardRequestNewScope(args) {
         status: "TEMPLATE_GENERATED",
         details: JSON.stringify(module_paths),
     });
+    const createCommand = SCOPE_MANAGER_COMMANDS.create(scope_id, description, module_paths[0] || "<module-path>");
     return formatResponse({
         status: "TEMPLATE_GENERATED",
         scope_id,
         template: scopeTemplate,
         file_path: `.scope/${scope_id}.scope.json`,
-        message: "REQUIRES USER APPROVAL: Create this scope file manually",
+        message: "REQUIRES USER APPROVAL: Use scope-manager.py to create scope",
+        command: createCommand,
     }, createGuidance("TEMPLATE_GENERATED", "interactive", [
         "Present template to user for approval",
-        `If approved, create file: .scope/${scope_id}.scope.json`,
-        "Restart scope-guard server after creating file",
+        `⚠️ MANDATORY: Run \`${createCommand}\``,
+        "Do NOT manually create .scope/*.scope.json files",
+        "Validate with: " + SCOPE_MANAGER_COMMANDS.validate(),
     ], [], true));
 }
 function handleScopeGuardValidateCode(args) {
@@ -880,8 +1142,97 @@ function handleScopeGuardSummary(args) {
             : "No manual updates required",
     ], warnings));
 }
+function handleScopeGuardReload() {
+    const previousCount = scopes.size;
+    loadScopes();
+    const newCount = scopes.size;
+    audit({
+        action: "reload",
+        status: "COMPLETED",
+        details: `Reloaded ${newCount} scopes (was ${previousCount})`,
+    });
+    return formatResponse({
+        status: "RELOADED",
+        previous_scope_count: previousCount,
+        current_scope_count: newCount,
+        scopes: Array.from(scopes.keys()),
+        bundles: Object.keys(config.bundles || {}),
+    }, createGuidance("RELOADED", currentSession?.agentMode || "interactive", [
+        `Loaded ${newCount} scopes from .scope/ directory`,
+        "scopesRead state preserved - already-read scopes remain acknowledged",
+        "Use scope_guard_list to see full details",
+    ]));
+}
+function handleScopeGuardSetContext(args) {
+    const { scope_id } = args;
+    if (!currentSession) {
+        return formatResponse({
+            error: "NO_SESSION",
+            message: "No active session. Call scope_guard_start_session first.",
+        }, createGuidance("ERROR", "interactive", [
+            "Start a session before setting context",
+            "Use scope_guard_start_session with working_scope parameter instead",
+        ]));
+    }
+    if (!scopes.has(scope_id)) {
+        return formatResponse({
+            error: "INVALID_SCOPE",
+            scope_id,
+            available_scopes: Array.from(scopes.keys()),
+        }, createGuidance("ERROR", currentSession.agentMode, [
+            `Scope '${scope_id}' not found`,
+            "Use one of the available scopes",
+        ]));
+    }
+    const previousScope = currentSession.workingScope;
+    currentSession.workingScope = scope_id;
+    // Auto-read the new working scope
+    if (!scopesRead.has(scope_id)) {
+        scopesRead.add(scope_id);
+        trackSessionAction("scopeRead", scope_id);
+    }
+    const scope = scopes.get(scope_id);
+    const relatedScopeIds = (scope.relatedScopes || []).map(r => r.replace(/\.scope\.json$/, ""));
+    // Collect allowed paths
+    const allowedPaths = [];
+    for (const modulePath of Object.keys(scope.modules)) {
+        allowedPaths.push(modulePath);
+    }
+    if (currentSession.allowRelatedScopes) {
+        for (const relatedId of relatedScopeIds) {
+            const relatedScope = scopes.get(relatedId);
+            if (relatedScope) {
+                for (const modulePath of Object.keys(relatedScope.modules)) {
+                    allowedPaths.push(modulePath);
+                }
+            }
+        }
+    }
+    audit({
+        action: "set_context",
+        scopeId: scope_id,
+        status: "CONTEXT_CHANGED",
+        details: `${previousScope || "none"} → ${scope_id}`,
+    });
+    return formatResponse({
+        status: "CONTEXT_CHANGED",
+        previous_scope: previousScope || null,
+        working_scope: scope_id,
+        allow_related_scopes: currentSession.allowRelatedScopes,
+        boundary: {
+            primary: scope_id,
+            related: relatedScopeIds,
+            allowedPaths,
+        },
+    }, createGuidance("CONTEXT_CHANGED", currentSession.agentMode, [
+        `🔒 Working scope changed to '${scope_id}'`,
+        `Previous scope was: ${previousScope || "none"}`,
+        `Files outside '${scope_id}' will now be BOUNDARY_VIOLATION`,
+        "Use scope_guard_check to verify file access",
+    ], previousScope ? [`Changed from '${previousScope}' to '${scope_id}'`] : []));
+}
 function handleScopeGuardStartSession(args) {
-    const { agent_mode } = args;
+    const { agent_mode, working_scope, allow_related_scopes = true } = args;
     if (!["interactive", "unattended"].includes(agent_mode)) {
         return formatResponse({
             error: "INVALID_MODE",
@@ -891,34 +1242,88 @@ function handleScopeGuardStartSession(args) {
             "Use agent_mode='unattended' for autonomous operations (must call scope_guard_summary at end)",
         ]));
     }
-    const session = startSession(agent_mode);
+    // Validate working_scope if provided
+    if (working_scope && !scopes.has(working_scope)) {
+        return formatResponse({
+            error: "INVALID_WORKING_SCOPE",
+            working_scope,
+            available_scopes: Array.from(scopes.keys()),
+        }, createGuidance("ERROR", "interactive", [
+            `Scope '${working_scope}' not found`,
+            "Use one of the available scopes or omit working_scope parameter",
+        ]));
+    }
+    const session = startSession(agent_mode, working_scope, allow_related_scopes);
+    // If working scope is set, auto-read it and get related scopes
+    let boundaryInfo;
+    if (working_scope) {
+        const scope = scopes.get(working_scope);
+        scopesRead.add(working_scope);
+        trackSessionAction("scopeRead", working_scope);
+        const relatedScopeIds = (scope.relatedScopes || []).map(r => r.replace(/\.scope\.json$/, ""));
+        // Collect all allowed paths
+        const allowedPaths = [];
+        for (const modulePath of Object.keys(scope.modules)) {
+            allowedPaths.push(modulePath);
+        }
+        if (allow_related_scopes) {
+            for (const relatedId of relatedScopeIds) {
+                const relatedScope = scopes.get(relatedId);
+                if (relatedScope) {
+                    for (const modulePath of Object.keys(relatedScope.modules)) {
+                        allowedPaths.push(modulePath);
+                    }
+                }
+            }
+        }
+        boundaryInfo = {
+            primary: working_scope,
+            related: relatedScopeIds,
+            allowedPaths,
+        };
+    }
     audit({
         action: "session_start",
         status: "STARTED",
         agentMode: agent_mode,
-        details: session.sessionId,
+        scopeId: working_scope,
+        details: `${session.sessionId}${working_scope ? ` [BOUNDED:${working_scope}]` : ""}`,
     });
     return formatResponse({
         status: "SESSION_STARTED",
         session_id: session.sessionId,
         agent_mode,
-        message: agent_mode === "unattended"
-            ? "UNATTENDED MODE: Must call scope_guard_summary at end of session"
-            : "INTERACTIVE MODE: User confirmation required for assignments",
-    }, createGuidance("SESSION_STARTED", agent_mode, [
-        "Session started",
+        working_scope: working_scope || null,
+        allow_related_scopes: working_scope ? allow_related_scopes : null,
+        boundary: boundaryInfo || null,
+        message: working_scope
+            ? `🔒 BOUNDED SESSION: You may ONLY edit files in scope '${working_scope}'${allow_related_scopes ? " and related scopes" : ""}`
+            : agent_mode === "unattended"
+                ? "UNATTENDED MODE: Must call scope_guard_summary at end of session"
+                : "INTERACTIVE MODE: User confirmation required for assignments",
+    }, createGuidance("SESSION_STARTED", agent_mode, working_scope ? [
+        `🔒 Working scope LOCKED to '${working_scope}'`,
+        `Files outside boundary will be HARD BLOCKED`,
+        allow_related_scopes
+            ? `Related scopes allowed: ${(scopes.get(working_scope)?.relatedScopes || []).join(", ") || "none"}`
+            : "Related scopes NOT allowed",
+        "Use scope_guard_check before any file edit",
+    ] : [
+        "Session started (no boundary set)",
         "Use scope_guard_check before any file edit",
         agent_mode === "unattended"
             ? "MUST call scope_guard_summary before ending"
             : "User will be prompted for confirmations",
-    ], agent_mode === "unattended" ? ["Remember to call scope_guard_summary at end"] : []));
+    ], working_scope
+        ? [`⚠️ BOUNDARY ENFORCED: Only ${working_scope} files editable`]
+        : (agent_mode === "unattended" ? ["Remember to call scope_guard_summary at end"] : [])));
 }
 // ============================================================================
 // Server Setup
 // ============================================================================
 const server = new Server({
     name: "scope-guard",
-    version: "3.0.0",
+    version: "3.2.0",
 }, {
     capabilities: {
         tools: {},
@@ -929,7 +1334,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
         tools: [
             {
                 name: "mcp_scope-guard_scope_guard_start_session",
-                description: "Start a new Scope Guard session. CALL THIS FIRST. Use agent_mode='interactive' for user-confirmed operations, or 'unattended' for autonomous operations (MUST call scope_guard_summary at end).",
+                description: "Start a new Scope Guard session. CALL THIS FIRST. Use working_scope to RESTRICT agent to a specific scope (HARD BLOCK on boundary violations).",
                 inputSchema: {
                     type: "object",
                     properties: {
@@ -938,13 +1343,21 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
                             enum: ["interactive", "unattended"],
                             description: "Agent mode: 'interactive' requires user confirmation, 'unattended' auto-assigns but MUST report in summary",
                         },
+                        working_scope: {
+                            type: "string",
+                            description: "OPTIONAL: Lock agent to this scope. Files outside this scope (and optionally related scopes) will be HARD BLOCKED. Use to prevent scope creep.",
+                        },
+                        allow_related_scopes: {
+                            type: "boolean",
+                            description: "If working_scope is set: allow editing files in relatedScopes (with warning). Default: true. Set to false for strict boundary.",
+                        },
                     },
                     required: ["agent_mode"],
                 },
             },
             {
                 name: "mcp_scope-guard_scope_guard_check",
-                description: "MANDATORY before ANY file edit. Returns ALLOWED, BLOCKED, UNTRACKED, READ_ONLY, EXCLUDED, or BUNDLE_BLOCKED. Every response includes guidance for next steps.",
+                description: "MANDATORY before ANY file edit. Returns ALLOWED, BLOCKED, UNTRACKED, READ_ONLY, EXCLUDED, BUNDLE_BLOCKED, BOUNDARY_VIOLATION, or MULTI_SCOPE. BOUNDARY_VIOLATION is HARD BLOCK when working_scope is set.",
                 inputSchema: {
                     type: "object",
                     properties: {
@@ -1136,6 +1549,29 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
                     required: [],
                 },
             },
+            {
+                name: "mcp_scope-guard_scope_guard_reload",
+                description: "Reload all scope files from disk. Use after scope-manager.py modifications or external changes.",
+                inputSchema: {
+                    type: "object",
+                    properties: {},
+                    required: [],
+                },
+            },
+            {
+                name: "mcp_scope-guard_scope_guard_set_context",
+                description: "Change working scope mid-session. Useful to resolve MULTI_SCOPE situations or switch focus. Updates boundary enforcement.",
+                inputSchema: {
+                    type: "object",
+                    properties: {
+                        scope_id: {
+                            type: "string",
+                            description: "New working scope ID",
+                        },
+                    },
+                    required: ["scope_id"],
+                },
+            },
         ],
     };
 });
@@ -1180,6 +1616,12 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             case "mcp_scope-guard_scope_guard_summary":
                 result = handleScopeGuardSummary(args);
                 break;
+            case "mcp_scope-guard_scope_guard_reload":
+                result = handleScopeGuardReload();
+                break;
+            case "mcp_scope-guard_scope_guard_set_context":
+                result = handleScopeGuardSetContext(args);
+                break;
             default:
                 result = JSON.stringify({ error: "Unknown tool", name });
         }
@@ -1203,7 +1645,7 @@ async function main() {
     log(`Loaded config ${JSON.stringify(config)}`);
     loadScopes();
     log(`Loaded ${scopes.size} scopes, ${Object.keys(config.bundles || {}).length} bundles`);
-    log("MCP Server running (v3.0 - Agent Modes & Bundles)");
+    log("MCP Server running (v3.2 - Session Health & Focus Drift Detection)");
     const transport = new StdioServerTransport();
     await server.connect(transport);
 }

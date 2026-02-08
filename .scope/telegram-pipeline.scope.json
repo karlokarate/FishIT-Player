@@ -1,0 +1,66 @@
+{
+  "$schema": "./scope-guard.schema.json",
+  "scopeId": "telegram-pipeline",
+  "version": "1.0.0",
+  "description": "Telegram chat/media pipeline processing - message bundling, metadata extraction, catalog sync",
+  "mandatoryReadBeforeEdit": [
+    "contracts/TELEGRAM_PARSER_CONTRACT.md",
+    "contracts/TELEGRAM_STRUCTURED_BUNDLES_CONTRACT.md",
+    ".github/instructions/pipeline.instructions.md"
+  ],
+  "modules": {
+    "pipeline/telegram/src/main/java/com/fishit/player/pipeline/telegram": {
+      "fileCount": 6,
+      "totalLOC": 0,
+      "criticalFiles": [
+        {
+          "path": "pipeline/telegram/src/main/java/com/fishit/player/pipeline/telegram/catalog/TelegramCatalogContract.kt",
+          "purpose": "Core contracts: pipeline interface, events, config"
+        },
+        {
+          "path": "pipeline/telegram/src/main/java/com/fishit/player/pipeline/telegram/catalog/TelegramCatalogPipelineImpl.kt",
+          "purpose": "Default pipeline implementation"
+        },
+        {
+          "path": "pipeline/telegram/src/main/java/com/fishit/player/pipeline/telegram/grouper/TelegramMessageBundler.kt",
+          "purpose": "Groups related messages into bundles"
+        },
+        {
+          "path": "pipeline/telegram/src/main/java/com/fishit/player/pipeline/telegram/mapper/TelegramBundleToMediaItemMapper.kt",
+          "purpose": "Maps bundles to normalized MediaItem"
+        },
+        {
+          "path": "pipeline/telegram/src/main/java/com/fishit/player/pipeline/telegram/adapter/TelegramPipelineAdapter.kt",
+          "purpose": "Bridge to transport layer"
+        },
+        {
+          "path": "pipeline/telegram/src/main/java/com/fishit/player/pipeline/telegram/model/TelegramMediaItem.kt",
+          "purpose": "DTO for telegram media items"
+        }
+      ]
+    }
+  },
+  "relatedScopes": [
+    "telegram-transport",
+    "telegram-playback",
+    "catalog-sync"
+  ],
+  "globalInvariants": [
+    "Use TelegramPipelineAdapter for ALL transport calls (no direct TelegramClient)",
+    "TelegramMediaItem is pipeline-internal DTO - never expose to UI",
+    "Message bundling follows TELEGRAM_STRUCTURED_BUNDLES_CONTRACT",
+    "Emit TelegramCatalogEvent for progress tracking"
+  ],
+  "forbiddenPatterns": [
+    {
+      "pattern": "import.*persistence",
+      "reason": "Pipeline layer must not import persistence - use catalog-sync as bridge"
+    },
+    {
+      "pattern": "import.*Obx",
+      "reason": "Obx* is DEPRECATED naming - use NX_* entities. Pipeline should not import persistence at all."
+    }
+  ],
+  "lastVerified": "2026-02-06",
+  "auditedBy": "scope-manager.py"
+}

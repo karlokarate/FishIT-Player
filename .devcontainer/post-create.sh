@@ -5,6 +5,13 @@ set -e
 
 echo "=== Setting up Android development environment ==="
 
+# Install required packages
+echo "=== Installing required packages ==="
+if ! command -v inotifywait &> /dev/null; then
+    sudo apt-get install -y --no-install-recommends inotify-tools 2>/dev/null || echo "inotify-tools install skipped"
+    echo "✓ inotify-tools installed"
+fi
+
 # SDK location in home directory (persists across rebuilds, not in workspace)
 # Use $HOME to support both 'codespace' and 'vscode' users
 SDK_DIR="$HOME/.android-sdk"
@@ -109,5 +116,18 @@ else
     echo "✓ Memory monitor already running"
 fi
 
+# Install Scope Guard hooks (mandatory for architecture enforcement)
+echo "=== Installing Scope Guard enforcement hooks ==="
+if [ -f "$WORKSPACE_ROOT/scripts/install-scope-guard-hooks.sh" ]; then
+    chmod +x "$WORKSPACE_ROOT/scripts/install-scope-guard-hooks.sh"
+    chmod +x "$WORKSPACE_ROOT/tools/scope-guard-cli.py" 2>/dev/null || true
+    chmod +x "$WORKSPACE_ROOT/scripts/hooks/"* 2>/dev/null || true
+    "$WORKSPACE_ROOT/scripts/install-scope-guard-hooks.sh"
+    echo "✓ Scope Guard pre-commit hook installed"
+else
+    echo "⚠ Scope Guard installer not found - hooks not installed"
+fi
+
 echo "=== Android environment ready ==="
 echo "=== Jupyter ready - use 'jupyter notebook' or 'jupyter lab' to start ==="
+echo "=== Scope Guard: Git commits are now enforced against READ_ONLY paths ==="

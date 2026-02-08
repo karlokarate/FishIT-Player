@@ -1,0 +1,107 @@
+{
+  "$schema": "./scope-guard.schema.json",
+  "scopeId": "xtream-data",
+  "version": "1.0.0",
+  "description": "Xtream catalog repositories and NX implementations. Provides media queries to UI.",
+  "mandatoryReadBeforeEdit": [
+    "contracts/NX_SSOT_CONTRACT.md",
+    "contracts/GLOSSARY_v2_naming_and_modules.md",
+    ".github/instructions/infra-data.instructions.md"
+  ],
+  "modules": {
+    "infra/data-xtream": {
+      "fileCount": 5,
+      "totalLOC": 400,
+      "criticalFiles": [
+        {
+          "path": "infra/data-xtream/src/main/java/com/fishit/player/infra/data/xtream/XtreamCatalogRepository.kt",
+          "purpose": "Interface: VOD/Series catalog operations",
+          "invariants": [
+            "Interface only in data-xtream module",
+            "Uses RawMediaMetadata, not pipeline DTOs"
+          ]
+        },
+        {
+          "path": "infra/data-xtream/src/main/java/com/fishit/player/infra/data/xtream/XtreamLiveRepository.kt",
+          "purpose": "Interface: Live TV channel operations",
+          "invariants": [
+            "Interface only in data-xtream module"
+          ]
+        },
+        {
+          "path": "infra/data-xtream/src/main/java/com/fishit/player/infra/data/xtream/XtreamAuthRepositoryAdapter.kt",
+          "purpose": "Bridges onboarding to transport layer",
+          "invariants": [
+            "Generates accountKey via NxKeyGenerator",
+            "Calls XtreamCredentialsStore for secure storage"
+          ]
+        }
+      ],
+      "diModules": [
+        "infra/data-xtream/src/main/java/com/fishit/player/infra/data/xtream/di/XtreamAuthRepositoryModule.kt"
+      ]
+    },
+    "infra/data-nx/src/main/java/com/fishit/player/infra/data/nx/xtream": {
+      "fileCount": 3,
+      "totalLOC": 450,
+      "criticalFiles": [
+        {
+          "path": "infra/data-nx/src/main/java/com/fishit/player/infra/data/nx/xtream/NxXtreamCatalogRepositoryImpl.kt",
+          "purpose": "NX implementation: reads NX_Work for VOD/Series",
+          "invariants": [
+            "Queries NX_Work + NX_WorkSourceRef",
+            "sourceType='xtream' filter",
+            "Maps NX entities to RawMediaMetadata for consumers"
+          ]
+        },
+        {
+          "path": "infra/data-nx/src/main/java/com/fishit/player/infra/data/nx/xtream/NxXtreamLiveRepositoryImpl.kt",
+          "purpose": "NX implementation: reads NX_Work for Live channels",
+          "invariants": [
+            "workType=LIVE_CHANNEL filter",
+            "sourceKey contains ':live:'"
+          ]
+        },
+        {
+          "path": "infra/data-nx/src/main/java/com/fishit/player/infra/data/nx/xtream/NxXtreamSeriesIndexRepository.kt",
+          "purpose": "Series/Season/Episode index via NX_WorkRelation",
+          "invariants": [
+            "Navigates SERIES → EPISODE relations"
+          ]
+        }
+      ]
+    }
+  },
+  "relatedScopes": [
+    "persistence",
+    "xtream-transport-auth",
+    "catalog-sync"
+  ],
+  "globalInvariants": [
+    "UI ONLY reads from NX repositories (not pipeline DTOs)",
+    "Data layer NEVER imports pipeline DTOs",
+    "Credentials stored via XtreamCredentialsStore, not in NX entities",
+    "accountKey links NX_SourceAccount to media items"
+  ],
+  "forbiddenPatterns": [
+    {
+      "pattern": "import.*pipeline\\.xtream\\.model",
+      "reason": "Data layer must not use pipeline DTOs"
+    },
+    {
+      "pattern": "XtreamVodItem|XtreamSeriesItem|XtreamChannel",
+      "reason": "Pipeline DTOs forbidden in data layer"
+    },
+    {
+      "pattern": "password.*=.*\"",
+      "reason": "No plaintext passwords in data layer"
+    }
+  ],
+  "entityRelationships": {
+    "NX_SourceAccount": "Root account entity with accountKey",
+    "NX_Work": "Media item (MOVIE, SERIES, EPISODE, LIVE_CHANNEL)",
+    "NX_WorkSourceRef": "Links NX_Work to Xtream source (xtreamStreamId, xtreamCategoryId)",
+    "NX_WorkVariant": "Playback info (playbackHintsJson with xtream specifics)",
+    "NX_WorkRelation": "Series ↔ Episode links"
+  }
+}

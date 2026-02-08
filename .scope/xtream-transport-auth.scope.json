@@ -1,0 +1,69 @@
+{
+  "$schema": "./scope-guard.schema.json",
+  "scopeId": "xtream-transport-auth",
+  "version": "1.0.0",
+  "description": "Secure credential storage and authentication for Xtream. SECURITY-SENSITIVE scope.",
+  "mandatoryReadBeforeEdit": [
+    "AGENTS.md Section 4 (Layer Boundaries)",
+    "Security review required for any change"
+  ],
+  "modules": {},
+  "filePatterns": [
+    "**/infra/transport/xtream/*Credentials*.kt",
+    "**/infra/transport/xtream/Encrypted*.kt"
+  ],
+  "coveredFiles": [
+    {
+      "path": "infra/transport-xtream/src/main/java/com/fishit/player/infra/transport/xtream/XtreamCredentialsStore.kt",
+      "purpose": "Interface for secure credential persistence",
+      "invariants": [
+        "Interface only - no implementation details",
+        "XtreamStoredConfig includes server URL, username, encrypted credential"
+      ]
+    },
+    {
+      "path": "infra/transport-xtream/src/main/java/com/fishit/player/infra/transport/xtream/EncryptedXtreamCredentialsStore.kt",
+      "purpose": "AES256-GCM encrypted SharedPreferences implementation",
+      "invariants": [
+        "MUST use EncryptedSharedPreferences",
+        "MUST use AndroidX MasterKey (Android Keystore)",
+        "NO plaintext fallback - fail secure",
+        "NEVER log credential values"
+      ]
+    }
+  ],
+  "relatedScopes": [
+    "xtream-transport-core",
+    "xtream-playback"
+  ],
+  "globalInvariants": [
+    "Credentials stored ONLY in EncryptedSharedPreferences",
+    "Password NEVER in ObjectBox/SQLite (use encrypted store)",
+    "All logging MUST use .redactCredentials()",
+    "No credential transmission over non-HTTPS (except localhost)"
+  ],
+  "forbiddenPatterns": [
+    {
+      "pattern": "SharedPreferences(?!.*Encrypted)",
+      "reason": "Must use EncryptedSharedPreferences for credentials"
+    },
+    {
+      "pattern": "Log\\.(d|i|w|e).*password",
+      "reason": "Never log passwords"
+    },
+    {
+      "pattern": "\\.credential\\.toString\\\\(\\\\)",
+      "reason": "Never convert credential to string for logging"
+    },
+    {
+      "pattern": "ObjectBox.*password|credential",
+      "reason": "Credentials must not be stored in ObjectBox"
+    }
+  ],
+  "securityNotes": [
+    "AES256-GCM via AndroidX Security Crypto",
+    "Key stored in Android Keystore (hardware-backed when available)",
+    "Credential cleared on logout via store.clear()",
+    "URL credentials redacted before any logging"
+  ]
+}

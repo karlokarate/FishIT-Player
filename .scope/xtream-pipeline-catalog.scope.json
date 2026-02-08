@@ -1,0 +1,138 @@
+{
+  "$schema": "./scope-guard.schema.json",
+  "scopeId": "xtream-pipeline-catalog",
+  "version": "1.0.0",
+  "description": "Catalog pipeline orchestration, scan phases, event emission. Layer: Pipeline.",
+  "mandatoryReadBeforeEdit": [
+    "contracts/CATALOG_SYNC_WORKERS_CONTRACT_V2.md",
+    "contracts/XTREAM_SCAN_PREMIUM_CONTRACT_V1.md",
+    ".github/instructions/pipeline.instructions.md"
+  ],
+  "modules": {
+    "pipeline/xtream/src/main/java/com/fishit/player/pipeline/xtream/catalog": {
+      "fileCount": 12,
+      "totalLOC": 1800,
+      "criticalFiles": [
+        {
+          "path": "pipeline/xtream/src/main/java/com/fishit/player/pipeline/xtream/catalog/XtreamCatalogContract.kt",
+          "purpose": "Core contracts: pipeline interface, events, config",
+          "invariants": [
+            "XtreamCatalogPipeline interface",
+            "XtreamCatalogEvent sealed class",
+            "XtreamCatalogConfig for scan configuration",
+            "XtreamCatalogItem wraps RawMediaMetadata"
+          ]
+        },
+        {
+          "path": "pipeline/xtream/src/main/java/com/fishit/player/pipeline/xtream/catalog/XtreamCatalogPipelineImpl.kt",
+          "purpose": "Default pipeline implementation",
+          "invariants": [
+            "Delegates to PhaseScanOrchestrator",
+            "Emits Flow<XtreamCatalogEvent>"
+          ]
+        },
+        {
+          "path": "pipeline/xtream/src/main/java/com/fishit/player/pipeline/xtream/catalog/phase/PhaseScanOrchestrator.kt",
+          "purpose": "Coordinates parallel phase execution",
+          "invariants": [
+            "LIVE, VOD, SERIES phases run parallel (Semaphore 3)",
+            "EPISODES phase runs after SERIES completes",
+            "Respects memory pressure monitoring"
+          ]
+        },
+        {
+          "path": "pipeline/xtream/src/main/java/com/fishit/player/pipeline/xtream/catalog/MemoryPressureMonitor.kt",
+          "purpose": "Adaptive throttling for large syncs",
+          "invariants": [
+            "Monitor heap usage",
+            "Provide backpressure signals",
+            "FireTV special handling"
+          ]
+        }
+      ],
+      "handlers": [
+        "pipeline/xtream/src/main/java/com/fishit/player/pipeline/xtream/catalog/phase/ScanPhase.kt",
+        "pipeline/xtream/src/main/java/com/fishit/player/pipeline/xtream/catalog/phase/LiveChannelPhase.kt",
+        "pipeline/xtream/src/main/java/com/fishit/player/pipeline/xtream/catalog/phase/VodItemPhase.kt",
+        "pipeline/xtream/src/main/java/com/fishit/player/pipeline/xtream/catalog/phase/SeriesItemPhase.kt",
+        "pipeline/xtream/src/main/java/com/fishit/player/pipeline/xtream/catalog/phase/EpisodeStreamingPhase.kt",
+        "pipeline/xtream/src/main/java/com/fishit/player/pipeline/xtream/catalog/XtreamCatalogSource.kt",
+        "pipeline/xtream/src/main/java/com/fishit/player/pipeline/xtream/catalog/DefaultXtreamCatalogSource.kt"
+      ],
+      "diModules": [
+        "pipeline/xtream/src/main/java/com/fishit/player/pipeline/xtream/catalog/di/XtreamCatalogModule.kt"
+      ]
+    },
+    "pipeline/xtream/src/main/java/com/fishit/player/pipeline/xtream/adapter": {
+      "fileCount": 1,
+      "totalLOC": 200,
+      "criticalFiles": [
+        {
+          "path": "pipeline/xtream/src/main/java/com/fishit/player/pipeline/xtream/adapter/XtreamPipelineAdapter.kt",
+          "purpose": "Wraps XtreamApiClient, converts Transport→Pipeline DTOs",
+          "invariants": [
+            "ONLY connection point to transport layer",
+            "XtreamVodStream → XtreamVodItem via toPipelineItem()"
+          ]
+        }
+      ]
+    },
+    "pipeline/xtream/src/main/java/com/fishit/player/pipeline/xtream/debug": {
+      "fileCount": 3,
+      "totalLOC": 200,
+      "criticalFiles": [
+        {
+          "path": "pipeline/xtream/src/main/java/com/fishit/player/pipeline/xtream/debug/XtreamDebugService.kt",
+          "purpose": "Debug inspection interface"
+        },
+        {
+          "path": "pipeline/xtream/src/main/java/com/fishit/player/pipeline/xtream/debug/XtreamDebugServiceImpl.kt",
+          "purpose": "Implementation for CLI/tools"
+        },
+        {
+          "path": "pipeline/xtream/src/main/java/com/fishit/player/pipeline/xtream/debug/XtcLogger.kt",
+          "purpose": "Sample-based logging (1st + every 50th)",
+          "invariants": [
+            "Singleton pattern",
+            "Non-critical - debug only"
+          ]
+        }
+      ]
+    }
+  },
+  "relatedScopes": [
+    "xtream-pipeline-mapping",
+    "xtream-transport-core",
+    "catalog-sync"
+  ],
+  "globalInvariants": [
+    "Pipeline NEVER accesses persistence/DB directly",
+    "Pipeline NEVER accesses playback layer",
+    "Output is Flow<XtreamCatalogEvent> with ItemDiscovered events",
+    "Memory pressure respected for FireTV devices"
+  ],
+  "forbiddenPatterns": [
+    {
+      "pattern": "import.*persistence",
+      "reason": "Pipeline must not access persistence directly"
+    },
+    {
+      "pattern": "import.*playback",
+      "reason": "Pipeline must not access playback layer"
+    },
+    {
+      "pattern": "ObjectBox|NX_",
+      "reason": "Pipeline must not use ObjectBox entities"
+    }
+  ],
+  "eventTypes": [
+    "ItemDiscovered(XtreamCatalogItem)",
+    "ScanStarted(config)",
+    "ScanProgress(phase, processed, total)",
+    "ScanCompleted(stats)",
+    "ScanCancelled(reason)",
+    "ScanError(error)",
+    "SeriesEpisodeComplete(seriesId, episodes)",
+    "SeriesEpisodeFailed(seriesId, error)"
+  ]
+}

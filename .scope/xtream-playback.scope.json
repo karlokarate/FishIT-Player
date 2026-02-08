@@ -1,0 +1,98 @@
+{
+  "$schema": "./scope-guard.schema.json",
+  "scopeId": "xtream-playback",
+  "version": "1.0.0",
+  "description": "Xtream PlaybackSourceFactory and DataSource implementations. Builds playback URLs from context.",
+  "mandatoryReadBeforeEdit": [
+    "contracts/INTERNAL_PLAYER_BEHAVIOR_CONTRACT.md",
+    ".github/instructions/playback.instructions.md",
+    ".github/instructions/player.instructions.md"
+  ],
+  "modules": {
+    "playback/xtream": {
+      "fileCount": 8,
+      "totalLOC": 800,
+      "criticalFiles": [
+        {
+          "path": "playback/xtream/src/main/java/com/fishit/player/playback/xtream/XtreamPlaybackSourceFactoryImpl.kt",
+          "purpose": "Core factory: PlaybackContext → PlaybackSource for Xtream",
+          "invariants": [
+            "Implements PlaybackSourceFactory interface",
+            "Delegates URL building to XtreamApiClient",
+            "Resolves output extension based on HLS capability",
+            "Lazy re-initialization if session null"
+          ]
+        },
+        {
+          "path": "playback/xtream/src/main/java/com/fishit/player/playback/xtream/XtreamHttpDataSourceFactory.kt",
+          "purpose": "Custom Media3 DataSource.Factory with OkHttp",
+          "invariants": [
+            "Handles HTTP redirects reliably (Cloudflare/CDN)",
+            "Preserves headers across 302 redirects"
+          ]
+        },
+        {
+          "path": "playback/xtream/src/main/java/com/fishit/player/playback/xtream/XtreamOkHttpClientProvider.kt",
+          "purpose": "Interface for OkHttpClient with streaming timeouts",
+          "invariants": [
+            "Compile-time gating for debug tools",
+            "Base builder in interface, impl in source sets"
+          ]
+        },
+        {
+          "path": "playback/xtream/src/main/java/com/fishit/player/playback/xtream/HlsCapabilityDetector.kt",
+          "purpose": "Runtime HLS module detection via reflection",
+          "invariants": [
+            "Auto-fallback to TS if HLS unavailable",
+            "Caches result after first check"
+          ]
+        }
+      ],
+      "diModules": [
+        "playback/xtream/src/main/java/com/fishit/player/playback/xtream/di/XtreamPlaybackModule.kt"
+      ]
+    }
+  },
+  "sourceSetFiles": {
+    "debug": [
+      "playback/xtream/src/debug/java/com/fishit/player/playback/xtream/XtreamOkHttpClientProviderImpl.kt"
+    ],
+    "release": [
+      "playback/xtream/src/release/java/com/fishit/player/playback/xtream/XtreamOkHttpClientProviderImpl.kt"
+    ]
+  },
+  "relatedScopes": [
+    "xtream-transport-core",
+    "xtream-transport-auth"
+  ],
+  "globalInvariants": [
+    "Playback layer NEVER accesses pipeline DTOs",
+    "URL building via XtreamApiClient (transport layer)",
+    "Credentials from XtreamCredentialsStore only",
+    "DataSourceType.XTREAM_HTTP for Xtream streams"
+  ],
+  "forbiddenPatterns": [
+    {
+      "pattern": "import.*pipeline",
+      "reason": "Playback must not import pipeline layer"
+    },
+    {
+      "pattern": "XtreamVodItem|XtreamSeriesItem",
+      "reason": "Pipeline DTOs forbidden in playback"
+    },
+    {
+      "pattern": "ObjectBox|NX_",
+      "reason": "Playback must not access DB directly"
+    }
+  ],
+  "urlPatterns": {
+    "live": "{baseUrl}/live/{username}/{password}/{streamId}.{extension}",
+    "vod": "{baseUrl}/{vodKind}/{username}/{password}/{vodId}.{extension}",
+    "episode": "{baseUrl}/series/{username}/{password}/{episodeId}.{extension}"
+  },
+  "testFiles": [
+    "playback/xtream/src/test/java/com/fishit/player/playback/xtream/HlsCapabilityFallbackTest.kt",
+    "playback/xtream/src/test/java/com/fishit/player/playback/xtream/XtreamHttpRedirectTest.kt",
+    "playback/xtream/src/test/java/com/fishit/player/playback/xtream/XtreamPlaybackHardeningTest.kt"
+  ]
+}

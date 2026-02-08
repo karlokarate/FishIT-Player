@@ -59,6 +59,23 @@
                 "purpose": {
                   "type": "string"
                 },
+                "ownership": {
+                  "type": "string",
+                  "enum": [
+                    "OWNER",
+                    "CONSUMER",
+                    "SHARED"
+                  ],
+                  "default": "OWNER",
+                  "description": "OWNER: Primary scope, can make structural changes. CONSUMER: Uses file, can only change call sites. SHARED: Multiple scopes co-own."
+                },
+                "sharedWith": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "Other scope IDs that also reference this file"
+                },
                 "invariants": {
                   "type": "array",
                   "items": {
@@ -95,6 +112,31 @@
         "type": "string"
       },
       "description": "Other scope files that should be considered together"
+    },
+    "boundaryPolicy": {
+      "type": "object",
+      "description": "Controls what happens when agent tries to edit files outside this scope",
+      "properties": {
+        "allowRelatedScopes": {
+          "type": "boolean",
+          "default": true,
+          "description": "If true, files in relatedScopes are ALLOWED_RELATED (warning). If false, BLOCKED."
+        },
+        "allowedDependencies": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Module paths this scope MAY import from (e.g., 'core:model', 'infra:logging')"
+        },
+        "forbiddenDependencies": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Module paths this scope MUST NOT import from (e.g., 'pipeline/*', 'data/*')"
+        }
+      }
     },
     "globalInvariants": {
       "type": "array",

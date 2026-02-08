@@ -1,0 +1,85 @@
+{
+  "$schema": "./scope-guard.schema.json",
+  "scopeId": "telegram-transport",
+  "version": "1.0.0",
+  "description": "Telegram TDLib transport layer - client, auth, file downloads, chat browsing",
+  "mandatoryReadBeforeEdit": [
+    "contracts/TELEGRAM_ID_ARCHITECTURE_CONTRACT.md",
+    ".github/instructions/infra-transport-telegram.instructions.md"
+  ],
+  "modules": {
+    "infra/transport-telegram/src/main/java/com/fishit/player/infra/transport/telegram": {
+      "fileCount": 6,
+      "totalLOC": 0,
+      "criticalFiles": [
+        {
+          "path": "infra/transport-telegram/src/main/java/com/fishit/player/infra/transport/telegram/TelegramClient.kt",
+          "purpose": "Main API interface for TDLib operations",
+          "invariants": [
+            "Single instance via DI - NEVER create multiple"
+          ]
+        },
+        {
+          "path": "infra/transport-telegram/src/main/java/com/fishit/player/infra/transport/telegram/TelegramAuthClient.kt",
+          "purpose": "Authentication flow API"
+        },
+        {
+          "path": "infra/transport-telegram/src/main/java/com/fishit/player/infra/transport/telegram/TelegramFileClient.kt",
+          "purpose": "File download/streaming API",
+          "ownership": "SHARED",
+          "sharedWith": [
+            "telegram-playback"
+          ]
+        },
+        {
+          "path": "infra/transport-telegram/src/main/java/com/fishit/player/infra/transport/telegram/internal/DefaultTelegramClient.kt",
+          "purpose": "Implementation wrapping TDLib",
+          "invariants": [
+            "Singleton via DefaultTelegramClient - NO TdlibClientProvider"
+          ]
+        },
+        {
+          "path": "infra/transport-telegram/src/main/java/com/fishit/player/infra/transport/telegram/chat/TelegramChatBrowser.kt",
+          "purpose": "Chat list and history browsing"
+        },
+        {
+          "path": "infra/transport-telegram/src/main/java/com/fishit/player/infra/transport/telegram/api/TgMessage.kt",
+          "purpose": "Transport-layer message wrapper DTO",
+          "invariants": [
+            "Used by pipeline - NOT exposed to UI"
+          ]
+        }
+      ]
+    }
+  },
+  "relatedScopes": [
+    "telegram-pipeline",
+    "telegram-playback"
+  ],
+  "globalInvariants": [
+    "ONE TelegramClient instance via DI (DefaultTelegramClient)",
+    "NEVER reintroduce TdlibClientProvider (v1 pattern)",
+    "TgMessage/TgChat are transport DTOs - pipeline converts them",
+    "All TDLib calls must use TelegramRetry for resilience"
+  ],
+  "forbiddenPatterns": [
+    {
+      "pattern": "TdlibClientProvider",
+      "reason": "DEPRECATED v1 pattern - use DefaultTelegramClient"
+    },
+    {
+      "pattern": "import.*pipeline",
+      "reason": "Transport layer must not import pipeline"
+    },
+    {
+      "pattern": "import.*persistence",
+      "reason": "Transport must not import persistence layer (pure transport)"
+    },
+    {
+      "pattern": "import.*Obx|import.*NX_",
+      "reason": "Transport must not import entities (Obx* deprecated, NX_* is new naming)"
+    }
+  ],
+  "lastVerified": "2026-02-06",
+  "auditedBy": "scope-manager.py"
+}

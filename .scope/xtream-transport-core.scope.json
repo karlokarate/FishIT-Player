@@ -1,0 +1,150 @@
+{
+  "$schema": "./scope-guard.schema.json",
+  "scopeId": "xtream-transport-core",
+  "version": "1.0.0",
+  "description": "Xtream HTTP API client, DTOs, URL building. Layer: Transport. NO pipeline, data, or playback access.",
+  "mandatoryReadBeforeEdit": [
+    "AGENTS.md Section 4 (Layer Boundaries)",
+    "contracts/XTREAM_SCAN_PREMIUM_CONTRACT_V1.md",
+    ".github/instructions/infra-transport-xtream.instructions.md"
+  ],
+  "modules": {
+    "infra/transport-xtream": {
+      "fileCount": 23,
+      "totalLOC": 4200,
+      "criticalFiles": [
+        {
+          "path": "infra/transport-xtream/src/main/java/com/fishit/player/infra/transport/xtream/XtreamApiClient.kt",
+          "purpose": "PUBLIC interface for all Xtream API operations",
+          "invariants": [
+            "Interface only - no implementation details",
+            "Returns Result types or throws XtreamError",
+            "No RawMediaMetadata - that's pipeline's job"
+          ]
+        },
+        {
+          "path": "infra/transport-xtream/src/main/java/com/fishit/player/infra/transport/xtream/DefaultXtreamApiClient.kt",
+          "purpose": "Facade orchestrating handler delegation",
+          "invariants": [
+            "Thin orchestrator - delegates to handlers",
+            "Single @Singleton instance per session"
+          ]
+        },
+        {
+          "path": "infra/transport-xtream/src/main/java/com/fishit/player/infra/transport/xtream/XtreamApiModels.kt",
+          "loc": 765,
+          "purpose": "ALL transport-layer DTOs for JSON parsing",
+          "invariants": [
+            "DTOs are transport-only - not exposed to pipeline consumers",
+            "Use @Serializable with kotlinx.serialization"
+          ]
+        },
+        {
+          "path": "infra/transport-xtream/src/main/java/com/fishit/player/infra/transport/xtream/XtreamUrlBuilder.kt",
+          "loc": 617,
+          "purpose": "Central URL factory for all Xtream endpoints",
+          "invariants": [
+            "SSOT for URL patterns (player_api, panel_api, playback)",
+            "String.redactCredentials() for logging safety"
+          ]
+        },
+        {
+          "path": "infra/transport-xtream/src/main/java/com/fishit/player/infra/transport/xtream/XtreamDiscovery.kt",
+          "loc": 516,
+          "purpose": "Port resolution and capability detection",
+          "invariants": [
+            "Port order: configured → 80 → 8080 → 8000 → 443",
+            "VOD alias detection: vod/movie/movies"
+          ]
+        },
+        {
+          "path": "infra/transport-xtream/src/main/java/com/fishit/player/infra/transport/xtream/XtreamTransportConfig.kt",
+          "purpose": "SSOT for timeouts, User-Agent, parallelism",
+          "invariants": [
+            "Respect Premium Contract parallelism limits",
+            "FireTV low RAM: 3, Phone/Tablet: 12"
+          ]
+        },
+        {
+          "path": "infra/transport-xtream/src/main/java/com/fishit/player/infra/transport/xtream/XtreamHttpHeaders.kt",
+          "purpose": "Header profiles: API vs PLAYBACK headers",
+          "invariants": [
+            "defaults() for JSON API calls",
+            "playbackDefaults() for media streaming"
+          ]
+        },
+        {
+          "path": "infra/transport-xtream/src/main/java/com/fishit/player/infra/transport/xtream/XtreamParallelism.kt",
+          "purpose": "Device-aware parallelism wrapper"
+        },
+        {
+          "path": "infra/transport-xtream/src/main/java/com/fishit/player/infra/transport/xtream/XtreamCapabilityStore.kt",
+          "purpose": "Stub interface for capability caching (Sprint 6)"
+        },
+        {
+          "path": "infra/transport-xtream/src/main/java/com/fishit/player/infra/transport/xtream/XtreamPortStore.kt",
+          "purpose": "Stub interface for port caching (Sprint 6)"
+        },
+        {
+          "path": "infra/transport-xtream/src/main/java/com/fishit/player/infra/transport/xtream/strategy/CategoryFallbackStrategy.kt",
+          "purpose": "Shared fallback logic for category filtering",
+          "invariants": [
+            "Fallback order: * → 0 → null",
+            "Eliminates ~150 lines duplication"
+          ]
+        }
+      ],
+      "handlers": [
+        "infra/transport-xtream/src/main/java/com/fishit/player/infra/transport/xtream/client/XtreamConnectionManager.kt",
+        "infra/transport-xtream/src/main/java/com/fishit/player/infra/transport/xtream/client/XtreamCategoryFetcher.kt",
+        "infra/transport-xtream/src/main/java/com/fishit/player/infra/transport/xtream/client/XtreamStreamFetcher.kt"
+      ],
+      "diModules": [
+        "infra/transport-xtream/src/main/java/com/fishit/player/infra/transport/xtream/di/XtreamTransportModule.kt"
+      ],
+      "sourceSetFiles": {
+        "debug": [
+          "infra/transport-xtream/src/debug/java/com/fishit/player/infra/transport/xtream/di/DebugInterceptorModule.kt"
+        ],
+        "release": [
+          "infra/transport-xtream/src/release/java/com/fishit/player/infra/transport/xtream/di/DebugInterceptorModule.kt"
+        ]
+      }
+    }
+  },
+  "relatedScopes": [
+    "xtream-transport-streaming",
+    "xtream-transport-auth",
+    "xtream-pipeline-mapping"
+  ],
+  "globalInvariants": [
+    "NO imports from pipeline/, data/, playback/, feature/",
+    "MAY import: core:model, core:device-api, infra:logging, infra:http-client",
+    "XtreamError sealed class for all error states",
+    "Credentials NEVER logged - use redactCredentials()"
+  ],
+  "forbiddenPatterns": [
+    {
+      "pattern": "import.*pipeline",
+      "reason": "Transport layer must not know about pipelines"
+    },
+    {
+      "pattern": "import.*data\\.",
+      "reason": "Transport layer must not access data/repositories"
+    },
+    {
+      "pattern": "RawMediaMetadata",
+      "reason": "Transport returns raw DTOs - mapping is pipeline's job"
+    },
+    {
+      "pattern": "Log\\.(d|i|w|e).*password|credential",
+      "reason": "Never log credentials"
+    }
+  ],
+  "testFiles": [
+    "infra/transport-xtream/src/test/java/com/fishit/player/infra/transport/xtream/XtreamParallelismTest.kt",
+    "infra/transport-xtream/src/test/java/com/fishit/player/infra/transport/xtream/JsonWhitespaceHandlingTest.kt",
+    "infra/transport-xtream/src/test/java/com/fishit/player/infra/transport/xtream/XtreamTransportConfigTest.kt",
+    "infra/transport-xtream/src/test/java/com/fishit/player/infra/transport/xtream/CategoryFallbackStrategyTest.kt"
+  ]
+}

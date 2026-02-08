@@ -1,0 +1,124 @@
+{
+  "$schema": "./scope-guard.schema.json",
+  "scopeId": "xtream-pipeline-mapping",
+  "version": "1.0.0",
+  "description": "DTO → RawMediaMetadata transformation. Core normalization entry point for Xtream.",
+  "mandatoryReadBeforeEdit": [
+    "contracts/MEDIA_NORMALIZATION_CONTRACT.md",
+    "contracts/GLOSSARY_v2_naming_and_modules.md",
+    ".github/instructions/pipeline.instructions.md"
+  ],
+  "modules": {
+    "pipeline/xtream/src/main/java/com/fishit/player/pipeline/xtream/mapper": {
+      "fileCount": 3,
+      "totalLOC": 600,
+      "criticalFiles": [
+        {
+          "path": "pipeline/xtream/src/main/java/com/fishit/player/pipeline/xtream/mapper/XtreamRawMetadataExtensions.kt",
+          "purpose": "CORE: Extension functions for DTO → RawMediaMetadata",
+          "invariants": [
+            "toRawMetadata() for each DTO type",
+            "Title passthrough - NO cleaning (delegated to normalizer)",
+            "TMDB mapping: vodItem.tmdbId → TmdbRef(MOVIE)",
+            "Duration parsing via parseDurationToMs()"
+          ]
+        },
+        {
+          "path": "pipeline/xtream/src/main/java/com/fishit/player/pipeline/xtream/mapper/XtreamCatalogMapper.kt",
+          "purpose": "DI-friendly wrapper around extensions",
+          "invariants": [
+            "Produces XtreamCatalogItem(raw: RawMediaMetadata, ...)",
+            "Single responsibility: mapping only"
+          ]
+        },
+        {
+          "path": "pipeline/xtream/src/main/java/com/fishit/player/pipeline/xtream/mapper/XtreamImageRefExtensions.kt",
+          "purpose": "ImageRef extraction from DTOs",
+          "invariants": [
+            "toPosterImageRef(), toBackdropImageRef()",
+            "Returns ImageRef.Http for valid URLs, null otherwise"
+          ]
+        }
+      ]
+    },
+    "pipeline/xtream/src/main/java/com/fishit/player/pipeline/xtream/model": {
+      "fileCount": 6,
+      "totalLOC": 400,
+      "criticalFiles": [
+        {
+          "path": "pipeline/xtream/src/main/java/com/fishit/player/pipeline/xtream/model/XtreamVodItem.kt",
+          "purpose": "VOD pipeline DTO"
+        },
+        {
+          "path": "pipeline/xtream/src/main/java/com/fishit/player/pipeline/xtream/model/XtreamSeriesItem.kt",
+          "purpose": "Series container pipeline DTO"
+        },
+        {
+          "path": "pipeline/xtream/src/main/java/com/fishit/player/pipeline/xtream/model/XtreamEpisode.kt",
+          "purpose": "Episode pipeline DTO"
+        },
+        {
+          "path": "pipeline/xtream/src/main/java/com/fishit/player/pipeline/xtream/model/XtreamChannel.kt",
+          "purpose": "Live channel pipeline DTO"
+        },
+        {
+          "path": "pipeline/xtream/src/main/java/com/fishit/player/pipeline/xtream/model/XtreamEpgEntry.kt",
+          "purpose": "EPG entry stub for future implementation"
+        },
+        {
+          "path": "pipeline/xtream/src/main/java/com/fishit/player/pipeline/xtream/model/XtreamSearchResult.kt",
+          "purpose": "Type-safe search result wrapper (sealed class)"
+        }
+      ]
+    },
+    "pipeline/xtream/src/main/java/com/fishit/player/pipeline/xtream/ids": {
+      "fileCount": 2,
+      "totalLOC": 100,
+      "criticalFiles": [
+        {
+          "path": "pipeline/xtream/src/main/java/com/fishit/player/pipeline/xtream/ids/XtreamIdCodec.kt",
+          "purpose": "Re-exports XtreamIdCodec from core:model:ids (SSOT)",
+          "invariants": [
+            "DEPRECATED location - use core:model:ids",
+            "Backward compat re-exports only"
+          ]
+        },
+        {
+          "path": "pipeline/xtream/src/main/java/com/fishit/player/pipeline/xtream/ids/XtreamSourceId.kt",
+          "purpose": "Backward compat re-exports"
+        }
+      ]
+    }
+  },
+  "relatedScopes": [
+    "xtream-transport-core",
+    "xtream-pipeline-catalog",
+    "catalog-sync"
+  ],
+  "globalInvariants": [
+    "Pipeline DTOs are INTERNAL - not exported to data/UI layers",
+    "All mapping produces RawMediaMetadata (core:model)",
+    "No DB access - mapping is pure transformation",
+    "ID generation via XtreamIdCodec SSOT (core:model:ids)"
+  ],
+  "forbiddenPatterns": [
+    {
+      "pattern": "import.*persistence",
+      "reason": "Pipeline mapping must not access persistence"
+    },
+    {
+      "pattern": "import.*data\\.",
+      "reason": "Pipeline mapping must not access data layer"
+    },
+    {
+      "pattern": "import.*playback",
+      "reason": "Pipeline mapping must not access playback layer"
+    }
+  ],
+  "idFormatContract": {
+    "vod": "xtream:vod:{vodId}",
+    "series": "xtream:series:{seriesId}",
+    "episode": "xtream:episode:{episodeId}",
+    "live": "xtream:live:{channelId}"
+  }
+}

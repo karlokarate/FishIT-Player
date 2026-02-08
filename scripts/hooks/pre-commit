@@ -1,0 +1,59 @@
+#!/bin/bash
+# =============================================================================
+# Scope Guard Pre-Commit Hook
+# =============================================================================
+#
+# This hook enforces scope boundaries by checking all staged files before commit.
+# If any file violates READ_ONLY rules, the commit is BLOCKED.
+#
+# Installation (automatic via devcontainer):
+#   scripts/install-scope-guard-hooks.sh
+#
+# Manual bypass (USE WITH CAUTION):
+#   git commit --no-verify -m "message"
+#
+# =============================================================================
+
+set -e
+
+# Colors
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m' # No Color
+
+# Find workspace root (where .git is)
+WORKSPACE_ROOT="$(git rev-parse --show-toplevel)"
+CLI_TOOL="$WORKSPACE_ROOT/tools/scope-guard-cli.py"
+
+echo -e "${YELLOW}🔒 Scope Guard: Checking staged files...${NC}"
+
+# Check if CLI tool exists
+if [ ! -f "$CLI_TOOL" ]; then
+    echo -e "${RED}ERROR: Scope Guard CLI not found: $CLI_TOOL${NC}"
+    echo "Please ensure the repository is properly set up."
+    exit 1
+fi
+
+# Run the check
+if python3 "$CLI_TOOL" check-staged; then
+    echo -e "${GREEN}✓ Scope Guard: All checks passed${NC}"
+    exit 0
+else
+    echo ""
+    echo -e "${RED}═══════════════════════════════════════════════════════════════${NC}"
+    echo -e "${RED}  🚫 COMMIT BLOCKED BY SCOPE GUARD${NC}"
+    echo -e "${RED}═══════════════════════════════════════════════════════════════${NC}"
+    echo ""
+    echo "You are trying to modify protected files."
+    echo ""
+    echo "Options:"
+    echo "  1. Remove the problematic files from your commit"
+    echo "  2. If editing AGENTS.md: edit docs/meta/AGENT_RULES_CANONICAL.md instead"
+    echo "  3. If editing legacy/: DO NOT - this code is frozen"
+    echo ""
+    echo "To bypass (EXPERTS ONLY - explain in commit message):"
+    echo "  git commit --no-verify -m \"[SCOPE-BYPASS] reason: ...\""
+    echo ""
+    exit 1
+fi

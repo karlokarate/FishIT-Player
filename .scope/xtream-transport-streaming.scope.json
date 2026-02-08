@@ -1,0 +1,71 @@
+{
+  "$schema": "./scope-guard.schema.json",
+  "scopeId": "xtream-transport-streaming",
+  "version": "1.0.0",
+  "description": "High-performance Jackson-based streaming JSON parser. O(1) memory for large arrays.",
+  "mandatoryReadBeforeEdit": [
+    "contracts/XTREAM_SCAN_PREMIUM_CONTRACT_V1.md (Memory Efficiency)",
+    ".github/instructions/infra-transport-xtream.instructions.md"
+  ],
+  "modules": {
+    "infra/transport-xtream/src/main/java/com/fishit/player/infra/transport/xtream/streaming": {
+      "fileCount": 1,
+      "totalLOC": 517,
+      "criticalFiles": [
+        {
+          "path": "infra/transport-xtream/src/main/java/com/fishit/player/infra/transport/xtream/streaming/StreamingJsonParser.kt",
+          "loc": 517,
+          "purpose": "O(1) memory JSON array streaming via Jackson",
+          "invariants": [
+            "NEVER load entire array into memory",
+            "Use parseArrayAsSequence() for streaming",
+            "Batch size configurable via streamInBatches()",
+            "Must yield to allow GC between batches"
+          ]
+        }
+      ]
+    },
+    "infra/transport-xtream/src/main/java/com/fishit/player/infra/transport/xtream/mapper": {
+      "fileCount": 3,
+      "totalLOC": 300,
+      "criticalFiles": [
+        {
+          "path": "infra/transport-xtream/src/main/java/com/fishit/player/infra/transport/xtream/mapper/LiveStreamMapper.kt",
+          "purpose": "JSON → XtreamLiveStream with dual mapper (Jackson streaming + kotlinx fallback)"
+        },
+        {
+          "path": "infra/transport-xtream/src/main/java/com/fishit/player/infra/transport/xtream/mapper/VodStreamMapper.kt",
+          "purpose": "JSON → XtreamVodStream"
+        },
+        {
+          "path": "infra/transport-xtream/src/main/java/com/fishit/player/infra/transport/xtream/mapper/SeriesStreamMapper.kt",
+          "purpose": "JSON → XtreamSeriesStream"
+        }
+      ]
+    }
+  },
+  "relatedScopes": [
+    "xtream-transport-core"
+  ],
+  "globalInvariants": [
+    "Memory usage must be O(1) regardless of array size",
+    "Use JsonObjectReader for field-by-field streaming",
+    "StreamingStats tracks items parsed, bytes, duration",
+    "Fallback to kotlinx.serialization if Jackson fails"
+  ],
+  "forbiddenPatterns": [
+    {
+      "pattern": "Json\\.decodeFromString.*List<",
+      "reason": "Don't deserialize entire list - use streaming"
+    },
+    {
+      "pattern": "\\.readValue<List<",
+      "reason": "Jackson readValue on List defeats O(1) memory"
+    }
+  ],
+  "performanceConstraints": {
+    "maxHeapPerBatch": "5MB",
+    "targetLatency": "< 50ms per batch of 100 items",
+    "gcPauseYield": "After every batch, yield() to allow GC"
+  }
+}

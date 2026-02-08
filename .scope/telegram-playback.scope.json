@@ -1,0 +1,62 @@
+{
+  "$schema": "./scope-guard.schema.json",
+  "scopeId": "telegram-playback",
+  "version": "1.0.0",
+  "description": "Telegram playback source - file streaming, mode detection, ExoPlayer integration",
+  "mandatoryReadBeforeEdit": [
+    "contracts/INTERNAL_PLAYER_BEHAVIOR_CONTRACT.md",
+    ".github/instructions/playback.instructions.md"
+  ],
+  "modules": {
+    "playback/telegram/src/main/java/com/fishit/player/playback/telegram": {
+      "fileCount": 4,
+      "totalLOC": 0,
+      "criticalFiles": [
+        {
+          "path": "playback/telegram/src/main/java/com/fishit/player/playback/telegram/TelegramPlaybackSourceFactoryImpl.kt",
+          "purpose": "Factory creating TelegramPlaybackSource for player",
+          "invariants": [
+            "Registered via @IntoSet @Multibinds pattern"
+          ]
+        },
+        {
+          "path": "playback/telegram/src/main/java/com/fishit/player/playback/telegram/TelegramFileDataSource.kt",
+          "purpose": "ExoPlayer DataSource for streaming TDLib files",
+          "invariants": [
+            "Uses TelegramFileClient interface - not direct TDLib"
+          ]
+        },
+        {
+          "path": "playback/telegram/src/main/java/com/fishit/player/playback/telegram/config/TelegramPlaybackModeDetector.kt",
+          "purpose": "Determines STREAMING vs DOWNLOAD mode based on file type/size"
+        },
+        {
+          "path": "playback/telegram/src/main/java/com/fishit/player/playback/telegram/TelegramPlaybackUriContract.kt",
+          "purpose": "URI scheme contract for telegram:// playback URIs"
+        }
+      ]
+    }
+  },
+  "relatedScopes": [
+    "telegram-transport",
+    "xtream-playback"
+  ],
+  "globalInvariants": [
+    "Use TelegramFileClient interface (not direct TDLib)",
+    "Register via @Multibinds + @IntoSet pattern",
+    "Playback mode detection follows config contract",
+    "NO import of pipeline layer - use PlaybackContext"
+  ],
+  "forbiddenPatterns": [
+    {
+      "pattern": "import.*pipeline",
+      "reason": "Playback layer must not import pipeline"
+    },
+    {
+      "pattern": "import.*TelegramMediaItem",
+      "reason": "Use PlaybackContext, not pipeline DTOs"
+    }
+  ],
+  "lastVerified": "2026-02-06",
+  "auditedBy": "scope-manager.py"
+}

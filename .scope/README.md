@@ -15,14 +15,37 @@ Each `.scope/*.scope.json` file defines a **bounded context** that must be fully
 
 ```
 .scope/
-├── scope-guard.schema.json       # Schema for *.scope.json files
-├── catalog-sync.scope.json       # 27 files, ~5400 LOC
-├── persistence.scope.json        # 20 entities, repositories
-├── xtream-pipeline.scope.json    # 26 files, ~3500 LOC (TODO)
-├── layer-boundaries.rules.json   # Layer hierarchy & import rules
-├── agent-checklists.rules.json   # Pre/Post-change checklists
-├── naming-rules.yaml             # Naming conventions
-└── README.md                     # This file
+├── scope-guard.schema.json         # Schema for *.scope.json files
+├── scope-guard.config.json         # Server configuration with bundles
+│
+│── # Core Scopes (2)
+├── catalog-sync.scope.json         # core/catalog-sync - sync orchestration
+├── persistence.scope.json          # core/persistence - ObjectBox entities
+│
+│── # Telegram Scopes (3)
+├── telegram-transport.scope.json   # infra/transport-telegram - TDLib
+├── telegram-pipeline.scope.json    # pipeline/telegram - message bundling
+├── telegram-playback.scope.json    # playback/telegram - streaming
+│
+│── # Xtream Scopes (7)
+├── xtream-transport-core.scope.json      # API client, DTOs
+├── xtream-transport-auth.scope.json      # Credentials, authentication
+├── xtream-transport-streaming.scope.json # Jackson streaming parser
+├── xtream-data.scope.json                # NX repositories
+├── xtream-pipeline-catalog.scope.json    # Scan phases, orchestration
+├── xtream-pipeline-mapping.scope.json    # DTO → RawMediaMetadata
+├── xtream-playback.scope.json            # PlaybackSourceFactory
+│
+│── # Other Pipelines (2)
+├── io-pipeline.scope.json          # pipeline/io - local files (stub)
+├── audiobook-pipeline.scope.json   # pipeline/audiobook (stub)
+│
+│── # Supplementary Files
+├── layer-boundaries.rules.json     # Layer hierarchy & import rules
+├── agent-checklists.rules.json     # Pre/Post-change checklists
+├── naming-rules.yaml               # Naming conventions
+├── audit.log                       # Scope Guard audit trail
+└── README.md                       # This file
 
 Note: Only *.scope.json files follow the scope-guard schema.
       *.rules.json and *.yaml are supplementary reference files.
