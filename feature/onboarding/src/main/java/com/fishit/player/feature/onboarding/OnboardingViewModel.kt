@@ -8,8 +8,11 @@ import com.fishit.player.core.onboarding.domain.XtreamAuthRepository
 import com.fishit.player.core.onboarding.domain.XtreamConfig
 import com.fishit.player.infra.logging.UnifiedLog
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.update
@@ -35,6 +38,13 @@ data class OnboardingState(
     // General
     val canContinue: Boolean = false,
 )
+
+/**
+ * Navigation events (one-time events)
+ */
+sealed interface NavigationEvent {
+    data object ToHome : NavigationEvent
+}
 
 /**
  * Xtream connection states (UI model)
@@ -71,6 +81,9 @@ class OnboardingViewModel
     ) : ViewModel() {
         private val _state = MutableStateFlow(OnboardingState())
         val state: StateFlow<OnboardingState> = _state.asStateFlow()
+
+        private val _navigationEvents = MutableSharedFlow<NavigationEvent>()
+        val navigationEvents: SharedFlow<NavigationEvent> = _navigationEvents.asSharedFlow()
 
         private var lastTelegramAuthState: TelegramAuthState = TelegramAuthState.Idle
         private var lastXtreamConnectionState: DomainXtreamConnectionState =
@@ -252,6 +265,11 @@ class OnboardingViewModel
                         .onFailure { error ->
                             UnifiedLog.e(TAG, error) { "connectXtream: Failed to save credentials" }
                             _state.update { it.copy(xtreamError = error.message) }
+                        }
+                        .onSuccess {
+                            // Navigate to Home/StartScreen after successful connection
+                            UnifiedLog.d(TAG) { "connectXtream: Emitting navigation event to Home" }
+                            _navigationEvents.emit(NavigationEvent.ToHome)
                         }
                 }
             }

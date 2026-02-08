@@ -5,6 +5,7 @@ package com.fishit.player.core.catalogsync.sources.xtream
 
 import com.fishit.player.core.catalogsync.IncrementalSyncDecider
 import com.fishit.player.core.catalogsync.SyncStrategy
+import com.fishit.player.core.model.MediaType
 import com.fishit.player.core.model.RawMediaMetadata
 import com.fishit.player.core.model.sync.DeviceProfile
 import com.fishit.player.core.model.sync.SyncPhase
@@ -16,6 +17,8 @@ import com.fishit.player.core.synccommon.checkpoint.SyncCheckpoint
 import com.fishit.player.core.synccommon.checkpoint.SyncCheckpointStore
 import com.fishit.player.core.synccommon.device.DeviceProfileDetector
 import com.fishit.player.core.synccommon.metrics.SyncPerfMetrics
+import com.fishit.player.infra.data.xtream.XtreamCatalogRepository
+import com.fishit.player.infra.data.xtream.XtreamLiveRepository
 import com.fishit.player.infra.logging.UnifiedLog
 import com.fishit.player.pipeline.xtream.catalog.XtreamCatalogConfig
 import com.fishit.player.pipeline.xtream.catalog.XtreamCatalogEvent
@@ -53,6 +56,8 @@ import kotlin.time.Duration.Companion.milliseconds
 @Singleton
 class DefaultXtreamSyncService @Inject constructor(
     private val pipeline: XtreamCatalogPipeline,
+    private val catalogRepository: XtreamCatalogRepository,
+    private val liveRepository: XtreamLiveRepository,
     private val checkpointStore: SyncCheckpointStore,
     private val incrementalSyncDecider: IncrementalSyncDecider,
     private val deviceProfileDetector: DeviceProfileDetector,
@@ -552,8 +557,28 @@ class DefaultXtreamSyncService @Inject constructor(
         // Consumer: process items in batches
         val consumerJob = scope.launch {
             buffer.consumeBatched(batchSize = 50) { items ->
-                // Items are collected and will be processed by catalog writer
-                // This is a passthrough - actual persistence happens in catalog sync service
+                try {
+                    if (items.isEmpty()) return@consumeBatched
+                    
+                    // Group items by type: live channels vs catalog content
+                    val (liveItems, catalogItems) = items.partition { 
+                        it.raw.mediaType == MediaType.LIVE 
+                    }
+                    
+                    // Persist live channels
+                    if (liveItems.isNotEmpty()) {
+                        liveRepository.upsertAll(liveItems.map { it.raw })
+                        log("Persisted ${liveItems.size} live channels")
+                    }
+                    
+                    // Persist catalog content (VOD, series, episodes)
+                    if (catalogItems.isNotEmpty()) {
+                        catalogRepository.upsertAll(catalogItems.map { it.raw })
+                        log("Persisted ${catalogItems.size} catalog items")
+                    }
+                } catch (e: Exception) {
+                    UnifiedLog.e("DefaultXtreamSyncService", "Error persisting batch: ${e.message}", e)
+                }
             }
         }
 

@@ -83,3 +83,19 @@
 {"timestamp": "2026-02-08T16:58:51.389316", "source": "cli", "action": "cli_check_batch", "filePath": ".scope/audit.log", "status": "EXCLUDED", "details": "Build artifact - auto-allowed"}
 {"timestamp": "2026-02-08T16:58:51.390270", "source": "cli", "action": "cli_check_batch", "filePath": "app-v2/src/main/java/com/fishit/player/v2/work/CatalogSyncOrchestratorWorker.kt", "status": "READ_ONLY", "details": "Protected by readOnlyPaths: app/**"}
 {"timestamp": "2026-02-08T16:58:51.390404", "source": "cli", "action": "cli_check_batch", "filePath": "app-v2/src/main/java/com/fishit/player/v2/work/XtreamCatalogScanWorker.kt", "status": "READ_ONLY", "details": "Protected by readOnlyPaths: app/**"}
+{"timestamp": "2026-02-08T17:20:51.127474", "source": "cli", "action": "cli_check_batch", "filePath": ".scope/audit.log", "status": "EXCLUDED", "details": "Build artifact - auto-allowed"}
+{"timestamp": "2026-02-08T17:20:51.135642", "source": "cli", "action": "cli_check_batch", "filePath": "app-v2/src/main/java/com/fishit/player/v2/work/CatalogSyncOrchestratorWorker.kt", "status": "READ_ONLY", "details": "Protected by readOnlyPaths: app/**"}
+{"timestamp": "2026-02-08T17:20:51.135834", "source": "cli", "action": "cli_check_batch", "filePath": "app-v2/src/main/java/com/fishit/player/v2/work/XtreamCatalogScanWorker.kt", "status": "READ_ONLY", "details": "Protected by readOnlyPaths: app/**"}
+{"action":"check","filePath":"core/catalog-sync/src/main/java/com/fishit/player/core/catalogsync/sources/xtream/DefaultXtreamSyncService.kt","status":"BLOCKED","agentMode":"interactive","scopeId":"catalog-sync","timestamp":"2026-02-08T17:58:58.902Z"}
+{"action":"check","filePath":"feature/onboarding/src/main/java/com/fishit/player/feature/onboarding/OnboardingViewModel.kt","status":"UNTRACKED","agentMode":"interactive","timestamp":"2026-02-08T17:59:44.737Z"}
+{"action":"check","filePath":"core/catalog-sync/build.gradle.kts","status":"BUNDLE_BLOCKED","agentMode":"interactive","details":"gradle-config","timestamp":"2026-02-08T18:00:01.498Z"}
+{"action":"check","filePath":"feature/settings/src/main/java/com/fishit/player/feature/settings/CategorySelectionScreen.kt","status":"UNTRACKED","agentMode":"interactive","timestamp":"2026-02-08T18:00:01.498Z"}
+{"action":"read_bundle","scopeId":"gradle-config","status":"ACKNOWLEDGED","timestamp":"2026-02-08T18:00:28.242Z"}
+{"action":"read","scopeId":"xtream-data","status":"ACKNOWLEDGED","timestamp":"2026-02-08T18:00:49.622Z"}
+{"action":"read","scopeId":"catalog-sync","status":"ACKNOWLEDGED","timestamp":"2026-02-08T18:00:58.058Z"}
+{"action":"check","filePath":"core/catalog-sync/src/main/java/com/fishit/player/core/catalogsync/sources/xtream/DefaultXtreamSyncService.kt","status":"RELATED_UNREAD","agentMode":"interactive","scopeId":"catalog-sync","timestamp":"2026-02-08T18:01:03.217Z"}
+{"action":"read","scopeId":"persistence","status":"ACKNOWLEDGED","timestamp":"2026-02-08T18:01:08.062Z"}
+{"action":"read","scopeId":"xtream-pipeline-catalog","status":"ACKNOWLEDGED","timestamp":"2026-02-08T18:01:08.063Z"}
+{"action":"check","filePath":"core/catalog-sync/src/main/java/com/fishit/player/core/catalogsync/sources/xtream/DefaultXtreamSyncService.kt","status":"RELATED_UNREAD","agentMode":"interactive","scopeId":"catalog-sync","timestamp":"2026-02-08T18:01:13.378Z"}
+{"action":"read","scopeId":"xtream-transport-core","status":"ACKNOWLEDGED","timestamp":"2026-02-08T18:01:18.505Z"}
+{"action":"check","filePath":"core/catalog-sync/src/main/java/com/fishit/player/core/catalogsync/sources/xtream/DefaultXtreamSyncService.kt","status":"ALLOWED","agentMode":"interactive","scopeId":"catalog-sync","timestamp":"2026-02-08T18:01:18.505Z"}
