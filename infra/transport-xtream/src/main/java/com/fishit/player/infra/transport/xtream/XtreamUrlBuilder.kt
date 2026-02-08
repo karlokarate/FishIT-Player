@@ -26,7 +26,7 @@ class XtreamUrlBuilder @Inject constructor() {
     @Volatile
     private var resolvedPort: Int = 80
     @Volatile
-    private var vodKind: String = "vod"
+    private var vodKind: String = "movie" // Default to "movie" - most Xtream servers use /movie/ path
 
     /**
      * Configure URL builder with connection credentials.
@@ -177,31 +177,43 @@ class XtreamUrlBuilder @Inject constructor() {
      * Build live stream URL.
      *
      * Format: {base}/live/{user}/{pass}/{streamId}.{ext}
+     *
+     * @param streamId Stream ID
+     * @param extension Optional extension override
+     * @param liveKind Optional kind/alias override (default: "live")
      */
     fun liveUrl(
         streamId: Int,
         extension: String? = null,
+        liveKind: String? = null,
     ): String {
         val cfg = config ?: error("XtreamUrlBuilder not configured - call configure() first")
         val ext = normalizeExtension(
             extension ?: cfg.liveExtPrefs.firstOrNull() ?: "m3u8",
             isLive = true,
         )
-        return playUrl("live", streamId, ext)
+        val kind = liveKind ?: "live"
+        return playUrl(kind, streamId, ext)
     }
 
     /**
      * Build VOD stream URL.
      *
      * Format: {base}/{vod|movie|movies}/{user}/{pass}/{vodId}.{ext}
+     *
+     * @param vodId VOD stream ID
+     * @param containerExtension Optional container extension
+     * @param vodKindOverride Optional kind/alias override (from PlaybackHints or persistence)
      */
     fun vodUrl(
         vodId: Int,
         containerExtension: String? = null,
+        vodKindOverride: String? = null,
     ): String {
         val cfg = config ?: error("XtreamUrlBuilder not configured - call configure() first")
         val ext = sanitizeExtension(containerExtension ?: cfg.vodExtPrefs.firstOrNull() ?: "m3u8")
-        return playUrl(vodKind, vodId, ext)
+        val kind = vodKindOverride ?: vodKind
+        return playUrl(kind, vodId, ext)
     }
 
     /**
@@ -227,6 +239,7 @@ class XtreamUrlBuilder @Inject constructor() {
      * @param episodeNumber Episode number (used only if episodeId is missing)
      * @param episodeId Episode stream ID (REQUIRED for direct playback)
      * @param containerExtension Container format from server (e.g., "mp4", "mkv")
+     * @param seriesKind Optional kind/alias override (from PlaybackHints, default: "series")
      * @return Series episode playback URL
      * @throws IllegalArgumentException if no valid extension can be determined
      */
@@ -236,6 +249,7 @@ class XtreamUrlBuilder @Inject constructor() {
         episodeNumber: Int,
         episodeId: Int? = null,
         containerExtension: String? = null,
+        seriesKind: String? = null,
     ): String {
         val cfg = config ?: error("XtreamUrlBuilder not configured - call configure() first")
         // SSOT: Use containerExtension if provided
@@ -248,11 +262,15 @@ class XtreamUrlBuilder @Inject constructor() {
                     ?: "mkv" // First fallback: mkv
             }
 
-        // Direct episodeId path: /series/user/pass/episodeId.ext (standard approach)
+        val kind = seriesKind ?: "series"
+
+        // Direct episodeId path: /{kind}/user/pass/episodeId.ext (standard approach)
         if (episodeId != null && episodeId > 0) {
             return buildString {
                 append(baseUrl)
-                append("/series/")
+                append("/")
+                append(kind)
+                append("/")
                 append(urlEncode(cfg.username))
                 append("/")
                 append(urlEncode(cfg.password))
@@ -263,10 +281,12 @@ class XtreamUrlBuilder @Inject constructor() {
             }
         }
 
-        // Legacy fallback: /series/user/pass/seriesId/season/episode.ext (rare)
+        // Legacy fallback: /{kind}/user/pass/seriesId/season/episode.ext (rare)
         return buildString {
             append(baseUrl)
-            append("/series/")
+            append("/")
+            append(kind)
+            append("/")
             append(urlEncode(cfg.username))
             append("/")
             append(urlEncode(cfg.password))

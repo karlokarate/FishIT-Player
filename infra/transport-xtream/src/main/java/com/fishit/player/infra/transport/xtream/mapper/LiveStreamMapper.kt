@@ -30,6 +30,7 @@ object LiveStreamMapper {
             tvArchive = reader.getIntOrNull("tv_archive"),
             tvArchiveDuration = reader.getIntOrNull("tv_archive_duration"),
             categoryId = reader.getStringOrNull("category_id"),
+            streamType = reader.getStringOrNull("stream_type"),
             added = reader.getStringOrNull("added"),
             isAdult = reader.getStringOrNull("is_adult"),
         )
@@ -50,6 +51,7 @@ object LiveStreamMapper {
             tvArchive = obj["tv_archive"]?.jsonPrimitive?.intOrNull,
             tvArchiveDuration = obj["tv_archive_duration"]?.jsonPrimitive?.intOrNull,
             categoryId = obj["category_id"]?.jsonPrimitive?.content,
+            streamType = obj["stream_type"]?.jsonPrimitive?.content,
             added = obj["added"]?.jsonPrimitive?.content,
             isAdult = obj["is_adult"]?.jsonPrimitive?.content,
         )

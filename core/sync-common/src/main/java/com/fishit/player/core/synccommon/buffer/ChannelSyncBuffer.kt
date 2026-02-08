@@ -2,6 +2,7 @@ package com.fishit.player.core.synccommon.buffer
 
 import com.fishit.player.core.model.sync.DeviceProfile
 import com.fishit.player.infra.logging.UnifiedLog
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ClosedReceiveChannelException
 import kotlinx.coroutines.channels.ClosedSendChannelException
@@ -57,6 +58,7 @@ import java.util.concurrent.atomic.AtomicLong
  * @param capacity Maximum items in buffer before backpressure
  * @param name Optional buffer name for logging
  */
+@OptIn(ExperimentalCoroutinesApi::class)
 class ChannelSyncBuffer<T>(
     /**
      * Buffer capacity (items in memory).
@@ -91,6 +93,7 @@ class ChannelSyncBuffer<T>(
      *
      * @param item Item to send
      */
+    @Suppress("OPT_IN_USAGE") // isClosedForSend is delicate but safe here (check-then-act with exception handling)
     suspend fun send(item: T) {
         if (_startTimeMs.get() == 0L) {
             _startTimeMs.set(System.currentTimeMillis())
@@ -135,8 +138,11 @@ class ChannelSyncBuffer<T>(
     /**
      * Try to receive without suspending.
      *
+     * Used in tests and for non-blocking polling scenarios.
+     *
      * @return Item if available, null otherwise
      */
+    @Suppress("unused") // Used in tests (ChannelSyncBufferTest)
     fun tryReceive(): T? {
         val result = channel.tryReceive()
         if (result.isSuccess) {
@@ -153,6 +159,7 @@ class ChannelSyncBuffer<T>(
      * - Batches items up to [batchSize] before calling [onBatch]
      * - Auto-flushes remaining items when channel closes
      * - Respects backpressure via channel semantics
+     * - Properly propagates CancellationException
      *
      * @param batchSize Max items per batch (use [DeviceProfile.dbBatchSize])
      * @param onBatch Callback invoked with each batch (suspend-safe)
@@ -162,6 +169,7 @@ class ChannelSyncBuffer<T>(
         onBatch: suspend (List<T>) -> Unit,
     ) {
         val batch = mutableListOf<T>()
+        var flushedCount = 0
         try {
             while (true) {
                 val item = receive()
@@ -172,11 +180,25 @@ class ChannelSyncBuffer<T>(
                 }
             }
         } catch (_: ClosedReceiveChannelException) {
-            // Flush remaining items
+            // Channel closed - flush remaining items
             if (batch.isNotEmpty()) {
+                flushedCount = batch.size
                 onBatch(batch.toList())
+                batch.clear()
             }
-            UnifiedLog.d(TAG) { "[$name] Consumer finished, flushed ${batch.size} remaining" }
+            UnifiedLog.d(TAG) { "[$name] Consumer finished, flushed $flushedCount remaining" }
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            // Coroutine cancelled - flush and re-throw to propagate cancellation
+            if (batch.isNotEmpty()) {
+                flushedCount = batch.size
+                try {
+                    onBatch(batch.toList())
+                } catch (_: Exception) {
+                    // Ignore errors during cancellation flush
+                }
+            }
+            UnifiedLog.d(TAG) { "[$name] Consumer cancelled, flushed $flushedCount remaining" }
+            throw e // Re-throw to propagate cancellation!
         }
     }
 
@@ -192,18 +214,6 @@ class ChannelSyncBuffer<T>(
         channel.close()
         UnifiedLog.d(TAG) { "[$name] Buffer closed, metrics: ${getMetrics()}" }
     }
-
-    /**
-     * Check if buffer is closed for sending.
-     */
-    val isClosedForSend: Boolean
-        get() = channel.isClosedForSend
-
-    /**
-     * Check if buffer is closed for receiving (closed AND empty).
-     */
-    val isClosedForReceive: Boolean
-        get() = channel.isClosedForReceive
 
     /**
      * Get buffer metrics.
@@ -232,9 +242,12 @@ class ChannelSyncBuffer<T>(
         /**
          * Create buffer with device-specific capacity.
          *
+         * Factory method for device-aware buffer creation.
+         *
          * @param deviceProfile Detected device profile
          * @param name Optional buffer name for logging
          */
+        @Suppress("unused") // Factory method for future use
         fun <T> forDevice(
             deviceProfile: DeviceProfile,
             name: String = "SyncBuffer",
@@ -262,13 +275,6 @@ data class BufferMetrics(
     /** Throughput (items received per second) */
     val throughputPerSec: Double,
 ) {
-    /**
-     * Buffer utilization percentage (0-100).
-     * High utilization = good parallelism, producer is faster than consumers.
-     */
-    val bufferUtilization: Int
-        get() = if (itemsSent > 0) ((itemsInBuffer * 100) / itemsSent).coerceIn(0, 100) else 0
-
     override fun toString(): String = buildString {
         append("BufferMetrics(")
         append("sent=$itemsSent, ")
@@ -276,7 +282,7 @@ data class BufferMetrics(
         append("inBuffer=$itemsInBuffer, ")
         append("backpressure=$backpressureEvents, ")
         append("elapsed=${elapsedMs}ms, ")
-        append("throughput=${String.format("%.1f", throughputPerSec)}/s")
+        append("throughput=${String.format(java.util.Locale.US, "%.1f", throughputPerSec)}/s")
         append(")")
     }
 }

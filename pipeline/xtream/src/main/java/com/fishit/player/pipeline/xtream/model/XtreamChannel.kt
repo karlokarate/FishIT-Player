@@ -24,6 +24,7 @@ data class XtreamChannel(
     val tvArchive: Int = 0,
     val tvArchiveDuration: Int = 0,
     val categoryId: String? = null,
+    val streamType: String? = null,
     val added: Long? = null,
     /**
      * Adult content flag from provider.

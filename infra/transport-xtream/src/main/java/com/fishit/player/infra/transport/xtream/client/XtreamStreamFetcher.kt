@@ -51,8 +51,8 @@ class XtreamStreamFetcher @Inject constructor(
 ) {
     companion object {
         private const val TAG = "XtreamStreamFetcher"
-        private val VOD_ALIAS_CANDIDATES = listOf("vod", "movie", "movies")
-        private const val DEFAULT_VOD_KIND = "vod"
+        private val VOD_ALIAS_CANDIDATES = listOf("movie", "vod", "movies") // "movie" first - most common
+        private const val DEFAULT_VOD_KIND = "movie" // Most Xtream servers use /movie/ path
     }
 
     /**
@@ -259,22 +259,32 @@ class XtreamStreamFetcher @Inject constructor(
     /**
      * Get VOD info for a specific item.
      * CC: 4 (parsing and error handling)
+     *
+     * @param vodId The VOD stream ID
+     * @param vodKind The kind/alias to use for API call (movie, vod, movies) - from PlaybackHints
      */
     suspend fun getVodInfo(
         vodId: Int,
+        vodKind: String? = null,
     ): XtreamVodInfo? =
         withContext(io) {
-            val url = urlBuilder.playerApiUrl("get_vod_info", mapOf("vod_id" to vodId.toString()))
+            val kind = vodKind ?: "vod" // Default fallback
+            val action = "get_${kind}_info"
+            val paramKey = "${kind}_id"
+            val url = urlBuilder.playerApiUrl(action, mapOf(paramKey to vodId.toString()))
+
+            UnifiedLog.d(TAG) { "getVodInfo: Using action=$action with $paramKey=$vodId (kind=$kind)" }
+
             val body = runCatching { fetchRaw(url) }.getOrNull()
             val trimmedBody = body?.trim { it.isWhitespace() || it == '\uFEFF' }
 
             if (trimmedBody.isNullOrEmpty() || !trimmedBody.startsWith("{")) {
-                UnifiedLog.w(TAG) { "getVodInfo: empty or invalid response vodId=$vodId" }
+                UnifiedLog.w(TAG) { "getVodInfo: empty or invalid response vodId=$vodId action=$action" }
                 return@withContext null
             }
 
             runCatching { json.decodeFromString<XtreamVodInfo>(trimmedBody) }
-                .onFailure { e -> UnifiedLog.w(TAG, e) { "getVodInfo: JSON parse failed vodId=$vodId" } }
+                .onFailure { e -> UnifiedLog.w(TAG, e) { "getVodInfo: JSON parse failed vodId=$vodId action=$action" } }
                 .getOrNull()
         }
 

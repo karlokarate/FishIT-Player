@@ -38,6 +38,7 @@ object SeriesStreamMapper {
             youtubeTrailer = reader.getStringOrNull("youtube_trailer"),
             episodeRunTime = reader.getStringOrNull("episode_run_time"),
             categoryId = reader.getStringOrNull("category_id"),
+            streamType = reader.getStringOrNull("stream_type"),
         )
     }
 
@@ -63,6 +64,7 @@ object SeriesStreamMapper {
             youtubeTrailer = obj["youtube_trailer"]?.jsonPrimitive?.content,
             episodeRunTime = obj["episode_run_time"]?.jsonPrimitive?.content,
             categoryId = obj["category_id"]?.jsonPrimitive?.content,
+            streamType = obj["stream_type"]?.jsonPrimitive?.content,
         )
     }
 }

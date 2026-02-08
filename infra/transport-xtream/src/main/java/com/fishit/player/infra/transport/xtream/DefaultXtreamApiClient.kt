@@ -157,8 +157,8 @@ class DefaultXtreamApiClient @Inject constructor(
     // Detail Methods (Delegated to StreamFetcher)
     // =========================================================================
 
-    override suspend fun getVodInfo(vodId: Int): XtreamVodInfo? =
-        streamFetcher.getVodInfo(vodId)
+    override suspend fun getVodInfo(vodId: Int, vodKind: String?): XtreamVodInfo? =
+        streamFetcher.getVodInfo(vodId, vodKind)
 
     override suspend fun getSeriesInfo(seriesId: Int): XtreamSeriesInfo? =
         streamFetcher.getSeriesInfo(seriesId)
@@ -180,11 +180,11 @@ class DefaultXtreamApiClient @Inject constructor(
     // URL Building Methods (Delegated to ConnectionManager)
     // =========================================================================
 
-    override fun buildLiveUrl(streamId: Int, extension: String?): String =
-        connectionManager.buildLiveUrl(streamId, extension)
+    override fun buildLiveUrl(streamId: Int, extension: String?, liveKind: String?): String =
+        connectionManager.buildLiveUrl(streamId, extension, liveKind)
 
-    override fun buildVodUrl(vodId: Int, containerExtension: String?): String =
-        connectionManager.buildVodUrl(vodId, containerExtension)
+    override fun buildVodUrl(vodId: Int, containerExtension: String?, vodKind: String?): String =
+        connectionManager.buildVodUrl(vodId, containerExtension, vodKind)
 
     override fun buildSeriesEpisodeUrl(
         seriesId: Int,
@@ -192,8 +192,9 @@ class DefaultXtreamApiClient @Inject constructor(
         episodeNumber: Int,
         episodeId: Int?,
         containerExtension: String?,
+        seriesKind: String?,
     ): String = connectionManager.buildSeriesEpisodeUrl(
-        seriesId, seasonNumber, episodeNumber, episodeId, containerExtension,
+        seriesId, seasonNumber, episodeNumber, episodeId, containerExtension, seriesKind,
     )
 
     override fun buildCatchupUrl(streamId: Int, start: Long, duration: Int): String? =

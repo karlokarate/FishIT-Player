@@ -60,7 +60,7 @@ class XtreamConnectionManager @Inject constructor(
         private set
     var resolvedPort: Int = 80
         private set
-    var vodKind: String = "vod"
+    var vodKind: String = "movie" // Default to "movie" - most Xtream servers use /movie/ path
         internal set
 
     companion object {
@@ -93,7 +93,7 @@ class XtreamConnectionManager @Inject constructor(
             if (!forceDiscovery) {
                 capabilityStore?.get(cacheKey)?.let { cached ->
                     _capabilities = cached
-                    vodKind = cached.resolvedAliases.vodKind ?: "vod"
+                    vodKind = cached.resolvedAliases.vodKind ?: "movie"
                     urlBuilder.updateVodKind(vodKind)
                     return@withContext validateAndComplete(config, cached)
                 }
@@ -105,7 +105,7 @@ class XtreamConnectionManager @Inject constructor(
             val latency = SystemClock.elapsedRealtime() - startTime
 
             _capabilities = caps
-            vodKind = caps.resolvedAliases.vodKind ?: "vod"
+            vodKind = caps.resolvedAliases.vodKind ?: "movie"
             urlBuilder.updateVodKind(vodKind)
             capabilityStore?.put(caps)
 
@@ -387,14 +387,14 @@ class XtreamConnectionManager @Inject constructor(
     /**
      * Build live stream playback URL.
      */
-    fun buildLiveUrl(streamId: Int, extension: String? = null): String =
-        urlBuilder.liveUrl(streamId, extension)
+    fun buildLiveUrl(streamId: Int, extension: String? = null, liveKind: String? = null): String =
+        urlBuilder.liveUrl(streamId, extension, liveKind)
 
     /**
      * Build VOD playback URL.
      */
-    fun buildVodUrl(vodId: Int, containerExtension: String?): String =
-        urlBuilder.vodUrl(vodId, containerExtension)
+    fun buildVodUrl(vodId: Int, containerExtension: String?, vodKind: String? = null): String =
+        urlBuilder.vodUrl(vodId, containerExtension, vodKind)
 
     /**
      * Build series episode playback URL.
@@ -405,7 +405,8 @@ class XtreamConnectionManager @Inject constructor(
         episodeNumber: Int,
         episodeId: Int? = null,
         containerExtension: String? = null,
-    ): String = urlBuilder.seriesEpisodeUrl(seriesId, seasonNumber, episodeNumber, episodeId, containerExtension)
+        seriesKind: String? = null,
+    ): String = urlBuilder.seriesEpisodeUrl(seriesId, seasonNumber, episodeNumber, episodeId, containerExtension, seriesKind)
 
     /**
      * Build catchup/timeshift URL.

@@ -71,9 +71,19 @@ class XtreamOkHttpClientProviderImpl : XtreamOkHttpClientProvider {
             val request = chain.request()
             val url = request.url
 
-            // Log initial request
+            // Log initial request (with port for clarity)
+            val urlWithPort = buildString {
+                append(url.scheme)
+                append("://")
+                append(url.host)
+                if ((url.scheme == "http" && url.port != 80) || (url.scheme == "https" && url.port != 443)) {
+                    append(":")
+                    append(url.port)
+                }
+                append(url.encodedPath)
+            }
             UnifiedLog.d(TAG) {
-                "→ Xtream HTTP request: ${request.method} ${url.scheme}://${url.host}${url.encodedPath}"
+                "→ Xtream HTTP request: ${request.method} $urlWithPort"
             }
 
             // Execute request

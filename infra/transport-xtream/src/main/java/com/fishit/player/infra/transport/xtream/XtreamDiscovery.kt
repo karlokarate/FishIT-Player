@@ -56,8 +56,8 @@ class XtreamDiscovery(
         private val HTTP_PORTS = listOf(80, 8080, 8000, 8880, 2052, 2082, 2086)
         private val HTTPS_PORTS = listOf(443, 8443, 2053, 2083, 2087, 2096)
 
-        // VOD alias candidates
-        private val VOD_ALIASES = listOf("vod", "movie", "movies")
+        // VOD alias candidates (order matters: most servers use /movie/ for playback)
+        private val VOD_ALIASES = listOf("movie", "movies", "vod")
 
         // Probe actions
         private val PROBE_ACTIONS = listOf("get_live_streams", "get_series", "get_vod_streams")

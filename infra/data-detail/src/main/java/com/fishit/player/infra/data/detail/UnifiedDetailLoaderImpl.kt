@@ -570,13 +570,17 @@ class UnifiedDetailLoaderImpl
         val vodId = parseVodId(cacheKey) ?: return null
         val now = System.currentTimeMillis()
 
-        UnifiedLog.d(TAG) { "loadVodDetailInternal: fetching vodId=$vodId" }
+        // Extract vodKind from PlaybackHints for correct API call
+        val xtreamSource = media.sources.firstOrNull { it.sourceType == SourceType.XTREAM }
+        val vodKind = xtreamSource?.playbackHints?.get(PlaybackHintKeys.Xtream.VOD_KIND)
 
-        // ONE API CALL
+        UnifiedLog.d(TAG) { "loadVodDetailInternal: fetching vodId=$vodId with kind=$vodKind" }
+
+        // ONE API CALL with correct kind/alias
         val vodInfo: XtreamVodInfo = withTimeout(API_TIMEOUT_MS) {
-            xtreamApiClient.getVodInfo(vodId)
+            xtreamApiClient.getVodInfo(vodId, vodKind)
         } ?: run {
-            UnifiedLog.w(TAG) { "loadVodDetailInternal: API returned null for vodId=$vodId" }
+            UnifiedLog.w(TAG) { "loadVodDetailInternal: API returned null for vodId=$vodId kind=$vodKind" }
             return null
         }
 

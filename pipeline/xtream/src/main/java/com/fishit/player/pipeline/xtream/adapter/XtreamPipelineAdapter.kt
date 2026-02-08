@@ -236,6 +236,7 @@ private fun XtreamVodStream.toPipelineItem(): XtreamVodItem =
         streamIcon = resolvedPoster,
         categoryId = categoryId,
         containerExtension = containerExtension,
+        streamType = streamType,
         // API returns Unix epoch SECONDS, convert to milliseconds for addedTimestamp
         added = added?.toLongOrNull()?.let { it * 1000L },
         rating = rating?.toDoubleOrNull(),
@@ -261,6 +262,7 @@ private fun XtreamSeriesStream.toPipelineItem(): XtreamSeriesItem =
                 it
             },
         categoryId = categoryId,
+        streamType = streamType,
         year = resolvedYear, // Uses year or extracts from releaseDate
         // Rating: prefer rating (0-10 scale), fall back to rating5Based scaled to 0-10
         rating = rating?.toDoubleOrNull() ?: rating5Based?.let { it * 2.0 },
@@ -286,6 +288,7 @@ private fun XtreamLiveStream.toPipelineItem(): XtreamChannel =
         tvArchive = tvArchive ?: 0,
         tvArchiveDuration = tvArchiveDuration ?: 0,
         categoryId = categoryId,
+        streamType = streamType,
         // API returns Unix epoch SECONDS, convert to milliseconds for addedTimestamp
         added = added?.toLongOrNull()?.let { it * 1000L },
         // Adult content flag ("1" = adult, else = not adult)

@@ -1,6 +1,7 @@
 package com.fishit.player.core.detail.domain
 
 import kotlinx.coroutines.flow.Flow
+import kotlinx.serialization.Serializable
 
 data class SeasonIndexItem(
     val seriesId: Int,
@@ -88,6 +89,7 @@ data class EpisodeIndexItem(
     }
 }
 
+@Serializable
 data class EpisodePlaybackHints(
     val episodeId: Int?,
     val streamId: Int?,

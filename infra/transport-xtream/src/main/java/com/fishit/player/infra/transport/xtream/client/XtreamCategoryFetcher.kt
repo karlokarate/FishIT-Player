@@ -34,7 +34,7 @@ class XtreamCategoryFetcher @Inject constructor(
 ) {
     companion object {
         private const val TAG = "XtreamCategoryFetcher"
-        private val VOD_ALIAS_CANDIDATES = listOf("vod", "movie", "movies")
+        private val VOD_ALIAS_CANDIDATES = listOf("movie", "vod", "movies") // "movie" first - most common
     }
 
     /**

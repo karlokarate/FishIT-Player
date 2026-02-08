@@ -44,11 +44,11 @@ object XtreamIdCodec {
     /**
      * Format VOD source ID.
      *
-     * @param vodId The Xtream VOD stream ID (positive Long)
+     * @param vodId The Xtream VOD stream ID (non-zero Long, may be negative for test content)
      * @return Canonical source ID: `xtream:vod:{vodId}`
      */
     fun vod(vodId: Long): String {
-        require(vodId > 0) { "VOD ID must be positive, got: $vodId" }
+        require(vodId != 0L) { "VOD ID must not be zero, got: $vodId" }
         return "$PREFIX:vod:$vodId"
     }
 
@@ -65,11 +65,11 @@ object XtreamIdCodec {
     /**
      * Format Series source ID.
      *
-     * @param seriesId The Xtream series ID (positive Long)
+     * @param seriesId The Xtream series ID (non-zero Long, may be negative for test content)
      * @return Canonical source ID: `xtream:series:{seriesId}`
      */
     fun series(seriesId: Long): String {
-        require(seriesId > 0) { "Series ID must be positive, got: $seriesId" }
+        require(seriesId != 0L) { "Series ID must not be zero, got: $seriesId" }
         return "$PREFIX:series:$seriesId"
     }
 
@@ -88,11 +88,11 @@ object XtreamIdCodec {
      *
      * Use this when the Xtream API provides a unique episode stream ID.
      *
-     * @param episodeId The Xtream episode stream ID (positive Long)
+     * @param episodeId The Xtream episode stream ID (non-zero Long, may be negative for test content)
      * @return Canonical source ID: `xtream:episode:{episodeId}`
      */
     fun episode(episodeId: Long): String {
-        require(episodeId > 0) { "Episode ID must be positive, got: $episodeId" }
+        require(episodeId != 0L) { "Episode ID must not be zero, got: $episodeId" }
         return "$PREFIX:episode:$episodeId"
     }
 
@@ -112,13 +112,13 @@ object XtreamIdCodec {
      * Use this only when no unique episode stream ID is available.
      * The stable [episode] format is preferred.
      *
-     * @param seriesId The parent series ID
-     * @param season Season number (1-based)
-     * @param episodeNum Episode number within season (1-based)
+     * @param seriesId The parent series ID (non-zero, may be negative)
+     * @param season Season number (0-based or 1-based)
+     * @param episodeNum Episode number within season (0-based or 1-based)
      * @return Canonical source ID: `xtream:episode:series:{seriesId}:s{season}:e{episode}`
      */
     fun episodeComposite(seriesId: Long, season: Int, episodeNum: Int): String {
-        require(seriesId > 0) { "Series ID must be positive, got: $seriesId" }
+        require(seriesId != 0L) { "Series ID must not be zero, got: $seriesId" }
         require(season >= 0) { "Season must be non-negative, got: $season" }
         require(episodeNum >= 0) { "Episode must be non-negative, got: $episodeNum" }
         return "$PREFIX:episode:series:$seriesId:s$season:e$episodeNum"
@@ -133,11 +133,11 @@ object XtreamIdCodec {
     /**
      * Format Live channel source ID.
      *
-     * @param channelId The Xtream live stream ID (positive Long)
+     * @param channelId The Xtream live stream ID (non-zero Long, may be negative for test content)
      * @return Canonical source ID: `xtream:live:{channelId}`
      */
     fun live(channelId: Long): String {
-        require(channelId > 0) { "Channel ID must be positive, got: $channelId" }
+        require(channelId != 0L) { "Channel ID must not be zero, got: $channelId" }
         return "$PREFIX:live:$channelId"
     }
 
@@ -169,7 +169,7 @@ object XtreamIdCodec {
      */
     fun vodOrUnknown(vodIdStr: String?): String {
         val vodId = vodIdStr?.toLongOrNull()
-        return if (vodId != null && vodId > 0) vod(vodId) else "$PREFIX:vod:unknown"
+        return if (vodId != null && vodId != 0L) vod(vodId) else "$PREFIX:vod:unknown"
     }
 
     /**
@@ -180,7 +180,7 @@ object XtreamIdCodec {
      */
     fun seriesOrUnknown(seriesIdStr: String?): String {
         val seriesId = seriesIdStr?.toLongOrNull()
-        return if (seriesId != null && seriesId > 0) series(seriesId) else "$PREFIX:series:unknown"
+        return if (seriesId != null && seriesId != 0L) series(seriesId) else "$PREFIX:series:unknown"
     }
 
     /**
@@ -191,7 +191,7 @@ object XtreamIdCodec {
      */
     fun episodeOrUnknown(episodeIdStr: String?): String {
         val episodeId = episodeIdStr?.toLongOrNull()
-        return if (episodeId != null && episodeId > 0) episode(episodeId) else "$PREFIX:episode:unknown"
+        return if (episodeId != null && episodeId != 0L) episode(episodeId) else "$PREFIX:episode:unknown"
     }
 
     /**
@@ -209,7 +209,7 @@ object XtreamIdCodec {
         val seriesId = seriesIdStr?.toLongOrNull()
         val s = season ?: 0
         val e = episodeNum ?: 0
-        return if (seriesId != null && seriesId > 0) {
+        return if (seriesId != null && seriesId != 0L) {
             episodeComposite(seriesId, s, e)
         } else {
             // Fallback format matching legacy behavior
@@ -225,7 +225,7 @@ object XtreamIdCodec {
      */
     fun liveOrUnknown(channelIdStr: String?): String {
         val channelId = channelIdStr?.toLongOrNull()
-        return if (channelId != null && channelId > 0) live(channelId) else "$PREFIX:live:unknown"
+        return if (channelId != null && channelId != 0L) live(channelId) else "$PREFIX:live:unknown"
     }
 
     // =========================================================================
@@ -262,7 +262,7 @@ object XtreamIdCodec {
      * Returns null if:
      * - String doesn't start with "xtream:"
      * - Format is invalid
-     * - IDs are not valid numbers
+     * - IDs are zero (not valid)
      *
      * @param sourceId Raw source ID string
      * @return Parsed source ID or null if invalid
@@ -275,15 +275,15 @@ object XtreamIdCodec {
 
         return when (parts[1]) {
             "vod" -> parts.getOrNull(2)?.toLongOrNull()
-                ?.takeIf { it > 0 }
+                ?.takeIf { it != 0L }
                 ?.let { XtreamParsedSourceId.Vod(it) }
 
             "series" -> parts.getOrNull(2)?.toLongOrNull()
-                ?.takeIf { it > 0 }
+                ?.takeIf { it != 0L }
                 ?.let { XtreamParsedSourceId.Series(it) }
 
             "live" -> parts.getOrNull(2)?.toLongOrNull()
-                ?.takeIf { it > 0 }
+                ?.takeIf { it != 0L }
                 ?.let { XtreamParsedSourceId.Live(it) }
 
             "episode" -> parseEpisode(parts)
@@ -303,13 +303,13 @@ object XtreamIdCodec {
         // Format A: xtream:episode:{episodeId}
         if (parts.size == 3) {
             return parts[2].toLongOrNull()
-                ?.takeIf { it > 0 }
+                ?.takeIf { it != 0L }
                 ?.let { XtreamParsedSourceId.Episode(it) }
         }
 
         // Format B: xtream:episode:series:{seriesId}:s{season}:e{episode}
         if (parts.size == 6 && parts[2] == "series") {
-            val seriesId = parts[3].toLongOrNull()?.takeIf { it > 0 } ?: return null
+            val seriesId = parts[3].toLongOrNull()?.takeIf { it != 0L } ?: return null
             val season = parts[4].removePrefix("s").toIntOrNull()?.takeIf { it >= 0 } ?: return null
             val episode = parts[5].removePrefix("e").toIntOrNull()?.takeIf { it >= 0 } ?: return null
             return XtreamParsedSourceId.EpisodeComposite(seriesId, season, episode)

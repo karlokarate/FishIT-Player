@@ -292,9 +292,10 @@ interface XtreamApiClient {
      * ID field resolution: vod_id → movie_id → id → stream_id
      *
      * @param vodId The VOD item ID
+     * @param vodKind Optional kind/alias (movie, vod, movies) for API call - from PlaybackHints
      * @return Detailed VOD info or null if not found
      */
-    suspend fun getVodInfo(vodId: Int): XtreamVodInfo?
+    suspend fun getVodInfo(vodId: Int, vodKind: String? = null): XtreamVodInfo?
 
     /**
      * Fetch detailed series information including episodes. Action: get_series_info
@@ -351,11 +352,13 @@ interface XtreamApiClient {
      *
      * @param streamId The stream ID
      * @param extension Optional extension override (default: from config prefs)
+     * @param liveKind Optional kind/alias override (from PlaybackHints, default: "live")
      * @return Playback URL string
      */
     fun buildLiveUrl(
         streamId: Int,
         extension: String? = null,
+        liveKind: String? = null,
     ): String
 
     /**
@@ -365,11 +368,13 @@ interface XtreamApiClient {
      *
      * @param vodId The VOD item ID
      * @param containerExtension Container from VOD info (mp4, mkv, etc.)
+     * @param vodKind Optional kind/alias override (from PlaybackHints, e.g. "movie", "vod", "movies")
      * @return Playback URL string
      */
     fun buildVodUrl(
         vodId: Int,
         containerExtension: String?,
+        vodKind: String? = null,
     ): String
 
     /**
@@ -379,14 +384,15 @@ interface XtreamApiClient {
      * This treats episodes as file-based content, matching provider behavior.
      *
      * Two URL formats supported:
-     * 1. Episode ID: {baseUrl}/{vodKind}/{username}/{password}/{episodeId}.{ext}
-     * 2. Path-based: {baseUrl}/{vodKind}/{username}/{password}/{seriesId}/{season}/{episode}.{ext}
+     * 1. Episode ID: {baseUrl}/{seriesKind}/{username}/{password}/{episodeId}.{ext}
+     * 2. Path-based: {baseUrl}/{seriesKind}/{username}/{password}/{seriesId}/{season}/{episode}.{ext}
      *
      * @param seriesId The series ID
      * @param seasonNumber Season number
      * @param episodeNumber Episode number
      * @param episodeId Optional direct episode ID (preferred if available)
      * @param containerExtension Container from episode info (SSOT)
+     * @param seriesKind Optional kind/alias override (from PlaybackHints, e.g. "series", "episodes")
      * @return Playback URL string
      */
     fun buildSeriesEpisodeUrl(
@@ -395,6 +401,7 @@ interface XtreamApiClient {
         episodeNumber: Int,
         episodeId: Int? = null,
         containerExtension: String? = null,
+        seriesKind: String? = null,
     ): String
 
     // =========================================================================

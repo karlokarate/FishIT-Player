@@ -146,6 +146,7 @@ fun XtreamVodItem.toRawMetadata(
             ?: ExternalIds()
     // Build playback hints for VOD URL construction
     // BUG FIX (Jan 2026): Include categoryId for proper category-based filtering
+    // BUG FIX (Feb 2026): Include streamType as vodKind for correct URL building
     val hints =
         buildMap {
             put(PlaybackHintKeys.Xtream.CONTENT_TYPE, PlaybackHintKeys.Xtream.CONTENT_VOD)
@@ -155,6 +156,10 @@ fun XtreamVodItem.toRawMetadata(
             }
             categoryId?.takeIf { it.isNotBlank() }?.let {
                 put("xtream.categoryId", it)
+            }
+            // Persist streamType as vodKind for URL building (movie, vod, movies)
+            streamType?.takeIf { it.isNotBlank() }?.let {
+                put(PlaybackHintKeys.Xtream.VOD_KIND, it)
             }
         }
 
@@ -292,7 +297,7 @@ fun XtreamSeriesItem.toRawMetadata(
 }
 
 /**
- * Converts an XtreamEpisode to RawMediaMetadata.
+ * Converts XtreamEpisode to RawMediaMetadata.
  *
  * Uses the embedded seriesName property (set during loadEpisodes) for context. Falls back to
  * external parameter if provided.
@@ -302,11 +307,13 @@ fun XtreamSeriesItem.toRawMetadata(
  * - season/episode fields enable episode-level API calls: GET /tv/{id}/season/{s}/episode/{e}
  *
  * @param seriesNameOverride Optional override for parent series name
+ * @param seriesKind The parent series kind/alias (series, episodes, movie) for URL building
  * @param authHeaders Optional headers for image URL authentication
  * @return RawMediaMetadata with episode-specific fields
  */
 fun XtreamEpisode.toRawMediaMetadata(
     seriesNameOverride: String? = null,
+    seriesKind: String? = null,
     authHeaders: Map<String, String> = emptyMap(),
 ): RawMediaMetadata {
     // Prefer embedded seriesName from data class, fall back to override parameter
@@ -334,6 +341,7 @@ fun XtreamEpisode.toRawMediaMetadata(
             ?: ExternalIds()
     // Build playback hints for episode URL construction
     // **Critical:** episodeId (this.id) is the stream ID needed for playback URL
+    // BUG FIX (Feb 2026): Include seriesKind for correct URL building
     val hints =
         buildMap {
             put(PlaybackHintKeys.Xtream.CONTENT_TYPE, PlaybackHintKeys.Xtream.CONTENT_SERIES)
@@ -344,6 +352,10 @@ fun XtreamEpisode.toRawMediaMetadata(
             put(PlaybackHintKeys.Xtream.EPISODE_ID, id.toString())
             containerExtension?.takeIf { it.isNotBlank() }?.let {
                 put(PlaybackHintKeys.Xtream.CONTAINER_EXT, it)
+            }
+            // Persist seriesKind for URL building (series, episodes, movie)
+            seriesKind?.takeIf { it.isNotBlank() }?.let {
+                put(PlaybackHintKeys.Xtream.SERIES_KIND, it)
             }
             // Episode-specific TMDB ID (when available) for optional direct metadata lookup
             // Note: externalIds.tmdb uses seriesTmdbId per Gold Decision; this is supplementary
@@ -425,6 +437,7 @@ fun XtreamChannel.toRawMediaMetadata(
     val rawTitle = cleanLiveChannelName(name)
     // Build playback hints for live stream URL construction
     // Note: Live channels don't have containerExtension - streams are typically .ts or .m3u8
+    // BUG FIX (Feb 2026): Include streamType as liveKind for correct URL building
     val hints =
         buildMap {
             put(PlaybackHintKeys.Xtream.CONTENT_TYPE, PlaybackHintKeys.Xtream.CONTENT_LIVE)
@@ -432,6 +445,10 @@ fun XtreamChannel.toRawMediaMetadata(
             // BUG FIX (Jan 2026): Add direct HLS source URL for potential playback optimization
             directSource?.takeIf { it.isNotBlank() }?.let {
                 put(PlaybackHintKeys.Xtream.DIRECT_SOURCE, it)
+            }
+            // Persist streamType as liveKind for URL building (live)
+            streamType?.takeIf { it.isNotBlank() }?.let {
+                put(PlaybackHintKeys.Xtream.LIVE_KIND, it)
             }
         }
 

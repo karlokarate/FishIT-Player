@@ -110,6 +110,28 @@ object PlaybackHintKeys {
          * Source: XtreamLiveStream.directSource from get_live_streams response.
          */
         const val DIRECT_SOURCE = "xtream.directSource"
+
+        /**
+         * VOD kind/alias from API stream_type field (e.g., "movie", "vod", "movies").
+         *
+         * Used for correct URL building and detail API calls.
+         * Different panels use different aliases for the same content.
+         */
+        const val VOD_KIND = "xtream.vodKind"
+
+        /**
+         * Series kind/alias from API stream_type field (e.g., "series", "episodes").
+         *
+         * Used for correct URL building for episode playback.
+         */
+        const val SERIES_KIND = "xtream.seriesKind"
+
+        /**
+         * Live kind/alias from API stream_type field (typically "live").
+         *
+         * Used for correct URL building for live streams.
+         */
+        const val LIVE_KIND = "xtream.liveKind"
     }
 
     /** Telegram-specific playback hints. */

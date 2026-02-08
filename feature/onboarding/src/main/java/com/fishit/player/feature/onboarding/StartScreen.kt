@@ -4,7 +4,7 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -59,6 +59,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -100,11 +101,19 @@ fun StartScreen(
 
     // Category Selection Overlay (ModalBottomSheet)
     if (state.showCategoryOverlay) {
-        val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+        val sheetState = rememberModalBottomSheetState(
+            skipPartiallyExpanded = true,
+        )
+
         ModalBottomSheet(
-            onDismissRequest = { viewModel.confirmCategorySelection() },
+            onDismissRequest = {
+                // INTENTIONALLY EMPTY: Prevent accidental dismissal via swipe-down
+                // User MUST use "Synchronisierung starten" button to close overlay
+                // This is intentional to prevent accidental sync trigger while scrolling
+            },
             sheetState = sheetState,
             containerColor = MaterialTheme.colorScheme.surface,
+            dragHandle = null, // Remove drag handle to indicate non-dismissible by swipe
         ) {
             CategoryOverlayContent(
                 state = state,
@@ -834,8 +843,7 @@ private fun OverlayCategoryItem(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp)
-            .clickable { onToggle(!category.isSelected) },
+            .padding(horizontal = 16.dp),
         colors = CardDefaults.cardColors(
             containerColor = if (category.isSelected) {
                 MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
@@ -847,7 +855,12 @@ private fun OverlayCategoryItem(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
+                .padding(horizontal = 16.dp, vertical = 12.dp)
+                .pointerInput(Unit) {
+                    detectTapGestures(
+                        onTap = { onToggle(!category.isSelected) }
+                    )
+                },
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {

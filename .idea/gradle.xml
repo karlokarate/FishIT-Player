@@ -28,6 +28,7 @@
             <option value="$PROJECT_DIR$/core/persistence" />
             <option value="$PROJECT_DIR$/core/player-model" />
             <option value="$PROJECT_DIR$/core/source-activation-api" />
+            <option value="$PROJECT_DIR$/core/sync-common" />
             <option value="$PROJECT_DIR$/core/telegrammedia-domain" />
             <option value="$PROJECT_DIR$/core/ui-imaging" />
             <option value="$PROJECT_DIR$/core/ui-layout" />
@@ -50,6 +51,7 @@
             <option value="$PROJECT_DIR$/infra/data-telegram" />
             <option value="$PROJECT_DIR$/infra/data-xtream" />
             <option value="$PROJECT_DIR$/infra/device-android" />
+            <option value="$PROJECT_DIR$/infra/http-client" />
             <option value="$PROJECT_DIR$/infra/imaging" />
             <option value="$PROJECT_DIR$/infra/logging" />
             <option value="$PROJECT_DIR$/infra/tooling" />

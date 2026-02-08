@@ -75,7 +75,7 @@ class XtreamRawMetadataExtensionsTest {
                 containerExtension = "mp4",
             )
 
-        val raw = episode.toRawMediaMetadata(seriesNameOverride = "Breaking Bad")
+        val raw = episode.toRawMediaMetadata(seriesNameOverride = "Breaking Bad", seriesKind = "series")
 
         assertEquals(dtoTitle, raw.originalTitle)
         assertEquals("", raw.globalId)
@@ -100,7 +100,7 @@ class XtreamRawMetadataExtensionsTest {
                 containerExtension = "mp4",
             )
 
-        val raw = episode.toRawMediaMetadata(seriesNameOverride = "Breaking Bad")
+        val raw = episode.toRawMediaMetadata(seriesNameOverride = "Breaking Bad", seriesKind = "series")
 
         assertEquals("", raw.globalId)
         assertEquals("Breaking Bad", raw.originalTitle) // Falls back to series name

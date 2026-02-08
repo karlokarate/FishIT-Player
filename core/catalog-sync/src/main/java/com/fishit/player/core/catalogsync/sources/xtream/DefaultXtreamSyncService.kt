@@ -5,6 +5,7 @@ package com.fishit.player.core.catalogsync.sources.xtream
 
 import com.fishit.player.core.catalogsync.IncrementalSyncDecider
 import com.fishit.player.core.catalogsync.SyncStrategy
+import com.fishit.player.core.metadata.MediaMetadataNormalizer
 import com.fishit.player.core.model.MediaType
 import com.fishit.player.core.model.RawMediaMetadata
 import com.fishit.player.core.model.sync.DeviceProfile
@@ -16,8 +17,7 @@ import com.fishit.player.core.synccommon.buffer.ChannelSyncBuffer
 import com.fishit.player.core.synccommon.checkpoint.SyncCheckpointStore
 import com.fishit.player.core.synccommon.device.DeviceProfileDetector
 import com.fishit.player.core.synccommon.metrics.SyncPerfMetrics
-import com.fishit.player.infra.data.xtream.XtreamCatalogRepository
-import com.fishit.player.infra.data.xtream.XtreamLiveRepository
+import com.fishit.player.infra.data.nx.writer.NxCatalogWriter
 import com.fishit.player.infra.logging.UnifiedLog
 import com.fishit.player.pipeline.xtream.catalog.XtreamCatalogConfig
 import com.fishit.player.pipeline.xtream.catalog.XtreamCatalogEvent
@@ -29,7 +29,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import java.util.concurrent.atomic.AtomicInteger
@@ -57,8 +57,8 @@ import kotlin.time.Duration.Companion.milliseconds
 @Singleton
 class DefaultXtreamSyncService @Inject constructor(
     private val pipeline: XtreamCatalogPipeline,
-    private val catalogRepository: XtreamCatalogRepository,
-    private val liveRepository: XtreamLiveRepository,
+    private val nxCatalogWriter: NxCatalogWriter,
+    private val normalizer: MediaMetadataNormalizer,
     private val checkpointStore: SyncCheckpointStore,
     private val incrementalSyncDecider: IncrementalSyncDecider,
     private val deviceProfileDetector: DeviceProfileDetector,
@@ -73,15 +73,15 @@ class DefaultXtreamSyncService @Inject constructor(
     override val isActive: Boolean
         get() = activeJob?.isActive == true
 
-    override fun sync(config: XtreamSyncConfig): Flow<SyncStatus> = flow {
+    override fun sync(config: XtreamSyncConfig): Flow<SyncStatus> = channelFlow {
         if (!config.hasContentToSync) {
-            emit(SyncStatus.Completed(
+            send(SyncStatus.Completed(
                 source = SYNC_SOURCE,
                 totalDuration = 0.milliseconds,
                 itemCounts = SyncStatus.Completed.ItemCounts(),
                 wasIncremental = false,
             ))
-            return@flow
+            return@channelFlow
         }
 
         // Resolve device profile
@@ -98,13 +98,13 @@ class DefaultXtreamSyncService @Inject constructor(
         when (syncStrategy) {
             is SyncStrategy.SkipSync -> {
                 log("Sync skipped: ${syncStrategy.reason}")
-                emit(SyncStatus.Completed(
+                send(SyncStatus.Completed(
                     source = SYNC_SOURCE,
                     totalDuration = 0.milliseconds,
                     itemCounts = SyncStatus.Completed.ItemCounts(),
                     wasIncremental = false,
                 ))
-                return@flow
+                return@channelFlow
             }
             is SyncStrategy.IncrementalSync,
             is SyncStrategy.FullSync -> {
@@ -112,7 +112,7 @@ class DefaultXtreamSyncService @Inject constructor(
             }
         }
 
-        // Emit started status
+        // Send started status
         val startTime = System.currentTimeMillis()
         val estimatedPhases = listOfNotNull(
             if (config.syncLive) SyncPhase.LIVE_CHANNELS else null,
@@ -120,7 +120,7 @@ class DefaultXtreamSyncService @Inject constructor(
             if (config.syncSeries) SyncPhase.SERIES_INDEX else null,
             if (config.syncEpisodes) SyncPhase.SERIES_EPISODES else null,
         )
-        emit(SyncStatus.Started(
+        send(SyncStatus.Started(
             source = SYNC_SOURCE,
             accountKey = config.accountKey,
             isFullSync = syncStrategy is SyncStrategy.FullSync,
@@ -219,10 +219,10 @@ class DefaultXtreamSyncService @Inject constructor(
                             }
                             is XtreamCatalogEvent.ScanProgress -> {
                                 log("Progress: vod=${event.vodCount}, series=${event.seriesCount}, live=${event.liveCount}")
-                                emit(SyncStatus.InProgress(
+                                send(SyncStatus.InProgress(
                                     source = SYNC_SOURCE,
                                     phase = SyncPhase.VOD_MOVIES,
-                                    processedItems = (liveCount.get() + vodCount.get() + seriesCount.get() + episodeCount.get()).toInt(),
+                                    processedItems = liveCount.get() + vodCount.get() + seriesCount.get() + episodeCount.get(),
                                     totalItems = null,
                                 ))
                             }
@@ -236,26 +236,28 @@ class DefaultXtreamSyncService @Inject constructor(
                 }
             }
 
-            // === CONSUMER: Batch persist, type-aware routing ===
+            // === CONSUMER: Batch persist via NxCatalogWriter ===
             val consumerJob = scope.launch {
-                buffer.consumeBatched(batchSize = 50) { items ->
-                    try {
+                try {
+                    buffer.consumeBatched(batchSize = 50) { items ->
                         if (items.isEmpty()) return@consumeBatched
 
-                        val (liveItems, catalogItems) = items.partition {
-                            it.raw.mediaType == MediaType.LIVE
+                        // Normalize and ingest each item via NxCatalogWriter
+                        items.forEach { syncItem ->
+                            try {
+                                val raw = syncItem.raw
+                                val normalized = normalizer.normalize(raw)
+                                nxCatalogWriter.ingest(raw, normalized, config.accountKey)
+                            } catch (e: Exception) {
+                                UnifiedLog.w(TAG) { "Failed to ingest ${syncItem.raw.sourceId}: ${e.message}" }
+                            }
                         }
-
-                        if (liveItems.isNotEmpty()) {
-                            liveRepository.upsertAll(liveItems.map { it.raw })
-                        }
-
-                        if (catalogItems.isNotEmpty()) {
-                            catalogRepository.upsertAll(catalogItems.map { it.raw })
-                        }
-                    } catch (e: Exception) {
-                        UnifiedLog.e(TAG, "Error persisting batch: ${e.message}", e)
                     }
+                } catch (e: Exception) {
+                    // Consumer failed - close buffer to unblock producer
+                    UnifiedLog.e(TAG, "Consumer error, closing buffer: ${e.message}", e)
+                    buffer.close()
+                    throw e
                 }
             }
 
@@ -290,7 +292,7 @@ class DefaultXtreamSyncService @Inject constructor(
             log("Sync completed: $totalItems items in ${durationMs}ms " +
                 "(live=${liveCount.get()}, vod=${vodCount.get()}, series=${seriesCount.get()}, episodes=${episodeCount.get()}, " +
                 "skippedTimestamp=${skippedByTimestamp.get()}, skippedFingerprint=${skippedByFingerprint.get()})")
-            emit(SyncStatus.Completed(
+            send(SyncStatus.Completed(
                 source = SYNC_SOURCE,
                 totalDuration = durationMs.milliseconds,
                 itemCounts = SyncStatus.Completed.ItemCounts(
@@ -306,7 +308,7 @@ class DefaultXtreamSyncService @Inject constructor(
             log("Sync cancelled")
             val totalItems = liveCount.get() + vodCount.get() + seriesCount.get() + episodeCount.get()
             val durationMs = System.currentTimeMillis() - startTime
-            emit(SyncStatus.Cancelled(
+            send(SyncStatus.Cancelled(
                 source = SYNC_SOURCE,
                 reason = SyncStatus.Cancelled.CancelReason.USER_REQUESTED,
                 phase = SyncPhase.CANCELLED,
@@ -319,7 +321,7 @@ class DefaultXtreamSyncService @Inject constructor(
             val totalItems = liveCount.get() + vodCount.get() + seriesCount.get() + episodeCount.get()
             val durationMs = System.currentTimeMillis() - startTime
             log("Sync failed after ${durationMs}ms: ${e.message}", e)
-            emit(SyncStatus.Error(
+            send(SyncStatus.Error(
                 source = SYNC_SOURCE,
                 errorType = SyncStatus.Error.ErrorType.UNKNOWN,
                 message = e.message ?: "Unknown error",

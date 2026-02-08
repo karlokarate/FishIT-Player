@@ -31,6 +31,7 @@ data class XtreamSeriesItem(
     val cover: String? = null,
     val backdrop: String? = null,
     val categoryId: String? = null,
+    val streamType: String? = null,
     val year: String? = null,
     val rating: Double? = null,
     val plot: String? = null,

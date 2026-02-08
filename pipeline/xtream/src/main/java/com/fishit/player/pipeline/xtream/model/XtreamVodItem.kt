@@ -23,6 +23,7 @@ data class XtreamVodItem(
     val streamIcon: String? = null,
     val categoryId: String? = null,
     val containerExtension: String? = null,
+    val streamType: String? = null,
     val added: Long? = null,
     val rating: Double? = null,
     val rating5Based: Double? = null,
