@@ -211,7 +211,7 @@ class DefaultXtreamSyncService @Inject constructor(
                                     MediaType.LIVE -> liveCount.incrementAndGet()
                                     MediaType.MOVIE -> vodCount.incrementAndGet()
                                     MediaType.SERIES -> seriesCount.incrementAndGet()
-                                    MediaType.EPISODE -> episodeCount.incrementAndGet()
+                                    MediaType.SERIES_EPISODE -> episodeCount.incrementAndGet()
                                     else -> vodCount.incrementAndGet()
                                 }
 
@@ -449,7 +449,7 @@ class DefaultXtreamSyncService @Inject constructor(
         MediaType.LIVE -> "live"
         MediaType.MOVIE -> "vod"
         MediaType.SERIES -> "series"
-        MediaType.EPISODE -> "episodes"
+        MediaType.SERIES_EPISODE -> "episodes"
         else -> "vod"
     }
 
