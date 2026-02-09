@@ -1,7 +1,9 @@
 package com.fishit.player.infra.data.nx.property
 
 import com.fishit.player.core.metadata.RegexMediaMetadataNormalizer
+import com.fishit.player.core.model.MediaType
 import com.fishit.player.core.model.NormalizedMediaMetadata
+import com.fishit.player.core.model.PipelineIdTag
 import com.fishit.player.core.model.RawMediaMetadata
 import com.fishit.player.core.model.SourceType
 import com.fishit.player.core.model.repository.NxWorkRepository
@@ -111,16 +113,33 @@ class MappingChainPropertyTest {
     fun `canonicalTitle is never blank after normalization`() = runTest {
         checkAll(config, Generators.rawMediaMetadata) { raw ->
             val normalized = normalizer.normalize(raw)
-            if (raw.originalTitle.isNotBlank()) {
-                // Non-blank input → canonicalTitle must not be blank
-                assertTrue(
-                    normalized.canonicalTitle.isNotBlank(),
-                    "canonicalTitle must not be blank for non-blank input. Input: '${raw.originalTitle}'",
-                )
-            }
-            // NOTE: empty/blank originalTitle → blank canonicalTitle is a known
-            // production behavior (normalizer passes scene-parser output which
-            // returns empty for empty input). This could be hardened.
+            // F4 Fix: canonicalTitle is ALWAYS non-blank (parser returns "[Untitled]" for blank input)
+            assertTrue(
+                normalized.canonicalTitle.isNotBlank(),
+                "canonicalTitle must never be blank. Input: '${raw.originalTitle}'",
+            )
+        }
+    }
+
+    @Test
+    fun `blank originalTitle produces Untitled fallback`() = runTest {
+        // Explicit test for F4 fix: blank input → "[Untitled]"
+        val blankInputs = listOf("", "   ", "\t", "\n")
+        for (input in blankInputs) {
+            val raw = RawMediaMetadata(
+                originalTitle = input,
+                mediaType = MediaType.MOVIE,
+                pipelineIdTag = PipelineIdTag.TELEGRAM,
+                sourceType = SourceType.TELEGRAM,
+                sourceId = "test:blank",
+                sourceLabel = "Test",
+            )
+            val normalized = normalizer.normalize(raw)
+            assertEquals(
+                "[Untitled]",
+                normalized.canonicalTitle,
+                "Blank originalTitle '$input' should become '[Untitled]'",
+            )
         }
     }
 
