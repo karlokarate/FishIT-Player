@@ -1,0 +1,42 @@
+{
+  "sourceId": "msg:-1001234567890:500",
+  "globalId": "",
+  "sourceType": "TELEGRAM",
+  "mediaType": "UNKNOWN",
+  "pipelineIdTag": "TELEGRAM",
+  "originalTitle": "Avatar",
+  "year": 2009,
+  "season": null,
+  "episode": null,
+  "durationMs": 9720000,
+  "addedTimestamp": 1690000000000,
+  "lastModifiedTimestamp": null,
+  "poster": null,
+  "backdrop": null,
+  "thumbnail": "tg://thumb/AAMCAgADGQEAAj_avatar_thumb_remote?chatId=-1001234567890&messageId=500",
+  "placeholderThumbnail": "inline:4bytes",
+  "rating": null,
+  "ageRating": null,
+  "plot": null,
+  "genres": null,
+  "director": null,
+  "cast": null,
+  "trailer": null,
+  "releaseDate": null,
+  "isAdult": false,
+  "categoryId": null,
+  "sourceLabel": "Telegram Chat: -1001234567890",
+  "epgChannelId": null,
+  "tvArchive": 0,
+  "tvArchiveDuration": 0,
+  "externalIds": {
+    "effectiveTmdbId": null,
+    "tmdbType": null,
+    "imdbId": null,
+    "tvdbId": null
+  },
+  "playbackHints": {
+    "telegram.chatId": "-1001234567890",
+    "telegram.messageId": "500"
+  }
+}

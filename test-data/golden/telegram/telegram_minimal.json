@@ -1,0 +1,42 @@
+{
+  "sourceId": "msg:999:777",
+  "globalId": "",
+  "sourceType": "TELEGRAM",
+  "mediaType": "UNKNOWN",
+  "pipelineIdTag": "TELEGRAM",
+  "originalTitle": "Untitled Media 777",
+  "year": null,
+  "season": null,
+  "episode": null,
+  "durationMs": null,
+  "addedTimestamp": null,
+  "lastModifiedTimestamp": null,
+  "poster": null,
+  "backdrop": null,
+  "thumbnail": null,
+  "placeholderThumbnail": null,
+  "rating": null,
+  "ageRating": null,
+  "plot": null,
+  "genres": null,
+  "director": null,
+  "cast": null,
+  "trailer": null,
+  "releaseDate": null,
+  "isAdult": false,
+  "categoryId": null,
+  "sourceLabel": "Telegram Chat: 999",
+  "epgChannelId": null,
+  "tvArchive": 0,
+  "tvArchiveDuration": 0,
+  "externalIds": {
+    "effectiveTmdbId": null,
+    "tmdbType": null,
+    "imdbId": null,
+    "tvdbId": null
+  },
+  "playbackHints": {
+    "telegram.chatId": "999",
+    "telegram.messageId": "777"
+  }
+}

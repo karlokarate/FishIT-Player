@@ -122,7 +122,7 @@ class TelegramRawMetadataExtensionsTest {
     }
 
     @Test
-    fun `toRawMediaMetadata sets MOVIE for regular video`() {
+    fun `toRawMediaMetadata sets UNKNOWN for regular video to let normalizer classify`() {
         val item =
             TelegramMediaItem(
                 chatId = 123L,
@@ -133,7 +133,8 @@ class TelegramRawMetadataExtensionsTest {
 
         val raw = item.toRawMediaMetadata()
 
-        assertEquals(MediaType.MOVIE, raw.mediaType)
+        // VIDEO → UNKNOWN: normalizer classifies movies vs episodes from scene-style filenames
+        assertEquals(MediaType.UNKNOWN, raw.mediaType)
     }
 
     @Test
@@ -169,7 +170,7 @@ class TelegramRawMetadataExtensionsTest {
     }
 
     @Test
-    fun `toRawMediaMetadata uses remoteId as sourceId when available`() {
+    fun `toRawMediaMetadata uses msg colon chatId colon messageId as sourceId always`() {
         val item =
             TelegramMediaItem(
                 chatId = 123L,
@@ -181,7 +182,10 @@ class TelegramRawMetadataExtensionsTest {
 
         val raw = item.toRawMediaMetadata()
 
-        assertEquals("stable-remote-id-xyz", raw.sourceId)
+        // sourceId always uses msg:chatId:messageId (remoteId is in playbackHints)
+        assertEquals("msg:123:456", raw.sourceId)
+        // remoteId preserved in playback hints
+        assertEquals("stable-remote-id-xyz", raw.playbackHints["telegram.remoteId"])
     }
 
     @Test

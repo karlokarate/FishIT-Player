@@ -1,6 +1,7 @@
 plugins {
     id("com.android.library")
     id("org.jetbrains.kotlin.android")
+    id("org.jetbrains.kotlin.plugin.serialization")
     id("com.google.devtools.ksp")
     id("com.google.dagger.hilt.android")
 }
@@ -22,6 +23,14 @@ android {
         jvmTarget = "17"
     }
 
+    // Configure test working directory to root project for test-data access
+    testOptions {
+        unitTests.all {
+            it.workingDir = rootProject.projectDir
+            // Forward golden.update system property to test JVM
+            it.systemProperty("golden.update", System.getProperty("golden.update") ?: "false")
+        }
+    }
 }
 
 dependencies {
@@ -45,6 +54,7 @@ dependencies {
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.jetbrains.kotlin:kotlin-test:2.0.21")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.2")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.8.0")
     testImplementation("io.mockk:mockk:1.13.12")
     testImplementation("io.mockk:mockk-agent-jvm:1.13.12")
 }
