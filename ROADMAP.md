@@ -203,12 +203,19 @@ For v1 roadmap history, see `legacy/docs/ROADMAP_v1.md`.
 - `contracts/MEDIA_NORMALIZATION_CONTRACT.md`
 - `contracts/CATALOG_SYNC_WORKERS_CONTRACT_V2.md`
 
-### Telegram Pipeline ✅ COMPLETE
+### Telegram Pipeline 🚧 SYNC SERVICE PENDING
 
 - [x] TDLib integration via typed interfaces
 - [x] Structured bundle detection (PHOTO + TEXT + VIDEO)
 - [x] remoteId-first architecture
 - [ ] **Bundle albumId support:** Add albumId to TgMessage when transport exposes it (pipeline/telegram/TelegramMessageBundler.kt:147)
+- [ ] **Telegram Pipeline Redesign** → `docs/v2/TELEGRAM_PIPELINE_REDESIGN_CONTRACT.md`
+  - [ ] Phase 1: Update `tdl-coroutines` to v8.0.0 (TDLib 1.8.60)
+  - [ ] Phase 2: Transport platinum (RetryPolicy, PaginatedScanner, RateLimiter)
+  - [ ] Phase 3: Fix `toRawMediaMetadata()` — close 17 field gaps vs Xtream
+  - [ ] Phase 4: Implement `TelegramSyncService` (mirrors `XtreamSyncService`)
+  - [ ] Phase 5: Wire `syncTelegram()` in orchestrator (replace stub)
+  - [ ] Phase 6: Verification — field parity audit, incremental sync, error recovery
 
 ### Xtream Pipeline ✅ COMPLETE
 
