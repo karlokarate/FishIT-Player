@@ -2,6 +2,7 @@ package com.fishit.player.feature.settings
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.fishit.player.core.catalogsync.CatalogSyncWorkScheduler
 import com.fishit.player.core.catalogsync.XtreamCategoryPreloader
 import com.fishit.player.core.model.repository.NxCategorySelectionRepository
 import com.fishit.player.core.model.repository.NxCategorySelectionRepository.CategorySelection
@@ -36,6 +37,7 @@ class CategorySelectionViewModel @Inject constructor(
     private val categoryRepository: NxCategorySelectionRepository,
     private val sourceAccountRepository: NxSourceAccountRepository,
     private val sourceActivationStore: SourceActivationStore,
+    private val catalogSyncWorkScheduler: CatalogSyncWorkScheduler,
 ) : ViewModel() {
 
     companion object {
@@ -145,6 +147,26 @@ class CategorySelectionViewModel @Inject constructor(
 
     fun setSelectedTab(tab: CategoryTab) {
         _state.update { it.copy(selectedTab = tab) }
+    }
+
+    /**
+     * Mark category selection as complete and trigger a catalog re-sync.
+     *
+     * XOC-4: setCategorySelectionComplete(true) opens the gate for sync.
+     * XOC-3: Worker checks isCategorySelectionComplete() before syncing.
+     */
+    fun saveAndSync() {
+        val accountKey = _state.value.accountKey ?: return
+        viewModelScope.launch {
+            try {
+                categoryRepository.setCategorySelectionComplete(accountKey, true)
+                catalogSyncWorkScheduler.enqueueExpertSyncNow()
+                UnifiedLog.i(TAG) { "Category selection saved, sync triggered" }
+            } catch (e: Exception) {
+                UnifiedLog.e(TAG) { "saveAndSync failed: ${e.message}" }
+                _state.update { it.copy(error = "Sync konnte nicht gestartet werden") }
+            }
+        }
     }
 
     // =========================================================================

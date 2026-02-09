@@ -1,6 +1,6 @@
 # XTREAM_ONBOARDING_CATEGORY_SELECTION_CONTRACT.md
 
-Version: 1.0  
+Version: 1.1  
 Date: 2026-02-09  
 Status: Binding Contract  
 Scope: Xtream source onboarding, category preload, user selection, sync gating
@@ -78,7 +78,7 @@ When a user adds a new Xtream source, the system MUST:
 ┌─────────────────────────────────────────────────────────────────────┐
 │  STEP 6: Sync with Selected Categories Only                         │
 │  CatalogSyncWorkScheduler.enqueueAutoSync()                         │
-│  → XtreamCatalogScanWorker reads selectedCategoryIds                │
+│  → CatalogSyncOrchestratorWorker.syncXtream() checks gate           │
 │  → Pipeline fetches per category: ?action=get_vod_streams&category_id=X │
 │  → Only selected categories are synced                              │
 └─────────────────────────────────────────────────────────────────────┘
@@ -110,9 +110,8 @@ data class XtreamSourceState(
 ### XOC-3 Where Sync Gate is Checked (MANDATORY)
 
 The gate MUST be checked in:
-1. `CatalogSyncOrchestratorWorker` - before building Xtream worker chain
-2. `XtreamPreflightWorker` - before proceeding to scan
-3. `OnboardingViewModel` - before emitting NavigationEvent.ToHome
+1. `CatalogSyncOrchestratorWorker.syncXtream()` - before building Xtream sync config
+2. `OnboardingViewModel.confirmCategorySelection()` - before emitting NavigationEvent.ToHome
 
 ### XOC-4 Persisted Gate State (MANDATORY)
 
@@ -224,23 +223,20 @@ If `selectedCategoryIds.isEmpty()`:
 
 ## 7. Worker Integration
 
-### XOC-12 XtreamCatalogScanWorker Gate Check (MANDATORY)
+### XOC-12 CatalogSyncOrchestratorWorker Gate Check (MANDATORY)
 
 ```kotlin
-class XtreamCatalogScanWorker : CoroutineWorker {
-    override suspend fun doWork(): Result {
-        val accountKey = inputData.getString(KEY_ACCOUNT_KEY) ?: return Result.failure()
-        
-        // GATE CHECK
-        if (!categoryRepository.isCategorySelectionComplete(accountKey)) {
-            UnifiedLog.w(TAG, "Category selection not complete, skipping sync")
-            return Result.failure(
-                workDataOf(KEY_FAILURE_REASON to "category_selection_incomplete")
-            )
-        }
-        
-        // Proceed with sync...
+// In CatalogSyncOrchestratorWorker.syncXtream()
+private suspend fun syncXtream(): Pair<Int, String> {
+    val accountKey = resolveXtreamAccountKey() ?: return 0 to "no account"
+
+    // GATE CHECK (XOC-3)
+    if (!categorySelectionRepository.isCategorySelectionComplete(accountKey)) {
+        UnifiedLog.w(TAG) { "Category selection not complete, skipping Xtream sync" }
+        return 0 to "category_selection_incomplete"
     }
+
+    // Proceed with sync...
 }
 ```
 
@@ -305,15 +301,20 @@ if (existingXtreamSource && categories.isEmpty()) {
 ## 10. Verification Checklist
 
 ### Pre-Implementation
-- [ ] NxCategorySelectionRepository has `isCategorySelectionComplete()` method
-- [ ] OnboardingViewModel injects XtreamCategoryPreloader
-- [ ] StartScreen has CategorySelectionOverlay composable
+- [x] NxCategorySelectionRepository has `isCategorySelectionComplete()` method
+- [x] NxCategorySelectionRepository has `setCategorySelectionComplete()` method
+- [x] OnboardingViewModel injects XtreamCategoryPreloader
+- [x] StartScreen has CategorySelectionOverlay composable
 
 ### Post-Implementation
-- [ ] New Xtream source cannot sync before overlay interaction
-- [ ] Category selections persist across app restart
-- [ ] Only selected categories are fetched from server
-- [ ] Upgraded existing sources can still sync
+- [x] New Xtream source cannot sync before overlay interaction
+- [x] Category selections persist across app restart
+- [x] Only selected categories are fetched from server
+- [x] Upgraded existing sources can still sync
+- [x] CatalogSyncOrchestratorWorker.syncXtream() checks gate (XOC-3)
+- [x] OnboardingViewModel.confirmCategorySelection() sets gate true (XOC-4)
+- [x] Settings → CategorySelectionScreen navigable when Xtream active
+- [x] CategorySelectionViewModel.saveAndSync() marks complete + triggers sync
 
 ---
 
@@ -330,5 +331,4 @@ if (existingXtreamSource && categories.isEmpty()) {
 ---
 
 > **Canonical Location:** `/contracts/XTREAM_ONBOARDING_CATEGORY_SELECTION_CONTRACT.md`  
-> **Related:** `CATALOG_SYNC_WORKERS_CONTRACT_V2.md`, `XTREAM_SCAN_PREMIUM_CONTRACT_V1.md`  
-> **Implementation Tracking:** `docs/v2/CATEGORY_SYNC_BLOCKER_ANALYSIS.md`
+> **Related:** `CATALOG_SYNC_WORKERS_CONTRACT_V2.md`, `XTREAM_SCAN_PREMIUM_CONTRACT_V1.md`

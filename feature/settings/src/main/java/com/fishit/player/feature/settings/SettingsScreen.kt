@@ -77,6 +77,7 @@ import com.fishit.player.core.catalogsync.SyncUiState
 fun SettingsScreen(
     onBack: () -> Unit,
     onDatabaseInspector: () -> Unit = {},
+    onCategorySelection: () -> Unit = {},
     modifier: Modifier = Modifier,
     viewModel: SettingsViewModel = hiltViewModel(),
 ) {
@@ -126,6 +127,21 @@ fun SettingsScreen(
                             isActive = state.xtreamActive,
                             details = state.xtreamDetails,
                         )
+                        if (state.xtreamActive) {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            OutlinedButton(
+                                onClick = onCategorySelection,
+                                modifier = Modifier.fillMaxWidth(),
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Folder,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(18.dp),
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text("Xtream Kategorien")
+                            }
+                        }
                         SourceRow(
                             name = "Lokale Dateien",
                             icon = Icons.Default.Folder,

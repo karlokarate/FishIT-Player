@@ -39,6 +39,7 @@ import com.fishit.player.feature.home.debug.DebugPlaybackScreen
 import com.fishit.player.feature.library.LibraryScreen
 import com.fishit.player.feature.onboarding.StartScreen
 import com.fishit.player.feature.settings.DebugScreen
+import com.fishit.player.feature.settings.CategorySelectionScreen
 import com.fishit.player.feature.settings.SettingsScreen
 import com.fishit.player.feature.settings.dbinspector.DbInspectorDetailScreen
 import com.fishit.player.feature.settings.dbinspector.DbInspectorEntityTypesScreen
@@ -299,6 +300,14 @@ fun AppNavHost(
                 SettingsScreen(
                     onBack = { navController.popBackStack() },
                     onDatabaseInspector = { navController.navigate(Routes.DB_INSPECTOR) },
+                    onCategorySelection = { navController.navigate(Routes.CATEGORY_SELECTION) },
+                )
+            }
+
+            // Category Selection Screen (Xtream categories)
+            composable(Routes.CATEGORY_SELECTION) {
+                CategorySelectionScreen(
+                    onBack = { navController.popBackStack() },
                 )
             }
 
@@ -380,6 +389,7 @@ object Routes {
     const val DEBUG_PLAYBACK = "debug_playback"
     const val DEBUG_SKELETON = "debug_skeleton"
     const val SETTINGS = "settings"
+    const val CATEGORY_SELECTION = "category_selection"
 
     // Database Inspector (ObjectBox) - debug/power-user
     const val DB_INSPECTOR = "db_inspector"
