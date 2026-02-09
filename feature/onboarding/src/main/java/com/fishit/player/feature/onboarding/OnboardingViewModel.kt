@@ -15,6 +15,7 @@ import com.fishit.player.core.onboarding.domain.XtreamConfig
 import com.fishit.player.core.sourceactivation.SourceActivationStore
 import com.fishit.player.infra.logging.UnifiedLog
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -28,6 +29,15 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 import com.fishit.player.core.onboarding.domain.XtreamAuthState as DomainXtreamAuthState
 import com.fishit.player.core.onboarding.domain.XtreamConnectionState as DomainXtreamConnectionState
+
+/**
+ * Category tab selection for the overlay
+ */
+enum class CategoryTab(val displayName: String, val categoryType: XtreamCategoryType) {
+    VOD("Filme", XtreamCategoryType.VOD),
+    SERIES("Serien", XtreamCategoryType.SERIES),
+    LIVE("Live TV", XtreamCategoryType.LIVE),
+}
 
 /**
  * State for the onboarding/start screen
@@ -49,7 +59,7 @@ data class OnboardingState(
     val vodCategories: List<CategorySelection> = emptyList(),
     val seriesCategories: List<CategorySelection> = emptyList(),
     val liveCategories: List<CategorySelection> = emptyList(),
-    val selectedCategoryTab: Int = 0,
+    val selectedCategoryTab: CategoryTab = CategoryTab.VOD,
     val categoryError: String? = null,
     // General
     val canContinue: Boolean = false,
@@ -108,6 +118,12 @@ class OnboardingViewModel
         private var lastTelegramAuthState: TelegramAuthState = TelegramAuthState.Idle
         private var lastXtreamConnectionState: DomainXtreamConnectionState =
             DomainXtreamConnectionState.Disconnected
+
+        /** Cached account key resolved once during category preload, reused for all toggle operations */
+        private var cachedAccountKey: String? = null
+
+        /** Tracked category observation jobs — cancelled on reconnect/disconnect to prevent leaks */
+        private var categoryObservationJobs: List<Job> = emptyList()
 
         init {
             observeTelegramAuth()
@@ -296,10 +312,19 @@ class OnboardingViewModel
         }
 
         fun disconnectXtream() {
+            // Cancel category observation jobs to prevent leaks
+            cancelCategoryObservation()
+            cachedAccountKey = null
+
             _state.update {
                 it.copy(
                     xtreamState = XtreamConnectionState.Disconnected,
                     xtreamUrl = "",
+                    showCategoryOverlay = false,
+                    categoryPreloading = false,
+                    vodCategories = emptyList(),
+                    seriesCategories = emptyList(),
+                    liveCategories = emptyList(),
                 )
             }
             viewModelScope.launch {
@@ -402,7 +427,7 @@ class OnboardingViewModel
                     categoryPreloader.preloadCategories(forceRefresh = true)
                     UnifiedLog.d(TAG) { "Category preload succeeded, resolving accountKey" }
 
-                    val accountKey = findXtreamAccountKey()
+                    val accountKey = resolveAndCacheAccountKey()
                     if (accountKey != null) {
                         observeCategories(accountKey)
                         _state.update {
@@ -426,38 +451,61 @@ class OnboardingViewModel
             }
         }
 
-        private fun observeCategories(accountKey: String) {
-            viewModelScope.launch {
-                categoryRepository.observeByType(accountKey, XtreamCategoryType.VOD).collect { categories ->
-                    _state.update { it.copy(vodCategories = categories) }
-                }
-            }
-            viewModelScope.launch {
-                categoryRepository.observeByType(accountKey, XtreamCategoryType.SERIES).collect { categories ->
-                    _state.update { it.copy(seriesCategories = categories) }
-                }
-            }
-            viewModelScope.launch {
-                categoryRepository.observeByType(accountKey, XtreamCategoryType.LIVE).collect { categories ->
-                    _state.update { it.copy(liveCategories = categories) }
-                }
-            }
-        }
-
-        private suspend fun findXtreamAccountKey(): String? {
+        /**
+         * Resolve the Xtream account key once and cache it.
+         * All subsequent toggle/select/deselect operations reuse the cached value
+         * instead of re-querying the database on every interaction.
+         */
+        private suspend fun resolveAndCacheAccountKey(): String? {
             val snapshot = sourceActivationStore.getCurrentSnapshot()
             if (!snapshot.xtream.isActive) return null
             val accounts = sourceAccountRepository.observeAll().first()
-            return accounts.firstOrNull { it.sourceType == SourceType.XTREAM }?.accountKey
+            val key = accounts.firstOrNull { it.sourceType == SourceType.XTREAM }?.accountKey
+            cachedAccountKey = key
+            return key
         }
 
-        fun setSelectedCategoryTab(tab: Int) {
+        /**
+         * Observe category selections from the repository.
+         * Cancels any previously running observation jobs first to prevent leaks
+         * on reconnect scenarios.
+         */
+        private fun observeCategories(accountKey: String) {
+            // Cancel previous observers (prevents accumulation on reconnect)
+            cancelCategoryObservation()
+
+            categoryObservationJobs = listOf(
+                viewModelScope.launch {
+                    categoryRepository.observeByType(accountKey, XtreamCategoryType.VOD).collect { categories ->
+                        _state.update { it.copy(vodCategories = categories) }
+                    }
+                },
+                viewModelScope.launch {
+                    categoryRepository.observeByType(accountKey, XtreamCategoryType.SERIES).collect { categories ->
+                        _state.update { it.copy(seriesCategories = categories) }
+                    }
+                },
+                viewModelScope.launch {
+                    categoryRepository.observeByType(accountKey, XtreamCategoryType.LIVE).collect { categories ->
+                        _state.update { it.copy(liveCategories = categories) }
+                    }
+                },
+            )
+        }
+
+        /** Cancel all running category observation coroutines */
+        private fun cancelCategoryObservation() {
+            categoryObservationJobs.forEach { it.cancel() }
+            categoryObservationJobs = emptyList()
+        }
+
+        fun setSelectedCategoryTab(tab: CategoryTab) {
             _state.update { it.copy(selectedCategoryTab = tab) }
         }
 
         fun toggleCategory(categoryId: String, categoryType: XtreamCategoryType, isSelected: Boolean) {
+            val accountKey = cachedAccountKey ?: return
             viewModelScope.launch {
-                val accountKey = findXtreamAccountKey() ?: return@launch
                 categoryRepository.setSelected(
                     accountKey = accountKey,
                     categoryType = categoryType,
@@ -468,23 +516,27 @@ class OnboardingViewModel
         }
 
         fun selectAllCategories(categoryType: XtreamCategoryType) {
+            val accountKey = cachedAccountKey ?: return
             viewModelScope.launch {
-                val accountKey = findXtreamAccountKey() ?: return@launch
                 categoryRepository.selectAll(accountKey, categoryType)
             }
         }
 
         fun deselectAllCategories(categoryType: XtreamCategoryType) {
+            val accountKey = cachedAccountKey ?: return
             viewModelScope.launch {
-                val accountKey = findXtreamAccountKey() ?: return@launch
                 categoryRepository.deselectAll(accountKey, categoryType)
             }
         }
 
         fun confirmCategorySelection() {
-            _state.update { it.copy(showCategoryOverlay = false) }
+            // Cancel observation jobs — no longer needed after selection is confirmed
+            cancelCategoryObservation()
+
             viewModelScope.launch {
                 UnifiedLog.d(TAG) { "Category selection confirmed, navigating to Home" }
+                // Update state and emit navigation in same coroutine to ensure ordering
+                _state.update { it.copy(showCategoryOverlay = false) }
                 _navigationEvents.emit(NavigationEvent.ToHome)
             }
         }

@@ -191,7 +191,7 @@ fun StartScreen(
             ) {
                 Button(
                     onClick = onContinue,
-                    enabled = state.canContinue,
+                    enabled = state.canContinue && !state.categoryPreloading,
                     colors =
                         ButtonDefaults.buttonColors(
                             containerColor = FishColors.Primary,
@@ -412,10 +412,14 @@ private fun XtreamLoginContent(
         }
 
         XtreamConnectionState.Connected -> {
-            ConnectedState(
-                message = "Xtream connected",
-                onDisconnect = onDisconnect,
-            )
+            if (state.categoryPreloading) {
+                LoadingState("Kategorien werden geladen...")
+            } else {
+                ConnectedState(
+                    message = "Xtream connected",
+                    onDisconnect = onDisconnect,
+                )
+            }
         }
 
         is XtreamConnectionState.Error -> {
@@ -633,28 +637,23 @@ private fun ErrorState(
 // Category Selection Overlay (embedded in ModalBottomSheet)
 // ═══════════════════════════════════════════════════════════════════════════════
 
-private enum class CategoryOverlayTab(val displayName: String, val categoryType: XtreamCategoryType) {
-    VOD("Filme", XtreamCategoryType.VOD),
-    SERIES("Serien", XtreamCategoryType.SERIES),
-    LIVE("Live TV", XtreamCategoryType.LIVE),
-}
-
 @Composable
 private fun CategoryOverlayContent(
     state: OnboardingState,
-    onTabSelected: (Int) -> Unit,
+    onTabSelected: (CategoryTab) -> Unit,
     onToggle: (String, XtreamCategoryType, Boolean) -> Unit,
     onSelectAll: (XtreamCategoryType) -> Unit,
     onDeselectAll: (XtreamCategoryType) -> Unit,
     onConfirm: () -> Unit,
 ) {
-    val tabs = CategoryOverlayTab.entries
-    val selectedTab = tabs.getOrElse(state.selectedCategoryTab) { CategoryOverlayTab.VOD }
+    val tabs = CategoryTab.entries
+    val selectedTab = state.selectedCategoryTab
     val (categories, categoryType) = when (selectedTab) {
-        CategoryOverlayTab.VOD -> state.vodCategories to XtreamCategoryType.VOD
-        CategoryOverlayTab.SERIES -> state.seriesCategories to XtreamCategoryType.SERIES
-        CategoryOverlayTab.LIVE -> state.liveCategories to XtreamCategoryType.LIVE
+        CategoryTab.VOD -> state.vodCategories to XtreamCategoryType.VOD
+        CategoryTab.SERIES -> state.seriesCategories to XtreamCategoryType.SERIES
+        CategoryTab.LIVE -> state.liveCategories to XtreamCategoryType.LIVE
     }
+    val selectedTabIndex = tabs.indexOf(selectedTab)
 
     Column(
         modifier = Modifier
@@ -695,20 +694,20 @@ private fun CategoryOverlayContent(
 
         // Tabs
         TabRow(
-            selectedTabIndex = state.selectedCategoryTab,
+            selectedTabIndex = selectedTabIndex,
             containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
         ) {
             tabs.forEachIndexed { index, tab ->
                 Tab(
-                    selected = state.selectedCategoryTab == index,
-                    onClick = { onTabSelected(index) },
+                    selected = selectedTabIndex == index,
+                    onClick = { onTabSelected(tab) },
                     text = {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(
                                 imageVector = when (tab) {
-                                    CategoryOverlayTab.VOD -> Icons.Default.Movie
-                                    CategoryOverlayTab.SERIES -> Icons.Default.Tv
-                                    CategoryOverlayTab.LIVE -> Icons.Default.LiveTv
+                                    CategoryTab.VOD -> Icons.Default.Movie
+                                    CategoryTab.SERIES -> Icons.Default.Tv
+                                    CategoryTab.LIVE -> Icons.Default.LiveTv
                                 },
                                 contentDescription = null,
                                 modifier = Modifier.size(16.dp),
