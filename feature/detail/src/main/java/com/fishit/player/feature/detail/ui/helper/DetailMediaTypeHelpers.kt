@@ -1,19 +1,26 @@
 package com.fishit.player.feature.detail.ui.helper
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -26,21 +33,28 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.fishit.player.core.imaging.compose.FishImage
 import com.fishit.player.core.model.CanonicalMediaId
 import com.fishit.player.core.model.ImageRef
 import com.fishit.player.core.model.MediaSourceRef
 import com.fishit.player.core.ui.layout.FishChipRow
-import com.fishit.player.core.ui.layout.FishHorizontalCard
-import com.fishit.player.core.ui.layout.FishThumbnailScrim
 import com.fishit.player.core.ui.theme.FishColors
 import com.fishit.player.core.ui.theme.FishShapes
+import kotlinx.coroutines.delay
 
 /**
  * Helper composables for MediaType-specific sections in DetailScreen.
@@ -101,197 +115,277 @@ fun DetailSeriesSectionSeasonSelector(
     )
 }
 
-/** Episode list for the selected season. */
+/**
+ * Vertical episode list for the selected season.
+ * Episodes are listed top-to-bottom (Episode 1 → x).
+ * Each row: thumbnail left, title + metadata right.
+ *
+ * Interactions:
+ * - **TV**: DPAD focus with 500ms delay → plot expands (animated). Unfocus → collapses.
+ * - **Mobile**: Short tap = play. Long press = toggle plot visibility.
+ */
 @Composable
 fun DetailSeriesSectionEpisodeList(
     episodes: List<DetailEpisodeItem>,
     onEpisodeClick: (DetailEpisodeItem) -> Unit,
-    focusedEpisode: DetailEpisodeItem? = null,
-    onEpisodeFocused: (DetailEpisodeItem) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
-    Column(modifier = modifier) {
-        // Horizontal episode tiles — compact, thumbnail-driven size
-        LazyRow(
-            contentPadding = PaddingValues(horizontal = 16.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            items(episodes) { episode ->
-                DetailSeriesSectionEpisodeCard(
-                    episode = episode,
-                    onClick = { onEpisodeClick(episode) },
-                    onFocused = { onEpisodeFocused(episode) },
-                    isFocused = focusedEpisode?.id == episode.id,
-                    modifier = Modifier.width(280.dp),
-                )
-            }
-        }
-
-        // Full episode metadata section for focused/selected episode
-        val displayEpisode = focusedEpisode ?: episodes.firstOrNull()
-        if (displayEpisode != null && !displayEpisode.plot.isNullOrBlank()) {
-            Spacer(modifier = Modifier.height(16.dp))
-            DetailSeriesSectionEpisodePlot(
-                episode = displayEpisode,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp),
+    Column(
+        modifier = modifier.padding(horizontal = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        episodes.forEach { episode ->
+            DetailSeriesSectionEpisodeRow(
+                episode = episode,
+                onPlay = { onEpisodeClick(episode) },
             )
         }
     }
 }
 
-/** Single episode card — compact, thumbnail-driven height. Click = play. */
+/**
+ * Single episode row — horizontal layout: thumbnail left (120×68dp), info right.
+ *
+ * - Quality badge overlaid on thumbnail (top-right: 4K / FHD / HD)
+ * - Play icon overlaid on thumbnail center
+ * - Resume progress bar at thumbnail bottom
+ * - Title + episode number, duration, metadata badges (rating, airDate, codec, audio)
+ * - Animated expandable plot section below
+ *
+ * TV: focus + 500ms → auto-expand plot, unfocus → auto-collapse.
+ * Mobile: long-press toggles plot, short tap = play.
+ */
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun DetailSeriesSectionEpisodeCard(
+fun DetailSeriesSectionEpisodeRow(
     episode: DetailEpisodeItem,
-    onClick: () -> Unit,
-    onFocused: () -> Unit = {},
-    isFocused: Boolean = false,
+    onPlay: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    // Card subtitle: "S1 • E3 • 45 min"
-    val subtitle = buildString {
-        append("S${episode.season} • E${episode.episode}")
-        episode.durationMs?.let { ms ->
-            val minutes = (ms / 60_000).toInt()
-            if (minutes > 0) append(" • ${minutes} min")
+    var plotExpanded by remember { mutableStateOf(false) }
+    var isFocused by remember { mutableStateOf(false) }
+
+    // TV: auto-expand plot after focus delay, collapse when unfocused
+    LaunchedEffect(isFocused) {
+        if (isFocused) {
+            delay(500L)
+            plotExpanded = true
+        } else {
+            plotExpanded = false
         }
     }
 
-    FishHorizontalCard(
-        title = episode.title,
-        subtitle = subtitle,
-        description = null, // Plot NOT in card — shown separately below, scrollable
-        thumbnail = episode.thumbnail,
-        thumbnailOverlay = {
-            FishThumbnailScrim(alpha = 0.3f)
-            Box(
-                modifier = Modifier.matchParentSize(),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    imageVector = Icons.Default.PlayArrow,
-                    contentDescription = "Play",
-                    tint = Color.White,
-                    modifier = Modifier.size(32.dp),
-                )
-            }
-            // Quality badge (top-right)
-            val qualityLabel = episode.qualityHeight?.let { h ->
-                when {
-                    h >= 2160 -> "4K"
-                    h >= 1080 -> "FHD"
-                    h >= 720 -> "HD"
-                    else -> null
-                }
-            }
-            if (qualityLabel != null) {
+    val focusBorderColor = if (isFocused) FishColors.FocusGlow else Color.Transparent
+
+    Surface(
+        shape = RoundedCornerShape(8.dp),
+        color = if (isFocused) {
+            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f)
+        } else {
+            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+        },
+        modifier = modifier
+            .fillMaxWidth()
+            .border(
+                width = if (isFocused) 2.dp else 0.dp,
+                color = focusBorderColor,
+                shape = RoundedCornerShape(8.dp),
+            )
+            .focusable()
+            .onFocusChanged { focusState -> isFocused = focusState.isFocused }
+            .combinedClickable(
+                onClick = onPlay,
+                onLongClick = { plotExpanded = !plotExpanded },
+            ),
+    ) {
+        Column(modifier = Modifier.padding(8.dp)) {
+            // ── Main row: thumbnail + info ──
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                // Thumbnail (left) — standardized 120×68dp
                 Box(
                     modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .padding(4.dp)
-                        .clip(RoundedCornerShape(4.dp))
-                        .background(FishColors.Primary.copy(alpha = 0.85f))
-                        .padding(horizontal = 6.dp, vertical = 2.dp),
+                        .size(width = 120.dp, height = 68.dp)
+                        .clip(RoundedCornerShape(6.dp))
+                        .background(MaterialTheme.colorScheme.surfaceVariant),
                 ) {
-                    Text(
-                        text = qualityLabel,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = Color.White,
-                        fontWeight = FontWeight.Bold,
-                    )
-                }
-            }
-            // Resume progress bar
-            if (episode.hasResume && episode.resumePercent > 0) {
-                Box(
-                    modifier =
-                        Modifier
-                            .align(Alignment.BottomStart)
-                            .fillMaxWidth()
-                            .height(3.dp)
-                            .background(Color.Gray.copy(alpha = 0.5f)),
-                ) {
+                    if (episode.thumbnail != null) {
+                        FishImage(
+                            imageRef = episode.thumbnail,
+                            contentDescription = null,
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier.matchParentSize(),
+                        )
+                    }
+
+                    // Play icon (center)
                     Box(
-                        modifier =
-                            Modifier
-                                .fillMaxWidth(episode.resumePercent / 100f)
-                                .height(3.dp)
-                                .background(FishColors.Primary),
+                        modifier = Modifier
+                            .matchParentSize()
+                            .background(Color.Black.copy(alpha = 0.25f)),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.PlayArrow,
+                            contentDescription = "Play",
+                            tint = Color.White.copy(alpha = 0.9f),
+                            modifier = Modifier.size(28.dp),
+                        )
+                    }
+
+                    // Quality badge (top-right)
+                    EpisodeQualityBadge(
+                        qualityHeight = episode.qualityHeight,
+                        modifier = Modifier.align(Alignment.TopEnd),
                     )
+
+                    // Resume progress bar (bottom)
+                    if (episode.hasResume && episode.resumePercent > 0) {
+                        Box(
+                            modifier = Modifier
+                                .align(Alignment.BottomStart)
+                                .fillMaxWidth()
+                                .height(3.dp)
+                                .background(Color.Gray.copy(alpha = 0.5f)),
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth(episode.resumePercent / 100f)
+                                    .height(3.dp)
+                                    .background(FishColors.Primary),
+                            )
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.width(12.dp))
+
+                // Info section (right)
+                Column(modifier = Modifier.weight(1f)) {
+                    // Title
+                    Text(
+                        text = episode.title,
+                        style = MaterialTheme.typography.titleSmall,
+                        color = MaterialTheme.colorScheme.onBackground,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+
+                    Spacer(modifier = Modifier.height(2.dp))
+
+                    // Episode number + duration
+                    Text(
+                        text = buildString {
+                            append("S${episode.season} • E${episode.episode}")
+                            episode.durationMs?.let { ms ->
+                                val minutes = (ms / 60_000).toInt()
+                                if (minutes > 0) append(" • ${minutes} min")
+                            }
+                        },
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+
+                    // Metadata badges row
+                    EpisodeMetadataBadges(episode = episode)
                 }
             }
-        },
-        onClick = {
-            onFocused()
-            onClick()
-        },
-        modifier = modifier,
-    )
+
+            // ── Expandable plot section (animated) ──
+            AnimatedVisibility(
+                visible = plotExpanded && !episode.plot.isNullOrBlank(),
+                enter = expandVertically(
+                    expandFrom = Alignment.Top,
+                ) + fadeIn(),
+                exit = shrinkVertically(
+                    shrinkTowards = Alignment.Top,
+                ) + fadeOut(),
+            ) {
+                Column(modifier = Modifier.padding(top = 8.dp)) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(max = 120.dp)
+                            .verticalScroll(rememberScrollState()),
+                    ) {
+                        Text(
+                            text = episode.plot ?: "",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+            }
+        }
+    }
 }
 
-/**
- * Scrollable episode plot section — shown below the episode LazyRow.
- * Displays the full, unlimited plot for the focused/selected episode.
- */
+/** Quality badge overlay — renders 4K / FHD / HD on thumbnail. */
 @Composable
-fun DetailSeriesSectionEpisodePlot(
+private fun EpisodeQualityBadge(
+    qualityHeight: Int?,
+    modifier: Modifier = Modifier,
+) {
+    val label = qualityHeight?.let { h ->
+        when {
+            h >= 2160 -> "4K"
+            h >= 1080 -> "FHD"
+            h >= 720 -> "HD"
+            else -> null
+        }
+    }
+    if (label != null) {
+        Box(
+            modifier = modifier
+                .padding(4.dp)
+                .clip(RoundedCornerShape(4.dp))
+                .background(FishColors.Primary.copy(alpha = 0.85f))
+                .padding(horizontal = 6.dp, vertical = 2.dp),
+        ) {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelSmall,
+                color = Color.White,
+                fontWeight = FontWeight.Bold,
+            )
+        }
+    }
+}
+
+/** Metadata badges row — rating, airDate, video/audio codec, channels. */
+@Composable
+private fun EpisodeMetadataBadges(
     episode: DetailEpisodeItem,
     modifier: Modifier = Modifier,
 ) {
-    Column(modifier = modifier) {
-        // Episode header
-        Text(
-            text = "S${episode.season}E${episode.episode} — ${episode.title}",
-            style = MaterialTheme.typography.titleSmall,
-            color = MaterialTheme.colorScheme.onBackground,
-            fontWeight = FontWeight.Bold,
-        )
-
-        // Metadata badges row
-        val badges = buildList {
-            episode.rating?.let { add("★ ${"%.1f".format(it)}") }
-            episode.airDate?.takeIf { it.isNotBlank() }?.let { add(it) }
-            episode.videoCodec?.uppercase()?.let { add(it) }
-            episode.audioCodec?.uppercase()?.let { add(it) }
-            episode.audioChannels?.let { ch ->
-                val label = when (ch) {
-                    1 -> "Mono"
-                    2 -> "Stereo"
-                    6 -> "5.1"
-                    8 -> "7.1"
-                    else -> "${ch}ch"
-                }
-                add(label)
+    val badges = buildList {
+        episode.rating?.let { add("★ ${"%.1f".format(it)}") }
+        episode.airDate?.takeIf { it.isNotBlank() }?.let { add(it) }
+        episode.videoCodec?.uppercase()?.let { add(it) }
+        episode.audioCodec?.uppercase()?.let { add(it) }
+        episode.audioChannels?.let { ch ->
+            val label = when (ch) {
+                1 -> "Mono"
+                2 -> "Stereo"
+                6 -> "5.1"
+                8 -> "7.1"
+                else -> "${ch}ch"
             }
+            add(label)
         }
-        if (badges.isNotEmpty()) {
-            Spacer(modifier = Modifier.height(4.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                badges.forEach { badge ->
-                    Text(
-                        text = badge,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-            }
-        }
-
-        // Full plot — scrollable, unlimited
-        episode.plot?.takeIf { it.isNotBlank() }?.let { plot ->
-            Spacer(modifier = Modifier.height(8.dp))
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(120.dp) // Fixed height container
-                    .verticalScroll(rememberScrollState()),
-            ) {
+    }
+    if (badges.isNotEmpty()) {
+        Spacer(modifier = Modifier.height(4.dp))
+        Row(
+            modifier = modifier,
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            badges.forEach { badge ->
                 Text(
-                    text = plot,
-                    style = MaterialTheme.typography.bodySmall,
+                    text = badge,
+                    style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
                 )
             }
         }
