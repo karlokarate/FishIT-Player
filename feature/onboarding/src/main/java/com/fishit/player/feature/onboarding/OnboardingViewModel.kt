@@ -2,6 +2,7 @@ package com.fishit.player.feature.onboarding
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.fishit.player.core.catalogsync.CatalogSyncWorkScheduler
 import com.fishit.player.core.catalogsync.XtreamCategoryPreloader
 import com.fishit.player.core.feature.auth.TelegramAuthRepository
 import com.fishit.player.core.feature.auth.TelegramAuthState
@@ -108,6 +109,7 @@ class OnboardingViewModel
         private val categoryRepository: NxCategorySelectionRepository,
         private val sourceAccountRepository: NxSourceAccountRepository,
         private val sourceActivationStore: SourceActivationStore,
+        private val catalogSyncWorkScheduler: CatalogSyncWorkScheduler,
     ) : ViewModel() {
         private val _state = MutableStateFlow(OnboardingState())
         val state: StateFlow<OnboardingState> = _state.asStateFlow()
@@ -563,7 +565,13 @@ class OnboardingViewModel
                     UnifiedLog.w(TAG) { "No cached accountKey — gate not set, sync will be blocked" }
                 }
 
-                UnifiedLog.d(TAG) { "Category selection confirmed, navigating to Home" }
+                // Trigger sync now that the category gate is open.
+                // CatalogSyncBootstrap already fired enqueueAutoSync() on source activation
+                // (before categories were selected), so that sync was skipped by the XOC-3 gate.
+                // We must enqueue a new sync here to actually start catalog synchronization.
+                catalogSyncWorkScheduler.enqueueExpertSyncNow()
+                UnifiedLog.i(TAG) { "Category selection confirmed — sync enqueued, navigating to Home" }
+
                 // Update state and emit navigation in same coroutine to ensure ordering
                 _state.update { it.copy(showCategoryOverlay = false) }
                 _navigationEvents.emit(NavigationEvent.ToHome)
