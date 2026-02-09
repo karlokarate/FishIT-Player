@@ -47,6 +47,8 @@ object Generators {
         "BBC One HD",
         "Unknown Video",
         "A",
+        "",
+        "   ",
         "日本語タイトル",
         "Тест кириллица",
         "Movie with  extra   spaces",
@@ -166,6 +168,15 @@ object Generators {
     )
 
     // =========================================================================
+    // Timestamps
+    // =========================================================================
+
+    /** addedTimestamp: null, 0, or positive epoch millis */
+    val addedTimestamp: Arb<Long?> = Arb.of(
+        null, 0L, 1700000000000L, 1600000000000L, -1L,
+    )
+
+    // =========================================================================
     // Nullable string fields
     // =========================================================================
 
@@ -193,7 +204,11 @@ object Generators {
         externalIds,
         playbackHints,
         Arb.boolean(),
-    ) { title, mType, yr, sn, ep, dur, srcType, srcId, extIds, hints, isAdult ->
+        imageRef,
+        imageRef,
+        addedTimestamp,
+    ) { title, mType, yr, sn, ep, dur, srcType, srcId, extIds, hints, isAdult,
+        poster, backdrop, addedTs ->
         RawMediaMetadata(
             originalTitle = title,
             mediaType = mType,
@@ -207,6 +222,9 @@ object Generators {
             externalIds = extIds,
             playbackHints = hints,
             isAdult = isAdult,
+            poster = poster,
+            backdrop = backdrop,
+            addedTimestamp = addedTs,
         )
     }
 }
