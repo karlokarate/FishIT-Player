@@ -8,12 +8,17 @@ import com.fishit.player.pipeline.xtream.catalog.XtreamCatalogSourceException
 import com.fishit.player.pipeline.xtream.catalog.XtreamScanPhase
 import com.fishit.player.pipeline.xtream.debug.XtcLogger
 import com.fishit.player.pipeline.xtream.mapper.XtreamCatalogMapper
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.channels.SendChannel
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.sync.withPermit
 import javax.inject.Inject
 
 /**
@@ -52,30 +57,37 @@ internal class VodItemPhase @Inject constructor(
         
         try {
             if (hasFilter) {
-                // Server-side filtering: fetch per category via API category_id parameter
-                for (catId in categoryFilter) {
-                    if (!currentCoroutineContext().isActive) break
-                    source.streamVodItems(batchSize = config.batchSize, categoryId = catId) { batch ->
-                        for (vodItem in batch) {
-                            if (!currentCoroutineContext().isActive) return@streamVodItems
-                            val catalogItem = mapper.fromVod(vodItem, headers, config.accountName)
-                            channel.send(XtreamCatalogEvent.ItemDiscovered(catalogItem))
-                            val count = counters.vodCounter.incrementAndGet()
-                            if (count % PROGRESS_LOG_INTERVAL == 0) {
-                                progressMutex.withLock {
-                                    channel.send(
-                                        XtreamCatalogEvent.ScanProgress(
-                                            vodCount = count,
-                                            seriesCount = counters.seriesCounter.get(),
-                                            episodeCount = counters.episodeCounter.get(),
-                                            liveCount = counters.liveCounter.get(),
-                                            currentPhase = XtreamScanPhase.VOD,
-                                        ),
-                                    )
+                // Server-side filtering: parallel fetch per category via API category_id parameter
+                // Semaphore limits concurrent HTTP calls per phase to avoid server overload
+                coroutineScope {
+                    val categorySemaphore = Semaphore(CATEGORY_PARALLELISM)
+                    categoryFilter.map { catId ->
+                        async {
+                            categorySemaphore.withPermit {
+                                source.streamVodItems(batchSize = config.batchSize, categoryId = catId) { batch ->
+                                    for (vodItem in batch) {
+                                        if (!currentCoroutineContext().isActive) return@streamVodItems
+                                        val catalogItem = mapper.fromVod(vodItem, headers, config.accountName)
+                                        channel.send(XtreamCatalogEvent.ItemDiscovered(catalogItem))
+                                        val count = counters.vodCounter.incrementAndGet()
+                                        if (count % PROGRESS_LOG_INTERVAL == 0) {
+                                            progressMutex.withLock {
+                                                channel.send(
+                                                    XtreamCatalogEvent.ScanProgress(
+                                                        vodCount = count,
+                                                        seriesCount = counters.seriesCounter.get(),
+                                                        episodeCount = counters.episodeCounter.get(),
+                                                        liveCount = counters.liveCounter.get(),
+                                                        currentPhase = XtreamScanPhase.VOD,
+                                                    ),
+                                                )
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         }
-                    }
+                    }.awaitAll()
                 }
             } else {
                 // No filter: fetch all items at once
@@ -114,5 +126,7 @@ internal class VodItemPhase @Inject constructor(
         private const val TAG = "VodItemPhase"
         private const val PROGRESS_LOG_INTERVAL = 500
         private const val STARTUP_DELAY_MS = 500L
+        /** Max concurrent category HTTP calls within this phase */
+        private const val CATEGORY_PARALLELISM = 4
     }
 }

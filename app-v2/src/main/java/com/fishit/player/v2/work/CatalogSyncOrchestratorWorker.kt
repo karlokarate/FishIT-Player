@@ -185,9 +185,18 @@ class CatalogSyncOrchestratorWorker
 
             UnifiedLog.i(TAG) { "Xtream sync starting..." }
 
+            // XOC-3: Gate check — category selection MUST be complete before sync
+            val accountKey = resolveXtreamAccountKey()
+            if (!categorySelectionRepository.isCategorySelectionComplete(accountKey)) {
+                UnifiedLog.w(TAG) {
+                    "XOC-3: Category selection not complete for account=$accountKey, skipping Xtream sync"
+                }
+                return SyncResult(source = "XTREAM", itemsPersisted = 0)
+            }
+
             try {
                 // Build config
-                val config = buildXtreamSyncConfig(input)
+                val config = buildXtreamSyncConfig(input, accountKey)
 
                 // Execute sync
                 xtreamSyncService.sync(config).collect { status ->
@@ -279,9 +288,27 @@ class CatalogSyncOrchestratorWorker
         }
 
         /**
+         * Resolve Xtream account key from API capabilities.
+         */
+        private fun resolveXtreamAccountKey(): String {
+            val capabilities = xtreamApiClient.capabilities
+            return if (capabilities != null) {
+                NxKeyGenerator.xtreamAccountKey(
+                    serverUrl = capabilities.baseUrl,
+                    username = capabilities.username,
+                )
+            } else {
+                "xtream_unknown"
+            }
+        }
+
+        /**
          * Build XtreamSyncConfig from input.
          */
-        private suspend fun buildXtreamSyncConfig(input: WorkerInputData): XtreamSyncConfig {
+        private suspend fun buildXtreamSyncConfig(
+            input: WorkerInputData,
+            accountKey: String,
+        ): XtreamSyncConfig {
             val deviceProfile = when {
                 input.isFireTvLowRam -> DeviceProfile.FIRETV_STICK
                 input.deviceClass.contains("FIRETV", ignoreCase = true) -> DeviceProfile.FIRETV_CUBE
@@ -292,14 +319,6 @@ class CatalogSyncOrchestratorWorker
             }
 
             val capabilities = xtreamApiClient.capabilities
-            val accountKey = if (capabilities != null) {
-                NxKeyGenerator.xtreamAccountKey(
-                    serverUrl = capabilities.baseUrl,
-                    username = capabilities.username,
-                )
-            } else {
-                "xtream_unknown"
-            }
 
             val (vodCategoryIds, seriesCategoryIds, liveCategoryIds) = if (capabilities != null) {
                 Triple(
