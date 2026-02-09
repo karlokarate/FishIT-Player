@@ -2,10 +2,17 @@ package com.fishit.player.feature.onboarding
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.fishit.player.core.catalogsync.XtreamCategoryPreloader
 import com.fishit.player.core.feature.auth.TelegramAuthRepository
 import com.fishit.player.core.feature.auth.TelegramAuthState
+import com.fishit.player.core.model.repository.NxCategorySelectionRepository
+import com.fishit.player.core.model.repository.NxCategorySelectionRepository.CategorySelection
+import com.fishit.player.core.model.repository.NxCategorySelectionRepository.XtreamCategoryType
+import com.fishit.player.core.model.repository.NxSourceAccountRepository
+import com.fishit.player.core.model.repository.NxWorkSourceRefRepository.SourceType
 import com.fishit.player.core.onboarding.domain.XtreamAuthRepository
 import com.fishit.player.core.onboarding.domain.XtreamConfig
+import com.fishit.player.core.sourceactivation.SourceActivationStore
 import com.fishit.player.infra.logging.UnifiedLog
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -15,6 +22,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -35,6 +43,14 @@ data class OnboardingState(
     val xtreamState: XtreamConnectionState = XtreamConnectionState.Disconnected,
     val xtreamUrl: String = "",
     val xtreamError: String? = null,
+    // Category overlay state
+    val showCategoryOverlay: Boolean = false,
+    val categoryPreloading: Boolean = false,
+    val vodCategories: List<CategorySelection> = emptyList(),
+    val seriesCategories: List<CategorySelection> = emptyList(),
+    val liveCategories: List<CategorySelection> = emptyList(),
+    val selectedCategoryTab: Int = 0,
+    val categoryError: String? = null,
     // General
     val canContinue: Boolean = false,
 )
@@ -78,6 +94,10 @@ class OnboardingViewModel
     constructor(
         private val telegramAuthRepository: TelegramAuthRepository,
         private val xtreamAuthRepository: XtreamAuthRepository,
+        private val categoryPreloader: XtreamCategoryPreloader,
+        private val categoryRepository: NxCategorySelectionRepository,
+        private val sourceAccountRepository: NxSourceAccountRepository,
+        private val sourceActivationStore: SourceActivationStore,
     ) : ViewModel() {
         private val _state = MutableStateFlow(OnboardingState())
         val state: StateFlow<OnboardingState> = _state.asStateFlow()
@@ -267,9 +287,9 @@ class OnboardingViewModel
                             _state.update { it.copy(xtreamError = error.message) }
                         }
                         .onSuccess {
-                            // Navigate to Home/StartScreen after successful connection
-                            UnifiedLog.d(TAG) { "connectXtream: Emitting navigation event to Home" }
-                            _navigationEvents.emit(NavigationEvent.ToHome)
+                            // Preload categories and show overlay for user selection
+                            UnifiedLog.d(TAG) { "connectXtream: Credentials saved, preloading categories" }
+                            startCategoryPreload()
                         }
                 }
             }
@@ -368,6 +388,104 @@ class OnboardingViewModel
                 )
             } catch (e: Exception) {
                 null
+            }
+        }
+
+        // ═══════════════════════════════════════════════════════════════════
+        // Category Preload & Overlay
+        // ═══════════════════════════════════════════════════════════════════
+
+        private fun startCategoryPreload() {
+            viewModelScope.launch {
+                _state.update { it.copy(categoryPreloading = true) }
+                try {
+                    categoryPreloader.preloadCategories(forceRefresh = true)
+                    UnifiedLog.d(TAG) { "Category preload succeeded, resolving accountKey" }
+
+                    val accountKey = findXtreamAccountKey()
+                    if (accountKey != null) {
+                        observeCategories(accountKey)
+                        _state.update {
+                            it.copy(
+                                categoryPreloading = false,
+                                showCategoryOverlay = true,
+                                categoryError = null,
+                            )
+                        }
+                    } else {
+                        UnifiedLog.w(TAG) { "No Xtream accountKey found after preload, navigating to Home" }
+                        _state.update { it.copy(categoryPreloading = false) }
+                        _navigationEvents.emit(NavigationEvent.ToHome)
+                    }
+                } catch (e: Exception) {
+                    UnifiedLog.e(TAG, e) { "Category preload failed, navigating to Home" }
+                    _state.update { it.copy(categoryPreloading = false) }
+                    // On failure, skip category selection and go to Home — sync will use all categories
+                    _navigationEvents.emit(NavigationEvent.ToHome)
+                }
+            }
+        }
+
+        private fun observeCategories(accountKey: String) {
+            viewModelScope.launch {
+                categoryRepository.observeByType(accountKey, XtreamCategoryType.VOD).collect { categories ->
+                    _state.update { it.copy(vodCategories = categories) }
+                }
+            }
+            viewModelScope.launch {
+                categoryRepository.observeByType(accountKey, XtreamCategoryType.SERIES).collect { categories ->
+                    _state.update { it.copy(seriesCategories = categories) }
+                }
+            }
+            viewModelScope.launch {
+                categoryRepository.observeByType(accountKey, XtreamCategoryType.LIVE).collect { categories ->
+                    _state.update { it.copy(liveCategories = categories) }
+                }
+            }
+        }
+
+        private suspend fun findXtreamAccountKey(): String? {
+            val snapshot = sourceActivationStore.getCurrentSnapshot()
+            if (!snapshot.xtream.isActive) return null
+            val accounts = sourceAccountRepository.observeAll().first()
+            return accounts.firstOrNull { it.sourceType == SourceType.XTREAM }?.accountKey
+        }
+
+        fun setSelectedCategoryTab(tab: Int) {
+            _state.update { it.copy(selectedCategoryTab = tab) }
+        }
+
+        fun toggleCategory(categoryId: String, categoryType: XtreamCategoryType, isSelected: Boolean) {
+            viewModelScope.launch {
+                val accountKey = findXtreamAccountKey() ?: return@launch
+                categoryRepository.setSelected(
+                    accountKey = accountKey,
+                    categoryType = categoryType,
+                    sourceCategoryId = categoryId,
+                    isSelected = isSelected,
+                )
+            }
+        }
+
+        fun selectAllCategories(categoryType: XtreamCategoryType) {
+            viewModelScope.launch {
+                val accountKey = findXtreamAccountKey() ?: return@launch
+                categoryRepository.selectAll(accountKey, categoryType)
+            }
+        }
+
+        fun deselectAllCategories(categoryType: XtreamCategoryType) {
+            viewModelScope.launch {
+                val accountKey = findXtreamAccountKey() ?: return@launch
+                categoryRepository.deselectAll(accountKey, categoryType)
+            }
+        }
+
+        fun confirmCategorySelection() {
+            _state.update { it.copy(showCategoryOverlay = false) }
+            viewModelScope.launch {
+                UnifiedLog.d(TAG) { "Category selection confirmed, navigating to Home" }
+                _navigationEvents.emit(NavigationEvent.ToHome)
             }
         }
 

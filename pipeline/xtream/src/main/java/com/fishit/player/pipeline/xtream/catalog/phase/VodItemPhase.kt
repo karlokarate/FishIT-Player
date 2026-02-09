@@ -48,39 +48,55 @@ internal class VodItemPhase @Inject constructor(
         val phaseStart = System.currentTimeMillis()
         val categoryFilter = config.vodCategoryIds
         val hasFilter = categoryFilter.isNotEmpty()
-        UnifiedLog.d(TAG, "[VOD] Starting parallel scan (streaming)${if (hasFilter) " with ${categoryFilter.size} category filter(s)" else ""}...")
+        UnifiedLog.d(TAG, "[VOD] Starting parallel scan (streaming)${if (hasFilter) " with ${categoryFilter.size} category filter(s) [server-side]" else ""}...")
         
         try {
-            source.streamVodItems(batchSize = config.batchSize) { batch ->
-                for (vodItem in batch) {
-                    // Check cancellation
-                    if (!currentCoroutineContext().isActive) return@streamVodItems
-                    
-                    // Issue #669: Filter by category if filter is configured
-                    if (hasFilter) {
-                        val itemCategoryId = vodItem.categoryId
-                        if (itemCategoryId == null || itemCategoryId !in categoryFilter) {
-                            continue
+            if (hasFilter) {
+                // Server-side filtering: fetch per category via API category_id parameter
+                for (catId in categoryFilter) {
+                    if (!currentCoroutineContext().isActive) break
+                    source.streamVodItems(batchSize = config.batchSize, categoryId = catId) { batch ->
+                        for (vodItem in batch) {
+                            if (!currentCoroutineContext().isActive) return@streamVodItems
+                            val catalogItem = mapper.fromVod(vodItem, headers, config.accountName)
+                            channel.send(XtreamCatalogEvent.ItemDiscovered(catalogItem))
+                            val count = counters.vodCounter.incrementAndGet()
+                            if (count % PROGRESS_LOG_INTERVAL == 0) {
+                                progressMutex.withLock {
+                                    channel.send(
+                                        XtreamCatalogEvent.ScanProgress(
+                                            vodCount = count,
+                                            seriesCount = counters.seriesCounter.get(),
+                                            episodeCount = counters.episodeCounter.get(),
+                                            liveCount = counters.liveCounter.get(),
+                                            currentPhase = XtreamScanPhase.VOD,
+                                        ),
+                                    )
+                                }
+                            }
                         }
                     }
-
-                    // Map and emit
-                    val catalogItem = mapper.fromVod(vodItem, headers, config.accountName)
-                    channel.send(XtreamCatalogEvent.ItemDiscovered(catalogItem))
-                    
-                    // Update counter and emit progress
-                    val count = counters.vodCounter.incrementAndGet()
-                    if (count % PROGRESS_LOG_INTERVAL == 0) {
-                        progressMutex.withLock {
-                            channel.send(
-                                XtreamCatalogEvent.ScanProgress(
-                                    vodCount = count,
-                                    seriesCount = counters.seriesCounter.get(),
-                                    episodeCount = counters.episodeCounter.get(),
-                                    liveCount = counters.liveCounter.get(),
-                                    currentPhase = XtreamScanPhase.VOD,
-                                ),
-                            )
+                }
+            } else {
+                // No filter: fetch all items at once
+                source.streamVodItems(batchSize = config.batchSize) { batch ->
+                    for (vodItem in batch) {
+                        if (!currentCoroutineContext().isActive) return@streamVodItems
+                        val catalogItem = mapper.fromVod(vodItem, headers, config.accountName)
+                        channel.send(XtreamCatalogEvent.ItemDiscovered(catalogItem))
+                        val count = counters.vodCounter.incrementAndGet()
+                        if (count % PROGRESS_LOG_INTERVAL == 0) {
+                            progressMutex.withLock {
+                                channel.send(
+                                    XtreamCatalogEvent.ScanProgress(
+                                        vodCount = count,
+                                        seriesCount = counters.seriesCounter.get(),
+                                        episodeCount = counters.episodeCounter.get(),
+                                        liveCount = counters.liveCounter.get(),
+                                        currentPhase = XtreamScanPhase.VOD,
+                                    ),
+                                )
+                            }
                         }
                     }
                 }

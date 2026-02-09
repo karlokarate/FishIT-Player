@@ -44,39 +44,55 @@ internal class LiveChannelPhase @Inject constructor(
         val phaseStart = System.currentTimeMillis()
         val categoryFilter = config.liveCategoryIds
         val hasFilter = categoryFilter.isNotEmpty()
-        UnifiedLog.d(TAG, "[LIVE] Starting parallel scan (streaming)${if (hasFilter) " with ${categoryFilter.size} category filter(s)" else ""}...")
+        UnifiedLog.d(TAG, "[LIVE] Starting parallel scan (streaming)${if (hasFilter) " with ${categoryFilter.size} category filter(s) [server-side]" else ""}...")
         
         try {
-            source.streamLiveChannels(batchSize = config.batchSize) { batch ->
-                for (liveChannel in batch) {
-                    // Check cancellation
-                    if (!currentCoroutineContext().isActive) return@streamLiveChannels
-                    
-                    // Issue #669: Filter by category if filter is configured
-                    if (hasFilter) {
-                        val itemCategoryId = liveChannel.categoryId
-                        if (itemCategoryId == null || itemCategoryId !in categoryFilter) {
-                            continue
+            if (hasFilter) {
+                // Server-side filtering: fetch per category via API category_id parameter
+                for (catId in categoryFilter) {
+                    if (!currentCoroutineContext().isActive) break
+                    source.streamLiveChannels(batchSize = config.batchSize, categoryId = catId) { batch ->
+                        for (liveChannel in batch) {
+                            if (!currentCoroutineContext().isActive) return@streamLiveChannels
+                            val catalogItem = mapper.fromChannel(liveChannel, headers, config.accountName)
+                            channel.send(XtreamCatalogEvent.ItemDiscovered(catalogItem))
+                            val count = counters.liveCounter.incrementAndGet()
+                            if (count % PROGRESS_LOG_INTERVAL == 0) {
+                                progressMutex.withLock {
+                                    channel.send(
+                                        XtreamCatalogEvent.ScanProgress(
+                                            vodCount = counters.vodCounter.get(),
+                                            seriesCount = counters.seriesCounter.get(),
+                                            episodeCount = counters.episodeCounter.get(),
+                                            liveCount = count,
+                                            currentPhase = XtreamScanPhase.LIVE,
+                                        ),
+                                    )
+                                }
+                            }
                         }
                     }
-
-                    // Map and emit
-                    val catalogItem = mapper.fromChannel(liveChannel, headers, config.accountName)
-                    channel.send(XtreamCatalogEvent.ItemDiscovered(catalogItem))
-                    
-                    // Update counter and emit progress
-                    val count = counters.liveCounter.incrementAndGet()
-                    if (count % PROGRESS_LOG_INTERVAL == 0) {
-                        progressMutex.withLock {
-                            channel.send(
-                                XtreamCatalogEvent.ScanProgress(
-                                    vodCount = counters.vodCounter.get(),
-                                    seriesCount = counters.seriesCounter.get(),
-                                    episodeCount = counters.episodeCounter.get(),
-                                    liveCount = count,
-                                    currentPhase = XtreamScanPhase.LIVE,
-                                ),
-                            )
+                }
+            } else {
+                // No filter: fetch all items at once
+                source.streamLiveChannels(batchSize = config.batchSize) { batch ->
+                    for (liveChannel in batch) {
+                        if (!currentCoroutineContext().isActive) return@streamLiveChannels
+                        val catalogItem = mapper.fromChannel(liveChannel, headers, config.accountName)
+                        channel.send(XtreamCatalogEvent.ItemDiscovered(catalogItem))
+                        val count = counters.liveCounter.incrementAndGet()
+                        if (count % PROGRESS_LOG_INTERVAL == 0) {
+                            progressMutex.withLock {
+                                channel.send(
+                                    XtreamCatalogEvent.ScanProgress(
+                                        vodCount = counters.vodCounter.get(),
+                                        seriesCount = counters.seriesCounter.get(),
+                                        episodeCount = counters.episodeCounter.get(),
+                                        liveCount = count,
+                                        currentPhase = XtreamScanPhase.LIVE,
+                                    ),
+                                )
+                            }
                         }
                     }
                 }

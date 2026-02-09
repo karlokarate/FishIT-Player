@@ -4,6 +4,7 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,6 +16,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -23,20 +26,31 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.CloudQueue
+import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.filled.LiveTv
+import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.filled.PhoneAndroid
+import androidx.compose.material.icons.filled.SelectAll
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material.icons.filled.Tv
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -52,6 +66,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.fishit.player.core.feature.auth.TelegramAuthState
+import com.fishit.player.core.model.repository.NxCategorySelectionRepository.CategorySelection
+import com.fishit.player.core.model.repository.NxCategorySelectionRepository.XtreamCategoryType
 import com.fishit.player.core.ui.theme.FishColors
 import com.fishit.player.core.ui.theme.FishShapes
 
@@ -63,6 +79,7 @@ import com.fishit.player.core.ui.theme.FishShapes
  * - Connect Xtream via URL
  * - Continue to Home when at least one source is connected
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun StartScreen(
     onContinue: () -> Unit,
@@ -78,6 +95,27 @@ fun StartScreen(
             when (event) {
                 NavigationEvent.ToHome -> onContinue()
             }
+        }
+    }
+
+    // Category Selection Overlay (ModalBottomSheet)
+    if (state.showCategoryOverlay) {
+        val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+        ModalBottomSheet(
+            onDismissRequest = { viewModel.confirmCategorySelection() },
+            sheetState = sheetState,
+            containerColor = MaterialTheme.colorScheme.surface,
+        ) {
+            CategoryOverlayContent(
+                state = state,
+                onTabSelected = viewModel::setSelectedCategoryTab,
+                onToggle = { categoryId, type, isSelected ->
+                    viewModel.toggleCategory(categoryId, type, isSelected)
+                },
+                onSelectAll = viewModel::selectAllCategories,
+                onDeselectAll = viewModel::deselectAllCategories,
+                onConfirm = viewModel::confirmCategorySelection,
+            )
         }
     }
 
@@ -587,6 +625,243 @@ private fun ErrorState(
             modifier = Modifier.fillMaxWidth(),
         ) {
             Text("Retry")
+        }
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// Category Selection Overlay (embedded in ModalBottomSheet)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+private enum class CategoryOverlayTab(val displayName: String, val categoryType: XtreamCategoryType) {
+    VOD("Filme", XtreamCategoryType.VOD),
+    SERIES("Serien", XtreamCategoryType.SERIES),
+    LIVE("Live TV", XtreamCategoryType.LIVE),
+}
+
+@Composable
+private fun CategoryOverlayContent(
+    state: OnboardingState,
+    onTabSelected: (Int) -> Unit,
+    onToggle: (String, XtreamCategoryType, Boolean) -> Unit,
+    onSelectAll: (XtreamCategoryType) -> Unit,
+    onDeselectAll: (XtreamCategoryType) -> Unit,
+    onConfirm: () -> Unit,
+) {
+    val tabs = CategoryOverlayTab.entries
+    val selectedTab = tabs.getOrElse(state.selectedCategoryTab) { CategoryOverlayTab.VOD }
+    val (categories, categoryType) = when (selectedTab) {
+        CategoryOverlayTab.VOD -> state.vodCategories to XtreamCategoryType.VOD
+        CategoryOverlayTab.SERIES -> state.seriesCategories to XtreamCategoryType.SERIES
+        CategoryOverlayTab.LIVE -> state.liveCategories to XtreamCategoryType.LIVE
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = 24.dp),
+    ) {
+        // Header
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(
+                imageVector = Icons.Default.Folder,
+                contentDescription = null,
+                modifier = Modifier.size(24.dp),
+                tint = MaterialTheme.colorScheme.primary,
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = "Kategorien auswählen",
+                style = MaterialTheme.typography.titleLarge,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+        }
+
+        Spacer(modifier = Modifier.height(4.dp))
+
+        Text(
+            text = "Wähle die Kategorien, die synchronisiert werden sollen",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(horizontal = 16.dp),
+        )
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        // Tabs
+        TabRow(
+            selectedTabIndex = state.selectedCategoryTab,
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+        ) {
+            tabs.forEachIndexed { index, tab ->
+                Tab(
+                    selected = state.selectedCategoryTab == index,
+                    onClick = { onTabSelected(index) },
+                    text = {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = when (tab) {
+                                    CategoryOverlayTab.VOD -> Icons.Default.Movie
+                                    CategoryOverlayTab.SERIES -> Icons.Default.Tv
+                                    CategoryOverlayTab.LIVE -> Icons.Default.LiveTv
+                                },
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp),
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(tab.displayName)
+                        }
+                    },
+                )
+            }
+        }
+
+        // Bulk actions
+        if (categories.isNotEmpty()) {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                ),
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = "${categories.count { it.isSelected }} von ${categories.size} ausgewählt",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Row {
+                        TextButton(onClick = { onSelectAll(categoryType) }) {
+                            Icon(
+                                imageVector = Icons.Default.SelectAll,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp),
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("Alle")
+                        }
+                        TextButton(onClick = { onDeselectAll(categoryType) }) {
+                            Text("Keine")
+                        }
+                    }
+                }
+            }
+        }
+
+        // Category list
+        when {
+            state.categoryPreloading -> {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(200.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    CircularProgressIndicator()
+                }
+            }
+            categories.isEmpty() -> {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(200.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        text = "Keine Kategorien verfügbar",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+            else -> {
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(400.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    items(categories, key = { it.sourceCategoryId }) { category ->
+                        OverlayCategoryItem(
+                            category = category,
+                            onToggle = { selected ->
+                                onToggle(category.sourceCategoryId, categoryType, selected)
+                            },
+                        )
+                    }
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Confirm button
+        Button(
+            onClick = onConfirm,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp)
+                .height(56.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = FishColors.Primary,
+            ),
+        ) {
+            Text(
+                text = "Synchronisierung starten",
+                style = MaterialTheme.typography.titleMedium,
+            )
+        }
+    }
+}
+
+@Composable
+private fun OverlayCategoryItem(
+    category: CategorySelection,
+    onToggle: (Boolean) -> Unit,
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp)
+            .clickable { onToggle(!category.isSelected) },
+        colors = CardDefaults.cardColors(
+            containerColor = if (category.isSelected) {
+                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+            } else {
+                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+            },
+        ),
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = category.categoryName,
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.weight(1f),
+            )
+            Checkbox(
+                checked = category.isSelected,
+                onCheckedChange = onToggle,
+            )
         }
     }
 }

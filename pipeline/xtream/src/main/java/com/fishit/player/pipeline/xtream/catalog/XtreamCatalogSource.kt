@@ -99,12 +99,14 @@ interface XtreamCatalogSource {
      * Use this instead of [loadVodItems] for large catalogs (60K+ items).
      *
      * @param batchSize Number of items per batch (default: 500)
+     * @param categoryId Optional category filter for server-side filtering
      * @param onBatch Callback invoked for each batch of [XtreamVodItem]
      * @return Total number of items streamed
      * @throws XtreamCatalogSourceException on non-recoverable errors
      */
     suspend fun streamVodItems(
         batchSize: Int = DEFAULT_BATCH_SIZE,
+        categoryId: String? = null,
         onBatch: suspend (List<XtreamVodItem>) -> Unit,
     ): Int
 
@@ -112,12 +114,14 @@ interface XtreamCatalogSource {
      * Stream series items in batches with constant memory usage.
      *
      * @param batchSize Number of items per batch (default: 500)
+     * @param categoryId Optional category filter for server-side filtering
      * @param onBatch Callback invoked for each batch of [XtreamSeriesItem]
      * @return Total number of items streamed
      * @throws XtreamCatalogSourceException on non-recoverable errors
      */
     suspend fun streamSeriesItems(
         batchSize: Int = DEFAULT_BATCH_SIZE,
+        categoryId: String? = null,
         onBatch: suspend (List<XtreamSeriesItem>) -> Unit,
     ): Int
 
@@ -125,12 +129,14 @@ interface XtreamCatalogSource {
      * Stream live channels in batches with constant memory usage.
      *
      * @param batchSize Number of items per batch (default: 500)
+     * @param categoryId Optional category filter for server-side filtering
      * @param onBatch Callback invoked for each batch of [XtreamChannel]
      * @return Total number of items streamed
      * @throws XtreamCatalogSourceException on non-recoverable errors
      */
     suspend fun streamLiveChannels(
         batchSize: Int = DEFAULT_BATCH_SIZE,
+        categoryId: String? = null,
         onBatch: suspend (List<XtreamChannel>) -> Unit,
     ): Int
 

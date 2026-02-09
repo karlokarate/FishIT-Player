@@ -229,30 +229,33 @@ class DefaultXtreamCatalogSource
 
         override suspend fun streamVodItems(
             batchSize: Int,
+            categoryId: String?,
             onBatch: suspend (List<XtreamVodItem>) -> Unit,
         ): Int =
             try {
-                adapter.streamVodItems(batchSize = batchSize, onBatch = onBatch)
+                adapter.streamVodItems(batchSize = batchSize, categoryId = categoryId, onBatch = onBatch)
             } catch (e: Exception) {
                 throw XtreamCatalogSourceException("Failed to stream VOD items", e)
             }
 
         override suspend fun streamSeriesItems(
             batchSize: Int,
+            categoryId: String?,
             onBatch: suspend (List<XtreamSeriesItem>) -> Unit,
         ): Int =
             try {
-                adapter.streamSeriesItems(batchSize = batchSize, onBatch = onBatch)
+                adapter.streamSeriesItems(batchSize = batchSize, categoryId = categoryId, onBatch = onBatch)
             } catch (e: Exception) {
                 throw XtreamCatalogSourceException("Failed to stream series items", e)
             }
 
         override suspend fun streamLiveChannels(
             batchSize: Int,
+            categoryId: String?,
             onBatch: suspend (List<XtreamChannel>) -> Unit,
         ): Int =
             try {
-                adapter.streamLiveChannels(batchSize = batchSize, onBatch = onBatch)
+                adapter.streamLiveChannels(batchSize = batchSize, categoryId = categoryId, onBatch = onBatch)
             } catch (e: Exception) {
                 throw XtreamCatalogSourceException("Failed to stream live channels", e)
             }
