@@ -19,25 +19,8 @@ import com.fishit.player.core.persistence.obx.NX_WorkUserState
 import com.fishit.player.core.persistence.obx.NX_WorkVariant
 import com.fishit.player.core.persistence.obx.ObxCanonicalMedia
 import com.fishit.player.core.persistence.obx.ObxCanonicalResumeMark
-import com.fishit.player.core.persistence.obx.ObxCategory
-import com.fishit.player.core.persistence.obx.ObxEpgNowNext
-import com.fishit.player.core.persistence.obx.ObxEpisode
-import com.fishit.player.core.persistence.obx.ObxIndexGenre
-import com.fishit.player.core.persistence.obx.ObxIndexLang
-import com.fishit.player.core.persistence.obx.ObxIndexProvider
-import com.fishit.player.core.persistence.obx.ObxIndexQuality
-import com.fishit.player.core.persistence.obx.ObxIndexYear
-import com.fishit.player.core.persistence.obx.ObxKidCategoryAllow
-import com.fishit.player.core.persistence.obx.ObxKidContentAllow
-import com.fishit.player.core.persistence.obx.ObxKidContentBlock
-import com.fishit.player.core.persistence.obx.ObxLive
 import com.fishit.player.core.persistence.obx.ObxMediaSourceRef
-import com.fishit.player.core.persistence.obx.ObxProfile
-import com.fishit.player.core.persistence.obx.ObxProfilePermissions
-import com.fishit.player.core.persistence.obx.ObxScreenTimeEntry
-import com.fishit.player.core.persistence.obx.ObxSeries
 import com.fishit.player.core.persistence.obx.ObxTelegramMessage
-import com.fishit.player.core.persistence.obx.ObxVod
 
 /**
  * Explicit registry of ObjectBox entity classes.
@@ -80,31 +63,13 @@ internal object ObxInspectorEntityRegistry {
             EntitySpec("NX_WorkCategoryRef", "NX: Work Category Ref", NX_WorkCategoryRef::class.java),
             EntitySpec("NX_EpgEntry", "NX: EPG Entry", NX_EpgEntry::class.java),
             // =================================================================
-            // Legacy Obx* Entities (v1 - Deprecated, for reference only)
+            // Transitional Obx* Entities (pending NX migration — P2/P3)
             // =================================================================
-            EntitySpec("ObxCategory", "[Legacy] Category", ObxCategory::class.java),
-            EntitySpec("ObxLive", "[Legacy] Live", ObxLive::class.java),
-            EntitySpec("ObxVod", "[Legacy] VOD", ObxVod::class.java),
-            EntitySpec("ObxSeries", "[Legacy] Series", ObxSeries::class.java),
-            EntitySpec("ObxEpisode", "[Legacy] Episode", ObxEpisode::class.java),
-            EntitySpec("ObxEpgNowNext", "[Legacy] EPG Now/Next", ObxEpgNowNext::class.java),
-            EntitySpec("ObxProfile", "[Legacy] Profile", ObxProfile::class.java),
-            EntitySpec("ObxProfilePermissions", "[Legacy] Profile Permissions", ObxProfilePermissions::class.java),
-            EntitySpec("ObxKidContentAllow", "[Legacy] Kid Allow: Content", ObxKidContentAllow::class.java),
-            EntitySpec("ObxKidCategoryAllow", "[Legacy] Kid Allow: Category", ObxKidCategoryAllow::class.java),
-            EntitySpec("ObxKidContentBlock", "[Legacy] Kid Block: Content", ObxKidContentBlock::class.java),
-            EntitySpec("ObxScreenTimeEntry", "[Legacy] Screen Time", ObxScreenTimeEntry::class.java),
-            EntitySpec("ObxTelegramMessage", "[Legacy] Telegram Message", ObxTelegramMessage::class.java),
-            // Aggregated index tables (legacy)
-            EntitySpec("ObxIndexProvider", "[Legacy] Index: Provider", ObxIndexProvider::class.java),
-            EntitySpec("ObxIndexYear", "[Legacy] Index: Year", ObxIndexYear::class.java),
-            EntitySpec("ObxIndexGenre", "[Legacy] Index: Genre", ObxIndexGenre::class.java),
-            EntitySpec("ObxIndexLang", "[Legacy] Index: Language", ObxIndexLang::class.java),
-            EntitySpec("ObxIndexQuality", "[Legacy] Index: Quality", ObxIndexQuality::class.java),
-            // Canonical identity (legacy v2 SSOT - replaced by NX_Work)
-            EntitySpec("ObxCanonicalMedia", "[Legacy] Canonical Media", ObxCanonicalMedia::class.java),
-            EntitySpec("ObxMediaSourceRef", "[Legacy] Canonical Source Ref", ObxMediaSourceRef::class.java),
-            EntitySpec("ObxCanonicalResumeMark", "[Legacy] Canonical Resume", ObxCanonicalResumeMark::class.java),
+            EntitySpec("ObxTelegramMessage", "Telegram Message (→ P2)", ObxTelegramMessage::class.java),
+            // Canonical identity (→ P3: consolidate with NX_Work)
+            EntitySpec("ObxCanonicalMedia", "Canonical Media (→ P3)", ObxCanonicalMedia::class.java),
+            EntitySpec("ObxMediaSourceRef", "Canonical Source Ref (→ P3)", ObxMediaSourceRef::class.java),
+            EntitySpec("ObxCanonicalResumeMark", "Canonical Resume (→ P3)", ObxCanonicalResumeMark::class.java),
         )
 
     val byId: Map<String, EntitySpec<out Any>> = all.associateBy { it.id }

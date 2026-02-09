@@ -54,10 +54,10 @@ class ObjectBoxIntrospectionDumpTest {
 
             // Then: Should contain known entities
             val entityNames = dump.entities.map { it.name }
-            assertTrue("Should contain ObxVod", entityNames.contains("ObxVod"))
-            assertTrue("Should contain ObxSeries", entityNames.contains("ObxSeries"))
-            assertTrue("Should contain ObxEpisode", entityNames.contains("ObxEpisode"))
-            assertTrue("Should contain ObxLive", entityNames.contains("ObxLive"))
+            assertTrue("Should contain NX_Work", entityNames.contains("NX_Work"))
+            assertTrue("Should contain NX_WorkSourceRef", entityNames.contains("NX_WorkSourceRef"))
+            assertTrue("Should contain NX_WorkVariant", entityNames.contains("NX_WorkVariant"))
+            assertTrue("Should contain NX_EpgEntry", entityNames.contains("NX_EpgEntry"))
             assertTrue("Should contain ObxCanonicalMedia", entityNames.contains("ObxCanonicalMedia"))
         }
 
@@ -68,22 +68,21 @@ class ObjectBoxIntrospectionDumpTest {
             val dump = ObjectBoxIntrospectionDump.generateDump(boxStore)
 
             // Then: Entities should have properties
-            val vodEntity = dump.entities.find { it.name == "ObxVod" }
-            assertNotNull("ObxVod entity should exist", vodEntity)
+            val workEntity = dump.entities.find { it.name == "NX_Work" }
+            assertNotNull("NX_Work entity should exist", workEntity)
 
-            vodEntity?.let {
-                assertTrue("ObxVod should have properties", it.properties.isNotEmpty())
+            workEntity?.let {
+                assertTrue("NX_Work should have properties", it.properties.isNotEmpty())
 
                 // Should have id property
                 val idProp = it.properties.find { prop -> prop.name == "id" }
                 assertNotNull("Should have id property", idProp)
                 assertTrue("id should be marked as Id", idProp?.isId == true)
 
-                // Should have vodId property
-                val vodIdProp = it.properties.find { prop -> prop.name == "vodId" }
-                assertNotNull("Should have vodId property", vodIdProp)
-                assertTrue("vodId should be unique", vodIdProp?.isUnique == true)
-                assertTrue("vodId should be indexed", vodIdProp?.isIndexed == true)
+                // Should have canonicalKey property
+                val keyProp = it.properties.find { prop -> prop.name == "canonicalKey" }
+                assertNotNull("Should have canonicalKey property", keyProp)
+                assertTrue("canonicalKey should be indexed", keyProp?.isIndexed == true)
             }
         }
 
@@ -143,8 +142,8 @@ class ObjectBoxIntrospectionDumpTest {
             val dump = ObjectBoxIntrospectionDump.generateDump(boxStore)
 
             // Then: Properties with annotations should list them
-            val vodEntity = dump.entities.find { it.name == "ObxVod" }
-            vodEntity?.let {
+            val workEntity = dump.entities.find { it.name == "NX_Work" }
+            workEntity?.let {
                 val indexedProps = it.properties.filter { prop -> prop.isIndexed }
                 indexedProps.forEach { prop ->
                     assertTrue(
