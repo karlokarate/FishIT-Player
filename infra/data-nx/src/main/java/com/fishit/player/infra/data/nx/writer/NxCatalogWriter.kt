@@ -22,6 +22,8 @@ import com.fishit.player.core.model.RawMediaMetadata
 import com.fishit.player.core.model.repository.NxWorkRepository
 import com.fishit.player.core.model.repository.NxWorkSourceRefRepository
 import com.fishit.player.core.model.repository.NxWorkVariantRepository
+import com.fishit.player.core.persistence.obx.NxKeyGenerator
+import com.fishit.player.infra.data.nx.mapper.MediaTypeMapper
 import com.fishit.player.infra.data.nx.mapper.SourceKeyParser
 import com.fishit.player.infra.data.nx.writer.builder.SourceRefBuilder
 import com.fishit.player.infra.data.nx.writer.builder.VariantBuilder
@@ -206,30 +208,17 @@ class NxCatalogWriter @Inject constructor(
      * - movie:tmdb:12345
      * - episode:tmdb:67890
      * - movie:heuristic:the-matrix-1999
+     *
+     * Uses canonical MediaTypeMapper.toWorkType() for correct type mapping.
+     * Uses NxKeyGenerator.toSlug() for consistent slug generation with "untitled" fallback.
      */
     private fun buildWorkKey(normalized: NormalizedMediaMetadata): String {
         val authority = if (normalized.tmdb != null) "tmdb" else "heuristic"
         val id = normalized.tmdb?.id?.toString()
-            ?: "${toSlug(normalized.canonicalTitle)}-${normalized.year ?: "unknown"}"
-        val workType = when {
-            normalized.mediaType.name.contains("SERIES") -> "series"
-            normalized.mediaType.name.contains("EPISODE") -> "episode"
-            normalized.mediaType.name.contains("LIVE") -> "live"
-            normalized.mediaType.name.contains("CLIP") -> "clip"
-            else -> "movie"
-        }
+            ?: "${NxKeyGenerator.toSlug(normalized.canonicalTitle)}-${normalized.year ?: "unknown"}"
+        // Use canonical MediaTypeMapper instead of buggy contains() heuristic
+        val workType = MediaTypeMapper.toWorkType(normalized.mediaType).name.lowercase()
         return "$workType:$authority:$id"
-    }
-
-    /**
-     * Convert title to URL-safe slug for heuristic work keys.
-     */
-    private fun toSlug(title: String): String {
-        return title
-            .lowercase(java.util.Locale.ROOT)
-            .replace(Regex("[^a-z0-9]+"), "-")
-            .trim('-')
-            .take(50)
     }
 
     /**

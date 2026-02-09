@@ -35,7 +35,8 @@ class RegexMediaMetadataNormalizer(
         val parsed = sceneParser.parse(raw.originalTitle)
 
         // Use parsed title as canonical (it's already cleaned)
-        val canonicalTitle = parsed.title
+        // Fallback to "[Untitled]" if parser returns blank (defense-in-depth)
+        val canonicalTitle = parsed.title.ifBlank { "[Untitled]" }
 
         // Prefer explicit metadata from raw over parsed
         // (e.g., Xtream API provides structured data)

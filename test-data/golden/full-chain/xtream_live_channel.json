@@ -1,6 +1,6 @@
 {
   "work": {
-    "workKey": "live:heuristic:bbc-one-unknown",
+    "workKey": "live_channel:heuristic:bbc-one-unknown",
     "type": "LIVE_CHANNEL",
     "displayTitle": "BBC One",
     "sortTitle": "BBC One",
@@ -28,7 +28,7 @@
   },
   "sourceRef": {
     "sourceKey": "src:xtream:xtream:premium-iptv:xtream:live:999",
-    "workKey": "live:heuristic:bbc-one-unknown",
+    "workKey": "live_channel:heuristic:bbc-one-unknown",
     "sourceType": "XTREAM",
     "accountKey": "xtream:premium-iptv",
     "sourceItemKind": "LIVE",

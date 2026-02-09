@@ -1,6 +1,6 @@
 {
   "work": {
-    "workKey": "series:tmdb:1396",
+    "workKey": "episode:tmdb:1396",
     "type": "EPISODE",
     "displayTitle": "Breaking Bad",
     "sortTitle": "Breaking Bad",
@@ -28,7 +28,7 @@
   },
   "sourceRef": {
     "sourceKey": "src:xtream:xtream:premium-iptv:xtream:episode:5001:2:7",
-    "workKey": "series:tmdb:1396",
+    "workKey": "episode:tmdb:1396",
     "sourceType": "XTREAM",
     "accountKey": "xtream:premium-iptv",
     "sourceItemKind": "EPISODE",
@@ -43,7 +43,7 @@
   },
   "variant": {
     "variantKey": "src:xtream:xtream:premium-iptv:xtream:episode:5001:2:7#original",
-    "workKey": "series:tmdb:1396",
+    "workKey": "episode:tmdb:1396",
     "sourceKey": "src:xtream:xtream:premium-iptv:xtream:episode:5001:2:7",
     "label": "Original",
     "isDefault": true,

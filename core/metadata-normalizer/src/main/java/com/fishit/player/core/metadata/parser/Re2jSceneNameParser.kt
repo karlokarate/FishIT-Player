@@ -57,13 +57,19 @@ enum class ContentCandidate {
  * used.
  */
 class Re2jSceneNameParser : SceneNameParser {
+
+    companion object {
+        /** Fallback title for blank/empty input filenames. */
+        const val UNTITLED_FALLBACK = "[Untitled]"
+    }
+
     // =========================================================================
     // MAIN PARSE METHOD
     // =========================================================================
 
     override fun parse(filename: String): ParsedSceneInfo {
         if (filename.isBlank()) {
-            return ParsedSceneInfo(title = "")
+            return ParsedSceneInfo(title = UNTITLED_FALLBACK)
         }
 
         // Step 0: Check for Xtream-specific formats FIRST (fast path)

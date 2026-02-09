@@ -26,6 +26,8 @@ import com.fishit.player.core.persistence.obx.NX_WorkUserState_
 import com.fishit.player.core.persistence.obx.NX_WorkVariant
 import com.fishit.player.core.persistence.obx.NX_WorkVariant_
 import com.fishit.player.core.persistence.obx.NX_Work_
+import com.fishit.player.core.persistence.obx.NxKeyGenerator
+import com.fishit.player.infra.data.nx.mapper.MediaTypeMapper
 import com.fishit.player.infra.data.nx.mapper.SourceKeyParser
 import io.objectbox.Box
 import io.objectbox.BoxStore
@@ -512,14 +514,21 @@ class NxCanonicalMediaRepositoryImpl @Inject constructor(
 
     // ========== Private Helper Methods ==========
 
+    /**
+     * Build work key from normalized metadata.
+     *
+     * Format: {workType}:{authority}:{id}
+     * Aligned with NxCatalogWriter.buildWorkKey() for consistency.
+     *
+     * Uses canonical MediaTypeMapper.toWorkType() for correct type mapping.
+     * Uses NxKeyGenerator.toSlug() for consistent slug generation with "untitled" fallback.
+     */
     private fun buildWorkKey(normalized: NormalizedMediaMetadata): String {
-        val slug = normalized.canonicalTitle
-            .lowercase()
-            .replace(Regex("[^a-z0-9]+"), "-")
-            .trim('-')
-            .take(50)
-        val yearPart = normalized.year?.toString() ?: "0"
-        return "${normalized.mediaType.name.lowercase()}:$slug:$yearPart"
+        val authority = if (normalized.tmdb != null) "tmdb" else "heuristic"
+        val id = normalized.tmdb?.id?.toString()
+            ?: "${NxKeyGenerator.toSlug(normalized.canonicalTitle)}-${normalized.year ?: "unknown"}"
+        val workType = MediaTypeMapper.toWorkType(normalized.mediaType).name.lowercase()
+        return "$workType:$authority:$id"
     }
 
     private fun getSourceRefsForWork(workId: Long): List<NX_WorkSourceRef> {

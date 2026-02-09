@@ -31,7 +31,8 @@ class FallbackCanonicalKeyGeneratorTest {
                 mediaType = MediaType.MOVIE,
             )
 
-        assertEquals("movie:inception", key?.value)
+        // Without year, uses :unknown suffix for consistency with workKey format
+        assertEquals("movie:inception:unknown", key?.value)
     }
 
     @Test

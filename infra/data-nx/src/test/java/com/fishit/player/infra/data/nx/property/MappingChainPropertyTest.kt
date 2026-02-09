@@ -6,6 +6,7 @@ import com.fishit.player.core.model.RawMediaMetadata
 import com.fishit.player.core.model.SourceType
 import com.fishit.player.core.model.repository.NxWorkRepository
 import com.fishit.player.core.model.repository.NxWorkSourceRefRepository
+import com.fishit.player.core.persistence.obx.NxKeyGenerator
 import com.fishit.player.infra.data.nx.mapper.MediaTypeMapper
 import com.fishit.player.infra.data.nx.mapper.SourceItemKindMapper
 import com.fishit.player.infra.data.nx.mapper.SourceKeyParser
@@ -16,7 +17,6 @@ import io.kotest.property.Arb
 import io.kotest.property.PropTestConfig
 import io.kotest.property.arbitrary.of
 import io.kotest.property.checkAll
-import java.util.Locale
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -53,28 +53,21 @@ class MappingChainPropertyTest {
     private val config = PropTestConfig(iterations = 200)
 
     // =========================================================================
-    // Key building (mirrors NxCatalogWriter)
+    // Key building (mirrors NxCatalogWriter - uses canonical mappers)
     // =========================================================================
 
+    /**
+     * Build work key from normalized metadata.
+     * Uses canonical MediaTypeMapper.toWorkType() and NxKeyGenerator.toSlug().
+     * Aligned with NxCatalogWriter.buildWorkKey() after F1-F6 fixes.
+     */
     private fun buildWorkKey(normalized: NormalizedMediaMetadata): String {
         val authority = if (normalized.tmdb != null) "tmdb" else "heuristic"
         val id = normalized.tmdb?.id?.toString()
-            ?: "${toSlug(normalized.canonicalTitle)}-${normalized.year ?: "unknown"}"
-        val workType = when {
-            normalized.mediaType.name.contains("SERIES") -> "series"
-            normalized.mediaType.name.contains("EPISODE") -> "episode"
-            normalized.mediaType.name.contains("LIVE") -> "live"
-            normalized.mediaType.name.contains("CLIP") -> "clip"
-            else -> "movie"
-        }
+            ?: "${NxKeyGenerator.toSlug(normalized.canonicalTitle)}-${normalized.year ?: "unknown"}"
+        // Use canonical MediaTypeMapper instead of buggy contains() heuristic
+        val workType = MediaTypeMapper.toWorkType(normalized.mediaType).name.lowercase()
         return "$workType:$authority:$id"
-    }
-
-    private fun toSlug(title: String): String {
-        return title.lowercase(Locale.ROOT)
-            .replace(Regex("[^a-z0-9]+"), "-")
-            .trim('-')
-            .take(50)
     }
 
     // =========================================================================
@@ -144,8 +137,13 @@ class MappingChainPropertyTest {
             // Format: {type}:{authority}:{id}
             val parts = workKey.split(":")
             assertTrue(parts.size >= 3, "workKey must have at least 3 colon-separated parts: $workKey")
+            // All WorkType enum values lowercase (from MediaTypeMapper.toWorkType())
+            val validTypes = listOf(
+                "movie", "series", "episode", "live_channel", "clip",
+                "audiobook", "music_track", "unknown"
+            )
             assertTrue(
-                parts[0] in listOf("movie", "series", "episode", "live", "clip"),
+                parts[0] in validTypes,
                 "workKey type must be valid: ${parts[0]}",
             )
             assertTrue(

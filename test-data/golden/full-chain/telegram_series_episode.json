@@ -1,6 +1,6 @@
 {
   "work": {
-    "workKey": "series:heuristic:breaking-bad-unknown",
+    "workKey": "episode:heuristic:breaking-bad-unknown",
     "type": "EPISODE",
     "displayTitle": "Breaking Bad",
     "sortTitle": "Breaking Bad",
@@ -28,7 +28,7 @@
   },
   "sourceRef": {
     "sourceKey": "src:telegram:telegram:series-channel:msg:-1001234567890:42050",
-    "workKey": "series:heuristic:breaking-bad-unknown",
+    "workKey": "episode:heuristic:breaking-bad-unknown",
     "sourceType": "TELEGRAM",
     "accountKey": "telegram:series-channel",
     "sourceItemKind": "UNKNOWN",
