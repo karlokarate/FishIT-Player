@@ -150,6 +150,8 @@ class XtreamPlaybackHardeningTest {
 
             val mockCredentialsStore =
                 object : XtreamCredentialsStore {
+                    override suspend fun isAvailable() = true
+
                     override suspend fun read() =
                         XtreamStoredConfig(
                             scheme = "http",
@@ -194,6 +196,8 @@ class XtreamPlaybackHardeningTest {
 
             val mockCredentialsStore =
                 object : XtreamCredentialsStore {
+                    override suspend fun isAvailable() = true
+
                     override suspend fun read() = null // No credentials
 
                     override suspend fun write(config: XtreamStoredConfig) {}
@@ -239,6 +243,8 @@ class XtreamPlaybackHardeningTest {
 
             val mockCredentialsStore =
                 object : XtreamCredentialsStore {
+                    override suspend fun isAvailable() = true
+
                     override suspend fun read() =
                         XtreamStoredConfig(
                             scheme = "http",
@@ -441,6 +447,8 @@ class XtreamPlaybackHardeningTest {
 
     private fun createMockCredentialsStore(): XtreamCredentialsStore =
         object : XtreamCredentialsStore {
+            override suspend fun isAvailable() = true
+
             override suspend fun read() =
                 XtreamStoredConfig(
                     scheme = "http",

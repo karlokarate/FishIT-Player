@@ -56,12 +56,15 @@ class EncryptedXtreamCredentialsStore
                 )
             } catch (e: Exception) {
                 // Storage disabled if encryption unavailable - no plaintext fallback
-                UnifiedLog.w(TAG, e) {
-                    "Encrypted storage unavailable (keystore issue) - credential persistence disabled"
+                UnifiedLog.e(TAG, e) {
+                    "Encrypted storage unavailable (keystore issue) - credential persistence disabled. " +
+                        "User will need to re-enter Xtream credentials on every app start."
                 }
                 null
             }
         }
+
+        override suspend fun isAvailable(): Boolean = prefs != null
 
         override suspend fun read(): XtreamStoredConfig? =
             withContext(Dispatchers.IO) {

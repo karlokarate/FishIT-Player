@@ -19,6 +19,9 @@ enum class SourceErrorReason {
     /** Required permission (e.g., storage) is missing */
     PERMISSION_MISSING,
 
-    /** Network or transport-level error */
+    /** Network or transport-level error (retryable) */
     TRANSPORT_ERROR,
+
+    /** Android Keystore unavailable — cannot read encrypted credentials */
+    KEYSTORE_UNAVAILABLE,
 }

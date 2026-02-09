@@ -103,6 +103,7 @@ class SettingsViewModel
                         SourceErrorReason.INVALID_CREDENTIALS -> "Ungültige Zugangsdaten"
                         SourceErrorReason.PERMISSION_MISSING -> "Berechtigung fehlt"
                         SourceErrorReason.TRANSPORT_ERROR -> "Verbindungsfehler"
+                        SourceErrorReason.KEYSTORE_UNAVAILABLE -> "Sicherer Speicher nicht verfügbar"
                     }
             }
 

@@ -13,6 +13,17 @@ package com.fishit.player.infra.transport.xtream
  */
 interface XtreamCredentialsStore {
     /**
+     * Check if the secure storage backend is available.
+     *
+     * Returns false if the Android Keystore or EncryptedSharedPreferences
+     * could not be initialized. In that case, [read] will always return null
+     * and [write] will silently discard data.
+     *
+     * @return true if credentials can be read/written, false if storage is broken
+     */
+    suspend fun isAvailable(): Boolean
+
+    /**
      * Read stored credentials.
      *
      * @return Stored configuration, or null if no credentials are saved
