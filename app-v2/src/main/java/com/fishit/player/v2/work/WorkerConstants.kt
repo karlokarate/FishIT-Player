@@ -39,12 +39,7 @@ object WorkerConstants {
 
     // Worker tags (format: worker/<ClassName>)
     const val TAG_WORKER_ORCHESTRATOR = "worker/CatalogSyncOrchestratorWorker"
-    const val TAG_WORKER_XTREAM_PREFLIGHT = "worker/XtreamPreflightWorker"
-    const val TAG_WORKER_XTREAM_SCAN = "worker/XtreamCatalogScanWorker"
-    const val TAG_WORKER_TELEGRAM_AUTH = "worker/TelegramAuthPreflightWorker"
-    const val TAG_WORKER_TELEGRAM_FULL = "worker/TelegramFullHistoryScanWorker"
     const val TAG_WORKER_TELEGRAM_INCREMENTAL = "worker/TelegramIncrementalScanWorker"
-    const val TAG_WORKER_IO_QUICK = "worker/IoQuickScanWorker"
 
     // TMDB Worker tags
     const val TAG_WORKER_TMDB_ORCHESTRATOR = "worker/TmdbEnrichmentOrchestratorWorker"
@@ -71,7 +66,6 @@ object WorkerConstants {
 
     // Xtream
     const val KEY_XTREAM_SYNC_SCOPE = "xtream_sync_scope"
-    const val KEY_XTREAM_USE_ENHANCED_SYNC = "xtream_use_enhanced_sync"
     const val KEY_XTREAM_INFO_BACKFILL_CONCURRENCY = "xtream_info_backfill_concurrency"
 
     // Telegram

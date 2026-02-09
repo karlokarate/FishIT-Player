@@ -1,14 +1,10 @@
 package com.fishit.player.core.catalogsync
 
-import com.fishit.player.core.catalogsync.sources.xtream.XtreamSyncConfig
-import com.fishit.player.core.catalogsync.sources.xtream.XtreamSyncService
 import com.fishit.player.core.feature.auth.TelegramAuthRepository
 import com.fishit.player.core.metadata.MediaMetadataNormalizer
 import com.fishit.player.core.model.PlaybackHintKeys
 import com.fishit.player.core.model.RawMediaMetadata
-import com.fishit.player.core.model.repository.NxSourceAccountRepository
 import com.fishit.player.core.model.repository.NxWorkSourceRefRepository.SourceType
-import com.fishit.player.core.model.sync.SyncStatus as CoreSyncStatus
 import com.fishit.player.core.persistence.obx.NxKeyGenerator
 import com.fishit.player.infra.data.nx.writer.NxCatalogWriter
 import com.fishit.player.infra.logging.UnifiedLog
@@ -20,39 +16,28 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.emitAll
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
  * Default implementation of [CatalogSyncService].
  *
- * Orchestrates catalog synchronization between pipelines and data repositories, with full canonical
- * media unification per MEDIA_NORMALIZATION_CONTRACT.md.
+ * Orchestrates Telegram catalog synchronization between pipeline and data repositories,
+ * with full canonical media unification per MEDIA_NORMALIZATION_CONTRACT.md.
  *
- * **Architecture Compliance (Phase 4 Refactoring - Feb 2026):**
+ * **Architecture (Phase 4 Refactoring - Feb 2026):**
  * - Telegram sync: Implemented directly (consumes TelegramCatalogPipeline)
- * - Xtream sync: **DELEGATED** to [XtreamSyncService] (single unified entry point)
+ * - Xtream sync: **NOT handled here** — CatalogSyncOrchestratorWorker calls
+ *   [XtreamSyncService] directly (eliminates delegation overhead)
  *
  * **Layer Position:** Transport → Pipeline → **CatalogSync** → Normalizer → Data → Domain → UI
- *
- * **Xtream Delegation:**
- * All Xtream sync methods (`syncXtream`, `syncXtreamEnhanced`, `syncXtreamDelta`,
- * `syncXtreamIncremental`, `syncXtreamBuffered`) delegate to `XtreamSyncService.sync(config)`.
- * This eliminates 1400+ lines of duplicated Xtream sync logic.
  *
  * **Cross-Pipeline Flow (NX-ONLY as of Jan 2026):**
  * 1. Pipeline produces RawMediaMetadata
  * 2. CatalogSync normalizes via MediaMetadataNormalizer
  * 3. CatalogSync ingests to NX work graph via NxCatalogWriter
  * 4. Resume positions work across all sources via NxWorkUserStateRepository
- *
- * **Migration Note:** Old OBX repositories (TelegramContentRepository, XtreamCatalogRepository,
- * XtreamLiveRepository, CanonicalMediaRepository) are no longer used for writes.
- * All persistence now flows through NxCatalogWriter → NX_Work/NX_WorkSourceRef/NX_WorkVariant.
  */
 @Singleton
 class DefaultCatalogSyncService
@@ -63,10 +48,6 @@ class DefaultCatalogSyncService
         private val nxCatalogWriter: NxCatalogWriter,
         private val checkpointStore: SyncCheckpointStore,
         private val telegramAuthRepository: TelegramAuthRepository,
-        // 📍 SSOT: Central source account repository for accountKey management (Feb 2026)
-        private val nxSourceAccountRepository: NxSourceAccountRepository,
-        // 🎯 UNIFIED XTREAM: Delegate all Xtream sync to unified service (Phase 4)
-        private val xtreamSyncService: XtreamSyncService,
     ) : CatalogSyncService {
         companion object {
             private const val TAG = "CatalogSyncService"
@@ -346,203 +327,6 @@ class DefaultCatalogSyncService
                     )
                 }
             }
-
-        // ========================================================================
-        // Xtream Sync Delegation (Phase 4: All methods delegate to XtreamSyncService)
-        // ========================================================================
-
-        /**
-         * Helper to get the active Xtream account key from the repository.
-         *
-         * Returns the first available Xtream account key, or a fallback placeholder.
-         * Used by legacy sync methods that don't accept accountKey parameter.
-         */
-        private suspend fun getFirstXtreamAccountKey(): String {
-            // Get all accounts and find the first Xtream one
-            val accounts = nxSourceAccountRepository.observeAll().first()
-            val xtreamAccount = accounts.firstOrNull { it.sourceType == SourceType.XTREAM }
-            return xtreamAccount?.accountKey ?: "xtream:unknown"
-        }
-
-        /**
-         * Maps core/model SyncStatus to catalog-sync SyncStatus.
-         *
-         * XtreamSyncService uses core/model/sync/SyncStatus, while CatalogSyncService
-         * uses its own SyncStatus. This mapper bridges the two.
-         *
-         * CoreSyncStatus structure (core/model):
-         * - Started(source, accountKey, isFullSync, estimatedPhases)
-         * - InProgress(source, phase, processedItems, totalItems?, ...)
-         * - CheckpointReached(source, checkpointId, phase, processedItems, metadata)
-         * - Completed(source, totalDuration, itemCounts, wasIncremental, ...)
-         * - Cancelled(source, reason, phase, processedItems, duration, ...)
-         * - Error(source, errorType, message, phase, processedItems, exception?, ...)
-         */
-        private fun CoreSyncStatus.toCatalogSyncStatus(): SyncStatus = when (this) {
-            is CoreSyncStatus.Started -> SyncStatus.Started(
-                source = SOURCE_XTREAM
-            )
-            is CoreSyncStatus.InProgress -> SyncStatus.InProgress(
-                source = SOURCE_XTREAM,
-                itemsDiscovered = processedItems.toLong(),
-                itemsPersisted = processedItems.toLong(),
-                currentPhase = phase.name
-            )
-            is CoreSyncStatus.CheckpointReached -> SyncStatus.InProgress(
-                source = SOURCE_XTREAM,
-                itemsDiscovered = processedItems.toLong(),
-                itemsPersisted = processedItems.toLong(),
-                currentPhase = "Checkpoint: ${phase.name}"
-            )
-            is CoreSyncStatus.Completed -> SyncStatus.Completed(
-                source = SOURCE_XTREAM,
-                totalItems = itemCounts.total.toLong(),
-                durationMs = totalDuration.inWholeMilliseconds
-            )
-            is CoreSyncStatus.Cancelled -> SyncStatus.Cancelled(
-                source = SOURCE_XTREAM,
-                itemsPersisted = processedItems.toLong()
-            )
-            is CoreSyncStatus.Error -> SyncStatus.Error(
-                source = SOURCE_XTREAM,
-                reason = errorType.name,
-                message = message,
-                throwable = exception
-            )
-        }
-
-        @Deprecated(
-            message = "Use syncXtreamBuffered() for better performance",
-            replaceWith = ReplaceWith("syncXtreamBuffered(includeVod, includeSeries, includeEpisodes, includeLive)"),
-        )
-        @Suppress("DEPRECATION")
-        override fun syncXtream(
-            includeVod: Boolean,
-            includeSeries: Boolean,
-            includeEpisodes: Boolean,
-            includeLive: Boolean,
-            excludeSeriesIds: Set<Int>,
-            episodeParallelism: Int,
-            syncConfig: SyncConfig,
-        ): Flow<SyncStatus> = flow {
-            // Get accountKey from first available Xtream account
-            val accountKey = getFirstXtreamAccountKey()
-
-            val config = XtreamSyncConfig(
-                accountKey = accountKey,
-                syncVod = includeVod,
-                syncSeries = includeSeries,
-                syncEpisodes = includeEpisodes,
-                syncLive = includeLive,
-                forceFullSync = true, // Legacy method always does full sync
-                enableCheckpoints = false,
-                excludeSeriesIds = excludeSeriesIds,
-                episodeParallelism = episodeParallelism,
-            )
-            UnifiedLog.d(TAG, "syncXtream() delegating to XtreamSyncService with config: $config")
-            emitAll(xtreamSyncService.sync(config).map { it.toCatalogSyncStatus() })
-        }
-
-        override fun syncXtreamEnhanced(
-            includeVod: Boolean,
-            includeSeries: Boolean,
-            includeEpisodes: Boolean,
-            includeLive: Boolean,
-            excludeSeriesIds: Set<Int>,
-            episodeParallelism: Int,
-            config: EnhancedSyncConfig,
-        ): Flow<SyncStatus> = flow {
-            val accountKey = getFirstXtreamAccountKey()
-
-            val syncConfig = XtreamSyncConfig(
-                accountKey = accountKey,
-                syncVod = includeVod,
-                syncSeries = includeSeries,
-                syncEpisodes = includeEpisodes,
-                syncLive = includeLive,
-                forceFullSync = false,
-                enableCheckpoints = true,
-                excludeSeriesIds = excludeSeriesIds,
-                episodeParallelism = episodeParallelism,
-            )
-            UnifiedLog.d(TAG, "syncXtreamEnhanced() delegating to XtreamSyncService")
-            emitAll(xtreamSyncService.sync(syncConfig).map { it.toCatalogSyncStatus() })
-        }
-
-        override fun syncXtreamDelta(
-            sinceTimestampMs: Long,
-            includeVod: Boolean,
-            includeSeries: Boolean,
-            includeLive: Boolean,
-            config: EnhancedSyncConfig,
-        ): Flow<SyncStatus> = flow {
-            val accountKey = getFirstXtreamAccountKey()
-
-            val syncConfig = XtreamSyncConfig(
-                accountKey = accountKey,
-                syncVod = includeVod,
-                syncSeries = includeSeries,
-                syncEpisodes = false, // Delta doesn't include episodes
-                syncLive = includeLive,
-                forceFullSync = false,
-                enableCheckpoints = false,
-                // Note: Delta timestamp filtering is handled internally by XtreamSyncService
-            )
-            UnifiedLog.d(TAG, "syncXtreamDelta() delegating to XtreamSyncService (sinceTs=$sinceTimestampMs)")
-            emitAll(xtreamSyncService.sync(syncConfig).map { it.toCatalogSyncStatus() })
-        }
-
-        override fun syncXtreamIncremental(
-            accountKey: String,
-            includeVod: Boolean,
-            includeSeries: Boolean,
-            includeLive: Boolean,
-            forceFullSync: Boolean,
-            syncConfig: SyncConfig,
-        ): Flow<SyncStatus> {
-            val config = XtreamSyncConfig(
-                accountKey = accountKey,
-                syncVod = includeVod,
-                syncSeries = includeSeries,
-                syncEpisodes = false,
-                syncLive = includeLive,
-                forceFullSync = forceFullSync,
-                enableCheckpoints = true,
-            )
-            UnifiedLog.d(TAG, "syncXtreamIncremental() delegating to XtreamSyncService (accountKey=$accountKey)")
-            return xtreamSyncService.sync(config).map { it.toCatalogSyncStatus() }
-        }
-
-        override fun syncXtreamBuffered(
-            includeVod: Boolean,
-            includeSeries: Boolean,
-            includeEpisodes: Boolean,
-            includeLive: Boolean,
-            bufferSize: Int,
-            consumerCount: Int,
-            vodCategoryIds: Set<String>,
-            seriesCategoryIds: Set<String>,
-            liveCategoryIds: Set<String>,
-        ): Flow<SyncStatus> = flow {
-            val accountKey = getFirstXtreamAccountKey()
-
-            val config = XtreamSyncConfig(
-                accountKey = accountKey,
-                syncVod = includeVod,
-                syncSeries = includeSeries,
-                syncEpisodes = includeEpisodes,
-                syncLive = includeLive,
-                forceFullSync = false,
-                enableCheckpoints = true,
-                vodCategoryIds = vodCategoryIds,
-                seriesCategoryIds = seriesCategoryIds,
-                liveCategoryIds = liveCategoryIds,
-                bufferSize = bufferSize,
-                consumerCount = consumerCount,
-            )
-            UnifiedLog.d(TAG, "syncXtreamBuffered() delegating to XtreamSyncService")
-            emitAll(xtreamSyncService.sync(config).map { it.toCatalogSyncStatus() })
-        }
 
         // ========================================================================
         // Source Management

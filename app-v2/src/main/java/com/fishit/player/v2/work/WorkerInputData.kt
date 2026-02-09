@@ -26,7 +26,6 @@ data class WorkerInputData(
     val maxRuntimeMs: Long,
     val deviceClass: String,
     val xtreamSyncScope: String?,
-    val xtreamUseEnhancedSync: Boolean,
     val xtreamInfoBackfillConcurrency: Int,
     val telegramSyncKind: String?,
     val ioSyncScope: String?,
@@ -92,9 +91,6 @@ data class WorkerInputData(
                 maxRuntimeMs = effectiveMaxRuntimeMs,
                 deviceClass = deviceClass,
                 xtreamSyncScope = data.getString(WorkerConstants.KEY_XTREAM_SYNC_SCOPE),
-                // Enhanced sync enabled by default (can be disabled via input data)
-                xtreamUseEnhancedSync =
-                    data.getBoolean(WorkerConstants.KEY_XTREAM_USE_ENHANCED_SYNC, true),
                 // Device-aware info backfill concurrency
                 xtreamInfoBackfillConcurrency =
                     data.getInt(
