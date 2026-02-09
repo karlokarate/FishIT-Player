@@ -158,7 +158,7 @@ class NxCatalogWriterVodE2ETest {
 
         // THEN: SourceRef is created with correct fields
         val sourceRef = sourceRefSlot.captured
-        assertEquals("xtream:vod:12345", sourceRef.sourceItemKey, "sourceItemKey ← raw.sourceId")
+        assertEquals("12345", sourceRef.sourceItemKey, "sourceItemKey ← clean numeric ID from raw.sourceId")
         assertEquals(NxWorkSourceRefRepository.SourceType.XTREAM, sourceRef.sourceType, "sourceType ← XTREAM")
         assertEquals("xtream:test-server", sourceRef.accountKey, "accountKey from ingest param")
         assertEquals("Test Movie 2024", sourceRef.sourceTitle, "sourceTitle ← raw.originalTitle")
@@ -373,7 +373,7 @@ class NxCatalogWriterSeriesE2ETest {
         assertEquals("1396", work.tmdbId, "tmdbId from tmdb ref")
 
         val sourceRef = sourceRefSlot.captured
-        assertEquals("xtream:series:5001", sourceRef.sourceItemKey, "sourceItemKey")
+        assertEquals("5001", sourceRef.sourceItemKey, "sourceItemKey ← clean numeric ID")
         assertEquals(NxWorkSourceRefRepository.SourceItemKind.SERIES, sourceRef.sourceItemKind, "sourceItemKind = SERIES")
     }
 
@@ -500,7 +500,7 @@ class NxCatalogWriterLiveE2ETest {
 
         // Live-specific fields go to SourceRef
         val sourceRef = sourceRefSlot.captured
-        assertEquals("xtream:live:999", sourceRef.sourceItemKey, "sourceItemKey")
+        assertEquals("999", sourceRef.sourceItemKey, "sourceItemKey ← clean numeric ID")
         assertEquals(NxWorkSourceRefRepository.SourceItemKind.LIVE, sourceRef.sourceItemKind, "sourceItemKind = LIVE")
         assertEquals("bbc.one.hd", sourceRef.epgChannelId, "epgChannelId ← API epg_channel_id")
         assertEquals(1, sourceRef.tvArchive, "tvArchive ← API tv_archive")

@@ -70,7 +70,7 @@ class VariantBuilder @Inject constructor() {
             "avi" -> "avi"
             "webm" -> "webm"
             "ts" -> "ts"
-            "m3u8" -> "hls"  // Normalize m3u8 to hls
+            "m3u8", "m3u" -> "hls"  // Normalize m3u8/m3u to hls
             "mov" -> "mov"
             "wmv" -> "wmv"
             "flv" -> "flv"

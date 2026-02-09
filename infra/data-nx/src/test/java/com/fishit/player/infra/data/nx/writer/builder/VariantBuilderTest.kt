@@ -109,7 +109,7 @@ class VariantBuilderTest {
             durationMs = 7200000L
         )
         
-        assertEquals("", variant.container)
+        assertEquals(null, variant.container)
     }
     
     @Test
