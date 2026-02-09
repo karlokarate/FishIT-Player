@@ -76,6 +76,23 @@ class XtreamCatalogScanWorker
                 "START sync_run_id=${input.syncRunId} mode=${input.syncMode} source=XTREAM"
             }
 
+            // Step 0: XOC-3 Category Selection Gate Check (MANDATORY - BEFORE runtime guards)
+            // Per XOC-12 contract: Worker MUST verify category selection was confirmed
+            val gateAccountKey = resolveAccountKey()
+            if (gateAccountKey != null) {
+                val categoryComplete = categorySelectionRepository.isCategorySelectionComplete(gateAccountKey)
+                if (!categoryComplete) {
+                    UnifiedLog.w(TAG) {
+                        "GATE_BLOCKED: Category selection not complete for account=$gateAccountKey. " +
+                            "User must complete category selection before sync. Failing worker."
+                    }
+                    return Result.failure(
+                        WorkerOutputData.failure("Category selection not complete")
+                    )
+                }
+                UnifiedLog.d(TAG) { "GATE_PASSED: Category selection complete for account=$gateAccountKey" }
+            }
+
             // Step 1: Runtime guards check
             val guardReason = RuntimeGuards.checkGuards(applicationContext, input.syncMode)
             if (guardReason != null) {
@@ -206,19 +223,10 @@ class XtreamCatalogScanWorker
             }
 
             // Get accountKey from capabilities
-            val capabilities = xtreamApiClient.capabilities
-            val accountKey = if (capabilities != null) {
-                NxKeyGenerator.xtreamAccountKey(
-                    serverUrl = capabilities.baseUrl,
-                    username = capabilities.username,
-                )
-            } else {
-                // Fallback - should not happen if preflight passed
-                "xtream_unknown"
-            }
+            val accountKey = resolveAccountKey() ?: "xtream_unknown"
 
             // Load category filters (Issue #669)
-            val (vodCategoryIds, seriesCategoryIds, liveCategoryIds) = if (capabilities != null) {
+            val (vodCategoryIds, seriesCategoryIds, liveCategoryIds) = if (xtreamApiClient.capabilities != null) {
                 Triple(
                     categorySelectionRepository.getSelectedCategoryIds(
                         accountKey,
@@ -271,5 +279,18 @@ class XtreamCatalogScanWorker
                     )
                 }
             }
+        }
+
+        /**
+         * Resolve the Xtream account key from current capabilities.
+         *
+         * @return accountKey or null if capabilities are unavailable
+         */
+        private fun resolveAccountKey(): String? {
+            val capabilities = xtreamApiClient.capabilities ?: return null
+            return NxKeyGenerator.xtreamAccountKey(
+                serverUrl = capabilities.baseUrl,
+                username = capabilities.username,
+            )
         }
     }

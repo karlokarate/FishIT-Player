@@ -68,6 +68,9 @@ dependencies {
     // Serialization for JSON storage of playbackHints
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
 
+    // DataStore for gate state persistence (XOC-2: categorySelectionComplete)
+    implementation("androidx.datastore:datastore-preferences:1.1.7")
+
     // Testing
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.jetbrains.kotlin:kotlin-test:2.0.21")

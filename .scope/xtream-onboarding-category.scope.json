@@ -1,0 +1,85 @@
+{
+  "$schema": "./scope-guard.schema.json",
+  "scopeId": "xtream-onboarding-category",
+  "version": "1.0.0",
+  "description": "Xtream Category Selection during Onboarding. Implements XOC-* rules from XTREAM_ONBOARDING_CATEGORY_SELECTION_CONTRACT.md. GATE: No sync before user selects categories.",
+  "mandatoryReadBeforeEdit": [
+    "contracts/XTREAM_ONBOARDING_CATEGORY_SELECTION_CONTRACT.md",
+    "contracts/CATALOG_SYNC_WORKERS_CONTRACT_V2.md",
+    "AGENTS.md Section 4 (Layer Boundaries)"
+  ],
+  "modules": {
+    "core/model/src/main/java/com/fishit/player/core/model/repository": {
+      "fileCount": 1,
+      "totalLOC": 192,
+      "criticalFiles": [
+        {
+          "path": "NxCategorySelectionRepository.kt",
+          "purpose": "Category selection repository interface with sync gate methods",
+          "invariants": [
+            "MUST have isCategorySelectionComplete(accountKey) method (XOC-2)",
+            "MUST have setCategorySelectionComplete(accountKey, complete) method (XOC-4)"
+          ]
+        }
+      ]
+    },
+    "feature/onboarding/src/main/java/com/fishit/player/feature/onboarding": {
+      "fileCount": 1,
+      "totalLOC": 624,
+      "criticalFiles": [
+        {
+          "path": "OnboardingViewModel.kt",
+          "purpose": "Onboarding flow controller with category preload and selection",
+          "invariants": [
+            "startCategoryPreload() MUST NOT navigate to Home on error (XOC-9)",
+            "confirmCategorySelection() MUST call setCategorySelectionComplete(true) (XOC-4)",
+            "NavigationEvent.ToHome ONLY after categorySelectionComplete=true"
+          ],
+          "knownBugs": [
+            "BUG: Line 450-453 navigates to Home on preload error - violates XOC-9"
+          ]
+        }
+      ]
+    },
+    "app-v2/src/main/java/com/fishit/player/v2/work": {
+      "fileCount": 1,
+      "totalLOC": 276,
+      "criticalFiles": [
+        {
+          "path": "XtreamCatalogScanWorker.kt",
+          "purpose": "Xtream catalog sync worker with category gate",
+          "invariants": [
+            "doWork() MUST check isCategorySelectionComplete() BEFORE runtime guards (XOC-3)",
+            "Return Result.failure() if gate not passed"
+          ],
+          "knownBugs": [
+            "BUG: Missing gate check - sync can start before category selection"
+          ]
+        }
+      ]
+    }
+  },
+  "relatedScopes": [
+    "catalog-sync",
+    "xtream-data",
+    "persistence"
+  ],
+  "globalInvariants": [
+    "XOC-1: NO catalog sync may start before user has seen and interacted with category selection",
+    "XOC-2: categorySelectionComplete flag MUST gate all sync operations",
+    "XOC-4: Gate state MUST be persisted (not in-memory only)",
+    "XOC-9: User CANNOT skip category selection on first setup"
+  ],
+  "forbiddenPatterns": [
+    {
+      "pattern": "NavigationEvent\\.ToHome.*catch.*Exception",
+      "reason": "XOC-9: Must NOT navigate to Home on preload error"
+    },
+    {
+      "pattern": "syncXtream.*without.*isCategorySelectionComplete",
+      "reason": "XOC-2: Sync gate must be checked before any sync call"
+    }
+  ],
+  "lastVerified": "2026-02-09",
+  "auditedBy": "Agent-assisted scope creation"
+}

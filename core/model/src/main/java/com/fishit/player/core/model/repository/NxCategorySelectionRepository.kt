@@ -188,4 +188,32 @@ interface NxCategorySelectionRepository {
      * @return Number of deleted selections
      */
     suspend fun deleteForAccount(accountKey: String): Int
+
+    // ──────────────────────────────────────────────────────────────────────────
+    // Sync Gate (XOC-2, XOC-4 from XTREAM_ONBOARDING_CATEGORY_SELECTION_CONTRACT)
+    // ──────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Check if user has completed category selection for this account.
+     *
+     * Used as sync gate per XOC-2: NO catalog sync may start before user
+     * has seen and interacted with category selection.
+     *
+     * **INVARIANT:** Sync workers MUST check this BEFORE starting any sync.
+     *
+     * @param accountKey Xtream account key
+     * @return true if user has completed category selection, false otherwise
+     */
+    suspend fun isCategorySelectionComplete(accountKey: String): Boolean
+
+    /**
+     * Mark category selection as complete for this account.
+     *
+     * Called when user closes the category selection overlay per XOC-4.
+     * This value MUST be persisted (not in-memory only).
+     *
+     * @param accountKey Xtream account key
+     * @param complete true to mark as complete, false to reset
+     */
+    suspend fun setCategorySelectionComplete(accountKey: String, complete: Boolean)
 }

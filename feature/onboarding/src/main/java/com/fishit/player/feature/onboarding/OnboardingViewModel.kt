@@ -438,17 +438,37 @@ class OnboardingViewModel
                             )
                         }
                     } else {
-                        UnifiedLog.w(TAG) { "No Xtream accountKey found after preload, navigating to Home" }
-                        _state.update { it.copy(categoryPreloading = false) }
-                        _navigationEvents.emit(NavigationEvent.ToHome)
+                        // XOC-9: MUST NOT navigate to Home without category selection.
+                        // Show error so user can retry or re-enter credentials.
+                        UnifiedLog.w(TAG) { "No Xtream accountKey found after preload, showing error" }
+                        _state.update {
+                            it.copy(
+                                categoryPreloading = false,
+                                categoryError = "Could not resolve account. Please try again.",
+                            )
+                        }
                     }
                 } catch (e: Exception) {
-                    UnifiedLog.e(TAG, e) { "Category preload failed, navigating to Home" }
-                    _state.update { it.copy(categoryPreloading = false) }
-                    // On failure, skip category selection and go to Home — sync will use all categories
-                    _navigationEvents.emit(NavigationEvent.ToHome)
+                    // XOC-9: MUST NOT navigate to Home on preload failure.
+                    // User must see category selection before sync can start.
+                    UnifiedLog.e(TAG, e) { "Category preload failed, showing retry option" }
+                    _state.update {
+                        it.copy(
+                            categoryPreloading = false,
+                            categoryError = e.message ?: "Category preload failed. Please retry.",
+                        )
+                    }
                 }
             }
+        }
+
+        /**
+         * Retry category preload after a previous failure.
+         * Clears the error state and re-triggers preload.
+         */
+        fun retryCategoryPreload() {
+            _state.update { it.copy(categoryError = null) }
+            startCategoryPreload()
         }
 
         /**
@@ -534,6 +554,15 @@ class OnboardingViewModel
             cancelCategoryObservation()
 
             viewModelScope.launch {
+                // XOC-4: Set gate BEFORE navigating — sync is now allowed
+                val accountKey = cachedAccountKey
+                if (accountKey != null) {
+                    categoryRepository.setCategorySelectionComplete(accountKey, true)
+                    UnifiedLog.d(TAG) { "Category gate set: complete=true for account=$accountKey" }
+                } else {
+                    UnifiedLog.w(TAG) { "No cached accountKey — gate not set, sync will be blocked" }
+                }
+
                 UnifiedLog.d(TAG) { "Category selection confirmed, navigating to Home" }
                 // Update state and emit navigation in same coroutine to ensure ordering
                 _state.update { it.copy(showCategoryOverlay = false) }

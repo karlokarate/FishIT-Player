@@ -119,6 +119,8 @@ SYNC_SSOT:
 | Player | `/contracts/INTERNAL_PLAYER_*.md` (all) |
 | Telegram | `/contracts/TELEGRAM_PARSER_CONTRACT.md` |
 | NX SSOT | `/contracts/NX_SSOT_CONTRACT.md` |
+| Xtream Onboarding | `/contracts/XTREAM_ONBOARDING_CATEGORY_SELECTION_CONTRACT.md` |
+| Xtream Sync | `/contracts/CATALOG_SYNC_WORKERS_CONTRACT_V2.md` |
 
 ---
 

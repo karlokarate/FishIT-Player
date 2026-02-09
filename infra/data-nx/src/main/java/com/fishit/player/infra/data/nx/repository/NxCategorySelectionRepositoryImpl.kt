@@ -1,5 +1,11 @@
 package com.fishit.player.infra.data.nx.repository
 
+import android.content.Context
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.booleanPreferencesKey
+import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.preferencesDataStore
 import com.fishit.player.core.model.repository.NxCategorySelectionRepository
 import com.fishit.player.core.model.repository.NxCategorySelectionRepository.CategorySelection
 import com.fishit.player.core.model.repository.NxCategorySelectionRepository.XtreamCategoryType
@@ -8,16 +14,24 @@ import com.fishit.player.core.persistence.obx.NX_XtreamCategorySelection_
 import com.fishit.player.infra.data.nx.mapper.toDomain
 import com.fishit.player.infra.data.nx.mapper.toEntity
 import com.fishit.player.infra.data.nx.mapper.updateEntity
+import dagger.hilt.android.qualifiers.ApplicationContext
 import io.objectbox.Box
 import io.objectbox.BoxStore
 import com.fishit.player.core.persistence.ObjectBoxFlow.asFlow
 import io.objectbox.query.QueryBuilder.StringOrder
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Singleton
+
+// DataStore extension for category selection gate persistence (XOC-2)
+// Key format: "xtream:{accountKey}:categorySelectionComplete" per contract
+private val Context.categoryGateDataStore: DataStore<Preferences> by preferencesDataStore(
+    name = "xtream_category_gate"
+)
 
 /**
  * ObjectBox implementation of [NxCategorySelectionRepository].
@@ -25,9 +39,11 @@ import javax.inject.Singleton
  * Part of Issue #669 - Sync by Category Implementation.
  *
  * Manages Xtream category sync selections.
+ * Uses DataStore for category selection gate persistence (XOC-2).
  */
 @Singleton
 class NxCategorySelectionRepositoryImpl @Inject constructor(
+    @ApplicationContext private val context: Context,
     boxStore: BoxStore,
 ) : NxCategorySelectionRepository {
 
@@ -198,9 +214,48 @@ class NxCategorySelectionRepositoryImpl @Inject constructor(
     // ──────────────────────────────────────────────────────────────────────────
 
     override suspend fun deleteForAccount(accountKey: String): Int = withContext(Dispatchers.IO) {
+        // Clear gate flag so re-adding the same account forces category selection (XOC-9)
+        setCategorySelectionComplete(accountKey, false)
+
         box.query(NX_XtreamCategorySelection_.accountKey.equal(accountKey, StringOrder.CASE_SENSITIVE))
             .build()
             .remove()
             .toInt()
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    // Category Selection Gate (XOC-2: Sync Gate)
+    // ──────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Checks if category selection has been completed for this account.
+     *
+     * Per XOC-2 contract: This gate MUST return true before ANY sync can start.
+     * Key format: "xtream:{accountKey}:categorySelectionComplete"
+     *
+     * @param accountKey The Xtream account key
+     * @return true if user has confirmed category selection, false otherwise
+     */
+    override suspend fun isCategorySelectionComplete(accountKey: String): Boolean {
+        val key = booleanPreferencesKey("xtream:$accountKey:categorySelectionComplete")
+        return context.categoryGateDataStore.data
+            .map { prefs -> prefs[key] ?: false }
+            .first()
+    }
+
+    /**
+     * Sets the category selection completion state for this account.
+     *
+     * Per XOC-4 contract: ONLY called when user explicitly selects categories.
+     * NEVER call with complete=true during preload or without user interaction.
+     *
+     * @param accountKey The Xtream account key
+     * @param complete true when user confirms selection, false to require re-selection
+     */
+    override suspend fun setCategorySelectionComplete(accountKey: String, complete: Boolean) {
+        val key = booleanPreferencesKey("xtream:$accountKey:categorySelectionComplete")
+        context.categoryGateDataStore.edit { prefs ->
+            prefs[key] = complete
+        }
     }
 }

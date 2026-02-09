@@ -1,8 +1,59 @@
 # Category Sync Blocker Analysis & Implementation Plan
 
-> **Date:** 2026-02-09  
+> **Date:** 2026-02-09 (Updated)  
+> **Contract:** `/contracts/XTREAM_ONBOARDING_CATEGORY_SELECTION_CONTRACT.md`  
 > **Issue:** Categories nicht gefetcht/persistiert beim Onboarding; kein Overlay; kein per-category API fetch  
 > **Scope:** Onboarding → Category → Sync end-to-end
+
+---
+
+## 🚨 VERIFICATION RESULTS (2026-02-09)
+
+**WICHTIG:** Die Implementierung enthält kritische Lücken, die gegen den Contract verstoßen!
+
+### Contract Compliance Check
+
+| Contract Rule | Status | Finding |
+|--------------|--------|---------|
+| **XOC-1** "NO catalog sync before user interaction" | ❌ VIOLATED | Worker hat keinen Gate-Check |
+| **XOC-2** "Sync Gate: categorySelectionComplete" | ❌ MISSING | Nicht implementiert |
+| **XOC-3** "Gate checked in Worker" | ❌ VIOLATED | XtreamCatalogScanWorker prüft nicht |
+| **XOC-4** "Persisted Gate State" | ❌ MISSING | NxCategorySelectionRepository fehlen Methoden |
+| **XOC-9** "No Skip Option" | ❌ VIOLATED | OnboardingViewModel überspringt bei Preload-Fehler |
+
+### Konkrete Code-Violations
+
+1. **OnboardingViewModel.kt:445-453**
+   ```kotlin
+   // VIOLATION: Navigiert zu Home OHNE Overlay bei Preload-Fehler
+   } catch (e: Exception) {
+       _state.update { it.copy(categoryPreloading = false) }
+       _navigationEvents.emit(NavigationEvent.ToHome)  // ← VERBOTEN!
+   }
+   ```
+
+2. **NxCategorySelectionRepository.kt**
+   ```kotlin
+   // MISSING: Keine Gate-Methoden vorhanden!
+   // suspend fun isCategorySelectionComplete(accountKey: String): Boolean
+   // suspend fun setCategorySelectionComplete(accountKey: String, complete: Boolean)
+   ```
+
+3. **XtreamCatalogScanWorker.kt:73ff**
+   ```kotlin
+   override suspend fun doWork(): Result {
+       // VIOLATION: Startet sync ohne Gate-Check!
+       val guardReason = RuntimeGuards.checkGuards(...)  // nur Runtime-Guards
+       // KEIN: if (!categoryRepo.isCategorySelectionComplete(accountKey)) return Result.failure()
+   ```
+
+### Risiko-Assessment
+
+| Szenario | Kann passieren? | Konsequenz |
+|----------|-----------------|------------|
+| Sync startet ohne Category-Auswahl (Preload Error) | ✅ JA | 100k+ Items werden geladen |
+| App Restart mit alten Creds ohne Category-Overlay | ✅ JA | Worker startet automatisch |
+| User schließt App während Preload | ✅ JA | Beim nächsten Start → Sync ohne Auswahl |
 
 ---
 
@@ -261,3 +312,119 @@ feature:settings (unverändert)
 - **Episode-Sync per Category** — Später (Performance-optimierung)
 - **Telegram Categories** — Nicht relevant
 - **Settings Screen Changes** — CategorySelectionScreen in Settings bleibt unverändert
+
+---
+
+## 9. KRITISCHE FIXES (Contract Violations)
+
+### FIX-1: Gate-Methoden in Repository hinzufügen
+
+**Datei:** `core/model/.../NxCategorySelectionRepository.kt`
+
+```kotlin
+// HINZUFÜGEN:
+
+/**
+ * Check if user has completed category selection for this account.
+ * Used as sync gate — sync MUST NOT start until this returns true.
+ */
+suspend fun isCategorySelectionComplete(accountKey: String): Boolean
+
+/**
+ * Mark category selection as complete.
+ * Called when user closes category overlay.
+ */
+suspend fun setCategorySelectionComplete(accountKey: String, complete: Boolean)
+```
+
+**Implementation:** `infra/data-nx/.../NxCategorySelectionRepositoryImpl.kt`
+- Persistiert via `SharedPreferences` oder `NX_XtreamSourceAccount` Entity
+
+---
+
+### FIX-2: Gate-Check in Worker hinzufügen
+
+**Datei:** `app-v2/.../XtreamCatalogScanWorker.kt`
+
+```kotlin
+override suspend fun doWork(): Result {
+    // ... existing input parsing ...
+
+    // ┌──────────────────────────────────────────────────────┐
+    // │  GATE CHECK: Category Selection Complete (XOC-2)     │
+    // └──────────────────────────────────────────────────────┘
+    val accountKey = resolveAccountKey()
+    if (!categorySelectionRepository.isCategorySelectionComplete(accountKey)) {
+        UnifiedLog.w(TAG) { "GATE_BLOCKED: Category selection not complete, aborting sync" }
+        return Result.failure(
+            WorkerOutputData.failure(reason = "category_selection_incomplete")
+        )
+    }
+
+    // ... existing runtime guards ...
+}
+```
+
+---
+
+### FIX-3: OnboardingViewModel darf NICHT zu Home bei Preload-Fehler
+
+**Datei:** `feature/onboarding/.../OnboardingViewModel.kt`
+
+```kotlin
+private fun startCategoryPreload() {
+    viewModelScope.launch {
+        _state.update { it.copy(categoryPreloading = true) }
+        try {
+            categoryPreloader.preloadCategories(forceRefresh = true)
+            // ... show overlay ...
+        } catch (e: Exception) {
+            UnifiedLog.e(TAG, e) { "Category preload failed" }
+            _state.update { 
+                it.copy(
+                    categoryPreloading = false,
+                    categoryError = "Failed to load categories: \${e.message}",
+                )
+            }
+            // ┌──────────────────────────────────────────────────────┐
+            // │  VERBOTEN: _navigationEvents.emit(NavigationEvent.ToHome)
+            // │  STATTDESSEN: User muss Retry oder Error sehen!
+            // └──────────────────────────────────────────────────────┘
+        }
+    }
+}
+```
+
+---
+
+### FIX-4: Gate setzen bei Overlay-Close
+
+**Datei:** `feature/onboarding/.../OnboardingViewModel.kt`
+
+```kotlin
+fun confirmCategorySelection() {
+    viewModelScope.launch {
+        val accountKey = cachedAccountKey ?: return@launch
+        
+        // ┌──────────────────────────────────────────────────────┐
+        // │  SETZE GATE: categorySelectionComplete = true        │
+        // └──────────────────────────────────────────────────────┘
+        categoryRepository.setCategorySelectionComplete(accountKey, true)
+        
+        _state.update { it.copy(showCategoryOverlay = false) }
+        _navigationEvents.emit(NavigationEvent.ToHome)
+    }
+}
+```
+
+---
+
+## 10. Verification Checklist (Post-Implementation)
+
+- [ ] `NxCategorySelectionRepository.isCategorySelectionComplete()` exists
+- [ ] `NxCategorySelectionRepository.setCategorySelectionComplete()` exists  
+- [ ] `XtreamCatalogScanWorker.doWork()` checks gate BEFORE runtime guards
+- [ ] `OnboardingViewModel.startCategoryPreload()` does NOT navigate to Home on error
+- [ ] `OnboardingViewModel.confirmCategorySelection()` calls `setCategorySelectionComplete(true)`
+- [ ] App Restart: Sync is blocked until user sees category overlay (if not completed)
+- [ ] New install: First Xtream connect → Category overlay → User confirms → THEN sync starts
