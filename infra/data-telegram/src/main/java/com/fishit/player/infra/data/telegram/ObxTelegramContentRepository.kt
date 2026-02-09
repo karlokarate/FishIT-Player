@@ -350,13 +350,13 @@ class ObxTelegramContentRepository
 
         override suspend fun getUnlinkedForCanonicalLinking(limit: Int): List<RawMediaMetadata> =
             withContext(Dispatchers.IO) {
-                // Query MediaSourceRef box to get all linked sourceIds
-                val sourceRefBox = boxStore.boxFor(com.fishit.player.core.persistence.obx.ObxMediaSourceRef::class.java)
+                // Query NX_WorkSourceRef box to get all linked sourceIds (migrated from ObxMediaSourceRef in P3)
+                val sourceRefBox = boxStore.boxFor(com.fishit.player.core.persistence.obx.NX_WorkSourceRef::class.java)
                 val linkedSourceIds =
                     sourceRefBox
                         .query(
-                            com.fishit.player.core.persistence.obx.ObxMediaSourceRef_.sourceType.equal(
-                                SourceType.TELEGRAM.name,
+                            com.fishit.player.core.persistence.obx.NX_WorkSourceRef_.sourceType.equal(
+                                SourceType.TELEGRAM.name.lowercase(),
                             ),
                         ).build()
                         .find()
@@ -385,13 +385,13 @@ class ObxTelegramContentRepository
 
         override suspend fun countUnlinkedForCanonicalLinking(): Long =
             withContext(Dispatchers.IO) {
-                // Query MediaSourceRef box to get all linked sourceIds
-                val sourceRefBox = boxStore.boxFor(com.fishit.player.core.persistence.obx.ObxMediaSourceRef::class.java)
+                // Query NX_WorkSourceRef box to get all linked sourceIds (migrated from ObxMediaSourceRef in P3)
+                val sourceRefBox = boxStore.boxFor(com.fishit.player.core.persistence.obx.NX_WorkSourceRef::class.java)
                 val linkedSourceIds =
                     sourceRefBox
                         .query(
-                            com.fishit.player.core.persistence.obx.ObxMediaSourceRef_.sourceType.equal(
-                                SourceType.TELEGRAM.name,
+                            com.fishit.player.core.persistence.obx.NX_WorkSourceRef_.sourceType.equal(
+                                SourceType.TELEGRAM.name.lowercase(),
                             ),
                         ).build()
                         .find()

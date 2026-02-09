@@ -107,13 +107,13 @@ interface TelegramContentRepository {
      * Get items that need canonical linking.
      *
      * Queries items that exist in ObxTelegramMessage but do NOT have a corresponding
-     * MediaSourceRef entry in ObxMediaSourceRef.
+     * NX_WorkSourceRef entry for sourceType "telegram".
      *
      * This enables the CanonicalLinkingBacklogWorker to process only unlinked items,
      * avoiding duplicate work on already-linked items.
      *
      * **Implementation Strategy:**
-     * Query all items and filter out those whose sourceId exists in ObxMediaSourceRef.
+     * Query all items and filter out those whose sourceId exists in NX_WorkSourceRef.
      *
      * @param limit Maximum number of items to return
      * @return List of unlinked items

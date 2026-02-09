@@ -17,9 +17,6 @@ import com.fishit.player.core.persistence.obx.NX_WorkRuntimeState
 import com.fishit.player.core.persistence.obx.NX_WorkSourceRef
 import com.fishit.player.core.persistence.obx.NX_WorkUserState
 import com.fishit.player.core.persistence.obx.NX_WorkVariant
-import com.fishit.player.core.persistence.obx.ObxCanonicalMedia
-import com.fishit.player.core.persistence.obx.ObxCanonicalResumeMark
-import com.fishit.player.core.persistence.obx.ObxMediaSourceRef
 import com.fishit.player.core.persistence.obx.ObxTelegramMessage
 
 /**
@@ -63,13 +60,9 @@ internal object ObxInspectorEntityRegistry {
             EntitySpec("NX_WorkCategoryRef", "NX: Work Category Ref", NX_WorkCategoryRef::class.java),
             EntitySpec("NX_EpgEntry", "NX: EPG Entry", NX_EpgEntry::class.java),
             // =================================================================
-            // Transitional Obx* Entities (pending NX migration — P2/P3)
+            // Transitional Obx* Entities (kept for schema compatibility)
             // =================================================================
             EntitySpec("ObxTelegramMessage", "Telegram Message (→ P2)", ObxTelegramMessage::class.java),
-            // Canonical identity (→ P3: consolidate with NX_Work)
-            EntitySpec("ObxCanonicalMedia", "Canonical Media (→ P3)", ObxCanonicalMedia::class.java),
-            EntitySpec("ObxMediaSourceRef", "Canonical Source Ref (→ P3)", ObxMediaSourceRef::class.java),
-            EntitySpec("ObxCanonicalResumeMark", "Canonical Resume (→ P3)", ObxCanonicalResumeMark::class.java),
         )
 
     val byId: Map<String, EntitySpec<out Any>> = all.associateBy { it.id }

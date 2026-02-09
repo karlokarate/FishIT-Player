@@ -58,7 +58,7 @@ class ObjectBoxIntrospectionDumpTest {
             assertTrue("Should contain NX_WorkSourceRef", entityNames.contains("NX_WorkSourceRef"))
             assertTrue("Should contain NX_WorkVariant", entityNames.contains("NX_WorkVariant"))
             assertTrue("Should contain NX_EpgEntry", entityNames.contains("NX_EpgEntry"))
-            assertTrue("Should contain ObxCanonicalMedia", entityNames.contains("ObxCanonicalMedia"))
+            assertTrue("Should contain ObxTelegramMessage", entityNames.contains("ObxTelegramMessage"))
         }
 
     @Test
