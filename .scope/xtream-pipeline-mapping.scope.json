@@ -2,7 +2,7 @@
   "$schema": "./scope-guard.schema.json",
   "scopeId": "xtream-pipeline-mapping",
   "version": "1.0.0",
-  "description": "DTO → RawMediaMetadata transformation. Core normalization entry point for Xtream.",
+  "description": "DTO \u2192 RawMediaMetadata transformation. Core normalization entry point for Xtream.",
   "mandatoryReadBeforeEdit": [
     "contracts/MEDIA_NORMALIZATION_CONTRACT.md",
     "contracts/GLOSSARY_v2_naming_and_modules.md",
@@ -15,11 +15,11 @@
       "criticalFiles": [
         {
           "path": "pipeline/xtream/src/main/java/com/fishit/player/pipeline/xtream/mapper/XtreamRawMetadataExtensions.kt",
-          "purpose": "CORE: Extension functions for DTO → RawMediaMetadata",
+          "purpose": "CORE: Extension functions for DTO \u2192 RawMediaMetadata",
           "invariants": [
             "toRawMetadata() for each DTO type",
             "Title passthrough - NO cleaning (delegated to normalizer)",
-            "TMDB mapping: vodItem.tmdbId → TmdbRef(MOVIE)",
+            "TMDB mapping: vodItem.tmdbId \u2192 TmdbRef(MOVIE)",
             "Duration parsing via parseDurationToMs()"
           ]
         },
@@ -88,6 +88,24 @@
           "purpose": "Backward compat re-exports"
         }
       ]
+    },
+    "pipeline/xtream/src/test/java/com/fishit/player/pipeline/xtream/golden": {
+      "fileCount": 3,
+      "totalLOC": 0,
+      "criticalFiles": [
+        {
+          "path": "pipeline/xtream/src/test/java/com/fishit/player/pipeline/xtream/golden/RawMetadataJsonSerializer.kt",
+          "purpose": "Golden file serialization utility"
+        },
+        {
+          "path": "pipeline/xtream/src/test/java/com/fishit/player/pipeline/xtream/golden/XtreamGoldenFileTest.kt",
+          "purpose": "Golden file comparison tests"
+        },
+        {
+          "path": "test-data/golden/xtream/xtream_vod_list_item.json",
+          "purpose": "Golden file serialization utility"
+        }
+      ]
     }
   },
   "relatedScopes": [
@@ -120,5 +138,6 @@
     "series": "xtream:series:{seriesId}",
     "episode": "xtream:episode:{episodeId}",
     "live": "xtream:live:{channelId}"
-  }
+  },
+  "lastVerified": "2026-02-09"
 }

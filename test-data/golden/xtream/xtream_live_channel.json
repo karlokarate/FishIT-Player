@@ -1,0 +1,42 @@
+{
+  "sourceId": "xtream:live:81568",
+  "globalId": "",
+  "sourceType": "XTREAM",
+  "mediaType": "LIVE",
+  "pipelineIdTag": "XTREAM",
+  "originalTitle": "DE HEVC",
+  "year": null,
+  "season": null,
+  "episode": null,
+  "durationMs": null,
+  "addedTimestamp": 1604353552,
+  "lastModifiedTimestamp": 1604353552,
+  "poster": "https://granada.choval.xyz/de/hevc/deutschflag.png",
+  "backdrop": null,
+  "thumbnail": "https://granada.choval.xyz/de/hevc/deutschflag.png",
+  "placeholderThumbnail": null,
+  "rating": null,
+  "ageRating": null,
+  "plot": null,
+  "genres": null,
+  "director": null,
+  "cast": null,
+  "trailer": null,
+  "releaseDate": null,
+  "isAdult": false,
+  "categoryId": "129",
+  "sourceLabel": "test-account",
+  "epgChannelId": null,
+  "tvArchive": 0,
+  "tvArchiveDuration": 0,
+  "externalIds": {
+    "effectiveTmdbId": null,
+    "tmdbType": null,
+    "imdbId": null,
+    "tvdbId": null
+  },
+  "playbackHints": {
+    "xtream.contentType": "live",
+    "xtream.streamId": "81568"
+  }
+}

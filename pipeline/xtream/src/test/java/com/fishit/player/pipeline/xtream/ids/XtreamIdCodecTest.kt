@@ -1,5 +1,6 @@
 package com.fishit.player.pipeline.xtream.ids
 
+import com.fishit.player.core.model.ids.XtreamParsedSourceId
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull

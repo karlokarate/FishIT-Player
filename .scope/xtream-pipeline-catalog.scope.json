@@ -10,7 +10,7 @@
   ],
   "modules": {
     "pipeline/xtream/src/main/java/com/fishit/player/pipeline/xtream/catalog": {
-      "fileCount": 12,
+      "fileCount": 13,
       "totalLOC": 1800,
       "criticalFiles": [
         {
@@ -48,6 +48,10 @@
             "Provide backpressure signals",
             "FireTV special handling"
           ]
+        },
+        {
+          "path": "pipeline/xtream/src/test/java/com/fishit/player/pipeline/xtream/ids/XtreamIdCodecTest.kt",
+          "purpose": "Unit tests for XtreamIdCodec source ID formatting"
         }
       ],
       "handlers": [
@@ -69,10 +73,10 @@
       "criticalFiles": [
         {
           "path": "pipeline/xtream/src/main/java/com/fishit/player/pipeline/xtream/adapter/XtreamPipelineAdapter.kt",
-          "purpose": "Wraps XtreamApiClient, converts Transport→Pipeline DTOs",
+          "purpose": "Wraps XtreamApiClient, converts Transport\u2192Pipeline DTOs",
           "invariants": [
             "ONLY connection point to transport layer",
-            "XtreamVodStream → XtreamVodItem via toPipelineItem()"
+            "XtreamVodStream \u2192 XtreamVodItem via toPipelineItem()"
           ]
         }
       ]
@@ -134,5 +138,6 @@
     "ScanError(error)",
     "SeriesEpisodeComplete(seriesId, episodes)",
     "SeriesEpisodeFailed(seriesId, error)"
-  ]
+  ],
+  "lastVerified": "2026-02-09"
 }
