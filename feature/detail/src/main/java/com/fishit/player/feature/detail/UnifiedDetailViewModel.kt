@@ -660,7 +660,13 @@ class UnifiedDetailViewModel
                             url.isNotBlank() && (url.startsWith("http://") || url.startsWith("https://"))
                         }?.let { ImageRef.Http(it) },
                 durationMs = durationSecs?.toLong()?.times(1000),
-                plot = plotBrief,
+                plot = plot,
+                rating = rating,
+                airDate = airDate,
+                qualityHeight = videoHeight,
+                videoCodec = videoCodec,
+                audioCodec = audioCodec,
+                audioChannels = audioChannels,
                 sources = emptyList(), // Will be resolved on playback
                 hasResume = false, // TODO: load from ResumeRepository
                 resumePercent = 0,

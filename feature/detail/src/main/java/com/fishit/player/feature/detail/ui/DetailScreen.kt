@@ -39,6 +39,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -159,6 +162,7 @@ private fun DetailContent(
 ) {
     val media = state.media ?: return
     val scrollState = rememberScrollState()
+    var focusedEpisode by remember { mutableStateOf<DetailEpisodeItem?>(null) }
 
     Column(modifier = Modifier.fillMaxSize().verticalScroll(scrollState)) {
         // Hero Section with backdrop
@@ -316,6 +320,8 @@ private fun DetailContent(
                     DetailSeriesSectionEpisodeList(
                         episodes = state.displayedEpisodes,
                         onEpisodeClick = onEpisodeClick,
+                        focusedEpisode = focusedEpisode,
+                        onEpisodeFocused = { focusedEpisode = it },
                     )
                 } else {
                     // DEBUG: Show why no episodes are displayed

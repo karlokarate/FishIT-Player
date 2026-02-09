@@ -14,7 +14,9 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Circle
 import androidx.compose.material.icons.filled.LiveTv
@@ -64,7 +66,18 @@ data class DetailEpisodeItem(
     val title: String,
     val thumbnail: ImageRef?,
     val durationMs: Long?,
+    /** Full plot — unlimited, never truncated */
     val plot: String?,
+    val rating: Double? = null,
+    val airDate: String? = null,
+    /** Video quality height for badges (e.g. 1080 → "HD", 2160 → "4K") */
+    val qualityHeight: Int? = null,
+    /** Video codec for badges (e.g. "hevc" → "HEVC") */
+    val videoCodec: String? = null,
+    /** Audio codec for badges (e.g. "ac3" → "AC3") */
+    val audioCodec: String? = null,
+    /** Audio channels for badges (e.g. 6 → "5.1") */
+    val audioChannels: Int? = null,
     val sources: List<MediaSourceRef> = emptyList(),
     val hasResume: Boolean = false,
     val resumePercent: Int = 0,
@@ -93,34 +106,63 @@ fun DetailSeriesSectionSeasonSelector(
 fun DetailSeriesSectionEpisodeList(
     episodes: List<DetailEpisodeItem>,
     onEpisodeClick: (DetailEpisodeItem) -> Unit,
+    focusedEpisode: DetailEpisodeItem? = null,
+    onEpisodeFocused: (DetailEpisodeItem) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
-    LazyRow(
-        modifier = modifier,
-        contentPadding = PaddingValues(horizontal = 16.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        items(episodes) { episode ->
-            DetailSeriesSectionEpisodeCard(
-                episode = episode,
-                onClick = { onEpisodeClick(episode) },
-                modifier = Modifier.width(320.dp),
+    Column(modifier = modifier) {
+        // Horizontal episode tiles — compact, thumbnail-driven size
+        LazyRow(
+            contentPadding = PaddingValues(horizontal = 16.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            items(episodes) { episode ->
+                DetailSeriesSectionEpisodeCard(
+                    episode = episode,
+                    onClick = { onEpisodeClick(episode) },
+                    onFocused = { onEpisodeFocused(episode) },
+                    isFocused = focusedEpisode?.id == episode.id,
+                    modifier = Modifier.width(280.dp),
+                )
+            }
+        }
+
+        // Full episode metadata section for focused/selected episode
+        val displayEpisode = focusedEpisode ?: episodes.firstOrNull()
+        if (displayEpisode != null && !displayEpisode.plot.isNullOrBlank()) {
+            Spacer(modifier = Modifier.height(16.dp))
+            DetailSeriesSectionEpisodePlot(
+                episode = displayEpisode,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp),
             )
         }
     }
 }
 
-/** Single episode card for series detail screen. */
+/** Single episode card — compact, thumbnail-driven height. Click = play. */
 @Composable
 fun DetailSeriesSectionEpisodeCard(
     episode: DetailEpisodeItem,
     onClick: () -> Unit,
+    onFocused: () -> Unit = {},
+    isFocused: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
+    // Card subtitle: "S1 • E3 • 45 min"
+    val subtitle = buildString {
+        append("S${episode.season} • E${episode.episode}")
+        episode.durationMs?.let { ms ->
+            val minutes = (ms / 60_000).toInt()
+            if (minutes > 0) append(" • ${minutes} min")
+        }
+    }
+
     FishHorizontalCard(
         title = episode.title,
-        subtitle = "S${episode.season} • E${episode.episode}",
-        description = episode.plot,
+        subtitle = subtitle,
+        description = null, // Plot NOT in card — shown separately below, scrollable
         thumbnail = episode.thumbnail,
         thumbnailOverlay = {
             FishThumbnailScrim(alpha = 0.3f)
@@ -135,6 +177,33 @@ fun DetailSeriesSectionEpisodeCard(
                     modifier = Modifier.size(32.dp),
                 )
             }
+            // Quality badge (top-right)
+            val qualityLabel = episode.qualityHeight?.let { h ->
+                when {
+                    h >= 2160 -> "4K"
+                    h >= 1080 -> "FHD"
+                    h >= 720 -> "HD"
+                    else -> null
+                }
+            }
+            if (qualityLabel != null) {
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(4.dp)
+                        .clip(RoundedCornerShape(4.dp))
+                        .background(FishColors.Primary.copy(alpha = 0.85f))
+                        .padding(horizontal = 6.dp, vertical = 2.dp),
+                ) {
+                    Text(
+                        text = qualityLabel,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold,
+                    )
+                }
+            }
+            // Resume progress bar
             if (episode.hasResume && episode.resumePercent > 0) {
                 Box(
                     modifier =
@@ -154,9 +223,79 @@ fun DetailSeriesSectionEpisodeCard(
                 }
             }
         },
-        onClick = onClick,
+        onClick = {
+            onFocused()
+            onClick()
+        },
         modifier = modifier,
     )
+}
+
+/**
+ * Scrollable episode plot section — shown below the episode LazyRow.
+ * Displays the full, unlimited plot for the focused/selected episode.
+ */
+@Composable
+fun DetailSeriesSectionEpisodePlot(
+    episode: DetailEpisodeItem,
+    modifier: Modifier = Modifier,
+) {
+    Column(modifier = modifier) {
+        // Episode header
+        Text(
+            text = "S${episode.season}E${episode.episode} — ${episode.title}",
+            style = MaterialTheme.typography.titleSmall,
+            color = MaterialTheme.colorScheme.onBackground,
+            fontWeight = FontWeight.Bold,
+        )
+
+        // Metadata badges row
+        val badges = buildList {
+            episode.rating?.let { add("★ ${"%.1f".format(it)}") }
+            episode.airDate?.takeIf { it.isNotBlank() }?.let { add(it) }
+            episode.videoCodec?.uppercase()?.let { add(it) }
+            episode.audioCodec?.uppercase()?.let { add(it) }
+            episode.audioChannels?.let { ch ->
+                val label = when (ch) {
+                    1 -> "Mono"
+                    2 -> "Stereo"
+                    6 -> "5.1"
+                    8 -> "7.1"
+                    else -> "${ch}ch"
+                }
+                add(label)
+            }
+        }
+        if (badges.isNotEmpty()) {
+            Spacer(modifier = Modifier.height(4.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                badges.forEach { badge ->
+                    Text(
+                        text = badge,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+        }
+
+        // Full plot — scrollable, unlimited
+        episode.plot?.takeIf { it.isNotBlank() }?.let { plot ->
+            Spacer(modifier = Modifier.height(8.dp))
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(120.dp) // Fixed height container
+                    .verticalScroll(rememberScrollState()),
+            ) {
+                Text(
+                    text = plot,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+    }
 }
 
 // =============================================================================

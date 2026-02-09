@@ -527,11 +527,31 @@ class UnifiedDetailLoaderImpl
                 sourceKey = sourceKey,
                 episodeId = resolvedId,
                 title = ep.title ?: ep.info?.name,
+                // --- Images: all sources preserved ---
                 thumbUrl = ep.info?.movieImage ?: ep.info?.posterPath ?: ep.info?.stillPath,
+                coverUrl = ep.info?.cover,
+                thumbnailUrl = ep.info?.thumbnail ?: ep.info?.img,
+                // --- Core metadata: full, unlimited ---
                 durationSecs = ep.info?.durationSecs,
-                plotBrief = ep.info?.plot?.take(200),
+                durationString = ep.info?.duration,
+                plot = ep.info?.plot, // Full plot — never truncated
                 rating = ep.info?.rating?.toDoubleOrNull(),
                 airDate = ep.info?.releaseDate ?: ep.info?.airDate,
+                // --- External IDs ---
+                tmdbId = ep.info?.tmdbId,
+                // --- Xtream-specific ---
+                addedTimestamp = ep.added,
+                customSid = ep.customSid,
+                // --- Technical stream metadata ---
+                videoCodec = ep.info?.video?.codec,
+                videoWidth = ep.info?.video?.width,
+                videoHeight = ep.info?.video?.height,
+                videoAspectRatio = ep.info?.video?.aspectRatio,
+                audioCodec = ep.info?.audio?.codec,
+                audioChannels = ep.info?.audio?.channels,
+                audioLanguage = ep.info?.audio?.language,
+                bitrateKbps = ep.info?.bitrate,
+                // --- Playback ---
                 playbackHintsJson = hintsJson,
                 lastUpdatedMs = now,
                 playbackHintsUpdatedMs = if (hintsJson != null) now else 0L,

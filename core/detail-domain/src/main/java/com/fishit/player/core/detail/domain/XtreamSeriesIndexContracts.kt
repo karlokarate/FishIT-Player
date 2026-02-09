@@ -26,11 +26,47 @@ data class EpisodeIndexItem(
     val sourceKey: String,
     val episodeId: Int?,
     val title: String?,
+    // --- Images ---
+    /** Primary thumbnail (API: movie_image → poster_path → still_path) */
     val thumbUrl: String?,
+    /** Cover/backdrop image (API: info.cover) */
+    val coverUrl: String? = null,
+    /** Alternative thumbnail (API: info.thumbnail, info.img) */
+    val thumbnailUrl: String? = null,
+    // --- Core metadata ---
     val durationSecs: Int?,
-    val plotBrief: String?,
+    /** Duration as display string from API (e.g. "45:00") */
+    val durationString: String? = null,
+    /** Full plot — unlimited, never truncated */
+    val plot: String?,
     val rating: Double?,
     val airDate: String?,
+    // --- External IDs ---
+    /** Episode-level TMDB ID (different from series TMDB ID) */
+    val tmdbId: Int? = null,
+    // --- Xtream-specific ---
+    /** Raw `added` timestamp from API (epoch string) */
+    val addedTimestamp: String? = null,
+    /** Custom SID from API (`custom_sid`) */
+    val customSid: String? = null,
+    // --- Technical stream metadata ---
+    /** Video codec (e.g. "h264", "hevc") from ffprobe info */
+    val videoCodec: String? = null,
+    /** Video width in pixels */
+    val videoWidth: Int? = null,
+    /** Video height in pixels (e.g. 1080, 2160) */
+    val videoHeight: Int? = null,
+    /** Video aspect ratio (e.g. "16:9") */
+    val videoAspectRatio: String? = null,
+    /** Audio codec (e.g. "aac", "ac3") from ffprobe info */
+    val audioCodec: String? = null,
+    /** Number of audio channels (e.g. 2, 6) */
+    val audioChannels: Int? = null,
+    /** Audio language tag */
+    val audioLanguage: String? = null,
+    /** Stream bitrate in kbps */
+    val bitrateKbps: Int? = null,
+    // --- Playback ---
     val playbackHintsJson: String?,
     val lastUpdatedMs: Long,
     val playbackHintsUpdatedMs: Long,
