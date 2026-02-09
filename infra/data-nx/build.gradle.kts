@@ -76,4 +76,6 @@ dependencies {
     testImplementation("io.mockk:mockk:1.13.12")
     // P1: Full-chain tests need the normalizer (RawMediaMetadata → NormalizedMediaMetadata)
     testImplementation(project(":core:metadata-normalizer"))
+    // P2: Property-based testing (Kotest generators + forAll/checkAll)
+    testImplementation("io.kotest:kotest-property:5.9.1")
 }
