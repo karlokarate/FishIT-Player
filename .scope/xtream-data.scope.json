@@ -10,7 +10,7 @@
   ],
   "modules": {
     "infra/data-xtream": {
-      "fileCount": 5,
+      "fileCount": 6,
       "totalLOC": 400,
       "criticalFiles": [
         {
@@ -35,6 +35,14 @@
             "Generates accountKey via NxKeyGenerator",
             "Calls XtreamCredentialsStore for secure storage"
           ]
+        },
+        {
+          "path": "infra/data-nx/src/main/java/com/fishit/player/infra/data/nx/writer/builder/WorkEntityBuilder.kt",
+          "purpose": "Part of xtream-data scope"
+        },
+        {
+          "path": "infra/data-nx/src/main/java/com/fishit/player/infra/data/nx/mapper/WorkMapper.kt",
+          "purpose": "Part of xtream-data scope"
         }
       ],
       "diModules": [
@@ -66,7 +74,7 @@
           "path": "infra/data-nx/src/main/java/com/fishit/player/infra/data/nx/xtream/NxXtreamSeriesIndexRepository.kt",
           "purpose": "Series/Season/Episode index via NX_WorkRelation",
           "invariants": [
-            "Navigates SERIES → EPISODE relations"
+            "Navigates SERIES \u2192 EPISODE relations"
           ]
         }
       ]
@@ -102,6 +110,7 @@
     "NX_Work": "Media item (MOVIE, SERIES, EPISODE, LIVE_CHANNEL)",
     "NX_WorkSourceRef": "Links NX_Work to Xtream source (xtreamStreamId, xtreamCategoryId)",
     "NX_WorkVariant": "Playback info (playbackHintsJson with xtream specifics)",
-    "NX_WorkRelation": "Series ↔ Episode links"
-  }
+    "NX_WorkRelation": "Series \u2194 Episode links"
+  },
+  "lastVerified": "2026-02-09"
 }

@@ -48,9 +48,15 @@ interface NxWorkRepository {
         val sortTitle: String = displayTitle,
         val titleNormalized: String = displayTitle.lowercase(),
         val year: Int? = null,
+        /** Season number (for episodes/series content) */
+        val season: Int? = null,
+        /** Episode number within season */
+        val episode: Int? = null,
         val runtimeMs: Long? = null,
         val posterRef: String? = null,
         val backdropRef: String? = null,
+        /** Thumbnail image (e.g., Telegram minithumbnail, episode screenshot) */
+        val thumbnailRef: String? = null,
         val rating: Double? = null, // 0..10 if present
         val genres: String? = null,
         val plot: String? = null,
@@ -69,6 +75,8 @@ interface NxWorkRepository {
          * May be a full URL (https://youtube.com/watch?v=xxx) or just the video ID.
          */
         val trailer: String? = null,
+        /** Release date string (e.g., "2024-01-15") from API metadata */
+        val releaseDate: String? = null,
         // === External Authority IDs ===
         /** TMDB ID (numeric string for persistence compatibility) */
         val tmdbId: String? = null,

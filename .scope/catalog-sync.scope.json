@@ -11,7 +11,7 @@
   ],
   "modules": {
     "core/catalog-sync": {
-      "fileCount": 27,
+      "fileCount": 16,
       "totalLOC": 5400,
       "criticalFiles": [
         {
@@ -41,7 +41,7 @@
           "purpose": "4-tier sync decision logic",
           "invariants": [
             "Returns SyncStrategy that MUST be used by callers",
-            "Tier order: ETag → Count → Timestamp → Fingerprint"
+            "Tier order: ETag \u2192 Count \u2192 Timestamp \u2192 Fingerprint"
           ]
         },
         {
@@ -59,6 +59,14 @@
           "invariants": [
             "Must update checkpoint AFTER successful sync"
           ]
+        },
+        {
+          "path": "core/model/src/main/java/com/fishit/player/core/model/repository/NxWorkRepository.kt",
+          "purpose": "Part of catalog-sync scope"
+        },
+        {
+          "path": "core/model/src/main/java/com/fishit/player/core/model/PlaybackHintKeys.kt",
+          "purpose": "Part of catalog-sync scope"
         }
       ],
       "diModules": [
@@ -128,6 +136,6 @@
       "DefaultXtreamSyncServiceTest.kt (0 tests for 492 LOC)"
     ]
   },
-  "lastVerified": "2025-02-05",
+  "lastVerified": "2026-02-09",
   "auditedBy": "Multi-Agent Audit (5 parallel subagents)"
 }

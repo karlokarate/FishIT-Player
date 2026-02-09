@@ -583,6 +583,7 @@ fun XtreamVodInfo.toRawMediaMetadata(
         director = director,
         cast = cast,
         trailer = trailer,
+        releaseDate = infoBlock?.releaseDate ?: infoBlock?.releaseDateAlt,
         // === Playback Hints (v2) ===
         playbackHints =
             buildMap {
@@ -596,6 +597,25 @@ fun XtreamVodInfo.toRawMediaMetadata(
                 // Include categoryId for consistency with list API
                 vodItem.categoryId?.takeIf { it.isNotBlank() }?.let {
                     put("xtream.categoryId", it)
+                }
+                // === Video/Audio Quality from ffprobe (G8 fix) ===
+                infoBlock?.videoInfo?.codec?.takeIf { it.isNotBlank() }?.let {
+                    put(PlaybackHintKeys.VIDEO_CODEC, it)
+                }
+                infoBlock?.videoInfo?.width?.let {
+                    put(PlaybackHintKeys.VIDEO_WIDTH, it.toString())
+                }
+                infoBlock?.videoInfo?.height?.let {
+                    put(PlaybackHintKeys.VIDEO_HEIGHT, it.toString())
+                }
+                infoBlock?.audioInfo?.codec?.takeIf { it.isNotBlank() }?.let {
+                    put(PlaybackHintKeys.AUDIO_CODEC, it)
+                }
+                infoBlock?.audioInfo?.channels?.let {
+                    put(PlaybackHintKeys.AUDIO_CHANNELS, it.toString())
+                }
+                infoBlock?.bitrate?.takeIf { it.isNotBlank() }?.let {
+                    put(PlaybackHintKeys.Xtream.BITRATE, it)
                 }
             },
         // === Content Classification (v2) ===

@@ -91,6 +91,12 @@ fun TelegramMediaItem.toRawMediaMetadata(): RawMediaMetadata {
             mimeType?.takeIf { it.isNotBlank() }?.let {
                 put(PlaybackHintKeys.Telegram.MIME_TYPE, it)
             }
+            sizeBytes?.let {
+                put(PlaybackHintKeys.Telegram.FILE_SIZE, it.toString())
+            }
+            fileName?.takeIf { it.isNotBlank() }?.let {
+                put(PlaybackHintKeys.Telegram.FILE_NAME, it)
+            }
         }
 
     return RawMediaMetadata(
@@ -123,6 +129,8 @@ fun TelegramMediaItem.toRawMediaMetadata(): RawMediaMetadata {
         cast = null, // Telegram structured bundles don't provide cast
         // === Playback Hints (v2) ===
         playbackHints = playbackHints,
+        // === Timestamp (v2) - message date as addedTimestamp ===
+        addedTimestamp = date?.let { it * 1000L }, // TDLib uses Unix seconds → convert to ms
     )
 }
 

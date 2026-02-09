@@ -130,6 +130,12 @@ object PlaybackHintKeys {
         /** MIME type hint (e.g., "video/mp4") */
         const val MIME_TYPE = "telegram.mimeType"
 
+        /** File size in bytes (for download progress estimation) */
+        const val FILE_SIZE = "telegram.fileSize"
+
+        /** Original file name from Telegram media */
+        const val FILE_NAME = "telegram.fileName"
+
         /**
          * Legacy session-local file ID.
          *
