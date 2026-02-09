@@ -23,6 +23,14 @@ android {
         jvmTarget = "17"
     }
 
+    // Configure test working directory to root project for test-data access
+    testOptions {
+        unitTests.all {
+            it.workingDir = rootProject.projectDir
+            // Forward golden.update system property to test JVM
+            it.systemProperty("golden.update", System.getProperty("golden.update") ?: "false")
+        }
+    }
 }
 
 dependencies {

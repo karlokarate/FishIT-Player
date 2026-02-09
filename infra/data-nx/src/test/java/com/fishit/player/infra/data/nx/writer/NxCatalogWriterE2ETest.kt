@@ -64,6 +64,9 @@ import com.fishit.player.core.model.TmdbRef
 import com.fishit.player.core.model.repository.NxWorkRepository
 import com.fishit.player.core.model.repository.NxWorkSourceRefRepository
 import com.fishit.player.core.model.repository.NxWorkVariantRepository
+import com.fishit.player.infra.data.nx.writer.builder.SourceRefBuilder
+import com.fishit.player.infra.data.nx.writer.builder.VariantBuilder
+import com.fishit.player.infra.data.nx.writer.builder.WorkEntityBuilder
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
@@ -89,6 +92,9 @@ class NxCatalogWriterVodE2ETest {
         workRepository = workRepository,
         sourceRefRepository = sourceRefRepository,
         variantRepository = variantRepository,
+        workEntityBuilder = WorkEntityBuilder(),
+        sourceRefBuilder = SourceRefBuilder(),
+        variantBuilder = VariantBuilder(),
         boxStore = boxStore,
     )
 
@@ -305,6 +311,9 @@ class NxCatalogWriterSeriesE2ETest {
         workRepository = workRepository,
         sourceRefRepository = sourceRefRepository,
         variantRepository = variantRepository,
+        workEntityBuilder = WorkEntityBuilder(),
+        sourceRefBuilder = SourceRefBuilder(),
+        variantBuilder = VariantBuilder(),
         boxStore = boxStore,
     )
 
@@ -441,6 +450,9 @@ class NxCatalogWriterLiveE2ETest {
         workRepository = workRepository,
         sourceRefRepository = sourceRefRepository,
         variantRepository = variantRepository,
+        workEntityBuilder = WorkEntityBuilder(),
+        sourceRefBuilder = SourceRefBuilder(),
+        variantBuilder = VariantBuilder(),
         boxStore = boxStore,
     )
 
@@ -545,6 +557,9 @@ class NxCatalogWriterPlaybackHintsE2ETest {
         workRepository = workRepository,
         sourceRefRepository = sourceRefRepository,
         variantRepository = variantRepository,
+        workEntityBuilder = WorkEntityBuilder(),
+        sourceRefBuilder = SourceRefBuilder(),
+        variantBuilder = VariantBuilder(),
         boxStore = boxStore,
     )
 
