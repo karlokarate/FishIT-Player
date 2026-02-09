@@ -1,0 +1,62 @@
+{
+  "work": {
+    "workKey": "movie:tmdb:872585",
+    "type": "MOVIE",
+    "displayTitle": "Oppenheimer",
+    "sortTitle": "Oppenheimer",
+    "titleNormalized": "oppenheimer",
+    "year": 2023,
+    "season": null,
+    "episode": null,
+    "runtimeMs": 10860000,
+    "posterRef": "http:https://image.tmdb.org/t/p/w500/8Gxv8gSFCU0XGDykEGv7zR1n2ua.jpg",
+    "backdropRef": "http:https://image.tmdb.org/t/p/w1280/fm6KqXpk3M2HVveHwCrBSSBaO0V.jpg",
+    "thumbnailRef": null,
+    "rating": 8.1,
+    "genres": "Drama, History",
+    "plot": "The story of J. Robert Oppenheimer and the Manhattan Project.",
+    "director": "Christopher Nolan",
+    "cast": "Cillian Murphy, Emily Blunt, Robert Downey Jr.",
+    "trailer": "https://youtube.com/watch?v=uYPbbksJxIg",
+    "releaseDate": "2023-07-19",
+    "tmdbId": "872585",
+    "imdbId": "tt15398776",
+    "tvdbId": null,
+    "isAdult": false,
+    "recognitionState": "CONFIRMED",
+    "isDeleted": false
+  },
+  "sourceRef": {
+    "sourceKey": "src:xtream:xtream:premium-iptv:xtream:vod:87654",
+    "workKey": "movie:tmdb:872585",
+    "sourceType": "XTREAM",
+    "accountKey": "xtream:premium-iptv",
+    "sourceItemKind": "VOD",
+    "sourceItemKey": "87654",
+    "sourceTitle": "Oppenheimer 2023",
+    "availability": "ACTIVE",
+    "note": null,
+    "sourceLastModifiedMs": null,
+    "epgChannelId": null,
+    "tvArchive": 0,
+    "tvArchiveDuration": 0
+  },
+  "variant": {
+    "variantKey": "src:xtream:xtream:premium-iptv:xtream:vod:87654#original",
+    "workKey": "movie:tmdb:872585",
+    "sourceKey": "src:xtream:xtream:premium-iptv:xtream:vod:87654",
+    "label": "Original",
+    "isDefault": true,
+    "container": "mp4",
+    "durationMs": 10860000,
+    "qualityHeight": null,
+    "bitrateKbps": null,
+    "videoCodec": null,
+    "audioCodec": null,
+    "audioLang": null,
+    "playbackHints": {
+      "xtream.containerExtension": "mp4",
+      "xtream.streamId": "87654"
+    }
+  }
+}
