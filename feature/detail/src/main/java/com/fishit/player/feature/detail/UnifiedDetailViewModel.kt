@@ -800,11 +800,13 @@ class UnifiedDetailViewModel
             val media = _state.value.media
             val seriesId = if (media != null) extractSeriesId(media.canonicalId) else null
 
-            // Extract seriesKind from media sources for correct URL building
-            val seriesKind = media?.sources
-                ?.firstOrNull { it.sourceType == SourceType.XTREAM }
-                ?.playbackHints?.get(PlaybackHintKeys.Xtream.SERIES_KIND)
-                ?: "series" // Default to "series" if not found
+            // Prefer episode-level seriesKind, fall back to media sources, then default
+            val seriesKind =
+                hints.seriesKind
+                    ?: media?.sources
+                        ?.firstOrNull { it.sourceType == SourceType.XTREAM }
+                        ?.playbackHints?.get(PlaybackHintKeys.Xtream.SERIES_KIND)
+                    ?: "series" // Default to "series" if not found
 
             UnifiedLog.d(TAG) {
                 "Episode playback ready [series=$seriesId, season=${episode.season}, episode=${episode.episode}, " +
