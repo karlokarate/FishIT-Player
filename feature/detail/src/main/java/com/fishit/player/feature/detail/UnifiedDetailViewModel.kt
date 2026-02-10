@@ -16,7 +16,7 @@ import com.fishit.player.core.model.ids.CanonicalId
 import com.fishit.player.core.model.ids.PipelineItemId
 import com.fishit.player.core.model.repository.CanonicalMediaWithSources
 import com.fishit.player.core.model.repository.CanonicalResumeInfo
-import com.fishit.player.feature.detail.enrichment.DetailEnrichmentService
+import com.fishit.player.core.detail.domain.DetailEnrichmentService
 import com.fishit.player.feature.detail.series.EnsureEpisodePlaybackReadyUseCase
 import com.fishit.player.feature.detail.ui.helper.DetailEpisodeItem
 import com.fishit.player.infra.logging.UnifiedLog

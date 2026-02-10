@@ -9,7 +9,7 @@ import com.fishit.player.core.model.ids.asCanonicalId
 import com.fishit.player.core.model.repository.CanonicalMediaRepository
 import com.fishit.player.core.model.repository.CanonicalMediaWithSources
 import com.fishit.player.core.model.repository.CanonicalResumeInfo
-import com.fishit.player.feature.detail.enrichment.DetailEnrichmentService
+import com.fishit.player.core.detail.domain.DetailEnrichmentService
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import javax.inject.Inject
