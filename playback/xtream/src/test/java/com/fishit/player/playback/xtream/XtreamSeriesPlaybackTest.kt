@@ -35,7 +35,9 @@ class XtreamSeriesPlaybackTest {
                 username = TEST_USER,
                 password = TEST_PASS,
             )
-        return XtreamUrlBuilder(config)
+        val urlBuilder = XtreamUrlBuilder()
+        urlBuilder.configure(config, TEST_PORT)
+        return urlBuilder
     }
 
     // =========================================================================
