@@ -59,6 +59,7 @@ interface XtreamCatalogMapper {
     fun fromEpisode(
         episode: XtreamEpisode,
         seriesName: String? = null,
+        seriesKind: String? = null,
         imageAuthHeaders: Map<String, String>,
         accountName: String = "xtream",
     ): XtreamCatalogItem
@@ -111,13 +112,14 @@ class XtreamCatalogMapperImpl
         override fun fromEpisode(
             episode: XtreamEpisode,
             seriesName: String?,
+            seriesKind: String?,
             imageAuthHeaders: Map<String, String>,
             accountName: String,
         ): XtreamCatalogItem =
             XtreamCatalogItem(
                 raw = episode.toRawMediaMetadata(
                     seriesNameOverride = seriesName,
-                    seriesKind = "series", // Default to "series" - will be overridden by parent series streamType if available
+                    seriesKind = seriesKind ?: "series", // Use parent series streamType, fallback to "series"
                     authHeaders = imageAuthHeaders
                 ),
                 kind = XtreamItemKind.EPISODE,
