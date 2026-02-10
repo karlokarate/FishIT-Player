@@ -188,7 +188,6 @@ class DefaultXtreamCatalogSource
                         EpisodeBatchResult.Batch(
                             seriesId = seriesItem.id,
                             seriesName = seriesItem.name,
-                            seriesKind = seriesItem.streamType,
                             episodes = episodes,
                         ),
                     )

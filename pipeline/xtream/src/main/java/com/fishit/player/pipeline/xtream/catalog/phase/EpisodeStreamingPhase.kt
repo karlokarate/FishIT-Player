@@ -72,7 +72,6 @@ internal class EpisodeStreamingPhase @Inject constructor(
                                 val catalogItem = mapper.fromEpisode(
                                     episode = episode,
                                     seriesName = result.seriesName,
-                                    seriesKind = result.seriesKind,
                                     imageAuthHeaders = headers,
                                     accountName = config.accountName,
                                 )

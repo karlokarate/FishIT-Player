@@ -163,13 +163,11 @@ sealed interface EpisodeBatchResult {
      *
      * @property seriesId The series these episodes belong to
      * @property seriesName The series name (for metadata context)
-     * @property seriesKind The series kind/alias from API stream_type field (e.g., "series", "episodes")
      * @property episodes List of episodes (never empty)
      */
     data class Batch(
         override val seriesId: Int,
         val seriesName: String?,
-        val seriesKind: String?,
         val episodes: List<XtreamEpisode>,
     ) : EpisodeBatchResult
 
