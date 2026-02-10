@@ -152,9 +152,14 @@ private fun TelegramMediaItem.buildExternalIds(): ExternalIds {
     // Need both ID and type for typed TmdbRef
     val tmdbType = structuredTmdbType
     if (tmdbType == null) {
-        // Legacy: Have ID but no type - store as legacy for migration
-        @Suppress("DEPRECATION")
-        return ExternalIds(legacyTmdbId = structuredTmdbId)
+        // No type available from structured metadata, infer from MediaType
+        // If we can't determine the type, skip the TMDB ID rather than storing untyped
+        val inferredType = when {
+            isSeries || seasonNumber != null || episodeNumber != null -> TelegramTmdbType.TV
+            else -> TelegramTmdbType.MOVIE // Default to MOVIE for single videos
+        }
+        val tmdbRef = TmdbRef(inferredType.toTmdbMediaType(), structuredTmdbId)
+        return ExternalIds(tmdb = tmdbRef)
     }
 
     // Create typed TmdbRef

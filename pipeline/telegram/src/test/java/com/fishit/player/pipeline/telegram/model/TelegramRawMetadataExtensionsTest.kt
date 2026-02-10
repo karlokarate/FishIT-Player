@@ -343,7 +343,7 @@ class TelegramRawMetadataExtensionsTest {
     }
 
     @Test
-    fun `toRawMediaMetadata uses legacyTmdbId when type missing`() {
+    fun `toRawMediaMetadata infers MOVIE type when structuredTmdbType missing`() {
         val item =
             TelegramMediaItem(
                 chatId = 123L,
@@ -351,17 +351,39 @@ class TelegramRawMetadataExtensionsTest {
                 mediaType = TelegramMediaType.VIDEO,
                 title = "The Movie",
                 structuredTmdbId = 12345,
-                // NO structuredTmdbType - legacy behavior
+                // NO structuredTmdbType - infer from context
                 bundleType = TelegramBundleType.FULL_3ER,
+                isSeries = false,
             )
 
         val raw = item.toRawMediaMetadata()
 
-        // Typed TmdbRef is null when type is missing
-        assertNull(raw.externalIds.tmdb)
-        // Legacy ID is set for migration compatibility
-        @Suppress("DEPRECATION")
-        assertEquals(12345, raw.externalIds.legacyTmdbId)
+        // Type is inferred as MOVIE when no series indicators present
+        assertEquals(12345, raw.externalIds.tmdb?.id)
+        assertEquals(TmdbMediaType.MOVIE, raw.externalIds.tmdb?.type)
+    }
+
+    @Test
+    fun `toRawMediaMetadata infers TV type when series indicators present`() {
+        val item =
+            TelegramMediaItem(
+                chatId = 123L,
+                messageId = 456L,
+                mediaType = TelegramMediaType.VIDEO,
+                title = "The Series S01E01",
+                structuredTmdbId = 54321,
+                // NO structuredTmdbType - infer from series indicators
+                bundleType = TelegramBundleType.FULL_3ER,
+                isSeries = true,
+                seasonNumber = 1,
+                episodeNumber = 1,
+            )
+
+        val raw = item.toRawMediaMetadata()
+
+        // Type is inferred as TV when series indicators present
+        assertEquals(54321, raw.externalIds.tmdb?.id)
+        assertEquals(TmdbMediaType.TV, raw.externalIds.tmdb?.type)
     }
 
     @Test
