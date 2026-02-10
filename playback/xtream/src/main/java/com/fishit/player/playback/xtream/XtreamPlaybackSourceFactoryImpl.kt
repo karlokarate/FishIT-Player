@@ -269,7 +269,11 @@ class XtreamPlaybackSourceFactoryImpl
 
                         UnifiedLog.d(TAG) { "Building VOD URL: vodId=$vodId, kind=$vodKind, ext=$resolvedExtension" }
 
-                        xtreamApiClient.buildVodUrl(vodId, resolvedExtension, vodKind)
+                        xtreamApiClient.buildVodUrl(
+                            vodId,
+                            containerExtension = resolvedExtension,
+                            vodKind = vodKind,
+                        )
                     }
                     CONTENT_TYPE_SERIES -> {
                         val seriesId =
