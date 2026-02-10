@@ -800,9 +800,15 @@ class UnifiedDetailViewModel
             val media = _state.value.media
             val seriesId = if (media != null) extractSeriesId(media.canonicalId) else null
 
+            // Extract seriesKind from media sources for correct URL building
+            val seriesKind = media?.sources
+                ?.firstOrNull { it.sourceType == SourceType.XTREAM }
+                ?.playbackHints?.get(PlaybackHintKeys.Xtream.SERIES_KIND)
+                ?: "series" // Default to "series" if not found
+
             UnifiedLog.d(TAG) {
                 "Episode playback ready [series=$seriesId, season=${episode.season}, episode=${episode.episode}, " +
-                    "episodeId=${episode.id}, streamId=$episodeStreamId, containerExt=$finalContainerExt]"
+                    "episodeId=${episode.id}, streamId=$episodeStreamId, containerExt=$finalContainerExt, seriesKind=$seriesKind]"
             }
 
             val source =
@@ -818,6 +824,7 @@ class UnifiedDetailViewModel
                             put(PlaybackHintKeys.Xtream.CONTAINER_EXT, finalContainerExt)
                             put(PlaybackHintKeys.Xtream.SEASON_NUMBER, episode.season.toString())
                             put(PlaybackHintKeys.Xtream.EPISODE_NUMBER, episode.episode.toString())
+                            put(PlaybackHintKeys.Xtream.SERIES_KIND, seriesKind)
                             if (seriesId != null) {
                                 put(PlaybackHintKeys.Xtream.SERIES_ID, seriesId.toString())
                             }
