@@ -53,28 +53,6 @@ class DefaultXtreamCatalogSource
             message = "Use loadEpisodesStreaming() for parallel loading with checkpoint support",
             replaceWith = ReplaceWith("loadEpisodesStreaming()"),
         )
-        @Suppress("DEPRECATION")
-        override suspend fun loadEpisodes(): List<XtreamEpisode> =
-            try {
-                // First load all series, then fetch episodes for each
-                val series = adapter.loadSeriesItems()
-                val allEpisodes = mutableListOf<XtreamEpisode>()
-
-                for (seriesItem in series) {
-                    try {
-                        // Pass seriesName for context in RawMediaMetadata
-                        val episodes = adapter.loadEpisodes(seriesItem.id, seriesItem.name)
-                        allEpisodes.addAll(episodes)
-                    } catch (e: Exception) {
-                        UnifiedLog.w(TAG) { "Failed to load episodes for series ${seriesItem.id}: ${e.message}" }
-                    }
-                }
-
-                allEpisodes
-            } catch (e: Exception) {
-                throw XtreamCatalogSourceException("Failed to load episodes", e)
-            }
-
         /**
          * PLATINUM: Stream episodes from all series with parallel loading.
          *

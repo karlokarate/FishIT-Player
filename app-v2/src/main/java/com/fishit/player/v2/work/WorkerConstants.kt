@@ -177,20 +177,6 @@ object WorkerConstants {
     /** Default max runtime for workers (15 min) */
     const val DEFAULT_MAX_RUNTIME_MS = 15L * 60 * 1000
 
-    /** General batch size for FireTV low-RAM devices (W-17) */
-    @Deprecated(
-        "Use ObxWriteConfig.FIRETV_BATCH_CAP",
-        ReplaceWith("ObxWriteConfig.FIRETV_BATCH_CAP", "com.fishit.player.core.persistence.config.ObxWriteConfig")
-    )
-    const val FIRETV_BATCH_SIZE = 35
-
-    /** General batch size for normal devices (W-17) */
-    @Deprecated(
-        "Use ObxWriteConfig.NORMAL_BATCH_SIZE",
-        ReplaceWith("ObxWriteConfig.NORMAL_BATCH_SIZE", "com.fishit.player.core.persistence.config.ObxWriteConfig")
-    )
-    const val NORMAL_BATCH_SIZE = 100
-
     /** Exponential backoff initial delay (W-18) */
     const val BACKOFF_INITIAL_SECONDS = 30L
 
