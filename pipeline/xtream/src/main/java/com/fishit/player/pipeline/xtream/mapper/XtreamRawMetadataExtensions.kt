@@ -590,7 +590,7 @@ fun XtreamVodInfo.toRawMediaMetadata(
             posterUrl?.let { createImageRef(it, authHeaders) }
                 ?: vodItem.toPosterImageRef(authHeaders),
         backdrop =
-            infoBlock?.backdropPath?.firstOrNull()?.let {
+            infoBlock?.backdropPath?.let {
                 createImageRef(it, authHeaders)
             },
         thumbnail = null,

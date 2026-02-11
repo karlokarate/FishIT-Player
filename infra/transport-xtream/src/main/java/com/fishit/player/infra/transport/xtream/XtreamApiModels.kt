@@ -1,5 +1,6 @@
 package com.fishit.player.infra.transport.xtream
 
+import com.fishit.player.infra.transport.xtream.serialization.FlexibleStringSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
@@ -365,7 +366,9 @@ data class XtreamSeriesStream(
     val cover: String? = null,
     @SerialName("poster_path") val posterPath: String? = null,
     val logo: String? = null,
-    @SerialName("backdrop_path") val backdropPath: kotlinx.serialization.json.JsonElement? = null,
+    @SerialName("backdrop_path")
+    @Serializable(with = FlexibleStringSerializer::class)
+    val backdropPath: String? = null,
     @SerialName("category_id") val categoryId: String? = null,
     @SerialName("category_ids") val categoryIds: List<Int>? = null,
     @SerialName("stream_type") val streamType: String? = null,
@@ -399,23 +402,6 @@ data class XtreamSeriesStream(
     val resolvedYear: String?
         get() = year ?: releaseDate?.take(4)?.takeIf { it.toIntOrNull() != null }
 
-    /**
-     * Resolve backdrop_path which can be a JSON string OR array depending on the Xtream panel.
-     * Real API data shows both variants: `"https://..."` and `["https://...", ...]`.
-     */
-    val resolvedBackdropPath: String?
-        get() = when (backdropPath) {
-            is kotlinx.serialization.json.JsonArray ->
-                (backdropPath as kotlinx.serialization.json.JsonArray)
-                    .firstOrNull()
-                    ?.let { (it as? kotlinx.serialization.json.JsonPrimitive)?.content }
-                    ?.takeIf { it.isNotBlank() }
-            is kotlinx.serialization.json.JsonPrimitive ->
-                (backdropPath as kotlinx.serialization.json.JsonPrimitive)
-                    .contentOrNull
-                    ?.takeIf { it.isNotBlank() }
-            else -> null
-        }
 }
 
 // =============================================================================
@@ -455,7 +441,9 @@ data class XtreamVodInfoBlock(
     @SerialName("poster_path") val posterPath: String? = null,
     val cover: String? = null,
     @SerialName("cover_big") val coverBig: String? = null,
-    @SerialName("backdrop_path") val backdropPath: List<String>? = null,
+    @SerialName("backdrop_path")
+    @Serializable(with = FlexibleStringSerializer::class)
+    val backdropPath: String? = null,
     @SerialName("youtube_trailer") val youtubeTrailer: String? = null,
     val trailer: String? = null,
     @SerialName("trailer_url") val trailerUrl: String? = null,
@@ -606,7 +594,9 @@ data class XtreamSeriesInfoBlock(
     @SerialName("tmdb_id") val tmdbId: String? = null,
     @SerialName("poster_path") val posterPath: String? = null,
     val cover: String? = null,
-    @SerialName("backdrop_path") val backdropPath: List<String>? = null,
+    @SerialName("backdrop_path")
+    @Serializable(with = FlexibleStringSerializer::class)
+    val backdropPath: String? = null,
     @SerialName("youtube_trailer") val youtubeTrailer: String? = null,
     val trailer: String? = null,
     @SerialName("episode_run_time") val episodeRunTime: String? = null,
