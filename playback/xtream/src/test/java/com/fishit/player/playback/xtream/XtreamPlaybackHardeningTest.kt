@@ -388,7 +388,7 @@ class XtreamPlaybackHardeningTest {
                 offset: Int,
             ) = emptyList<XtreamSeriesStream>()
 
-            override suspend fun getVodInfo(vodId: Int) = null
+            override suspend fun getVodInfo(vodId: Int, vodKind: String?) = null
 
             override suspend fun getSeriesInfo(seriesId: Int) = null
 
@@ -404,14 +404,57 @@ class XtreamPlaybackHardeningTest {
                 perStreamLimit: Int,
             ) {}
 
+            override suspend fun streamVodInBatches(
+                batchSize: Int,
+                categoryId: String?,
+                onBatch: suspend (List<XtreamVodStream>) -> Unit,
+            ) = 0
+
+            override suspend fun streamSeriesInBatches(
+                batchSize: Int,
+                categoryId: String?,
+                onBatch: suspend (List<XtreamSeriesStream>) -> Unit,
+            ) = 0
+
+            override suspend fun streamLiveInBatches(
+                batchSize: Int,
+                categoryId: String?,
+                onBatch: suspend (List<XtreamLiveStream>) -> Unit,
+            ) = 0
+
+            override suspend fun countVodStreams(categoryId: String?) = 0
+
+            override suspend fun countSeries(categoryId: String?) = 0
+
+            override suspend fun countLiveStreams(categoryId: String?) = 0
+
+            override suspend fun search(
+                query: String,
+                types: Set<XtreamContentType>,
+                limit: Int,
+            ) = XtreamSearchResults(emptyList(), emptyList(), emptyList())
+
+            override fun buildCatchupUrl(
+                streamId: Int,
+                start: Long,
+                duration: Int,
+            ): String? = "http://server/catchup/$streamId"
+
+            override suspend fun rawApiCall(
+                action: String,
+                params: Map<String, String>,
+            ): String? = null
+
             override fun buildLiveUrl(
                 streamId: Int,
                 extension: String?,
+                liveKind: String?,
             ) = "http://server/live/$streamId.${extension ?: "m3u8"}"
 
             override fun buildVodUrl(
                 vodId: Int,
                 containerExtension: String?,
+                vodKind: String?,
             ) = "http://server/vod/$vodId.${containerExtension ?: "mp4"}"
 
             override fun buildSeriesEpisodeUrl(
@@ -420,28 +463,12 @@ class XtreamPlaybackHardeningTest {
                 episodeNumber: Int,
                 episodeId: Int?,
                 containerExtension: String?,
+                seriesKind: String?,
             ) = if (episodeId != null && episodeId > 0) {
                 "http://server/movie/$episodeId.${containerExtension ?: "mp4"}"
             } else {
                 "http://server/movie/$seriesId/$seasonNumber/$episodeNumber.${containerExtension ?: "mp4"}"
             }
-
-            override fun buildCatchupUrl(
-                streamId: Int,
-                start: Long,
-                duration: Int,
-            ) = null
-
-            override suspend fun search(
-                query: String,
-                types: Set<XtreamContentType>,
-                limit: Int,
-            ) = XtreamSearchResults(emptyList(), emptyList(), emptyList())
-
-            override suspend fun rawApiCall(
-                action: String,
-                params: Map<String, String>,
-            ) = null
         }
     }
 

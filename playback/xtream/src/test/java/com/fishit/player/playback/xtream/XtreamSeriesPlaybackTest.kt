@@ -35,7 +35,9 @@ class XtreamSeriesPlaybackTest {
                 username = TEST_USER,
                 password = TEST_PASS,
             )
-        return XtreamUrlBuilder(config)
+        val urlBuilder = XtreamUrlBuilder()
+        urlBuilder.configure(config, TEST_PORT)
+        return urlBuilder
     }
 
     // =========================================================================
@@ -244,6 +246,85 @@ class XtreamSeriesPlaybackTest {
             assertTrue(
                 "Error message should list valid formats",
                 e.message!!.contains("Valid formats") && e.message!!.contains("mp4"),
+            )
+        }
+    }
+
+    // =========================================================================
+    // Custom seriesKind Parameter Tests (Fix for provider-specific aliases)
+    // =========================================================================
+
+    @Test
+    fun `series episode URL uses custom seriesKind parameter`() {
+        // Given: A URL builder for series episodes
+        val urlBuilder = createUrlBuilder()
+
+        // When: Building a series episode URL with custom seriesKind "episodes"
+        val url =
+            urlBuilder.seriesEpisodeUrl(
+                seriesId = TEST_SERIES_ID,
+                seasonNumber = 1,
+                episodeNumber = 1,
+                episodeId = TEST_EPISODE_ID,
+                containerExtension = "mp4",
+                seriesKind = "episodes",
+            )
+
+        // Then: URL must use /episodes/ path (NOT default /series/)
+        assertTrue(
+            "Series URL must use custom /episodes/ path",
+            url.contains("/episodes/$TEST_USER/$TEST_PASS/$TEST_EPISODE_ID.mp4"),
+        )
+        assertFalse("Series URL must NOT use default /series/ path", url.contains("/series/"))
+    }
+
+    @Test
+    fun `series episode URL defaults to series when seriesKind is null`() {
+        // Given: A URL builder for series episodes
+        val urlBuilder = createUrlBuilder()
+
+        // When: Building a series episode URL without seriesKind (null)
+        val url =
+            urlBuilder.seriesEpisodeUrl(
+                seriesId = TEST_SERIES_ID,
+                seasonNumber = 1,
+                episodeNumber = 1,
+                episodeId = TEST_EPISODE_ID,
+                containerExtension = "mp4",
+                seriesKind = null,
+            )
+
+        // Then: URL must use default /series/ path
+        assertTrue(
+            "Series URL must use default /series/ path when seriesKind is null",
+            url.contains("/series/$TEST_USER/$TEST_PASS/$TEST_EPISODE_ID.mp4"),
+        )
+    }
+
+    @Test
+    fun `series episode URL supports provider-specific aliases`() {
+        // Given: A URL builder for series episodes
+        val urlBuilder = createUrlBuilder()
+
+        // Test multiple provider-specific aliases that might be used
+        val aliases = listOf("series", "episodes", "show", "tvshow")
+
+        aliases.forEach { alias ->
+            // When: Building URL with provider-specific alias
+            val url =
+                urlBuilder.seriesEpisodeUrl(
+                    seriesId = TEST_SERIES_ID,
+                    seasonNumber = 1,
+                    episodeNumber = 1,
+                    episodeId = TEST_EPISODE_ID,
+                    containerExtension = "mp4",
+                    seriesKind = alias,
+                )
+
+            // Then: URL must use the specified alias
+            assertTrue(
+                "Series URL must use custom /$alias/ path",
+                url.contains("/$alias/$TEST_USER/$TEST_PASS/$TEST_EPISODE_ID.mp4"),
             )
         }
     }
