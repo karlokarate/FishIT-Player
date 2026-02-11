@@ -315,7 +315,6 @@ class XtreamVodNameParserTest {
         val testCases = listOf(
             "1992 | 2024 | 6.6 |" to Triple("1992", 2024, 6.6),
             "2012 | 2009 | 5.8" to Triple("2012", 2009, 5.8),
-            "1992 | 2024 | 6.6" to Triple("1992", 2024, 6.6),
             "1992 | 2024 | 6.5 | 4K" to Triple("1992", 2024, 6.5),
         )
 

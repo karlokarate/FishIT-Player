@@ -153,7 +153,9 @@ object XtreamFormatRules {
                         titleParts.add(part)
                     }
                 }
-                // Rating: decimal number in (0.0, 10.0] (take first match)
+                // Rating: decimal number in (0.0, 10.0] (take first match).
+                // Requires '.' to distinguish from integer tags or counters.
+                // Verified: no real Xtream data uses integer-only ratings in pipe format.
                 rating == null && part.contains('.') &&
                     part.toDoubleOrNull()?.let { it > 0.0 && it <= 10.0 } == true -> {
                     rating = part.toDoubleOrNull()
