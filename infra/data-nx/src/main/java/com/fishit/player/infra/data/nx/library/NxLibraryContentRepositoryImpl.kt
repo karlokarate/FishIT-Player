@@ -173,8 +173,8 @@ class NxLibraryContentRepositoryImpl @Inject constructor(
         return LibraryMediaItem(
             id = workKey,
             title = displayTitle,
-            poster = ImageRef.fromString(posterRef),
-            backdrop = ImageRef.fromString(backdropRef),
+            poster = poster,
+            backdrop = backdrop,
             mediaType = MediaTypeMapper.toMediaType(type),
             sourceType = sourceType,
             year = year,

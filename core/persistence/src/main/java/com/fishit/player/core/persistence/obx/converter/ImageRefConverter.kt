@@ -1,6 +1,7 @@
 package com.fishit.player.core.persistence.obx.converter
 
 import com.fishit.player.core.model.ImageRef
+import com.fishit.player.core.model.toUriString
 import io.objectbox.converter.PropertyConverter
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -57,34 +58,8 @@ class ImageRefConverter : PropertyConverter<ImageRef?, String?> {
     }
 }
 
-/**
- * Extension function for URI string conversion.
- *
- * ## v2 Format for TelegramThumb:
- * `tg://thumb/<remoteId>?chatId=123&messageId=456`
- *
- * Note: remoteId is URL-encoded to handle special characters.
- *
- * @see contracts/TELEGRAM_ID_ARCHITECTURE_CONTRACT.md
- */
-private fun ImageRef.toUriString(): String =
-    when (this) {
-        is ImageRef.Http -> url
-        is ImageRef.TelegramThumb ->
-            buildString {
-                append("tg://thumb/")
-                append(java.net.URLEncoder.encode(remoteId, "UTF-8"))
-                val params = mutableListOf<String>()
-                chatId?.let { params.add("chatId=$it") }
-                messageId?.let { params.add("messageId=$it") }
-                if (params.isNotEmpty()) {
-                    append("?")
-                    append(params.joinToString("&"))
-                }
-            }
-        is ImageRef.LocalFile -> "file://$path"
-        is ImageRef.InlineBytes -> "inline:${bytes.size}bytes"
-    }
+// NX_CONSOLIDATION_PLAN Phase 7 #14: Removed duplicate toUriString() — 
+// delegates to ImageRef.toUriString() in core:model (SSOT)
 
 // =============================================================================
 // Serialization DTO

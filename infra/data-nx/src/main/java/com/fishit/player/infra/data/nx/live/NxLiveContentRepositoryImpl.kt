@@ -227,7 +227,7 @@ class NxLiveContentRepositoryImpl @Inject constructor(
             id = workKey,
             name = displayTitle,
             channelNumber = null, // TODO: Add to NX_Work or metadata
-            logo = ImageRef.fromString(posterRef),
+            logo = poster,
             categoryId = null, // TODO: Add category support
             categoryName = null,
             // EPG Now/Next: null here, fetched on-demand by player

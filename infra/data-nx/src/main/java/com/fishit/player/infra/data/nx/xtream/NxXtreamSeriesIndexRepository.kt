@@ -22,6 +22,8 @@ import com.fishit.player.core.detail.domain.EpisodeIndexItem
 import com.fishit.player.core.detail.domain.EpisodePlaybackHints
 import com.fishit.player.core.detail.domain.SeasonIndexItem
 import com.fishit.player.core.detail.domain.XtreamSeriesIndexRepository
+import com.fishit.player.core.model.ImageRef
+import com.fishit.player.core.model.toUriString
 import com.fishit.player.core.model.repository.NxWorkRelationRepository
 import com.fishit.player.core.model.repository.NxWorkRelationRepository.RelationType
 import com.fishit.player.core.model.repository.NxWorkRepository
@@ -30,14 +32,15 @@ import com.fishit.player.core.model.repository.NxWorkSourceRefRepository
 import com.fishit.player.core.model.repository.NxWorkSourceRefRepository.SourceItemKind
 import com.fishit.player.core.model.repository.NxWorkSourceRefRepository.SourceType
 import com.fishit.player.core.model.repository.NxWorkVariantRepository
+import com.fishit.player.core.model.PlaybackHintKeys
 import com.fishit.player.infra.data.nx.mapper.SourceKeyParser
+import com.fishit.player.infra.data.nx.mapper.base.PlaybackHintsDecoder
 import com.fishit.player.infra.logging.UnifiedLog
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
-import org.json.JSONObject
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -189,10 +192,10 @@ class NxXtreamSeriesIndexRepository @Inject constructor(
             sourceKey = sourceKey,
             episodeId = SourceKeyParser.extractXtreamEpisodeId(sourceKey),
             title = episodeWork.displayTitle,
-            // --- Images ---
-            thumbUrl = episodeWork.posterRef,
-            coverUrl = episodeWork.backdropRef,
-            thumbnailUrl = episodeWork.thumbnailRef,
+            // --- Images (ImageRef → String URL for EpisodeIndexItem DTO) ---
+            thumbUrl = episodeWork.poster?.toUriString(),
+            coverUrl = episodeWork.backdrop?.toUriString(),
+            thumbnailUrl = episodeWork.thumbnail?.toUriString(),
             // --- Core metadata ---
             durationSecs = episodeWork.runtimeMs?.let { (it / 1000).toInt() },
             durationString = defaultVariant?.playbackHints?.get("duration_display"),
@@ -255,9 +258,9 @@ class NxXtreamSeriesIndexRepository @Inject constructor(
                 episode = episode.episodeNumber,
                 year = null,
                 runtimeMs = episode.durationSecs?.let { it.toLong() * 1000 },
-                posterRef = episode.thumbUrl,
-                backdropRef = episode.coverUrl,
-                thumbnailRef = episode.thumbnailUrl,
+                poster = ImageRef.fromString(episode.thumbUrl),
+                backdrop = ImageRef.fromString(episode.coverUrl),
+                thumbnail = ImageRef.fromString(episode.thumbnailUrl),
                 rating = episode.rating,
                 plot = episode.plot, // Full plot — never truncated
                 releaseDate = episode.airDate,
@@ -305,12 +308,12 @@ class NxXtreamSeriesIndexRepository @Inject constructor(
 
                 // Build playbackHints map — includes ALL source-specific data
                 val playbackHints = buildMap<String, String> {
-                    playbackUrl?.let { put("direct_url", it) }
-                    containerExt?.let { put("container_extension", it) }
+                    playbackUrl?.let { put(PlaybackHintKeys.Xtream.DIRECT_SOURCE, it) }
+                    containerExt?.let { put(PlaybackHintKeys.Xtream.CONTAINER_EXT, it) }
                     episode.customSid?.let { put("custom_sid", it) }
-                    episode.videoWidth?.let { put("video_width", it.toString()) }
+                    episode.videoWidth?.let { put(PlaybackHintKeys.VIDEO_WIDTH, it.toString()) }
                     episode.videoAspectRatio?.let { put("aspect_ratio", it) }
-                    episode.audioChannels?.let { put("audio_channels", it.toString()) }
+                    episode.audioChannels?.let { put(PlaybackHintKeys.AUDIO_CHANNELS, it.toString()) }
                     episode.audioLanguage?.let { put("audio_language", it) }
                     episode.durationString?.let { put("duration_display", it) }
                 }
@@ -360,8 +363,8 @@ class NxXtreamSeriesIndexRepository @Inject constructor(
             // Keep existing hints
             existingVariant?.playbackHints?.forEach { (k, v) -> put(k, v) }
             // Override with new values
-            playbackUrl?.let { put("direct_url", it) }
-            containerExt?.let { put("container_extension", it) }
+            playbackUrl?.let { put(PlaybackHintKeys.Xtream.DIRECT_SOURCE, it) }
+            containerExt?.let { put(PlaybackHintKeys.Xtream.CONTAINER_EXT, it) }
         }
 
         val variant = NxWorkVariantRepository.Variant(
@@ -542,10 +545,10 @@ class NxXtreamSeriesIndexRepository @Inject constructor(
                 sourceKey = sourceKey,
                 episodeId = SourceKeyParser.extractXtreamEpisodeId(sourceKey),
                 title = episodeWork.displayTitle,
-                // --- Images ---
-                thumbUrl = episodeWork.posterRef,
-                coverUrl = episodeWork.backdropRef,
-                thumbnailUrl = episodeWork.thumbnailRef,
+                // --- Images (ImageRef → String URL for EpisodeIndexItem DTO) ---
+                thumbUrl = episodeWork.poster?.toUriString(),
+                coverUrl = episodeWork.backdrop?.toUriString(),
+                thumbnailUrl = episodeWork.thumbnail?.toUriString(),
                 // --- Core metadata ---
                 durationSecs = episodeWork.runtimeMs?.let { (it / 1000).toInt() },
                 durationString = defaultVariant?.playbackHints?.get("duration_display"),
@@ -584,32 +587,21 @@ class NxXtreamSeriesIndexRepository @Inject constructor(
     }
 
     private fun extractPlaybackUrlFromHints(hintsJson: String): String? {
-        return try {
-            val obj = JSONObject(hintsJson)
-            obj.optString("direct_url", null)
-                ?: obj.optString("directUrl", null)
-        } catch (e: Exception) {
-            null
-        }
+        val hints = PlaybackHintsDecoder.decodeJson(hintsJson) ?: return null
+        return hints[PlaybackHintKeys.Xtream.DIRECT_SOURCE]
+            ?: hints["direct_url"] // legacy fallback
+            ?: hints["directUrl"]  // legacy fallback
     }
 
     private fun extractContainerFromHints(hintsJson: String): String? {
-        return try {
-            val obj = JSONObject(hintsJson)
-            obj.optString("container_extension", null)
-                ?: obj.optString("containerExtension", null)
-        } catch (e: Exception) {
-            null
-        }
+        val hints = PlaybackHintsDecoder.decodeJson(hintsJson) ?: return null
+        return hints[PlaybackHintKeys.Xtream.CONTAINER_EXT]
+            ?: hints["container_extension"] // legacy fallback
+            ?: hints["containerExtension"]  // legacy fallback
     }
 
-    private fun buildPlaybackHintsJsonFromVariant(variant: NxWorkVariantRepository.Variant): String {
-        val obj = JSONObject()
-        variant.playbackHints["direct_url"]?.let { obj.put("direct_url", it) }
-        variant.playbackHints["container_extension"]?.let { obj.put("container_extension", it) }
-        variant.container?.let { obj.put("container_extension", it) }
-        return obj.toString()
-    }
+    private fun buildPlaybackHintsJsonFromVariant(variant: NxWorkVariantRepository.Variant): String =
+        PlaybackHintsDecoder.encodeToJson(variant.playbackHints) ?: "{}"
 
     companion object {
         private const val TAG = "NxSeriesIndex"

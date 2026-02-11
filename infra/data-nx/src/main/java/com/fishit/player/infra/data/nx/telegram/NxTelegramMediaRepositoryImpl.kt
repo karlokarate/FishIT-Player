@@ -142,7 +142,8 @@ class NxTelegramMediaRepositoryImpl @Inject constructor(
             sourceLabel = telegramSourceRef?.sourceTitle ?: "Telegram",
             mediaType = MediaTypeMapper.toMediaType(type),
             durationMs = runtimeMs,
-            posterUrl = posterRef?.let { serializeImageRefToUrl(it) },
+            posterUrl = (poster as? com.fishit.player.core.model.ImageRef.Http)?.url
+                ?: (poster as? com.fishit.player.core.model.ImageRef.TelegramThumb)?.let { "tg:${it.remoteId}" },
             chatId = extractedChatId,
             messageId = messageId,
             remoteId = null, // TODO: Store in NX metadata if needed
@@ -160,18 +161,5 @@ class NxTelegramMediaRepositoryImpl @Inject constructor(
 
     // Note: mapWorkTypeToMediaType removed - use MediaTypeMapper.toMediaType() instead
 
-    private fun serializeImageRefToUrl(serialized: String): String? {
-        val colonIndex = serialized.indexOf(':')
-        if (colonIndex < 0) return null
-
-        val type = serialized.substring(0, colonIndex)
-        val value = serialized.substring(colonIndex + 1)
-
-        return when (type) {
-            "http" -> value
-            "tg" -> "tg:$value" // Keep tg: prefix for Telegram thumbnails
-            "file" -> "file://$value"
-            else -> null
-        }
-    }
+    // NX_CONSOLIDATION_PLAN Phase 4: serializeImageRefToUrl() removed — ImageRef accessed directly
 }

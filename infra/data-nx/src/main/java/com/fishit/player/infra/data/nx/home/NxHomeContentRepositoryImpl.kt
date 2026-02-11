@@ -32,7 +32,6 @@ import androidx.paging.map
 import com.fishit.player.core.home.domain.HomeContentRepository
 import com.fishit.player.core.home.domain.HomeMediaItem
 import com.fishit.player.core.model.ContentDisplayLimits
-import com.fishit.player.core.model.ImageRef
 import com.fishit.player.core.model.MediaType
 import com.fishit.player.core.model.SourceType
 import com.fishit.player.core.model.repository.NxWorkRepository
@@ -344,9 +343,9 @@ class NxHomeContentRepositoryImpl @Inject constructor(
         return HomeMediaItem(
             id = workKey,
             title = displayTitle,
-            poster = ImageRef.fromString(posterRef),
+            poster = poster,
             placeholderThumbnail = null,
-            backdrop = ImageRef.fromString(backdropRef),
+            backdrop = backdrop,
             mediaType = MediaTypeMapper.toMediaType(type),
             sourceType = sourceType,
             sourceTypes = allSourceTypes,
@@ -541,9 +540,9 @@ private class HomePagingSource(
         return HomeMediaItem(
             id = workKey,
             title = displayTitle,
-            poster = ImageRef.fromString(posterRef),
+            poster = poster,
             placeholderThumbnail = null,
-            backdrop = ImageRef.fromString(backdropRef),
+            backdrop = backdrop,
             mediaType = MediaTypeMapper.toMediaType(type),
             sourceType = sourceType,
             sourceTypes = allSourceTypes,

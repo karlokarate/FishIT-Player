@@ -11,7 +11,6 @@
  */
 package com.fishit.player.infra.data.nx.writer.builder
 
-import com.fishit.player.core.model.ImageRef
 import com.fishit.player.core.model.NormalizedMediaMetadata
 import com.fishit.player.core.model.repository.NxWorkRepository
 import com.fishit.player.infra.data.nx.mapper.MediaTypeMapper
@@ -50,9 +49,10 @@ class WorkEntityBuilder @Inject constructor() {
             season = normalized.season,
             episode = normalized.episode,
             runtimeMs = normalized.durationMs,
-            posterRef = normalized.poster?.toSerializedString(),
-            backdropRef = normalized.backdrop?.toSerializedString(),
-            thumbnailRef = normalized.thumbnail?.toSerializedString(),
+            // NX_CONSOLIDATION_PLAN Phase 4: ImageRef direct — no serialization roundtrip
+            poster = normalized.poster,
+            backdrop = normalized.backdrop,
+            thumbnail = normalized.thumbnail,
             rating = normalized.rating,
             genres = normalized.genres,
             plot = normalized.plot,
@@ -84,18 +84,6 @@ class WorkEntityBuilder @Inject constructor() {
             NxWorkRepository.RecognitionState.CONFIRMED
         } else {
             NxWorkRepository.RecognitionState.HEURISTIC
-        }
-    }
-    
-    /**
-     * Extension to serialize ImageRef to string format.
-     */
-    private fun ImageRef.toSerializedString(): String {
-        return when (this) {
-            is ImageRef.Http -> "http:$url"
-            is ImageRef.TelegramThumb -> "tg:$remoteId"
-            is ImageRef.LocalFile -> "file:$path"
-            is ImageRef.InlineBytes -> "inline:${bytes.size}bytes"
         }
     }
 }

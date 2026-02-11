@@ -3,6 +3,7 @@ package com.fishit.player.playback.domain.defaults
 import com.fishit.player.core.model.repository.NxEpgRepository
 import com.fishit.player.core.model.repository.NxWorkRepository
 import com.fishit.player.core.model.repository.NxWorkRepository.WorkType
+import com.fishit.player.core.model.toUriString
 import com.fishit.player.infra.logging.UnifiedLog
 import com.fishit.player.playback.domain.EpgEntry
 import com.fishit.player.playback.domain.LiveChannelInfo
@@ -124,7 +125,7 @@ class NxLivePlaybackController @Inject constructor(
             val channelInfo = LiveChannelInfo(
                 channelId = channelId,
                 name = work.displayTitle,
-                logoUrl = work.posterRef,
+                logoUrl = work.poster?.toUriString(),
                 currentProgram = nowNext?.now?.toEpgEntry(),
                 nextProgram = nowNext?.next?.toEpgEntry(),
             )
@@ -186,7 +187,7 @@ class NxLivePlaybackController @Inject constructor(
                 LiveChannelInfo(
                     channelId = work.workKey,
                     name = work.displayTitle,
-                    logoUrl = work.posterRef,
+                    logoUrl = work.poster?.toUriString(),
                     currentProgram = null, // Not fetched for list
                     nextProgram = null,
                 )
