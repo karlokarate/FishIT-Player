@@ -453,23 +453,6 @@ class TelegramFileReadyEnsurer(
     }
 
     /**
-     * Legacy method for backward compatibility.
-     *
-     * @deprecated Use pollUntilReadyProgressive or pollUntilReadyFullFile directly
-     */
-    @Deprecated("Use pollUntilReadyProgressive or pollUntilReadyFullFile")
-    private suspend fun pollUntilReady(
-        fileId: Int,
-        validateMoov: Boolean,
-        minBytes: Long = TelegramStreamingConfig.MIN_PREFIX_FOR_VALIDATION_BYTES,
-    ): String =
-        if (validateMoov) {
-            pollUntilReadyProgressive(fileId, mimeType = null)
-        } else {
-            pollUntilReadyFullFile(fileId)
-        }
-
-    /**
      * Polls until file is ready for seek at the specified position.
      *
      * Uses correct check: downloadedPrefixSize >= seekPosition + MIN_READ_AHEAD_BYTES (not just

@@ -19,17 +19,6 @@ object CanonicalKeyGenerator {
     private const val EPISODE_PREFIX = "episode:"
 
     /**
-     * Generate a canonical key from an untyped TMDB ID.
-     *
-     * This produces the legacy untyped format `tmdb:<id>`.
-     * Prefer [fromTmdbId(com.fishit.player.core.model.TmdbRef)] for deterministic typed keys.
-     */
-    @Deprecated(
-        message = "Ambiguous TMDB ID without type. Prefer fromTmdbId(TmdbRef) for tmdb:movie:/tmdb:tv:.",
-    )
-    fun fromTmdbId(tmdbId: com.fishit.player.core.model.ids.TmdbId): String = "$TMDB_PREFIX${tmdbId.value}"
-
-    /**
      * Generate canonical key from typed TmdbRef (preferred).
      * Per Gold Decision Dec 2025: Format is tmdb:{type}:{id}
      */

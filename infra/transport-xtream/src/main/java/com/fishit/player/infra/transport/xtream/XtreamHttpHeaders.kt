@@ -37,12 +37,6 @@ object XtreamHttpHeaders {
      * Legacy User-Agent for backward compatibility with older panel configs.
      * @deprecated Use [PREMIUM_USER_AGENT] for new code.
      */
-    @Deprecated(
-        message = "Use PREMIUM_USER_AGENT per Premium Contract Section 4",
-        replaceWith = ReplaceWith("PREMIUM_USER_AGENT"),
-    )
-    const val LEGACY_USER_AGENT: String = "IBOPlayer/1.4 (Android)"
-
     // =========================================================================
     // API Headers (JSON/metadata requests)
     // =========================================================================

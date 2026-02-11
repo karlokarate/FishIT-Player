@@ -42,22 +42,6 @@ interface XtreamCatalogSource {
     suspend fun loadSeriesItems(): List<XtreamSeriesItem>
 
     /**
-     * Load all episodes across all series.
-     *
-     * @deprecated Use [loadEpisodesStreaming] for parallel loading with progress.
-     * This method blocks until ALL episodes from ALL series are loaded,
-     * which can take minutes for large catalogs and may timeout.
-     *
-     * @return List of all episodes (may be empty)
-     * @throws XtreamCatalogSourceException on non-recoverable errors
-     */
-    @Deprecated(
-        message = "Use loadEpisodesStreaming() for parallel loading with checkpoint support",
-        replaceWith = ReplaceWith("loadEpisodesStreaming()"),
-    )
-    suspend fun loadEpisodes(): List<XtreamEpisode>
-
-    /**
      * Stream episodes from all series with parallel loading.
      *
      * **PLATINUM Episode Loading:**

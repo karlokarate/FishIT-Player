@@ -232,14 +232,12 @@ data class RawMediaMetadata(
  * External IDs from upstream sources. These MUST be passed through without modification.
  *
  * **Typed TMDB Reference (Gold Decision Dec 2025):**
- * - [tmdb] is the typed TMDB reference (MOVIE or TV) - preferred field
- * - [legacyTmdbId] is deprecated, kept only for migration of existing data
+ * - [tmdb] is the typed TMDB reference (MOVIE or TV)
  *
  * For episodes: Use `TmdbRef(TV, seriesId)` with `season/episode` from RawMediaMetadata. Never
  * create episode-specific TMDB refs.
  *
- * @property tmdb Typed TMDB reference (MOVIE or TV type + ID). Preferred field.
- * @property legacyTmdbId DEPRECATED: Untyped TMDB ID for migration only. Do not use in new code.
+ * @property tmdb Typed TMDB reference (MOVIE or TV type + ID)
  * @property imdbId IMDb ID (tt-prefixed string, e.g., "tt0137523")
  * @property tvdbId TheTVDB ID
  */
@@ -254,38 +252,26 @@ data class ExternalIds(
      * Never use EPISODE type (TMDB has no episode root type).
      */
     val tmdb: TmdbRef? = null,
-    /**
-     * DEPRECATED: Legacy untyped TMDB ID.
-     *
-     * Kept only for migration of existing stored data. New code MUST use [tmdb] field.
-     * Migration: Convert to typed [tmdb] using MediaType context.
-     */
-    @Deprecated("Use tmdb (typed TmdbRef) instead", replaceWith = ReplaceWith("tmdb"))
-    val legacyTmdbId: Int? = null,
     val imdbId: String? = null,
     val tvdbId: String? = null,
 ) {
     /**
-     * Get the effective TMDB ID (from typed or legacy field).
-     *
-     * Prefers typed [tmdb] field. Falls back to [legacyTmdbId] for migration compatibility.
+     * Get the effective TMDB ID from typed field.
      */
-    @Suppress("DEPRECATION")
     val effectiveTmdbId: Int?
-        get() = tmdb?.id ?: legacyTmdbId
+        get() = tmdb?.id
 
-    /** Check if this has any TMDB reference (typed or legacy). */
-    @Suppress("DEPRECATION")
+    /** Check if this has any TMDB reference. */
     val hasTmdb: Boolean
-        get() = tmdb != null || legacyTmdbId != null
+        get() = tmdb != null
 
     companion object {
         /**
-         * Create ExternalIds from legacy untyped TMDB ID with migration.
+         * Create ExternalIds from untyped TMDB ID with type inference.
          *
-         * @param tmdbId Legacy untyped TMDB ID
+         * @param tmdbId Untyped TMDB ID
          * @param mediaType MediaType to determine TMDB type
-         * @return ExternalIds with typed tmdb field if type can be determined
+         * @return ExternalIds with typed tmdb field if type can be determined, empty otherwise
          */
         fun fromLegacyTmdbId(
             tmdbId: Int,
@@ -296,13 +282,12 @@ data class ExternalIds(
                     MediaType.MOVIE -> TmdbRef(TmdbMediaType.MOVIE, tmdbId)
                     MediaType.SERIES, MediaType.SERIES_EPISODE ->
                         TmdbRef(TmdbMediaType.TV, tmdbId)
-                    else -> null // Cannot determine type, store as legacy
+                    else -> null // Cannot determine type
                 }
             return if (tmdbRef != null) {
                 ExternalIds(tmdb = tmdbRef)
             } else {
-                @Suppress("DEPRECATION")
-                ExternalIds(legacyTmdbId = tmdbId)
+                ExternalIds() // Return empty if type cannot be determined
             }
         }
     }
