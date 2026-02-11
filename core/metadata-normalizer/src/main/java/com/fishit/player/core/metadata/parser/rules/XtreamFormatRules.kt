@@ -171,7 +171,8 @@ object XtreamFormatRules {
         for (i in (titleIndex + 1) until parts.size) {
             val part = parts[i]
 
-            // Quality/extra tag: lazy uppercase — only allocate when length matches tag range
+            // Quality/extra tag: lazy uppercase — only allocate when length matches tag range.
+            // First matched quality tag becomes the primary `quality`; additional tags go to `extraTags`.
             if (part.length in 2..11) {
                 val upper = part.uppercase()
                 if (upper in QUALITY_TAGS) {

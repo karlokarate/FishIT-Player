@@ -129,9 +129,11 @@ class Re2jSceneNameParser : SceneNameParser {
                 }
             }
 
-        // Check all tags (primary quality + extras) for IMAX and collect unmapped
+        // Collect tags that weren't mapped to QualityInfo. The primary quality tag
+        // maps to resolution/codec/hdr; if it didn't map (e.g. "+18"), it's unmapped.
+        // IMAX is always consumed by EditionInfo regardless of position.
         val allTags = buildList {
-            result.quality?.let { if (quality == null) add(it) } // unmapped primary tag
+            result.quality?.let { if (quality == null) add(it) } // primary tag didn't map to QualityInfo
             addAll(result.extraTags)
         }
         val hasImax = allTags.any { it.equals("IMAX", ignoreCase = true) }
