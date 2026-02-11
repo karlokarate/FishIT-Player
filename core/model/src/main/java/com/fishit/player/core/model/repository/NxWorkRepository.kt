@@ -11,6 +11,7 @@
  */
 package com.fishit.player.core.model.repository
 
+import com.fishit.player.core.model.ImageRef
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -53,10 +54,12 @@ interface NxWorkRepository {
         /** Episode number within season */
         val episode: Int? = null,
         val runtimeMs: Long? = null,
-        val posterRef: String? = null,
-        val backdropRef: String? = null,
-        /** Thumbnail image (e.g., Telegram minithumbnail, episode screenshot) */
-        val thumbnailRef: String? = null,
+        /** Poster image — SSOT: ImageRef (NX_CONSOLIDATION_PLAN Phase 4). */
+        val poster: ImageRef? = null,
+        /** Backdrop/fanart image. */
+        val backdrop: ImageRef? = null,
+        /** Thumbnail image (e.g., Telegram minithumbnail, episode screenshot). */
+        val thumbnail: ImageRef? = null,
         val rating: Double? = null, // 0..10 if present
         val genres: String? = null,
         val plot: String? = null,
@@ -247,6 +250,29 @@ interface NxWorkRepository {
      * Upsert by workKey (idempotent).
      */
     suspend fun upsert(work: Work): Work
+
+    /**
+     * Enrich an existing work with additional metadata (write-protected).
+     *
+     * **NX_CONSOLIDATION_PLAN Phase 1 — Field Guard**
+     *
+     * WRITE PROTECTION RULES:
+     * - **IMMUTABLE** fields (set at creation, never overwritten):
+     *   workKey, type, displayTitle, sortTitle, titleNormalized, year, createdAtMs
+     * - **ENRICH_ONLY** fields (overwrite only if currently null/default):
+     *   poster, backdrop, thumbnail, plot, genres, director, cast, rating,
+     *   runtimeMs, trailer, releaseDate, season, episode, isAdult
+     * - **ALWAYS_UPDATE** fields (always overwritten when new value non-null):
+     *   tmdbId, imdbId, tvdbId
+     * - **MONOTONIC_UP** for recognitionState:
+     *   Only upgrades (HEURISTIC→CONFIRMED), never downgrades
+     * - **AUTO**: updatedAtMs always set to current time
+     *
+     * @param workKey Key of the work to enrich
+     * @param enrichment Work containing the enrichment data
+     * @return Updated work, or null if workKey doesn't exist
+     */
+    suspend fun enrichIfAbsent(workKey: String, enrichment: Work): Work?
 
     suspend fun upsertBatch(works: List<Work>): List<Work>
 

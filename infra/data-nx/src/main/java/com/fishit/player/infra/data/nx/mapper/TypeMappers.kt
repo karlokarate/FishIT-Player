@@ -47,6 +47,7 @@
 package com.fishit.player.infra.data.nx.mapper
 
 import com.fishit.player.core.model.MediaType
+import com.fishit.player.core.model.MediaKind
 import com.fishit.player.core.model.repository.NxWorkRepository.WorkType
 import com.fishit.player.core.model.repository.NxWorkSourceRefRepository.SourceItemKind
 import com.fishit.player.core.model.repository.NxWorkSourceRefRepository.SourceType
@@ -179,6 +180,36 @@ internal object MediaTypeMapper {
         val workType = WorkTypeMapper.toWorkType(value)
         return toMediaType(workType)
     }
+
+    /**
+     * Converts MediaType to MediaKind (for CanonicalMediaId).
+     *
+     * **NX_CONSOLIDATION_PLAN Phase 2 — Replaces duplicate mediaTypeToKind() in NxCanonicalMediaRepositoryImpl**
+     */
+    fun toMediaKind(mediaType: MediaType): MediaKind = when (mediaType) {
+        MediaType.SERIES_EPISODE -> MediaKind.EPISODE
+        else -> MediaKind.MOVIE
+    }
+
+    /**
+     * Converts WorkType entity string to MediaKind.
+     *
+     * **NX_CONSOLIDATION_PLAN Phase 2 — Replaces duplicate workTypeToKind() in NxCanonicalMediaRepositoryImpl**
+     */
+    fun workTypeStringToMediaKind(workTypeString: String): MediaKind = when (workTypeString.uppercase()) {
+        "EPISODE", "SERIES_EPISODE" -> MediaKind.EPISODE
+        else -> MediaKind.MOVIE
+    }
+
+    /**
+     * Converts MediaKind back to workType entity string.
+     *
+     * **NX_CONSOLIDATION_PLAN Phase 7 #2 — Replaces inline kindToWorkType() in NxCanonicalMediaRepositoryImpl**
+     */
+    fun fromMediaKind(kind: MediaKind): String = when (kind) {
+        MediaKind.MOVIE -> "MOVIE"
+        MediaKind.EPISODE -> "EPISODE"
+    }
 }
 
 /**
@@ -217,6 +248,8 @@ internal object SourceLabelBuilder {
     /**
      * Builds a human-readable label for a source type and account.
      *
+     * Format: "IPTV: MyServer", "Telegram: MyChannel", "Local File"
+     *
      * @param sourceType The source type (e.g., "telegram", "xtream")
      * @param accountLabel The human-readable account label
      * @return Formatted label for UI display
@@ -228,6 +261,29 @@ internal object SourceLabelBuilder {
         "plex" -> "Plex: $accountLabel"
         else -> "${sourceType}: $accountLabel"
     }
+
+    /**
+     * Builds a label with optional quality suffix for list views.
+     *
+     * Format: "IPTV: MyServer - 1080p", "Telegram: MyChannel - 4K"
+     * Falls back to [buildLabel] base when no quality info available.
+     *
+     * @param sourceType The source type
+     * @param accountLabel The human-readable account label
+     * @param qualityHeight Optional video height in pixels for quality suffix
+     * @return Formatted label with optional quality
+     */
+    fun buildLabelWithQuality(
+        sourceType: String,
+        accountLabel: String,
+        qualityHeight: Int?,
+    ): String = buildString {
+        append(buildLabel(sourceType, accountLabel))
+        com.fishit.player.core.model.util.ResolutionLabel.fromHeight(qualityHeight)?.let {
+            append(" - ")
+            append(it)
+        }
+    }
 }
 
 /**
@@ -237,69 +293,22 @@ internal object SourceLabelBuilder {
  *
  * Used in WorkDetailMapper for determining which source/variant to prefer.
  */
+/**
+ * @deprecated Use [com.fishit.player.core.model.util.SourcePriority] instead.
+ * Retained temporarily as a delegate — all new code should use SourcePriority directly.
+ */
+@Deprecated("Use SourcePriority from core:model", ReplaceWith("SourcePriority", "com.fishit.player.core.model.util.SourcePriority"))
 internal object SourcePriorityCalculator {
-    /**
-     * Calculates base priority from source type.
-     *
-     * Higher priority = preferred for auto-selection.
-     * Priority order: local (100) > plex (80) > xtream (60) > telegram (40) > other (20)
-     *
-     * @param sourceType The source type string
-     * @return Base priority score
-     */
-    fun getBasePriority(sourceType: String): Int = when (sourceType.lowercase()) {
-        "local" -> 100
-        "plex" -> 80
-        "xtream" -> 60
-        "telegram" -> 40
-        else -> 20
-    }
-
-    /**
-     * Calculates quality priority from quality tag.
-     *
-     * @param qualityTag Quality tag (e.g., "4k", "1080p", "720p", "source")
-     * @return Quality priority score (0-50)
-     */
-    fun getQualityPriority(qualityTag: String): Int = when (qualityTag.lowercase()) {
-        "4k", "2160p", "uhd" -> 50
-        "1080p", "fhd" -> 40
-        "720p", "hd" -> 30
-        "480p", "sd" -> 20
-        "source" -> 25 // Slightly lower than explicit qualities
-        else -> 10
-    }
-
-    /**
-     * Calculates total priority for a source/variant combination.
-     *
-     * @param sourceType The source type string
-     * @param qualityTag Optional quality tag
-     * @param hasDirectUrl Whether a direct playback URL is available
-     * @param isExplicitVariant Whether this is an explicit variant (vs default)
-     * @return Total priority score
-     */
     fun calculateTotalPriority(
         sourceType: String,
-        qualityTag: String?,
+        qualityTag: String? = null,
         hasDirectUrl: Boolean = false,
         isExplicitVariant: Boolean = false,
-    ): Int {
-        var priority = getBasePriority(sourceType)
-
-        if (qualityTag != null) {
-            priority += getQualityPriority(qualityTag)
-        }
-
-        if (hasDirectUrl) {
-            priority += 10
-        }
-
-        if (isExplicitVariant) {
-            priority += 5
-        }
-
-        return priority
-    }
+    ): Int = com.fishit.player.core.model.util.SourcePriority.totalPriority(
+        sourceType = sourceType,
+        qualityTag = qualityTag,
+        hasDirectUrl = hasDirectUrl,
+        isExplicitVariant = isExplicitVariant,
+    )
 }
 

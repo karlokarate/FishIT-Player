@@ -1,6 +1,8 @@
 package com.fishit.player.core.persistence.obx
 
+import com.fishit.player.core.model.SourceType
 import com.fishit.player.core.model.repository.NxWorkRepository
+import com.fishit.player.core.model.util.SlugGenerator
 import java.text.Normalizer
 import java.util.Locale
 
@@ -392,15 +394,7 @@ object NxKeyGenerator {
      * @param title Input title
      * @return URL-safe slug
      */
-    fun toSlug(title: String): String =
-        Normalizer
-            .normalize(title, Normalizer.Form.NFD)
-            .replace(Regex("[\\p{InCombiningDiacriticalMarks}]"), "")
-            .lowercase(Locale.ROOT)
-            .replace(Regex("[^a-z0-9]+"), "-")
-            .replace(Regex("-+"), "-")
-            .trim('-')
-            .ifEmpty { "untitled" }
+    fun toSlug(title: String): String = SlugGenerator.toSlug(title)
 
     // =========================================================================
     // Key Parsing
@@ -464,7 +458,11 @@ object NxKeyGenerator {
         val parts = sourceKey.split(":", limit = 3)
         if (parts.size < 3) return null
 
-        val sourceType = SourceType.fromString(parts[0])
+        val sourceType = try {
+            SourceType.valueOf(parts[0].uppercase())
+        } catch (_: IllegalArgumentException) {
+            SourceType.UNKNOWN
+        }
         val accountKey = parts[1]
         val sourceId = parts[2]
 

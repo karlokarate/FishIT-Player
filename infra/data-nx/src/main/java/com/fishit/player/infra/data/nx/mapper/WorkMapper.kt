@@ -6,11 +6,11 @@
  */
 package com.fishit.player.infra.data.nx.mapper
 
-import com.fishit.player.core.model.ImageRef
 import com.fishit.player.core.model.repository.NxWorkRepository.RecognitionState
 import com.fishit.player.core.model.repository.NxWorkRepository.Work
 import com.fishit.player.core.model.repository.NxWorkRepository.WorkType
 import com.fishit.player.core.persistence.obx.NX_Work
+import com.fishit.player.infra.data.nx.mapper.base.MappingUtils
 
 /**
  * Converts NX_Work entity to Work domain model.
@@ -25,9 +25,10 @@ fun NX_Work.toDomain(): Work = Work(
     season = season,
     episode = episode,
     runtimeMs = durationMs,
-    posterRef = poster?.toUrlString(),
-    backdropRef = backdrop?.toUrlString(),
-    thumbnailRef = thumbnail?.toUrlString(),
+    // NX_CONSOLIDATION_PLAN Phase 4: ImageRef direct — no String roundtrip
+    poster = poster,
+    backdrop = backdrop,
+    thumbnail = thumbnail,
     rating = rating,
     genres = genres,
     plot = plot,
@@ -40,7 +41,12 @@ fun NX_Work.toDomain(): Work = Work(
     imdbId = imdbId,
     tvdbId = tvdbId,
     isAdult = isAdult,
-    recognitionState = if (needsReview) RecognitionState.NEEDS_REVIEW else RecognitionState.HEURISTIC,
+    recognitionState = MappingUtils.safeEnumFromString(
+        this.recognitionState,
+        // Migration fallback: if recognitionState not yet set, use legacy needsReview
+        @Suppress("DEPRECATION")
+        if (this.needsReview) RecognitionState.NEEDS_REVIEW else RecognitionState.HEURISTIC,
+    ),
     createdAtMs = createdAt,
     updatedAtMs = updatedAt,
     isDeleted = false, // ObjectBox soft delete not implemented yet
@@ -50,7 +56,7 @@ fun NX_Work.toDomain(): Work = Work(
  * Converts Work domain model to NX_Work entity.
  * Note: Only sets fields from Work domain model, preserves entity ID.
  *
- * **Important:** Converts posterRef/backdropRef URL strings back to ImageRef objects.
+ * NX_CONSOLIDATION_PLAN Phase 4: ImageRef flows directly — no String↔ImageRef roundtrip.
  * Falls back to existing entity values if new value is null (preserves existing images).
  */
 fun Work.toEntity(existingEntity: NX_Work? = null): NX_Work {
@@ -65,10 +71,10 @@ fun Work.toEntity(existingEntity: NX_Work? = null): NX_Work {
         season = season,
         episode = episode,
         durationMs = runtimeMs,
-        // Convert URL strings back to ImageRef - use new values if provided, else preserve existing
-        poster = posterRef?.let { parseSerializedImageRef(it) } ?: existingEntity?.poster,
-        backdrop = backdropRef?.let { parseSerializedImageRef(it) } ?: existingEntity?.backdrop,
-        thumbnail = thumbnailRef?.let { parseSerializedImageRef(it) } ?: existingEntity?.thumbnail,
+        // ImageRef direct — use new values if provided, else preserve existing
+        poster = poster ?: existingEntity?.poster,
+        backdrop = backdrop ?: existingEntity?.backdrop,
+        thumbnail = thumbnail ?: existingEntity?.thumbnail,
         rating = rating,
         genres = genres,
         plot = plot,
@@ -81,30 +87,12 @@ fun Work.toEntity(existingEntity: NX_Work? = null): NX_Work {
         imdbId = imdbId ?: existingEntity?.imdbId,
         tvdbId = tvdbId ?: existingEntity?.tvdbId,
         isAdult = isAdult,
-        needsReview = recognitionState == RecognitionState.NEEDS_REVIEW,
+        recognitionState = this@toEntity.recognitionState.name,
+        needsReview = this@toEntity.recognitionState == RecognitionState.NEEDS_REVIEW,
         createdAt = if (existingEntity == null) createdAtMs.takeIf { it > 0 } ?: System.currentTimeMillis() else existingEntity.createdAt,
         updatedAt = System.currentTimeMillis(),
     )
 }
 
-/**
- * Extracts URL string from ImageRef for domain model.
- * Works with Http and LocalFile variants, returns special URI for TelegramThumb.
- */
-private fun ImageRef.toUrlString(): String? = when (this) {
-    is ImageRef.Http -> url
-    is ImageRef.LocalFile -> path
-    is ImageRef.TelegramThumb -> "tg://$remoteId" // Encode as special URI
-    is ImageRef.InlineBytes -> null // Cannot convert to URL
-}
-
-/**
- * Parses a serialized ImageRef string back to ImageRef.
- *
- * **Delegates to canonical parsing function** [ImageRef.fromString] in core/model.
- *
- * This private function exists only for backward compatibility and to clarify intent.
- * All actual parsing logic is centralized in core/model to respect layer boundaries.
- */
-private fun parseSerializedImageRef(serialized: String): ImageRef? =
-    ImageRef.fromString(serialized)
+// NX_CONSOLIDATION_PLAN Phase 4: Removed toUrlString() and parseSerializedImageRef()
+// — ImageRef flows directly between domain and entity, no String roundtrip needed.

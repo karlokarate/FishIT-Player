@@ -138,7 +138,17 @@ data class NX_Work(
     /** YouTube trailer URL or ID */
     var trailer: String? = null,
     // === Classification ===
-    /** True if classification was UNKNOWN and needs manual review */
+    /**
+     * Recognition state: CONFIRMED | HEURISTIC | NEEDS_REVIEW | UNPLAYABLE.
+     *
+     * SSOT for classification confidence — replaces legacy `needsReview: Boolean`.
+     * Mapped via [MappingUtils.safeEnumFromString] to `RecognitionState` enum.
+     *
+     * **NX_CONSOLIDATION_PLAN Phase 3**
+     */
+    @Index var recognitionState: String = "HEURISTIC",
+    /** @deprecated Use [recognitionState] instead. Kept for migration compatibility. */
+    @Deprecated("Use recognitionState field. Will be removed after migration.")
     var needsReview: Boolean = false,
     /** Adult content flag */
     @Index var isAdult: Boolean = false,

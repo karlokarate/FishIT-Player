@@ -7,47 +7,14 @@ package com.fishit.player.core.persistence.obx
  * ObjectBox stores these as strings for compatibility and migration flexibility.
  *
  * **SSOT Contract:** docs/v2/NX_SSOT_CONTRACT.md
- */
-
-// =============================================================================
-// WorkType - Classification of media items
-// =============================================================================
-
-/**
- * Type of media work.
  *
- * Determines key format and UI treatment.
+ * ## Removed Enums (NX_CONSOLIDATION_PLAN Phase 6):
+ * - `WorkType` → SSOT: `NxWorkRepository.WorkType` in core:model, mapped by `WorkTypeMapper`
+ * - `SourceType` → SSOT: `NxWorkSourceRefRepository.SourceType` in core:model, mapped by `SourceTypeMapper`
  *
- * Per NX_SSOT_CONTRACT.md Section 3.1
+ * Remaining enums are valid-value documentation for entity string fields.
+ * They have no production consumers and exist solely for reference.
  */
-enum class WorkType {
-    /** Standalone movie */
-    MOVIE,
-
-    /** Episode of a series */
-    EPISODE,
-
-    /** Series container (parent of episodes) */
-    SERIES,
-
-    /** Short clip (trailers, extras) */
-    CLIP,
-
-    /** Live TV channel */
-    LIVE,
-
-    /** Audiobook */
-    AUDIOBOOK,
-
-    /** Classification unknown - requires review */
-    UNKNOWN,
-
-    ;
-
-    companion object {
-        fun fromString(value: String): WorkType = entries.find { it.name.equals(value, ignoreCase = true) } ?: UNKNOWN
-    }
-}
 
 // =============================================================================
 // IngestDecision - Ingest outcome
@@ -146,38 +113,6 @@ enum class IngestReasonCode {
 
     companion object {
         fun fromString(value: String): IngestReasonCode = entries.find { it.name.equals(value, ignoreCase = true) } ?: UNKNOWN_ERROR
-    }
-}
-
-// =============================================================================
-// SourceType - Pipeline source types
-// =============================================================================
-
-/**
- * Pipeline source type.
- *
- * Per NX_SSOT_CONTRACT.md key format specifications.
- */
-enum class SourceType {
-    /** Telegram media */
-    TELEGRAM,
-
-    /** Xtream Codes API */
-    XTREAM,
-
-    /** Local file system */
-    LOCAL,
-
-    /** Plex Media Server */
-    PLEX,
-
-    /** Manual entry */
-    MANUAL,
-
-    ;
-
-    companion object {
-        fun fromString(value: String): SourceType = entries.find { it.name.equals(value, ignoreCase = true) } ?: MANUAL
     }
 }
 

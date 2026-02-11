@@ -1,13 +1,13 @@
 package com.fishit.player.infra.data.nx.canonical
 
 import com.fishit.player.core.model.CanonicalMediaId
-import com.fishit.player.core.model.ImageRef
 import com.fishit.player.core.model.MediaFormat
 import com.fishit.player.core.model.MediaKind
 import com.fishit.player.core.model.MediaQuality
 import com.fishit.player.core.model.MediaSourceRef
 import com.fishit.player.core.model.MediaType
 import com.fishit.player.core.model.NormalizedMediaMetadata
+import com.fishit.player.core.model.PlaybackHintKeys
 import com.fishit.player.core.model.SourceType
 import com.fishit.player.core.model.TmdbResolvedBy
 import com.fishit.player.core.model.ids.CanonicalId
@@ -18,6 +18,9 @@ import com.fishit.player.core.model.repository.CanonicalMediaStats
 import com.fishit.player.core.model.repository.CanonicalMediaWithResume
 import com.fishit.player.core.model.repository.CanonicalMediaWithSources
 import com.fishit.player.core.model.repository.CanonicalResumeInfo
+import com.fishit.player.core.model.repository.NxWorkRepository
+import com.fishit.player.core.model.util.ResolutionLabel
+import com.fishit.player.core.model.util.SourcePriority
 import com.fishit.player.core.persistence.obx.NX_Work
 import com.fishit.player.core.persistence.obx.NX_WorkSourceRef
 import com.fishit.player.core.persistence.obx.NX_WorkSourceRef_
@@ -29,12 +32,14 @@ import com.fishit.player.core.persistence.obx.NX_Work_
 import com.fishit.player.core.persistence.obx.NxKeyGenerator
 import com.fishit.player.infra.data.nx.mapper.MediaTypeMapper
 import com.fishit.player.infra.data.nx.mapper.SourceKeyParser
+import com.fishit.player.infra.data.nx.mapper.SourceLabelBuilder
+import com.fishit.player.infra.data.nx.mapper.base.PlaybackHintsDecoder
+import com.fishit.player.infra.data.nx.writer.builder.WorkEntityBuilder
 import io.objectbox.Box
 import io.objectbox.BoxStore
 import io.objectbox.query.QueryCondition
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import kotlinx.serialization.json.Json
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -55,6 +60,8 @@ import javax.inject.Singleton
 @Singleton
 class NxCanonicalMediaRepositoryImpl @Inject constructor(
     boxStore: BoxStore,
+    private val workRepository: NxWorkRepository,
+    private val workEntityBuilder: WorkEntityBuilder,
 ) : CanonicalMediaRepository {
 
     private val workBox: Box<NX_Work> = boxStore.boxFor(NX_Work::class.java)
@@ -64,46 +71,33 @@ class NxCanonicalMediaRepositoryImpl @Inject constructor(
 
     // ========== Core CRUD Operations ==========
 
+    /**
+     * Upsert canonical media using the SSOT write path.
+     *
+     * **NX_CONSOLIDATION_PLAN Phase 2 — Single Write Path**
+     *
+     * Uses [WorkEntityBuilder] for correct field mapping (workType, recognitionState, etc.)
+     * and [NxWorkRepository.enrichIfAbsent] for write-protected enrichment.
+     *
+     * Eliminates the previous dual-write path that bypassed the builder and caused:
+     * - workType stored as "SERIES_EPISODE" instead of "EPISODE"
+     * - trailer, releaseDate, isAdult fields not being set
+     * - recognitionState not being set correctly
+     */
     override suspend fun upsertCanonicalMedia(
         normalized: NormalizedMediaMetadata,
     ): CanonicalMediaId = withContext(Dispatchers.IO) {
         val workKey = buildWorkKey(normalized)
-        val existing = workBox.query(NX_Work_.workKey.equal(workKey))
-            .build()
-            .findFirst()
+        val now = System.currentTimeMillis()
+        val enrichment = workEntityBuilder.build(normalized, workKey, now)
 
-        val work = existing ?: NX_Work()
-        work.apply {
-            this.workKey = workKey
-            this.workType = normalized.mediaType.name
-            this.canonicalTitle = normalized.canonicalTitle
-            this.canonicalTitleLower = normalized.canonicalTitle.lowercase()
-            this.year = normalized.year
-            this.season = normalized.season
-            this.episode = normalized.episode
-            // External IDs from externalIds
-            this.tmdbId = normalized.externalIds.effectiveTmdbId?.toString()
-            this.imdbId = normalized.externalIds.imdbId
-            this.tvdbId = normalized.externalIds.tvdbId
-            // Imaging
-            this.poster = normalized.poster
-            this.backdrop = normalized.backdrop
-            this.thumbnail = normalized.thumbnail
-            // Rich metadata (already strings)
-            this.plot = normalized.plot
-            this.rating = normalized.rating
-            this.durationMs = normalized.durationMs
-            this.genres = normalized.genres
-            this.director = normalized.director
-            this.cast = normalized.cast
-            // Timestamps
-            this.updatedAt = System.currentTimeMillis()
-            if (existing == null) {
-                this.createdAt = System.currentTimeMillis()
-            }
+        // Try enrichment first (only fills missing fields on existing work)
+        val result = workRepository.enrichIfAbsent(workKey, enrichment)
+
+        if (result == null) {
+            // Work doesn't exist yet → full upsert
+            workRepository.upsert(enrichment)
         }
-
-        workBox.put(work)
 
         CanonicalMediaId(
             kind = mediaTypeToKind(normalized.mediaType),
@@ -583,19 +577,17 @@ class NxCanonicalMediaRepositoryImpl @Inject constructor(
         val variants = getVariantsForSource(sourceRef.sourceKey)
         val bestVariant = variants.maxByOrNull { it.height ?: 0 }
 
-        val playbackHints = buildPlaybackHints(bestVariant)
-        val sourceLabel = buildSourceLabel(sourceRef, bestVariant)
+        val playbackHints = PlaybackHintsDecoder.decodeFromVariant(bestVariant)
+        val sourceLabel = SourceLabelBuilder.buildLabelWithQuality(
+            sourceType = sourceRef.sourceType,
+            accountLabel = sourceRef.accountKey,
+            qualityHeight = bestVariant?.height,
+        )
 
         val quality = bestVariant?.let { variant ->
             MediaQuality(
                 resolution = variant.height,
-                resolutionLabel = when {
-                    (variant.height ?: 0) >= 2160 -> "4K"
-                    (variant.height ?: 0) >= 1080 -> "1080p"
-                    (variant.height ?: 0) >= 720 -> "720p"
-                    (variant.height ?: 0) >= 480 -> "480p"
-                    else -> "SD"
-                },
+                resolutionLabel = ResolutionLabel.fromHeight(variant.height),
                 codec = variant.videoCodec,
             )
         }
@@ -610,7 +602,7 @@ class NxCanonicalMediaRepositoryImpl @Inject constructor(
 
         return MediaSourceRef(
             sourceType = try {
-                SourceType.valueOf(sourceRef.sourceType.uppercase())  // ← FIX: uppercase!
+                SourceType.valueOf(sourceRef.sourceType.uppercase())
             } catch (e: IllegalArgumentException) {
                 SourceType.UNKNOWN
             },
@@ -622,91 +614,14 @@ class NxCanonicalMediaRepositoryImpl @Inject constructor(
             sizeBytes = sourceRef.fileSizeBytes,
             durationMs = null,
             addedAt = sourceRef.discoveredAt,
-            priority = calculatePriority(sourceRef, bestVariant),
+            priority = SourcePriority.totalPriority(
+                sourceType = sourceRef.sourceType,
+                qualityTag = bestVariant?.qualityTag,
+                hasDirectUrl = !bestVariant?.playbackUrl.isNullOrBlank(),
+                isExplicitVariant = bestVariant != null,
+            ),
             playbackHints = playbackHints,
         )
-    }
-
-    private fun buildSourceLabel(
-        sourceRef: NX_WorkSourceRef,
-        variant: NX_WorkVariant?,
-    ): String = buildString {
-        append(
-            // FIX: DB stores lowercase sourceType via toEntityString()
-            when (sourceRef.sourceType.lowercase()) {
-                "xtream" -> "Xtream"
-                "telegram" -> "Telegram"
-                "local" -> "Local"
-                else -> sourceRef.sourceType.replaceFirstChar { it.uppercase() }
-            }
-        )
-
-        variant?.let { v ->
-            val height = v.height
-            if (height != null && height > 0) {
-                append(" - ")
-                append(
-                    when {
-                        height >= 2160 -> "4K"
-                        height >= 1080 -> "1080p"
-                        height >= 720 -> "720p"
-                        height >= 480 -> "480p"
-                        else -> "SD"
-                    }
-                )
-            }
-        }
-    }
-
-    private fun buildPlaybackHints(variant: NX_WorkVariant?): Map<String, String> {
-        if (variant == null) return emptyMap()
-
-        // Primary: JSON storage (contains all source-specific hints)
-        if (!variant.playbackHintsJson.isNullOrBlank()) {
-            return try {
-                Json.decodeFromString<Map<String, String>>(variant.playbackHintsJson!!)
-            } catch (e: Exception) {
-                // Fallback to legacy fields on decode error
-                buildLegacyPlaybackHints(variant)
-            }
-        }
-
-        // Fallback: Legacy entity fields (for old data without JSON)
-        return buildLegacyPlaybackHints(variant)
-    }
-
-    private fun buildLegacyPlaybackHints(variant: NX_WorkVariant): Map<String, String> = buildMap {
-        variant.playbackUrl?.let { put("playbackUrl", it) }
-        put("playbackMethod", variant.playbackMethod)
-        variant.containerFormat?.let { put("containerExtension", it) }
-        variant.videoCodec?.let { put("videoCodec", it) }
-        variant.audioCodec?.let { put("audioCodec", it) }
-    }
-
-    private fun calculatePriority(
-        sourceRef: NX_WorkSourceRef,
-        variant: NX_WorkVariant?,
-    ): Int {
-        var priority = 0
-
-        // FIX: DB stores lowercase sourceType via toEntityString()
-        priority += when (sourceRef.sourceType.lowercase()) {
-            "xtream" -> 100
-            "telegram" -> 80
-            "local" -> 60
-            else -> 50
-        }
-
-        val height = variant?.height ?: 0
-        priority += when {
-            height >= 2160 -> 40
-            height >= 1080 -> 30
-            height >= 720 -> 20
-            height >= 480 -> 10
-            else -> 0
-        }
-
-        return priority
     }
 
     private fun mapToCanonicalResumeInfo(
@@ -750,7 +665,8 @@ class NxCanonicalMediaRepositoryImpl @Inject constructor(
             this.variantKey = variantKey
             this.qualityTag = qualityTag
             this.languageTag = "original"
-            this.playbackUrl = source.playbackHints["playbackUrl"]
+            this.playbackUrl = source.playbackHints[PlaybackHintKeys.Xtream.DIRECT_SOURCE]
+                ?: source.playbackHints["playbackUrl"] // legacy fallback
             this.playbackMethod = source.playbackHints["playbackMethod"] ?: "DIRECT"
             this.containerFormat = source.format?.container
             this.videoCodec = source.format?.videoCodec ?: source.quality?.codec
@@ -767,19 +683,15 @@ class NxCanonicalMediaRepositoryImpl @Inject constructor(
         return SourceKeyParser.extractItemKey(sourceKey) ?: sourceKey
     }
 
-    private fun mediaTypeToKind(mediaType: MediaType): MediaKind = when (mediaType) {
-        MediaType.MOVIE, MediaType.SERIES, MediaType.LIVE, MediaType.CLIP -> MediaKind.MOVIE
-        MediaType.SERIES_EPISODE -> MediaKind.EPISODE
-        else -> MediaKind.MOVIE
-    }
+    /** Delegates to [MediaTypeMapper.toMediaKind] — SSOT. NX_CONSOLIDATION_PLAN Phase 2. */
+    private fun mediaTypeToKind(mediaType: MediaType): MediaKind =
+        MediaTypeMapper.toMediaKind(mediaType)
 
-    private fun workTypeToKind(workType: String): MediaKind = when (workType) {
-        "EPISODE", "SERIES_EPISODE" -> MediaKind.EPISODE
-        else -> MediaKind.MOVIE
-    }
+    /** Delegates to [MediaTypeMapper.workTypeStringToMediaKind] — SSOT. */
+    private fun workTypeToKind(workType: String): MediaKind =
+        MediaTypeMapper.workTypeStringToMediaKind(workType)
 
-    private fun kindToWorkType(kind: MediaKind): String = when (kind) {
-        MediaKind.MOVIE -> "MOVIE"
-        MediaKind.EPISODE -> "SERIES_EPISODE"
-    }
+    /** Delegates to [MediaTypeMapper.fromMediaKind] — SSOT. NX_CONSOLIDATION_PLAN Phase 7 #2. */
+    private fun kindToWorkType(kind: MediaKind): String =
+        MediaTypeMapper.fromMediaKind(kind)
 }
