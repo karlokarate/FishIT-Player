@@ -517,18 +517,21 @@ class NxCanonicalMediaRepositoryImpl @Inject constructor(
     /**
      * Build work key from normalized metadata.
      *
-     * Format: {workType}:{authority}:{id}
-     * Aligned with NxCatalogWriter.buildWorkKey() for consistency.
+     * Delegates to NxKeyGenerator.workKey() — the single source of truth for
+     * work key format: `{workType}:{authority}:{id}`
      *
      * Uses canonical MediaTypeMapper.toWorkType() for correct type mapping.
-     * Uses NxKeyGenerator.toSlug() for consistent slug generation with "untitled" fallback.
      */
     private fun buildWorkKey(normalized: NormalizedMediaMetadata): String {
-        val authority = if (normalized.tmdb != null) "tmdb" else "heuristic"
-        val id = normalized.tmdb?.id?.toString()
-            ?: "${NxKeyGenerator.toSlug(normalized.canonicalTitle)}-${normalized.year ?: "unknown"}"
-        val workType = MediaTypeMapper.toWorkType(normalized.mediaType).name.lowercase()
-        return "$workType:$authority:$id"
+        val workType = MediaTypeMapper.toWorkType(normalized.mediaType)
+        return NxKeyGenerator.workKey(
+            workType = workType,
+            title = normalized.canonicalTitle,
+            year = normalized.year,
+            tmdbId = normalized.tmdb?.id,
+            season = normalized.season,
+            episode = normalized.episode,
+        )
     }
 
     private fun getSourceRefsForWork(workId: Long): List<NX_WorkSourceRef> {
