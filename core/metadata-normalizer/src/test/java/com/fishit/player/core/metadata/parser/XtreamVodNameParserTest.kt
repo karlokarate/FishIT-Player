@@ -348,12 +348,29 @@ class XtreamVodNameParserTest {
     }
 
     @Test
+    fun `parse pipe-separated pattern - country prefix stripped from title`() {
+        // NL prefix is detected and stripped — segment 1 becomes the title.
+        // Real data: 2,013 items with "NL | Title | Year | Rating" format.
+        val testCases = listOf(
+            "NL | After Yang | 2022 | 6.8 |" to Triple("After Yang", 2022, 6.8),
+            "NL | Top Gun: Maverick | 2022 | 8.3" to Triple("Top Gun: Maverick", 2022, 8.3),
+            "NL | Hustle | 2022 | 7.8" to Triple("Hustle", 2022, 7.8),
+        )
+
+        testCases.forEach { (input, expected) ->
+            val result = parser.parse(input)
+            assertEquals(expected.first, result.title, "Title mismatch for: $input")
+            assertEquals(expected.second, result.year, "Year mismatch for: $input")
+            assertEquals(expected.third, result.rating, "Rating mismatch for: $input")
+        }
+    }
+
+    @Test
     fun `parse pipe-separated pattern - country prefix with year-number title`() {
-        // NL prefix + title that is a year number — both should end up in title
+        // NL prefix + title that is a year number — prefix stripped, year-number is title
         val input = "NL | 1917 | 2019 | 8.3"
         val result = parser.parse(input)
-        // "NL" and "1917" are both non-year segments → joined as title
-        assertEquals("NL | 1917", result.title, "Country prefix and year-title should both be in title")
+        assertEquals("1917", result.title, "Year-number title should be preserved after prefix strip")
         assertEquals(2019, result.year)
         assertEquals(8.3, result.rating)
     }
@@ -374,6 +391,35 @@ class XtreamVodNameParserTest {
             assertEquals(expected.second, result.year, "Year mismatch for: $input")
             assertEquals(expected.third, result.rating, "Rating mismatch for: $input")
         }
+    }
+
+    @Test
+    fun `parse pipe-separated pattern - 4-segment with quality tags from real data`() {
+        // Real data: "Title | Year | Rating | Tag" with +18, UNTERTITEL, IMAX, LOWQ
+        val testCases = listOf(
+            "Babygirl | 2024 | 5.7 | +18 |" to Triple("Babygirl", 2024, 5.7),
+            "South Park (Für Kinder Nicht Geeignet) | 2023 | 7.7 | UNTERTITEL |" to
+                Triple("South Park (Für Kinder Nicht Geeignet)", 2023, 7.7),
+            "Oppenheimer | 2023 | 8.2 | IMAX |" to Triple("Oppenheimer", 2023, 8.2),
+            "Zoomania 2 | 2025 | 7.6 | LOWQ" to Triple("Zoomania 2", 2025, 7.6),
+        )
+
+        testCases.forEach { (input, expected) ->
+            val result = parser.parse(input)
+            assertEquals(expected.first, result.title, "Title mismatch for: $input")
+            assertEquals(expected.second, result.year, "Year mismatch for: $input")
+            assertEquals(expected.third, result.rating, "Rating mismatch for: $input")
+        }
+    }
+
+    @Test
+    fun `parse pipe-separated pattern - UNTERTITEL swapped with rating from real data`() {
+        // Real data: "Jawan | 2023 | UNTERTITEL | 7.1" — tag and rating swapped
+        val input = "Jawan | 2023 | UNTERTITEL | 7.1"
+        val result = parser.parse(input)
+        assertEquals("Jawan", result.title)
+        assertEquals(2023, result.year)
+        assertEquals(7.1, result.rating)
     }
 
     @Test
