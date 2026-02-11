@@ -413,6 +413,24 @@ class XtreamVodNameParserTest {
     }
 
     @Test
+    fun `parse pipe-separated pattern - IMAX maps to edition imax flag`() {
+        val result = parser.parse("Oppenheimer | 2023 | 8.2 | IMAX |")
+        assertEquals("Oppenheimer", result.title)
+        assertTrue(result.edition?.imax == true, "IMAX tag should map to edition.imax")
+    }
+
+    @Test
+    fun `parse pipe-separated pattern - unmapped tags preserved in extraTags`() {
+        val result18 = parser.parse("Babygirl | 2024 | 5.7 | +18 |")
+        assertEquals("Babygirl", result18.title)
+        assertTrue(result18.extraTags.contains("+18"), "+18 should be in extraTags")
+
+        val resultUt = parser.parse("South Park (Für Kinder Nicht Geeignet) | 2023 | 7.7 | UNTERTITEL |")
+        assertEquals("South Park (Für Kinder Nicht Geeignet)", resultUt.title)
+        assertTrue(resultUt.extraTags.contains("UNTERTITEL"), "UNTERTITEL should be in extraTags")
+    }
+
+    @Test
     fun `parse pipe-separated pattern - UNTERTITEL swapped with rating from real data`() {
         // Real data: "Jawan | 2023 | UNTERTITEL | 7.1" — tag and rating swapped
         val input = "Jawan | 2023 | UNTERTITEL | 7.1"

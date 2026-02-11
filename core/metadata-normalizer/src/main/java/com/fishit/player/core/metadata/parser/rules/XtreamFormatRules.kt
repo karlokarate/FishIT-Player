@@ -30,6 +30,7 @@ data class XtreamPipeResult(
     val year: Int?,
     val rating: Double?,
     val quality: String?,
+    val extraTags: List<String>,
     val matched: Boolean,
 )
 
@@ -138,23 +139,18 @@ object XtreamFormatRules {
      * @return XtreamPipeResult with extracted fields
      */
     fun parsePipeFormat(input: String): XtreamPipeResult {
-        if (!isPipeFormat(input)) {
-            return XtreamPipeResult(
-                title = input,
-                year = null,
-                rating = null,
-                quality = null,
-                matched = false,
-            )
-        }
+        val unmatched = XtreamPipeResult(
+            title = input, year = null, rating = null,
+            quality = null, extraTags = emptyList(), matched = false,
+        )
+
+        if (!input.contains('|')) return unmatched
 
         // Combined map + filter: single allocation instead of map().filter()
         val parts = input.split('|', limit = 5)
             .mapNotNull { val t = it.trim(); if (t.isNotEmpty()) t else null }
 
-        if (parts.isEmpty()) {
-            return XtreamPipeResult(title = input, year = null, rating = null, quality = null, matched = false)
-        }
+        if (parts.size < 2) return unmatched
 
         // Detect country-code prefix: 2–3 char uppercase alpha string at segment 0.
         // Real data: "NL | Title | Year | Rating" — 2,013 items with NL prefix.
@@ -169,16 +165,21 @@ object XtreamFormatRules {
         var year: Int? = null
         var rating: Double? = null
         var quality: String? = null
+        val extraTags = mutableListOf<String>()
         var effectiveYearRange = YEAR_RANGE
 
         for (i in (titleIndex + 1) until parts.size) {
             val part = parts[i]
 
-            // Quality tag: lazy uppercase — only allocate when length matches tag range
-            if (quality == null && part.length in 2..11) {
+            // Quality/extra tag: lazy uppercase — only allocate when length matches tag range
+            if (part.length in 2..11) {
                 val upper = part.uppercase()
                 if (upper in QUALITY_TAGS) {
-                    quality = upper
+                    if (quality == null) {
+                        quality = upper
+                    } else {
+                        extraTags.add(upper)
+                    }
                     continue
                 }
             }
@@ -239,6 +240,7 @@ object XtreamFormatRules {
             year = year,
             rating = rating,
             quality = quality,
+            extraTags = extraTags,
             matched = year != null,
         )
     }

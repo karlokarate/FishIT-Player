@@ -36,6 +36,7 @@ import com.fishit.player.core.metadata.parser.rules.TitleSimplifierRules
 import com.fishit.player.core.metadata.parser.rules.Token
 import com.fishit.player.core.metadata.parser.rules.VideoCodecRules
 import com.fishit.player.core.metadata.parser.rules.XtreamFormatRules
+import com.fishit.player.core.metadata.parser.rules.XtreamPipeResult
 import com.fishit.player.core.metadata.parser.rules.YearRules
 import com.fishit.player.core.metadata.parser.rules.collapseWhitespace
 import com.fishit.player.core.metadata.parser.rules.convertSeparatorsPreservingHyphens
@@ -76,8 +77,10 @@ class Re2jSceneNameParser : SceneNameParser {
         // These are provider-specific patterns, not scene releases
 
         // Xtream pipe format: "Title | Year | Rating" (21% of Xtream VOD)
-        if (XtreamFormatRules.isPipeFormat(filename)) {
-            return parseXtreamPipeFormat(filename)
+        // Single-pass detection+parse — no separate isPipeFormat() call
+        val pipeResult = XtreamFormatRules.parsePipeFormat(filename)
+        if (pipeResult.matched) {
+            return buildPipeFormatResult(pipeResult)
         }
 
         // Xtream parentheses format: "Title (Year)" (56% of Xtream VOD)
@@ -104,17 +107,12 @@ class Re2jSceneNameParser : SceneNameParser {
     // =========================================================================
 
     /**
-     * Parse Xtream pipe-separated format (position-independent).
+     * Build ParsedSceneInfo from an already-parsed XtreamPipeResult.
      *
-     * Handles all known provider variants:
-     * - "Sisu: Road to Revenge | 2025 | 7.4"
-     * - "John Wick: Kapitel 4 | 2023 | 4K |"
-     * - "NL | Beast | 2022 | 5.0"
-     * - "Ant-Man | 7.3 | 2015"
+     * Maps quality tags to QualityInfo, IMAX to EditionInfo.imax, and
+     * preserves unmapped tags (e.g. "+18", "UNTERTITEL") in extraTags.
      */
-    private fun parseXtreamPipeFormat(input: String): ParsedSceneInfo {
-        val result = XtreamFormatRules.parsePipeFormat(input)
-
+    private fun buildPipeFormatResult(result: XtreamPipeResult): ParsedSceneInfo {
         // Map quality tag to QualityInfo
         val quality =
             result.quality?.let { tag ->
@@ -131,6 +129,14 @@ class Re2jSceneNameParser : SceneNameParser {
                 }
             }
 
+        // Check all tags (primary quality + extras) for IMAX and collect unmapped
+        val allTags = buildList {
+            result.quality?.let { if (quality == null) add(it) } // unmapped primary tag
+            addAll(result.extraTags)
+        }
+        val hasImax = allTags.any { it.equals("IMAX", ignoreCase = true) }
+        val unmappedTags = allTags.filter { !it.equals("IMAX", ignoreCase = true) }
+
         return ParsedSceneInfo(
             title = result.title,
             year = result.year,
@@ -139,7 +145,8 @@ class Re2jSceneNameParser : SceneNameParser {
             episode = null,
             rating = result.rating,
             quality = quality,
-            edition = EditionInfo(),
+            edition = EditionInfo(imax = hasImax),
+            extraTags = unmappedTags,
         )
     }
 
