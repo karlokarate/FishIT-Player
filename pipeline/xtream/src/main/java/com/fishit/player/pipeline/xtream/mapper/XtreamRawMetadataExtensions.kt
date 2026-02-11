@@ -155,7 +155,7 @@ fun XtreamVodItem.toRawMetadata(
                 put(PlaybackHintKeys.Xtream.CONTAINER_EXT, it)
             }
             categoryId?.takeIf { it.isNotBlank() }?.let {
-                put("xtream.categoryId", it)
+                put(PlaybackHintKeys.Xtream.CATEGORY_ID, it)
             }
             // Persist streamType as vodKind for URL building (movie, vod, movies)
             streamType?.takeIf { it.isNotBlank() }?.let {
@@ -359,7 +359,7 @@ fun XtreamEpisode.toRawMediaMetadata(
             }
             // Episode-specific TMDB ID (when available) for optional direct metadata lookup
             // Note: externalIds.tmdb uses seriesTmdbId per Gold Decision; this is supplementary
-            episodeTmdbId?.let { put("xtream.episodeTmdbId", it.toString()) }
+            episodeTmdbId?.let { put(PlaybackHintKeys.Xtream.EPISODE_TMDB_ID, it.toString()) }
             // Video/Audio codec info from ffprobe (optional, for UI display)
             videoCodec?.takeIf { it.isNotBlank() }?.let {
                 put(PlaybackHintKeys.VIDEO_CODEC, it)
@@ -613,7 +613,7 @@ fun XtreamVodInfo.toRawMediaMetadata(
                 }
                 // Include categoryId for consistency with list API
                 vodItem.categoryId?.takeIf { it.isNotBlank() }?.let {
-                    put("xtream.categoryId", it)
+                    put(PlaybackHintKeys.Xtream.CATEGORY_ID, it)
                 }
                 // === Video/Audio Quality from ffprobe (G8 fix) ===
                 infoBlock?.videoInfo?.codec?.takeIf { it.isNotBlank() }?.let {

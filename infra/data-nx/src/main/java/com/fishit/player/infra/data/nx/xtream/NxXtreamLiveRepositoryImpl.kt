@@ -44,6 +44,7 @@ import com.fishit.player.core.persistence.obx.NX_WorkSourceRef
 import com.fishit.player.core.persistence.obx.NX_WorkSourceRef_
 import com.fishit.player.core.persistence.obx.NX_Work_
 import com.fishit.player.infra.data.nx.mapper.SourceKeyParser
+import com.fishit.player.infra.data.nx.mapper.WorkTypeMapper
 import com.fishit.player.infra.data.xtream.XtreamLiveRepository
 import com.fishit.player.infra.logging.UnifiedLog
 import io.objectbox.BoxStore
@@ -84,7 +85,7 @@ class NxXtreamLiveRepositoryImpl
         override fun observeChannels(categoryId: String?): Flow<List<RawMediaMetadata>> {
             // Query NX_Work for LIVE_CHANNEL type
             val workQuery = workBox.query(
-                NX_Work_.workType.equal(WorkType.LIVE_CHANNEL.name),
+                NX_Work_.workType.equal(WorkTypeMapper.toEntityString(WorkType.LIVE_CHANNEL)),
             ).order(NX_Work_.canonicalTitleLower).build()
 
             val sourceRefQuery = sourceRefBox.query(
@@ -116,7 +117,7 @@ class NxXtreamLiveRepositoryImpl
         override suspend fun getAll(limit: Int, offset: Int): List<RawMediaMetadata> =
             withContext(Dispatchers.IO) {
                 val works = workBox.query(
-                    NX_Work_.workType.equal(WorkType.LIVE_CHANNEL.name),
+                    NX_Work_.workType.equal(WorkTypeMapper.toEntityString(WorkType.LIVE_CHANNEL)),
                 ).order(NX_Work_.canonicalTitleLower)
                     .build()
                     .find(offset.toLong(), limit.toLong())
@@ -156,7 +157,7 @@ class NxXtreamLiveRepositoryImpl
                 val lowerQuery = query.lowercase()
                 val works = workBox.query(
                     NX_Work_.canonicalTitleLower.contains(lowerQuery)
-                        .and(NX_Work_.workType.equal(WorkType.LIVE_CHANNEL.name)),
+                        .and(NX_Work_.workType.equal(WorkTypeMapper.toEntityString(WorkType.LIVE_CHANNEL))),
                 ).build().find(0, limit.toLong())
 
                 val workKeys = works.map { it.workKey }
@@ -187,7 +188,7 @@ class NxXtreamLiveRepositoryImpl
 
         override suspend fun count(): Long = withContext(Dispatchers.IO) {
             workBox.query(
-                NX_Work_.workType.equal(WorkType.LIVE_CHANNEL.name),
+                NX_Work_.workType.equal(WorkTypeMapper.toEntityString(WorkType.LIVE_CHANNEL)),
             ).build().count()
         }
 

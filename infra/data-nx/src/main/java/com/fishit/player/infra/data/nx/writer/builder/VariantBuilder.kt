@@ -10,6 +10,7 @@
  */
 package com.fishit.player.infra.data.nx.writer.builder
 
+import com.fishit.player.core.model.PlaybackHintKeys
 import com.fishit.player.core.model.repository.NxWorkVariantRepository
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -61,7 +62,7 @@ class VariantBuilder @Inject constructor() {
      */
     private fun extractContainerFromHints(hints: Map<String, String>): String? {
         // Check all possible keys (Xtream uses "xtream.containerExtension")
-        val ext = hints["xtream.containerExtension"]
+        val ext = hints[PlaybackHintKeys.Xtream.CONTAINER_EXT]
             ?: hints["containerExtension"]
             ?: hints["extension"]
         return when (ext?.lowercase()) {

@@ -1,5 +1,6 @@
 package com.fishit.player.infra.data.nx.golden
 
+import com.fishit.player.core.model.ImageRef
 import com.fishit.player.core.model.repository.NxWorkRepository
 import com.fishit.player.core.model.repository.NxWorkSourceRefRepository
 import com.fishit.player.core.model.repository.NxWorkVariantRepository
@@ -72,9 +73,9 @@ object ChainOutputJsonSerializer {
         putNullableLong("runtimeMs", work.runtimeMs)
 
         // Imaging
-        putNullableString("posterRef", work.posterRef)
-        putNullableString("backdropRef", work.backdropRef)
-        putNullableString("thumbnailRef", work.thumbnailRef)
+        putNullableString("poster", work.poster.toSerializedString())
+        putNullableString("backdrop", work.backdrop.toSerializedString())
+        putNullableString("thumbnail", work.thumbnail.toSerializedString())
 
         // Rich metadata
         putNullableDouble("rating", work.rating)
@@ -174,5 +175,13 @@ object ChainOutputJsonSerializer {
 
     private fun kotlinx.serialization.json.JsonObjectBuilder.putNullableDouble(key: String, value: Double?) {
         if (value != null) put(key, JsonPrimitive(value)) else put(key, JsonNull)
+    }
+
+    private fun ImageRef?.toSerializedString(): String? = when (this) {
+        is ImageRef.Http -> url
+        is ImageRef.TelegramThumb -> "tg:${remoteId}"
+        is ImageRef.LocalFile -> "file:${path}"
+        is ImageRef.InlineBytes -> "inline:${bytes.size}bytes"
+        null -> null
     }
 }

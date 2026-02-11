@@ -132,6 +132,21 @@ object PlaybackHintKeys {
          * Used for correct URL building for live streams.
          */
         const val LIVE_KIND = "xtream.liveKind"
+
+        /**
+         * Category ID from Xtream API (e.g., VOD category, live category).
+         *
+         * Used for category-based filtering and grouping.
+         */
+        const val CATEGORY_ID = "xtream.categoryId"
+
+        /**
+         * Episode-specific TMDB ID (supplementary to series-level TmdbRef).
+         *
+         * Used for optional direct episode metadata lookup.
+         * Note: externalIds.tmdb carries the series-level TMDB ID per Gold Decision.
+         */
+        const val EPISODE_TMDB_ID = "xtream.episodeTmdbId"
     }
 
     /** Telegram-specific playback hints. */

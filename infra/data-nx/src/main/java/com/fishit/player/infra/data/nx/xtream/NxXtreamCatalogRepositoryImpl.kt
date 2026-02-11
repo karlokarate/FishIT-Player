@@ -62,6 +62,7 @@ import com.fishit.player.core.persistence.obx.NX_WorkSourceRef
 import com.fishit.player.core.persistence.obx.NX_WorkSourceRef_
 import com.fishit.player.core.persistence.obx.NX_Work_
 import com.fishit.player.infra.data.nx.mapper.MediaTypeMapper
+import com.fishit.player.infra.data.nx.mapper.WorkTypeMapper
 import com.fishit.player.infra.data.xtream.XtreamCatalogRepository
 import com.fishit.player.infra.logging.UnifiedLog
 import io.objectbox.BoxStore
@@ -107,7 +108,7 @@ class NxXtreamCatalogRepositoryImpl
         override fun observeVod(categoryId: String?): Flow<List<RawMediaMetadata>> {
             // Query NX_Work for MOVIE type with Xtream source
             val workQuery = workBox.query(
-                NX_Work_.workType.equal(WorkType.MOVIE.name),
+                NX_Work_.workType.equal(WorkTypeMapper.toEntityString(WorkType.MOVIE)),
             ).order(NX_Work_.canonicalTitleLower).build()
 
             val sourceRefQuery = sourceRefBox.query(
@@ -135,7 +136,7 @@ class NxXtreamCatalogRepositoryImpl
 
         override fun observeSeries(categoryId: String?): Flow<List<RawMediaMetadata>> {
             val workQuery = workBox.query(
-                NX_Work_.workType.equal(WorkType.SERIES.name),
+                NX_Work_.workType.equal(WorkTypeMapper.toEntityString(WorkType.SERIES)),
             ).order(NX_Work_.canonicalTitleLower).build()
 
             val sourceRefQuery = sourceRefBox.query(
@@ -193,13 +194,17 @@ class NxXtreamCatalogRepositoryImpl
             limit: Int,
             offset: Int,
         ): List<RawMediaMetadata> = withContext(Dispatchers.IO) {
-            val workType = mediaType?.let { MediaTypeMapper.toWorkType(it).name }
+            val workType = mediaType?.let { WorkTypeMapper.toEntityString(MediaTypeMapper.toWorkType(it)) }
 
             val baseCondition: QueryCondition<NX_Work> = if (workType != null) {
                 NX_Work_.workType.equal(workType)
             } else {
                 NX_Work_.workType.oneOf(
-                    arrayOf(WorkType.MOVIE.name, WorkType.SERIES.name, WorkType.EPISODE.name),
+                    arrayOf(
+                        WorkTypeMapper.toEntityString(WorkType.MOVIE),
+                        WorkTypeMapper.toEntityString(WorkType.SERIES),
+                        WorkTypeMapper.toEntityString(WorkType.EPISODE),
+                    ),
                 )
             }
 
@@ -218,10 +223,10 @@ class NxXtreamCatalogRepositoryImpl
 
             works.mapNotNull { work ->
                 val sourceRef = sourceRefMap[work.workKey] ?: return@mapNotNull null
-                when (work.workType) {
-                    WorkType.MOVIE.name -> work.toRawMediaMetadataVod(sourceRef)
-                    WorkType.SERIES.name -> work.toRawMediaMetadataSeries(sourceRef)
-                    WorkType.EPISODE.name -> work.toRawMediaMetadataEpisode(sourceRef)
+                when (WorkTypeMapper.toWorkType(work.workType)) {
+                    WorkType.MOVIE -> work.toRawMediaMetadataVod(sourceRef)
+                    WorkType.SERIES -> work.toRawMediaMetadataSeries(sourceRef)
+                    WorkType.EPISODE -> work.toRawMediaMetadataEpisode(sourceRef)
                     else -> null
                 }
             }
@@ -249,7 +254,10 @@ class NxXtreamCatalogRepositoryImpl
                     NX_Work_.canonicalTitleLower.contains(lowerQuery)
                         .and(
                             NX_Work_.workType.oneOf(
-                                arrayOf(WorkType.MOVIE.name, WorkType.SERIES.name),
+                                arrayOf(
+                                    WorkTypeMapper.toEntityString(WorkType.MOVIE),
+                                    WorkTypeMapper.toEntityString(WorkType.SERIES),
+                                ),
                             ),
                         ),
                 ).build().find(0, limit.toLong())
@@ -263,9 +271,9 @@ class NxXtreamCatalogRepositoryImpl
 
                 works.mapNotNull { work ->
                     val sourceRef = sourceRefMap[work.workKey] ?: return@mapNotNull null
-                    when (work.workType) {
-                        WorkType.MOVIE.name -> work.toRawMediaMetadataVod(sourceRef)
-                        WorkType.SERIES.name -> work.toRawMediaMetadataSeries(sourceRef)
+                    when (WorkTypeMapper.toWorkType(work.workType)) {
+                        WorkType.MOVIE -> work.toRawMediaMetadataVod(sourceRef)
+                        WorkType.SERIES -> work.toRawMediaMetadataSeries(sourceRef)
                         else -> null
                     }
                 }
@@ -286,14 +294,18 @@ class NxXtreamCatalogRepositoryImpl
         }
 
         override suspend fun count(mediaType: MediaType?): Long = withContext(Dispatchers.IO) {
-            val workType = mediaType?.let { MediaTypeMapper.toWorkType(it).name }
+            val workType = mediaType?.let { WorkTypeMapper.toEntityString(MediaTypeMapper.toWorkType(it)) }
 
             if (workType != null) {
                 workBox.query(NX_Work_.workType.equal(workType)).build().count()
             } else {
                 workBox.query(
                     NX_Work_.workType.oneOf(
-                        arrayOf(WorkType.MOVIE.name, WorkType.SERIES.name, WorkType.EPISODE.name),
+                        arrayOf(
+                            WorkTypeMapper.toEntityString(WorkType.MOVIE),
+                            WorkTypeMapper.toEntityString(WorkType.SERIES),
+                            WorkTypeMapper.toEntityString(WorkType.EPISODE),
+                        ),
                     ),
                 ).build().count()
             }

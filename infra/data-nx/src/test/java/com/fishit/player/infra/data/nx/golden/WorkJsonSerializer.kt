@@ -1,5 +1,6 @@
 package com.fishit.player.infra.data.nx.golden
 
+import com.fishit.player.core.model.ImageRef
 import com.fishit.player.core.model.repository.NxWorkRepository
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
@@ -44,9 +45,9 @@ object WorkJsonSerializer {
         putNullableLong("runtimeMs", work.runtimeMs)
 
         // === Imaging (serialized strings) ===
-        putNullableString("posterRef", work.posterRef)
-        putNullableString("backdropRef", work.backdropRef)
-        putNullableString("thumbnailRef", work.thumbnailRef)
+        putNullableString("poster", work.poster.toSerializedString())
+        putNullableString("backdrop", work.backdrop.toSerializedString())
+        putNullableString("thumbnail", work.thumbnail.toSerializedString())
 
         // === Rich Metadata ===
         putNullableDouble("rating", work.rating)
@@ -104,3 +105,15 @@ object WorkJsonSerializer {
 }
 
 private typealias JsonObjectBuilderScope = kotlinx.serialization.json.JsonObjectBuilder
+
+/**
+ * Convert ImageRef to a serialized string for golden file comparison.
+ * Http → URL string, Telegram → "telegram:{remoteId}", null → null.
+ */
+private fun ImageRef?.toSerializedString(): String? = when (this) {
+    is ImageRef.Http -> url
+    is ImageRef.TelegramThumb -> "tg:${remoteId}"
+    is ImageRef.LocalFile -> "file:${path}"
+    is ImageRef.InlineBytes -> "inline:${bytes.size}bytes"
+    null -> null
+}

@@ -154,7 +154,7 @@ class NxCatalogWriterVodE2ETest {
         assertEquals(2024, work.year, "year ← normalized.year")
         assertEquals(7.5, work.rating, "rating ← normalized.rating")
         assertEquals(NxWorkRepository.WorkType.MOVIE, work.type, "type ← MOVIE")
-        assertTrue(work.posterRef?.contains("poster.jpg") == true, "posterRef ← poster URL")
+        assertTrue((work.poster as? ImageRef.Http)?.url?.contains("poster.jpg") == true, "poster ← poster URL")
 
         // THEN: SourceRef is created with correct fields
         val sourceRef = sourceRefSlot.captured
@@ -255,8 +255,8 @@ class NxCatalogWriterVodE2ETest {
         assertEquals("tt1375666", work.imdbId, "imdbId ← API imdb_id")
 
         // Images
-        assertTrue(work.posterRef?.contains("inception_cover") == true, "posterRef ← cover_big")
-        assertTrue(work.backdropRef?.contains("inception_backdrop") == true, "backdropRef ← backdrop_path")
+        assertTrue((work.poster as? ImageRef.Http)?.url?.contains("inception_cover") == true, "poster ← cover_big")
+        assertTrue((work.backdrop as? ImageRef.Http)?.url?.contains("inception_backdrop") == true, "backdrop ← backdrop_path")
     }
 
     @Test

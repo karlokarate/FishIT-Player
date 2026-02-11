@@ -197,8 +197,8 @@ class BuilderGoldenFileTest {
         assertEquals("tt15398776", work.imdbId)
         assertEquals(8.1, work.rating)
         assertEquals("Christopher Nolan", work.director)
-        assertTrue(work.posterRef!!.startsWith("http:"))
-        assertTrue(work.backdropRef!!.startsWith("http:"))
+        assertTrue(work.poster is ImageRef.Http, "poster should be Http")
+        assertTrue(work.backdrop is ImageRef.Http, "backdrop should be Http")
     }
 
     @Test
@@ -230,7 +230,7 @@ class BuilderGoldenFileTest {
         assertNull(work.tmdbId)
         assertNull(work.year)
         assertNull(work.runtimeMs)
-        assertNull(work.posterRef)
+        assertNull(work.poster)
         assertNull(work.rating)
     }
 
@@ -241,12 +241,14 @@ class BuilderGoldenFileTest {
 
         assertGolden("builder_telegram_item.json", work)
 
-        // TelegramThumb → "tg:remoteId"
-        assertEquals("tg:AAMCAgADGQEAAj_avatar_thumb", work.thumbnailRef)
-        // InlineBytes → NOT mapped to thumbnailRef (placeholderThumbnail not a Work field)
-        // Work only has posterRef, backdropRef, thumbnailRef
-        assertNull(work.posterRef)
-        assertNull(work.backdropRef)
+        // TelegramThumb → thumbnail field
+        val thumb = work.thumbnail as? ImageRef.TelegramThumb
+        assertTrue(thumb != null, "thumbnail should be TelegramThumb")
+        assertEquals("AAMCAgADGQEAAj_avatar_thumb", thumb!!.remoteId)
+        // InlineBytes → NOT mapped to thumbnail (placeholderThumbnail not a Work field)
+        // Work only has poster, backdrop, thumbnail
+        assertNull(work.poster)
+        assertNull(work.backdrop)
     }
 
     @Test

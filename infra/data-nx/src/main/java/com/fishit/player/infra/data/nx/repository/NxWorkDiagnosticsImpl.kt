@@ -13,6 +13,7 @@ import com.fishit.player.core.persistence.obx.NX_Work
 import com.fishit.player.core.persistence.obx.NX_WorkSourceRef
 import com.fishit.player.core.persistence.obx.NX_WorkVariant
 import com.fishit.player.core.persistence.obx.NX_Work_
+import com.fishit.player.infra.data.nx.mapper.WorkTypeMapper
 import com.fishit.player.infra.data.nx.mapper.toDomain
 import io.objectbox.BoxStore
 import io.objectbox.kotlin.boxFor
@@ -40,7 +41,7 @@ class NxWorkDiagnosticsImpl @Inject constructor(
     }
 
     override suspend fun countByType(type: WorkType): Long = withContext(Dispatchers.IO) {
-        val typeString = type.toEntityString()
+        val typeString = WorkTypeMapper.toEntityString(type)
         workBox.query(NX_Work_.workType.equal(typeString, StringOrder.CASE_SENSITIVE))
             .build()
             .count()
@@ -76,16 +77,5 @@ class NxWorkDiagnosticsImpl @Inject constructor(
         workBox.query(NX_Work_.needsReview.equal(true))
             .build()
             .count()
-    }
-
-    private fun WorkType.toEntityString(): String = when (this) {
-        WorkType.MOVIE -> "MOVIE"
-        WorkType.SERIES -> "SERIES"
-        WorkType.EPISODE -> "EPISODE"
-        WorkType.CLIP -> "CLIP"
-        WorkType.LIVE_CHANNEL -> "LIVE"
-        WorkType.AUDIOBOOK -> "AUDIOBOOK"
-        WorkType.MUSIC_TRACK -> "MUSIC"
-        WorkType.UNKNOWN -> "UNKNOWN"
     }
 }
