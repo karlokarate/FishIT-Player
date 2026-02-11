@@ -1,7 +1,7 @@
 package com.fishit.player.infra.transport.xtream.serialization
 
-import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.KSerializer
+import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.descriptors.PrimitiveKind
 import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
 import kotlinx.serialization.descriptors.SerialDescriptor
@@ -9,6 +9,7 @@ import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonDecoder
+import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonPrimitive
@@ -42,22 +43,16 @@ object FlexibleStringSerializer : KSerializer<String?> {
     override val descriptor: SerialDescriptor =
         PrimitiveSerialDescriptor("FlexibleString", PrimitiveKind.STRING)
 
-    override fun deserialize(decoder: Decoder): String? {
+    /**
+     * Extracts a non-blank string from a [JsonElement] that may be a String, Array, or other type.
+     * Usable from both the serializer and manual JSON parsing (e.g., streaming parsers).
+     */
+    fun extractString(element: JsonElement?): String? {
+        if (element == null) return null
         return try {
-            val jsonDecoder = decoder as? JsonDecoder
-                ?: return decoder.decodeString()
-
-            when (val element = jsonDecoder.decodeJsonElement()) {
-                is JsonPrimitive -> {
-                    element.contentOrNull?.takeIf { it.isNotBlank() }
-                }
-                is JsonArray -> {
-                    element
-                        .firstOrNull()
-                        ?.jsonPrimitive
-                        ?.contentOrNull
-                        ?.takeIf { it.isNotBlank() }
-                }
+            when (element) {
+                is JsonPrimitive -> element.contentOrNull?.takeIf { it.isNotBlank() }
+                is JsonArray -> element.firstOrNull()?.jsonPrimitive?.contentOrNull?.takeIf { it.isNotBlank() }
                 else -> null
             }
         } catch (_: Exception) {
@@ -65,12 +60,17 @@ object FlexibleStringSerializer : KSerializer<String?> {
         }
     }
 
-    @OptIn(ExperimentalSerializationApi::class)
-    override fun serialize(encoder: Encoder, value: String?) {
-        if (value != null) {
-            encoder.encodeString(value)
-        } else {
-            encoder.encodeNull()
+    override fun deserialize(decoder: Decoder): String? {
+        return try {
+            val jsonDecoder = decoder as? JsonDecoder
+                ?: return decoder.decodeString()
+            extractString(jsonDecoder.decodeJsonElement())
+        } catch (_: Exception) {
+            null
         }
+    }
+
+    override fun serialize(encoder: Encoder, value: String?) {
+        encoder.encodeNullableSerializableValue(String.serializer(), value)
     }
 }
