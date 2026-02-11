@@ -145,7 +145,10 @@ class DefaultXtreamSyncService @Inject constructor(
             // Build SINGLE pipeline config with ALL content types
             // → PhaseScanOrchestrator runs Live/VOD/Series in parallel
             val pipelineConfig = XtreamCatalogConfig(
-                accountName = config.accountKey,
+                // Extract human-readable part from accountKey for display label.
+                // accountKey format: "xtream:user@server.com" → accountLabel: "user@server.com"
+                // This prevents duplicate "xtream:" prefixes in sourceKey generation.
+                accountLabel = config.accountKey.removePrefix("xtream:"),
                 includeVod = config.syncVod,
                 includeSeries = config.syncSeries,
                 includeEpisodes = config.syncEpisodes,
@@ -346,7 +349,7 @@ class DefaultXtreamSyncService @Inject constructor(
     override suspend fun loadCategories(accountKey: String): XtreamCategories {
         log("Loading categories for account: $accountKey")
         return try {
-            val config = XtreamCatalogConfig(accountName = accountKey)
+            val config = XtreamCatalogConfig(accountLabel = accountKey.removePrefix("xtream:"))
             when (val response = pipeline.fetchCategories(config)) {
                 is XtreamCategoryResult.Success -> XtreamCategories(
                     vodCategories = response.vodCategories.map { XtreamCategory(it.categoryId, it.categoryName, it.parentId?.toString()) },

@@ -26,7 +26,7 @@ import kotlin.test.assertTrue
 class XtreamSeriesIntegrationTest {
 
     private val testDataDir = File("test-data/xtream-responses")
-    private val accountName = "test-account"
+    private val accountLabel = "test-account"
 
     private val json = Json {
         ignoreUnknownKeys = true
@@ -140,7 +140,7 @@ class XtreamSeriesIntegrationTest {
                 backdrop = api.backdrop_path?.firstOrNull(),
             )
 
-            val raw = dto.toRawMetadata(accountName = accountName)
+            val raw = dto.toRawMetadata(accountLabel = accountLabel)
 
             // XtreamIdCodec
             assertEquals("xtream:series:${api.series_id}", raw.sourceId, "sourceId")

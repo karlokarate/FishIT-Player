@@ -73,7 +73,7 @@ internal class EpisodeStreamingPhase @Inject constructor(
                                     episode = episode,
                                     seriesName = result.seriesName,
                                     imageAuthHeaders = headers,
-                                    accountName = config.accountName,
+                                    accountLabel = config.accountLabel,
                                 )
                                 channel.send(XtreamCatalogEvent.ItemDiscovered(catalogItem))
                                 

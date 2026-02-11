@@ -66,7 +66,7 @@ internal class SeriesItemPhase @Inject constructor(
                                 source.streamSeriesItems(batchSize = config.batchSize, categoryId = catId) { batch ->
                                     for (seriesItem in batch) {
                                         if (!currentCoroutineContext().isActive) return@streamSeriesItems
-                                        val catalogItem = mapper.fromSeries(seriesItem, headers, config.accountName)
+                                        val catalogItem = mapper.fromSeries(seriesItem, headers, config.accountLabel)
                                         channel.send(XtreamCatalogEvent.ItemDiscovered(catalogItem))
                                         val count = counters.seriesCounter.incrementAndGet()
                                         if (count % PROGRESS_LOG_INTERVAL == 0) {
@@ -93,7 +93,7 @@ internal class SeriesItemPhase @Inject constructor(
                 source.streamSeriesItems(batchSize = config.batchSize) { batch ->
                     for (seriesItem in batch) {
                         if (!currentCoroutineContext().isActive) return@streamSeriesItems
-                        val catalogItem = mapper.fromSeries(seriesItem, headers, config.accountName)
+                        val catalogItem = mapper.fromSeries(seriesItem, headers, config.accountLabel)
                         channel.send(XtreamCatalogEvent.ItemDiscovered(catalogItem))
                         val count = counters.seriesCounter.incrementAndGet()
                         if (count % PROGRESS_LOG_INTERVAL == 0) {

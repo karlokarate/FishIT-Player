@@ -49,7 +49,7 @@ class XtreamGoldenFileTest {
 
     private val testDataDir = File("test-data/xtream-responses")
     private val goldenDir = File("test-data/golden/xtream")
-    private val accountName = "test-account"
+    private val accountLabel = "test-account"
 
     private val json = Json {
         ignoreUnknownKeys = true
@@ -231,7 +231,7 @@ class XtreamGoldenFileTest {
             isAdult = api.is_adult == "1",
         )
 
-        val raw = dto.toRawMetadata(accountName = accountName)
+        val raw = dto.toRawMetadata(accountLabel = accountLabel)
 
         // Sanity: verify critical identity fields before golden comparison
         assertEquals(MediaType.MOVIE, raw.mediaType, "wrong mediaType")
@@ -267,7 +267,7 @@ class XtreamGoldenFileTest {
 
         val raw = vodInfo.toRawMediaMetadata(
             vodItem = vodItem,
-            accountName = accountName,
+            accountLabel = accountLabel,
         )
 
         // Sanity checks
@@ -315,7 +315,7 @@ class XtreamGoldenFileTest {
             isAdult = api.is_adult == "1",
         )
 
-        val raw = dto.toRawMetadata(accountName = accountName)
+        val raw = dto.toRawMetadata(accountLabel = accountLabel)
 
         // Sanity checks
         assertEquals(MediaType.SERIES, raw.mediaType)
@@ -407,7 +407,7 @@ class XtreamGoldenFileTest {
             directSource = api.direct_source,
         )
 
-        val raw = dto.toRawMediaMetadata(accountName = accountName)
+        val raw = dto.toRawMediaMetadata(accountLabel = accountLabel)
 
         // Sanity checks
         assertEquals(MediaType.LIVE, raw.mediaType)
@@ -436,7 +436,7 @@ class XtreamGoldenFileTest {
                 streamIcon = api.stream_icon,
                 added = api.added?.toLongOrNull(),
             )
-            val raw = dto.toRawMetadata(accountName = accountName)
+            val raw = dto.toRawMetadata(accountLabel = accountLabel)
 
             assertTrue(raw.sourceId.startsWith("xtream:vod:"), "sourceId format for item $idx")
             assertEquals(api.name, raw.originalTitle, "originalTitle for item $idx")

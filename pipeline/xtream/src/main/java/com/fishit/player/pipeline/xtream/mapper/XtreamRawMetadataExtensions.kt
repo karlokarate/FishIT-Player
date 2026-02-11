@@ -113,12 +113,12 @@ private fun parseDurationToMs(duration: String?): Long? {
  * - VOD items map to TmdbRef(MOVIE, tmdbId) when tmdbId is available
  *
  * @param authHeaders Optional headers for image URL authentication
- * @param accountName Xtream account identifier (e.g., "konigtv") for sourceLabel
+ * @param accountLabel Human-readable account label for UI display
  * @return RawMediaMetadata with VOD-specific fields
  */
 fun XtreamVodItem.toRawMetadata(
     authHeaders: Map<String, String> = emptyMap(),
-    accountName: String = "xtream",
+    accountLabel: String = "xtream",
 ): RawMediaMetadata {
     val rawTitle = name
 
@@ -172,7 +172,7 @@ fun XtreamVodItem.toRawMetadata(
         durationMs = durationMs,
         externalIds = externalIds,
         sourceType = SourceType.XTREAM,
-        sourceLabel = accountName,
+        sourceLabel = accountLabel,
         sourceId = sourceIdStable,
         // === Pipeline Identity (v2) ===
         pipelineIdTag = PipelineIdTag.XTREAM,
@@ -214,12 +214,12 @@ fun XtreamVodItem.toRawMetadata(
  * - Series map to TmdbRef(TV, tmdbId) when tmdbId is available
  *
  * @param authHeaders Optional headers for image URL authentication
- * @param accountName Xtream account identifier (e.g., "konigtv") for sourceLabel
+ * @param accountLabel Human-readable account label for UI display
  * @return RawMediaMetadata with series-specific fields
  */
 fun XtreamSeriesItem.toRawMetadata(
     authHeaders: Map<String, String> = emptyMap(),
-    accountName: String = "xtream",
+    accountLabel: String = "xtream",
 ): RawMediaMetadata {
     val rawTitle = name
 
@@ -261,7 +261,7 @@ fun XtreamSeriesItem.toRawMetadata(
         durationMs = durationMs, // Average episode runtime (from episode_run_time API field)
         externalIds = externalIds,
         sourceType = SourceType.XTREAM,
-        sourceLabel = accountName,
+        sourceLabel = accountLabel,
         // Uses XtreamIdCodec as SSOT per xtream_290126.md Blocker #1
         sourceId = XtreamIdCodec.series(id),
         // === Pipeline Identity (v2) ===
@@ -309,12 +309,14 @@ fun XtreamSeriesItem.toRawMetadata(
  * @param seriesNameOverride Optional override for parent series name
  * @param seriesKind The parent series kind/alias (series, episodes, movie) for URL building
  * @param authHeaders Optional headers for image URL authentication
+ * @param accountLabel Human-readable account label for UI display
  * @return RawMediaMetadata with episode-specific fields
  */
 fun XtreamEpisode.toRawMediaMetadata(
     seriesNameOverride: String? = null,
     seriesKind: String? = null,
     authHeaders: Map<String, String> = emptyMap(),
+    accountLabel: String = "xtream",
 ): RawMediaMetadata {
     // Prefer embedded seriesName from data class, fall back to override parameter
     val effectiveSeriesName = seriesName ?: seriesNameOverride
@@ -389,7 +391,7 @@ fun XtreamEpisode.toRawMediaMetadata(
         durationMs = resolvedDurationMs, // Prefer durationSecs, fallback to parsed duration
         externalIds = externalIds,
         sourceType = SourceType.XTREAM,
-        sourceLabel = effectiveSeriesName?.let { "Xtream: $it" } ?: "Xtream Series",
+        sourceLabel = accountLabel,
         sourceId = sourceIdStable,
         // === Pipeline Identity (v2) ===
         pipelineIdTag = PipelineIdTag.XTREAM,
@@ -426,12 +428,12 @@ fun XtreamEpisode.toRawMediaMetadata(
  * - Country prefix (DE:, US:) preserved
  *
  * @param authHeaders Optional headers for image URL authentication
- * @param accountName Xtream account identifier (e.g., "konigtv") for sourceLabel
+ * @param accountLabel Human-readable account label for UI display
  * @return RawMediaMetadata with live channel fields
  */
 fun XtreamChannel.toRawMediaMetadata(
     authHeaders: Map<String, String> = emptyMap(),
-    accountName: String = "xtream",
+    accountLabel: String = "xtream",
 ): RawMediaMetadata {
     // Clean Unicode decorators from live channel names
     val rawTitle = cleanLiveChannelName(name)
@@ -461,7 +463,7 @@ fun XtreamChannel.toRawMediaMetadata(
         durationMs = null, // Live channels don't have duration
         externalIds = ExternalIds(),
         sourceType = SourceType.XTREAM,
-        sourceLabel = accountName,
+        sourceLabel = accountLabel,
         // Uses XtreamIdCodec as SSOT per xtream_290126.md Blocker #1
         sourceId = XtreamIdCodec.live(id),
         // === Pipeline Identity (v2) ===
@@ -516,7 +518,7 @@ fun XtreamChannel.toRawMediaMetadata(
 fun XtreamVodInfo.toRawMediaMetadata(
     vodItem: XtreamVodItem,
     authHeaders: Map<String, String> = emptyMap(),
-    accountName: String = "xtream",
+    accountLabel: String = "xtream",
 ): RawMediaMetadata {
     val infoBlock = info
     val movieData = movieData
@@ -573,7 +575,7 @@ fun XtreamVodInfo.toRawMediaMetadata(
         durationMs = durationMs,
         externalIds = externalIds,
         sourceType = SourceType.XTREAM,
-        sourceLabel = accountName,
+        sourceLabel = accountLabel,
         sourceId = sourceIdStable,
         // === Pipeline Identity (v2) ===
         pipelineIdTag = PipelineIdTag.XTREAM,

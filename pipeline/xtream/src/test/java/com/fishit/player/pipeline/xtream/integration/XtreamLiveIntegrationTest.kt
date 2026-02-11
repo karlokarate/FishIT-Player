@@ -23,7 +23,7 @@ import kotlin.test.assertTrue
 class XtreamLiveIntegrationTest {
 
     private val testDataDir = File("test-data/xtream-responses")
-    private val accountName = "test-account"
+    private val accountLabel = "test-account"
 
     private val json = Json {
         ignoreUnknownKeys = true
@@ -90,7 +90,7 @@ class XtreamLiveIntegrationTest {
                 added = api.added?.toLongOrNull(),
             )
 
-            val raw = dto.toRawMediaMetadata(accountName = accountName)
+            val raw = dto.toRawMediaMetadata(accountLabel = accountLabel)
 
             // XtreamIdCodec
             assertEquals("xtream:live:${api.stream_id}", raw.sourceId, "sourceId")
