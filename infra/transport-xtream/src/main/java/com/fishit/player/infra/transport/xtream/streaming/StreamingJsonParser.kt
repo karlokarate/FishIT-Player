@@ -452,6 +452,23 @@ class JsonObjectReader(private val parser: JsonParser) {
     /** Get string field value or null. */
     fun getStringOrNull(name: String): String? = fields[name]?.toString()
 
+    /**
+     * Get string field value handling String|Array polymorphism.
+     *
+     * Xtream API fields like `backdrop_path` can return either a plain string
+     * or an array of strings. This method handles both formats:
+     * - String → return as-is (if non-blank)
+     * - List → return first non-blank string element
+     * - Other → null
+     */
+    fun getFlexibleStringOrNull(name: String): String? {
+        return when (val v = fields[name]) {
+            is String -> v.takeIf { it.isNotBlank() }
+            is List<*> -> v.firstOrNull()?.toString()?.takeIf { it.isNotBlank() }
+            else -> null
+        }
+    }
+
     /** Get string field value or empty string. */
     fun getString(name: String): String = getStringOrNull(name) ?: ""
 

@@ -11,7 +11,6 @@ import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonDecoder
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonPrimitive
 
 /**
@@ -51,8 +50,8 @@ object FlexibleStringSerializer : KSerializer<String?> {
         if (element == null) return null
         return try {
             when (element) {
-                is JsonPrimitive -> element.contentOrNull?.takeIf { it.isNotBlank() }
-                is JsonArray -> element.firstOrNull()?.jsonPrimitive?.contentOrNull?.takeIf { it.isNotBlank() }
+                is JsonPrimitive -> if (element.isString) element.content.takeIf { it.isNotBlank() } else null
+                is JsonArray -> element.firstOrNull()?.jsonPrimitive?.takeIf { it.isString }?.content?.takeIf { it.isNotBlank() }
                 else -> null
             }
         } catch (_: Exception) {
@@ -61,13 +60,18 @@ object FlexibleStringSerializer : KSerializer<String?> {
     }
 
     override fun deserialize(decoder: Decoder): String? {
-        return try {
-            val jsonDecoder = decoder as? JsonDecoder
-                ?: return decoder.decodeString()
-            extractString(jsonDecoder.decodeJsonElement())
-        } catch (_: Exception) {
-            null
+        val jsonDecoder = decoder as? JsonDecoder
+        if (jsonDecoder != null) {
+            return try {
+                extractString(jsonDecoder.decodeJsonElement())
+            } catch (_: Exception) {
+                null
+            }
         }
+
+        // Non-JSON fallback: mirror encodeNullableSerializableValue and apply blank filtering
+        val raw = decoder.decodeNullableSerializableValue(String.serializer())
+        return raw?.takeIf { it.isNotBlank() }
     }
 
     override fun serialize(encoder: Encoder, value: String?) {

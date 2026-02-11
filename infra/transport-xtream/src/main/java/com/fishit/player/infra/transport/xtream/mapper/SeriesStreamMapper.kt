@@ -35,7 +35,7 @@ object SeriesStreamMapper {
             lastModified = reader.getStringOrNull("last_modified"),
             rating = reader.getStringOrNull("rating"),
             rating5Based = reader.getDoubleOrNull("rating_5based"),
-            backdropPath = reader.getStringOrNull("backdrop_path"),
+            backdropPath = reader.getFlexibleStringOrNull("backdrop_path"),
             youtubeTrailer = reader.getStringOrNull("youtube_trailer"),
             episodeRunTime = reader.getStringOrNull("episode_run_time"),
             categoryId = reader.getStringOrNull("category_id"),

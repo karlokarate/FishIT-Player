@@ -74,9 +74,15 @@ class FlexibleStringSerializerTest {
     }
 
     @Test
-    fun `deserialize number primitive returns string representation`() {
+    fun `deserialize number primitive returns null`() {
         val result = json.decodeFromString<TestModel>("""{"field": 42}""")
-        assertEquals("42", result.field)
+        assertNull(result.field)
+    }
+
+    @Test
+    fun `deserialize boolean primitive returns null`() {
+        val result = json.decodeFromString<TestModel>("""{"field": true}""")
+        assertNull(result.field)
     }
 
     @Test
