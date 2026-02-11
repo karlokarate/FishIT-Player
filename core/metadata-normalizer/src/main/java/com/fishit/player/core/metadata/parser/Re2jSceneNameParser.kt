@@ -104,11 +104,13 @@ class Re2jSceneNameParser : SceneNameParser {
     // =========================================================================
 
     /**
-     * Parse Xtream pipe-separated format: "Title | Year | Rating | Quality"
+     * Parse Xtream pipe-separated format (position-independent).
      *
-     * Examples:
+     * Handles all known provider variants:
      * - "Sisu: Road to Revenge | 2025 | 7.4"
      * - "John Wick: Kapitel 4 | 2023 | 4K |"
+     * - "NL | Beast | 2022 | 5.0"
+     * - "Ant-Man | 7.3 | 2015"
      */
     private fun parseXtreamPipeFormat(input: String): ParsedSceneInfo {
         val result = XtreamFormatRules.parsePipeFormat(input)
@@ -135,6 +137,7 @@ class Re2jSceneNameParser : SceneNameParser {
             isEpisode = false,
             season = null,
             episode = null,
+            rating = result.rating,
             quality = quality,
             edition = EditionInfo(),
         )

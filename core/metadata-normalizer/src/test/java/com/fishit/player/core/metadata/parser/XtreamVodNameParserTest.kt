@@ -303,6 +303,62 @@ class XtreamVodNameParserTest {
         }
     }
 
+    // =========================================================================
+    // YEAR-AS-TITLE EDGE CASES (from real Xtream data)
+    // Movies whose title is a year number: "1992", "2012", "2046", "1917"
+    // The first pipe segment must always be treated as title, never as year.
+    // =========================================================================
+
+    @Test
+    fun `parse pipe-separated pattern - year-number movie titles from real data`() {
+        // Real entries from vod_streams.json where the title IS a year
+        val testCases = listOf(
+            "1992 | 2024 | 6.6 |" to Triple("1992", 2024, 6.6),
+            "2012 | 2009 | 5.8" to Triple("2012", 2009, 5.8),
+            "1992 | 2024 | 6.6" to Triple("1992", 2024, 6.6),
+            "1992 | 2024 | 6.5 | 4K" to Triple("1992", 2024, 6.5),
+        )
+
+        testCases.forEach { (input, expected) ->
+            val result = parser.parse(input)
+            assertEquals(expected.first, result.title, "Title mismatch for: $input")
+            assertEquals(expected.second, result.year, "Year mismatch for: $input")
+            assertEquals(expected.third, result.rating, "Rating mismatch for: $input")
+        }
+    }
+
+    @Test
+    fun `parse pipe-separated pattern - year outside range treated as title`() {
+        // "2046" (2004 film by Wong Kar-wai) - year 2046 is outside the 1960-2030 range
+        // so even if it appeared at position >= 1, it wouldn't be mistaken for a year
+        val input = "2046 | 2004 | 7.2"
+        val result = parser.parse(input)
+        assertEquals("2046", result.title, "2046 should be the movie title")
+        assertEquals(2004, result.year, "2004 should be the release year")
+        assertEquals(7.2, result.rating, "7.2 should be the rating")
+    }
+
+    @Test
+    fun `parse pipe-separated pattern - rating extracted from title when API rating empty`() {
+        // The core bug: API returns empty rating field but title contains "| 7.4 |"
+        val input = "Die Dschungelhelden auf Weltreise | 2023 | 7.4 |"
+        val result = parser.parse(input)
+        assertEquals("Die Dschungelhelden auf Weltreise", result.title)
+        assertEquals(2023, result.year)
+        assertEquals(7.4, result.rating, "Rating should be extracted from pipe format")
+    }
+
+    @Test
+    fun `parse pipe-separated pattern - country prefix with year-number title`() {
+        // NL prefix + title that is a year number — both should end up in title
+        val input = "NL | 1917 | 2019 | 8.3"
+        val result = parser.parse(input)
+        // "NL" and "1917" are both non-year segments → joined as title
+        assertEquals("NL | 1917", result.title, "Country prefix and year-title should both be in title")
+        assertEquals(2019, result.year)
+        assertEquals(8.3, result.rating)
+    }
+
     @Test
     fun `parse titles with numbers`() {
         val testCases =

@@ -75,7 +75,7 @@ class RegexMediaMetadataNormalizer(
             genres = raw.genres,
             director = raw.director,
             cast = raw.cast,
-            rating = raw.rating,
+            rating = raw.rating ?: parsed.rating,
             durationMs = raw.durationMs,
             trailer = raw.trailer,
             releaseDate = raw.releaseDate,

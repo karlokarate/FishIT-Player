@@ -11,6 +11,7 @@ package com.fishit.player.core.metadata.parser
  * @property isEpisode True if filename contains episode markers (SxxEyy)
  * @property season Season number for episodes (1-99)
  * @property episode Episode number for episodes (1-999)
+ * @property rating Rating extracted from structured title formats (e.g. Xtream pipe format "Title | Year | 7.4")
  * @property quality Quality and technical metadata
  * @property edition Edition flags (Extended, Director's Cut, Unrated, etc.)
  * @property extraTags Unrecognized tags for debugging/logging
@@ -21,6 +22,7 @@ data class ParsedSceneInfo(
     val isEpisode: Boolean = false,
     val season: Int? = null,
     val episode: Int? = null,
+    val rating: Double? = null,
     val quality: QualityInfo? = null,
     val edition: EditionInfo? = null,
     val extraTags: List<String> = emptyList(),
