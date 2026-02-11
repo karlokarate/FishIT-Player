@@ -117,7 +117,7 @@ class XtreamCatalogMapperImpl
             XtreamCatalogItem(
                 raw = episode.toRawMediaMetadata(
                     seriesNameOverride = seriesName,
-                    seriesKind = "series", // Default to "series" - will be overridden by parent series streamType if available
+                    seriesKind = "series", // Xtream API does not return stream_type for series, default to "series"
                     authHeaders = imageAuthHeaders
                 ),
                 kind = XtreamItemKind.EPISODE,
