@@ -231,16 +231,18 @@ class FullChainGoldenFileTest {
 
     /**
      * Build work key from normalized metadata.
-     * Uses canonical MediaTypeMapper.toWorkType() and NxKeyGenerator.toSlug().
-     * Aligned with NxCatalogWriter.buildWorkKey() after F1-F6 fixes.
+     * Delegates to NxKeyGenerator.workKey() — single source of truth.
      */
     private fun buildWorkKey(normalized: NormalizedMediaMetadata): String {
-        val authority = if (normalized.tmdb != null) "tmdb" else "heuristic"
-        val id = normalized.tmdb?.id?.toString()
-            ?: "${NxKeyGenerator.toSlug(normalized.canonicalTitle)}-${normalized.year ?: "unknown"}"
-        // Use canonical MediaTypeMapper instead of buggy contains() heuristic
-        val workType = MediaTypeMapper.toWorkType(normalized.mediaType).name.lowercase()
-        return "$workType:$authority:$id"
+        val workType = MediaTypeMapper.toWorkType(normalized.mediaType)
+        return NxKeyGenerator.workKey(
+            workType = workType,
+            title = normalized.canonicalTitle,
+            year = normalized.year,
+            tmdbId = normalized.tmdb?.id,
+            season = normalized.season,
+            episode = normalized.episode,
+        )
     }
 
     private fun buildSourceKey(raw: RawMediaMetadata, accountKey: String): String {
