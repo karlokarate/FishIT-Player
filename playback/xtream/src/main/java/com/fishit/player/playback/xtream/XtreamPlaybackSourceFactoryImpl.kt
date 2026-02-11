@@ -293,7 +293,6 @@ class XtreamPlaybackSourceFactoryImpl
                             context.extras[PlaybackHintKeys.Xtream.EPISODE_NUMBER]
                                 ?.toIntOrNull()
                                 ?: context.extras[EXTRA_EPISODE_NUMBER]?.toIntOrNull() ?: 1
-                        
                         // Use seriesKind from PlaybackHints for correct URL building
                         val seriesKind = context.extras[PlaybackHintKeys.Xtream.SERIES_KIND]
 
