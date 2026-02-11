@@ -121,15 +121,8 @@ data class MediaSourceRef(
      */
     fun percentFromPosition(positionMs: Long): Float? = durationMs?.takeIf { it > 0 }?.let { positionMs.toFloat() / it }
 
-    private fun formatFileSize(bytes: Long): String {
-        val gb = bytes / (1024.0 * 1024.0 * 1024.0)
-        val mb = bytes / (1024.0 * 1024.0)
-        return when {
-            gb >= 1.0 -> String.format("%.1f GB", gb)
-            mb >= 1.0 -> String.format("%.0f MB", mb)
-            else -> String.format("%d KB", bytes / 1024)
-        }
-    }
+    private fun formatFileSize(bytes: Long): String =
+        com.fishit.player.core.model.util.FileSizeFormatter.format(bytes)
 
     private fun formatDuration(ms: Long): String {
         val totalMinutes = ms / 60_000
@@ -172,17 +165,7 @@ data class MediaQuality(
     fun toDisplayLabel(): String =
         buildString {
             resolutionLabel?.let { append(it) }
-                ?: resolution?.let {
-                    append(
-                        when {
-                            it >= 2160 -> "4K"
-                            it >= 1080 -> "1080p"
-                            it >= 720 -> "720p"
-                            it >= 480 -> "480p"
-                            else -> "SD"
-                        },
-                    )
-                }
+                ?: com.fishit.player.core.model.util.ResolutionLabel.fromHeight(resolution)?.let { append(it) }
             hdr?.let {
                 if (isNotEmpty()) append(" ")
                 append(it)
@@ -204,14 +187,7 @@ data class MediaQuality(
             val resolution = height ?: return null
             return MediaQuality(
                 resolution = resolution,
-                resolutionLabel =
-                    when {
-                        resolution >= 2160 -> "4K"
-                        resolution >= 1080 -> "1080p"
-                        resolution >= 720 -> "720p"
-                        resolution >= 480 -> "480p"
-                        else -> "SD"
-                    },
+                resolutionLabel = com.fishit.player.core.model.util.ResolutionLabel.fromHeight(resolution),
             )
         }
 

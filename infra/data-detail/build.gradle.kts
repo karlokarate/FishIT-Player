@@ -29,6 +29,7 @@ dependencies {
     implementation(project(":core:model"))
     implementation(project(":core:detail-domain"))
     implementation(project(":core:metadata-normalizer"))
+    implementation(project(":infra:data-nx"))
     implementation(project(":infra:logging"))
     implementation(project(":infra:api-priority"))
 

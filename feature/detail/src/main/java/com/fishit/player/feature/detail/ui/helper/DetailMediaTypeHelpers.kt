@@ -327,12 +327,7 @@ private fun EpisodeQualityBadge(
     modifier: Modifier = Modifier,
 ) {
     val label = qualityHeight?.let { h ->
-        when {
-            h >= 2160 -> "4K"
-            h >= 1080 -> "FHD"
-            h >= 720 -> "HD"
-            else -> null
-        }
+        com.fishit.player.core.model.util.ResolutionLabel.badgeLabel(h)
     }
     if (label != null) {
         Box(

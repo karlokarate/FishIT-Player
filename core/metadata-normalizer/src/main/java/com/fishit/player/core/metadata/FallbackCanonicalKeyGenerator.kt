@@ -2,6 +2,7 @@ package com.fishit.player.core.metadata
 
 import com.fishit.player.core.model.MediaType
 import com.fishit.player.core.model.ids.CanonicalId
+import com.fishit.player.core.model.util.SlugGenerator
 
 /**
  * Generates contract-aligned fallback canonical keys when TMDB identity is unavailable.
@@ -52,11 +53,9 @@ object FallbackCanonicalKeyGenerator {
             .replace(Regex("""\s+"""), " ")
             .trim()
 
-    private fun toSlug(input: String): String =
-        input
-            .lowercase()
-            .replace(Regex("[^a-z0-9\\s-]"), "")
-            .replace(Regex("\\s+"), "-")
-            .replace(Regex("-+"), "-")
-            .trim('-')
+    /**
+     * Delegates to [SlugGenerator.toSlug] — SSOT for slug generation.
+     * NX_CONSOLIDATION_PLAN Phase 7 — Duplicate #1.
+     */
+    private fun toSlug(input: String): String = SlugGenerator.toSlug(input)
 }

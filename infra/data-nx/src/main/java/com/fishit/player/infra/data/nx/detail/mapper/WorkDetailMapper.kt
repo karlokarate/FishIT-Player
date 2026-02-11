@@ -1,5 +1,7 @@
 package com.fishit.player.infra.data.nx.detail.mapper
 
+import com.fishit.player.core.model.util.ContainerGuess
+import com.fishit.player.core.model.util.SourcePriority
 import com.fishit.player.core.persistence.obx.NX_Work
 import com.fishit.player.core.persistence.obx.NX_WorkSourceRef
 import com.fishit.player.core.persistence.obx.NX_WorkUserState
@@ -8,8 +10,7 @@ import com.fishit.player.infra.data.nx.detail.dto.WorkResumeInfo
 import com.fishit.player.infra.data.nx.detail.dto.WorkSourceInfo
 import com.fishit.player.infra.data.nx.detail.dto.WorkWithSources
 import com.fishit.player.infra.data.nx.mapper.SourceLabelBuilder
-import com.fishit.player.infra.data.nx.mapper.SourcePriorityCalculator
-import kotlinx.serialization.json.Json
+import com.fishit.player.infra.data.nx.mapper.base.PlaybackHintsDecoder
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -123,9 +124,14 @@ class WorkDetailMapper @Inject constructor() {
             // File info (from sourceRef)
             fileSizeBytes = sourceRef.fileSizeBytes,
             // Hints for PlaybackSourceFactory
-            playbackHints = buildPlaybackHints(sourceRef, variant),
+            playbackHints = PlaybackHintsDecoder.decodeFromVariantAndSource(variant, sourceRef),
             // Selection priority
-            priority = calculatePriority(sourceRef, variant),
+            priority = SourcePriority.totalPriority(
+                sourceType = sourceRef.sourceType,
+                qualityTag = variant.qualityTag,
+                hasDirectUrl = !variant.playbackUrl.isNullOrBlank(),
+                isExplicitVariant = true,
+            ),
             isAvailable = true, // TODO: Implement availability check
         )
 
@@ -153,15 +159,19 @@ class WorkDetailMapper @Inject constructor() {
             // No direct URL (factory will resolve)
             playbackUrl = null,
             playbackMethod = "DIRECT",
-            containerFormat = sourceRef.mimeType?.let { guesContainerFromMime(it) },
+            containerFormat = sourceRef.mimeType?.let { ContainerGuess.fromMimeType(it) },
             videoCodec = null,
             audioCodec = null,
             // File info
             fileSizeBytes = sourceRef.fileSizeBytes,
             // Hints
-            playbackHints = buildPlaybackHints(sourceRef, null),
+            playbackHints = PlaybackHintsDecoder.decodeFromVariantAndSource(null, sourceRef),
             // Lower priority than explicit variants
-            priority = calculatePriority(sourceRef, null),
+            priority = SourcePriority.totalPriority(
+                sourceType = sourceRef.sourceType,
+                hasDirectUrl = false,
+                isExplicitVariant = false,
+            ),
             isAvailable = true,
         )
 
@@ -174,95 +184,6 @@ class WorkDetailMapper @Inject constructor() {
         sourceRef: NX_WorkSourceRef,
         accountLabel: String,
     ): String = SourceLabelBuilder.buildLabel(sourceRef.sourceType, accountLabel)
-
-    /**
-     * Builds playback hints map for PlaybackSourceFactory.
-     *
-     * These hints contain source-specific data needed for playback resolution.
-     */
-    private fun buildPlaybackHints(
-        sourceRef: NX_WorkSourceRef,
-        variant: NX_WorkVariant?,
-    ): Map<String, String> {
-        // Primary: JSON storage from variant (contains all source-specific hints)
-        if (variant != null && !variant.playbackHintsJson.isNullOrBlank()) {
-            return try {
-                Json.decodeFromString<Map<String, String>>(variant.playbackHintsJson!!)
-            } catch (e: Exception) {
-                // Fallback to legacy on decode error
-                buildLegacyPlaybackHints(sourceRef, variant)
-            }
-        }
-
-        // Fallback: Legacy entity fields (for old data without JSON)
-        return buildLegacyPlaybackHints(sourceRef, variant)
-    }
-
-    private fun buildLegacyPlaybackHints(
-        sourceRef: NX_WorkSourceRef,
-        variant: NX_WorkVariant?,
-    ): Map<String, String> =
-        buildMap {
-            // Common hints
-            put("sourceType", sourceRef.sourceType)
-            put("accountKey", sourceRef.accountKey)
-            put("sourceId", sourceRef.sourceId)
-
-            // Telegram-specific
-            sourceRef.telegramChatId?.let { put("telegramChatId", it.toString()) }
-            sourceRef.telegramMessageId?.let { put("telegramMessageId", it.toString()) }
-
-            // Xtream-specific
-            sourceRef.xtreamStreamId?.let { put("xtreamStreamId", it.toString()) }
-            sourceRef.xtreamCategoryId?.let { put("xtreamCategoryId", it.toString()) }
-
-            // File info
-            sourceRef.mimeType?.let { put("mimeType", it) }
-            sourceRef.fileSizeBytes?.let { put("fileSizeBytes", it.toString()) }
-
-            // Variant-specific
-            variant?.let {
-                it.playbackUrl?.let { url -> put("playbackUrl", url) }
-                put("playbackMethod", it.playbackMethod)
-                it.containerFormat?.let { f -> put("containerFormat", f) }
-            }
-        }
-
-    /**
-     * Calculates selection priority for source/variant combination.
-     *
-     * Higher priority = preferred for auto-selection.
-     *
-     * Priority factors:
-     * - Source type preference (local > plex > xtream > telegram)
-     * - Quality (4k > 1080p > 720p > source)
-     * - Has direct URL (+10 points)
-     * - Explicit variant vs default (+5 points)
-     *
-     * Uses SourcePriorityCalculator for consistent priority logic.
-     */
-    private fun calculatePriority(
-        sourceRef: NX_WorkSourceRef,
-        variant: NX_WorkVariant?,
-    ): Int = SourcePriorityCalculator.calculateTotalPriority(
-        sourceType = sourceRef.sourceType,
-        qualityTag = variant?.qualityTag,
-        hasDirectUrl = !variant?.playbackUrl.isNullOrBlank(),
-        isExplicitVariant = variant != null,
-    )
-
-    /**
-     * Guesses container format from MIME type.
-     */
-    private fun guesContainerFromMime(mimeType: String): String? =
-        when {
-            mimeType.contains("mp4") -> "mp4"
-            mimeType.contains("mkv") || mimeType.contains("matroska") -> "mkv"
-            mimeType.contains("avi") -> "avi"
-            mimeType.contains("webm") -> "webm"
-            mimeType.contains("mpegts") || mimeType.contains("ts") -> "ts"
-            else -> null
-        }
 
     /**
      * Maps NX_WorkUserState to WorkResumeInfo DTO.

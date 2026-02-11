@@ -4,6 +4,8 @@ import com.fishit.player.core.detail.domain.DomainDetailMedia
 import com.fishit.player.core.detail.domain.DomainResumeState
 import com.fishit.player.core.detail.domain.DomainSourceInfo
 import com.fishit.player.core.detail.domain.NxDetailMediaRepository
+import com.fishit.player.core.model.util.ContainerGuess
+import com.fishit.player.core.model.util.SourcePriority
 import com.fishit.player.core.persistence.obx.NX_Work
 import com.fishit.player.core.persistence.obx.NX_WorkSourceRef
 import com.fishit.player.core.persistence.obx.NX_WorkUserState
@@ -11,7 +13,7 @@ import com.fishit.player.core.persistence.obx.NX_WorkUserState_
 import com.fishit.player.core.persistence.obx.NX_WorkVariant
 import com.fishit.player.core.persistence.obx.NX_Work_
 import com.fishit.player.infra.data.nx.mapper.SourceLabelBuilder
-import com.fishit.player.infra.data.nx.mapper.SourcePriorityCalculator
+import com.fishit.player.infra.data.nx.mapper.base.PlaybackHintsDecoder
 import io.objectbox.Box
 import io.objectbox.BoxStore
 import io.objectbox.kotlin.toFlow
@@ -20,7 +22,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
-import kotlinx.serialization.json.Json
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -330,9 +331,14 @@ class NxDetailMediaRepositoryImpl @Inject constructor(
         containerFormat = variant.containerFormat,
         fileSizeBytes = sourceRef.fileSizeBytes,
         language = variant.languageTag,
-        priority = calculatePriority(sourceRef, variant),
+        priority = SourcePriority.totalPriority(
+            sourceType = sourceRef.sourceType,
+            qualityTag = variant.qualityTag,
+            hasDirectUrl = !variant.playbackUrl.isNullOrBlank(),
+            isExplicitVariant = true,
+        ),
         isAvailable = true,
-        playbackHints = buildPlaybackHints(sourceRef, variant),
+        playbackHints = PlaybackHintsDecoder.decodeFromVariantAndSource(variant, sourceRef),
     )
 
     private fun mapSourceWithDefault(
@@ -346,80 +352,20 @@ class NxDetailMediaRepositoryImpl @Inject constructor(
         width = null,
         height = null,
         videoCodec = null,
-        containerFormat = sourceRef.mimeType?.let { guesContainerFromMime(it) },
+        containerFormat = sourceRef.mimeType?.let { ContainerGuess.fromMimeType(it) },
         fileSizeBytes = sourceRef.fileSizeBytes,
         language = null,
-        priority = calculatePriority(sourceRef, null),
+        priority = SourcePriority.totalPriority(
+            sourceType = sourceRef.sourceType,
+            hasDirectUrl = false,
+            isExplicitVariant = false,
+        ),
         isAvailable = true,
-        playbackHints = buildPlaybackHints(sourceRef, null),
+        playbackHints = PlaybackHintsDecoder.decodeFromVariantAndSource(null, sourceRef),
     )
 
     private fun buildSourceLabel(sourceRef: NX_WorkSourceRef): String =
         SourceLabelBuilder.buildLabel(sourceRef.sourceType, sourceRef.accountKey)
-
-    private fun buildPlaybackHints(
-        sourceRef: NX_WorkSourceRef,
-        variant: NX_WorkVariant?,
-    ): Map<String, String> {
-        // Primary: JSON storage from variant (contains all source-specific hints)
-        if (variant != null && !variant.playbackHintsJson.isNullOrBlank()) {
-            return try {
-                Json.decodeFromString<Map<String, String>>(variant.playbackHintsJson!!)
-            } catch (e: Exception) {
-                // Fallback to legacy on decode error
-                buildLegacyPlaybackHints(sourceRef, variant)
-            }
-        }
-
-        // Fallback: Legacy entity fields (for old data without JSON)
-        return buildLegacyPlaybackHints(sourceRef, variant)
-    }
-
-    private fun buildLegacyPlaybackHints(
-        sourceRef: NX_WorkSourceRef,
-        variant: NX_WorkVariant?,
-    ): Map<String, String> = buildMap {
-        put("sourceType", sourceRef.sourceType)
-        put("accountKey", sourceRef.accountKey)
-        put("sourceId", sourceRef.sourceId)
-
-        // Telegram hints
-        sourceRef.telegramChatId?.let { put("telegramChatId", it.toString()) }
-        sourceRef.telegramMessageId?.let { put("telegramMessageId", it.toString()) }
-
-        // Xtream hints
-        sourceRef.xtreamStreamId?.let { put("xtreamStreamId", it.toString()) }
-        sourceRef.xtreamCategoryId?.let { put("xtreamCategoryId", it.toString()) }
-
-        // File info
-        sourceRef.mimeType?.let { put("mimeType", it) }
-        sourceRef.fileSizeBytes?.let { put("fileSizeBytes", it.toString()) }
-
-        // Variant hints
-        variant?.let {
-            it.playbackUrl?.let { url -> put("playbackUrl", url) }
-            put("playbackMethod", it.playbackMethod)
-            it.containerFormat?.let { f -> put("containerFormat", f) }
-        }
-    }
-
-    private fun calculatePriority(
-        sourceRef: NX_WorkSourceRef,
-        variant: NX_WorkVariant?,
-    ): Int = SourcePriorityCalculator.calculateTotalPriority(
-        sourceType = sourceRef.sourceType,
-        qualityTag = variant?.qualityTag,
-        hasDirectUrl = !variant?.playbackUrl.isNullOrBlank(),
-        isExplicitVariant = variant != null,
-    )
-
-    private fun guesContainerFromMime(mimeType: String): String? = when {
-        "mp4" in mimeType -> "mp4"
-        "mkv" in mimeType || "matroska" in mimeType -> "mkv"
-        "webm" in mimeType -> "webm"
-        "ts" in mimeType || "mpegts" in mimeType -> "ts"
-        else -> null
-    }
 
     private fun mapToDomainResumeState(userState: NX_WorkUserState): DomainResumeState {
         val progressPercent = if (userState.totalDurationMs > 0) {

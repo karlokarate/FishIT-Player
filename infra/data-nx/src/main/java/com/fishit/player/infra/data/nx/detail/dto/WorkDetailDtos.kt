@@ -156,26 +156,12 @@ data class WorkSourceInfo(
     val displayQuality: String
         get() = when {
             qualityTag != "source" -> qualityTag
-            height != null -> when {
-                height >= 2160 -> "4K"
-                height >= 1080 -> "1080p"
-                height >= 720 -> "720p"
-                height >= 480 -> "480p"
-                else -> "SD"
-            }
-            else -> "Unknown"
+            else -> com.fishit.player.core.model.util.ResolutionLabel.fromHeight(height) ?: "Unknown"
         }
 
     /** File size as human-readable string */
     val fileSizeLabel: String?
-        get() = fileSizeBytes?.let { bytes ->
-            when {
-                bytes >= 1_073_741_824 -> "%.1f GB".format(bytes / 1_073_741_824.0)
-                bytes >= 1_048_576 -> "%.1f MB".format(bytes / 1_048_576.0)
-                bytes >= 1024 -> "%.1f KB".format(bytes / 1024.0)
-                else -> "$bytes B"
-            }
-        }
+        get() = fileSizeBytes?.let { com.fishit.player.core.model.util.FileSizeFormatter.format(it) }
 }
 
 /**

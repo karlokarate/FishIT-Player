@@ -2,8 +2,8 @@ package com.fishit.player.core.catalogsync
 
 import com.fishit.player.core.model.MediaSourceRef
 import com.fishit.player.core.model.RawMediaMetadata
-import com.fishit.player.core.model.SourceType
 import com.fishit.player.core.model.ids.asPipelineItemId
+import com.fishit.player.core.model.util.SourcePriority
 
 /**
  * Utility for building MediaSourceRef instances from RawMediaMetadata.
@@ -54,28 +54,6 @@ object MediaSourceRefBuilder {
             sizeBytes = null, // Not available in RawMediaMetadata
             durationMs = raw.durationMs,
             playbackHints = raw.playbackHints,
-            priority = calculateSourcePriority(raw.sourceType),
+            priority = SourcePriority.basePriority(raw.sourceType.name),
         )
-
-    /**
-     * Calculate source priority for ordering in source selection.
-     *
-     * **Design Note:** Xtream gets highest priority because it provides:
-     * - Structured metadata (genres, plot, cast)
-     * - Reliable streaming URLs
-     * - EPG data for live content
-     *
-     * Telegram gets lower priority due to:
-     * - Variable quality (community uploads)
-     * - Potential for duplicate/incomplete uploads
-     * - Less structured metadata
-     */
-    private fun calculateSourcePriority(sourceType: SourceType): Int =
-        when (sourceType) {
-            SourceType.XTREAM -> 100
-            SourceType.TELEGRAM -> 50
-            SourceType.IO -> 75
-            SourceType.AUDIOBOOK -> 25
-            else -> 0
-        }
 }

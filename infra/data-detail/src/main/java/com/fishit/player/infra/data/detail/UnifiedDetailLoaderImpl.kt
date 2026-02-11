@@ -2,7 +2,6 @@ package com.fishit.player.infra.data.detail
 
 import com.fishit.player.core.detail.domain.DetailBundle
 import com.fishit.player.core.detail.domain.EpisodeIndexItem
-import com.fishit.player.core.detail.domain.EpisodePlaybackHints
 import com.fishit.player.core.detail.domain.SeasonIndexItem
 import com.fishit.player.core.detail.domain.UnifiedDetailLoader
 import com.fishit.player.core.detail.domain.XtreamSeriesIndexRepository
@@ -11,12 +10,14 @@ import com.fishit.player.core.model.ImageRef
 import com.fishit.player.core.model.MediaType
 import com.fishit.player.core.model.NormalizedMediaMetadata
 import com.fishit.player.core.model.PlaybackHintKeys
+import com.fishit.player.infra.data.nx.mapper.base.PlaybackHintsDecoder
 import com.fishit.player.core.model.SourceType
 import com.fishit.player.core.model.TmdbMediaType
 import com.fishit.player.core.model.TmdbRef
 import com.fishit.player.core.model.ids.XtreamIdCodec
 import com.fishit.player.core.model.repository.CanonicalMediaRepository
 import com.fishit.player.core.model.repository.CanonicalMediaWithSources
+import com.fishit.player.infra.data.nx.mapper.SourceKeyParser
 import com.fishit.player.infra.logging.UnifiedLog
 import com.fishit.player.infra.priority.ApiPriorityDispatcher
 import com.fishit.player.infra.transport.xtream.XtreamApiClient
@@ -36,8 +37,7 @@ import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withTimeout
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
+
 import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -129,8 +129,6 @@ class UnifiedDetailLoaderImpl
         private const val TAG = "UnifiedDetailLoader"
         private const val API_TIMEOUT_MS = 12_000L
     }
-
-    private val json = Json { ignoreUnknownKeys = true }
 
     // =========================================================================
     // Deduplication: Prevents concurrent API calls for the same media
@@ -827,30 +825,18 @@ class UnifiedDetailLoaderImpl
     }
 
     private fun parseSeriesIdFromSourceKey(sourceKey: String): Int? {
-        // Formats: "src:xtream:account:series:123" or "xtream:series:123"
-        val parts = sourceKey.split(":")
-        val seriesIndex = parts.indexOf("series")
-        return if (seriesIndex >= 0 && seriesIndex + 1 < parts.size) {
-            parts[seriesIndex + 1].toIntOrNull()
-        } else null
+        // NX_CONSOLIDATION_PLAN Phase 7: Delegate to SourceKeyParser SSOT
+        return SourceKeyParser.extractNumericItemKey(sourceKey)?.toInt()
     }
 
     private fun parseVodIdFromSourceKey(sourceKey: String): Int? {
-        // Formats: "src:xtream:account:vod:123" or "xtream:vod:123"
-        val parts = sourceKey.split(":")
-        val vodIndex = parts.indexOf("vod")
-        return if (vodIndex >= 0 && vodIndex + 1 < parts.size) {
-            parts[vodIndex + 1].toIntOrNull()
-        } else null
+        // NX_CONSOLIDATION_PLAN Phase 7: Delegate to SourceKeyParser SSOT
+        return SourceKeyParser.extractNumericItemKey(sourceKey)?.toInt()
     }
 
     private fun parseChannelIdFromSourceKey(sourceKey: String): Int? {
-        // Formats: "src:xtream:account:live:123" or "xtream:live:123"
-        val parts = sourceKey.split(":")
-        val liveIndex = parts.indexOf("live")
-        return if (liveIndex >= 0 && liveIndex + 1 < parts.size) {
-            parts[liveIndex + 1].toIntOrNull()
-        } else null
+        // NX_CONSOLIDATION_PLAN Phase 7: Delegate to SourceKeyParser SSOT
+        return SourceKeyParser.extractNumericItemKey(sourceKey)?.toInt()
     }
 
     private fun extractSeriesIdFromMedia(media: CanonicalMediaWithSources): Int? {
@@ -870,13 +856,13 @@ class UnifiedDetailLoaderImpl
         containerExtension: String?,
         directUrl: String?,
     ): String {
-        val hints = EpisodePlaybackHints(
-            episodeId = streamId,
-            streamId = streamId,
-            containerExtension = containerExtension,
-            directUrl = directUrl,
-        )
-        return json.encodeToString(hints)
+        val hints = buildMap<String, String> {
+            put(PlaybackHintKeys.Xtream.EPISODE_ID, streamId.toString())
+            put(PlaybackHintKeys.Xtream.STREAM_ID, streamId.toString())
+            containerExtension?.let { put(PlaybackHintKeys.Xtream.CONTAINER_EXT, it) }
+            directUrl?.let { put(PlaybackHintKeys.Xtream.DIRECT_SOURCE, it) }
+        }
+        return PlaybackHintsDecoder.encodeToJson(hints) ?: "{}"
     }
 
     // =========================================================================

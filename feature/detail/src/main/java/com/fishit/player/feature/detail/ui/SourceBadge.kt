@@ -606,15 +606,8 @@ fun ResumeApproximationNotice(
     }
 }
 
-private fun formatFileSize(bytes: Long): String {
-    val gb = bytes / (1024.0 * 1024.0 * 1024.0)
-    val mb = bytes / (1024.0 * 1024.0)
-    return when {
-        gb >= 1.0 -> String.format("%.1f GB", gb)
-        mb >= 1.0 -> String.format("%.0f MB", mb)
-        else -> String.format("%d KB", bytes / 1024)
-    }
-}
+private fun formatFileSize(bytes: Long): String =
+    com.fishit.player.core.model.util.FileSizeFormatter.format(bytes)
 
 private fun formatDuration(ms: Long): String {
     val totalSeconds = ms / 1000
