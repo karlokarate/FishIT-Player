@@ -86,7 +86,7 @@ object XtreamFormatRules {
         val parts = input.split('|', limit = 5)
         if (parts.size < 2) return false
 
-        // Scan segments 1+ for year and rating candidates.
+        // Single pass over segments 1+ with early exit.
         // Segment 0 is always title (or prefix) — never checked as year for detection.
         var hasYearStrict = false
         var hasYearExtended = false
@@ -104,11 +104,13 @@ object XtreamFormatRules {
                 val d = seg.toDoubleOrNull()
                 if (d != null && d > 0.0 && d <= 10.0) hasRating = true
             }
+
+            // Early exit when already unambiguous
+            if (hasYearStrict) return true
+            if (hasYearExtended && hasRating) return true
         }
 
-        // Accept if: year in strict range, OR (year in extended range AND rating present).
-        // The rating disambiguates: "Schneewittchen | 7.4 | 1937" → clearly a pipe format.
-        return hasYearStrict || (hasYearExtended && hasRating)
+        return false
     }
 
     /**
@@ -136,7 +138,7 @@ object XtreamFormatRules {
      * @return XtreamPipeResult with extracted fields
      */
     fun parsePipeFormat(input: String): XtreamPipeResult {
-        if (!input.contains('|')) {
+        if (!isPipeFormat(input)) {
             return XtreamPipeResult(
                 title = input,
                 year = null,
@@ -146,7 +148,10 @@ object XtreamFormatRules {
             )
         }
 
-        val parts = input.split('|').map { it.trim() }.filter { it.isNotEmpty() }
+        // Combined map + filter: single allocation instead of map().filter()
+        val parts = input.split('|', limit = 5)
+            .mapNotNull { val t = it.trim(); if (t.isNotEmpty()) t else null }
+
         if (parts.isEmpty()) {
             return XtreamPipeResult(title = input, year = null, rating = null, quality = null, matched = false)
         }
@@ -156,63 +161,69 @@ object XtreamFormatRules {
         val hasPrefix = parts.size >= 3 && isCountryPrefix(parts[0])
         val titleIndex = if (hasPrefix) 1 else 0
 
-        // Pass 1: scan for rating presence among non-title segments.
-        // This determines which year range to use (strict vs extended).
-        var hasRatingSegment = false
-        for (i in (titleIndex + 1) until parts.size) {
-            val part = parts[i]
-            if (part.contains('.')) {
-                val d = part.toDoubleOrNull()
-                if (d != null && d > 0.0 && d <= 10.0) {
-                    hasRatingSegment = true
-                    break
-                }
-            }
-        }
-
-        // When rating is present, a yyyy segment is unambiguously a year even outside 1960–2030.
-        // Example: "Schneewittchen | 7.4 | 1937" → year=1937 (because 7.4 disambiguates).
-        val effectiveYearRange = if (hasRatingSegment) YEAR_RANGE_WITH_RATING else YEAR_RANGE
-
         // Title segment is ALWAYS at titleIndex — even "1992", "2012", "2001" are movie titles
         val titleParts = mutableListOf(parts[titleIndex])
 
-        // Pass 2: classify segments after title by content
+        // Single-pass: classify segments after title by content.
+        // Year range starts strict (1960–2030) and expands to 1900–2099 when rating is found.
         var year: Int? = null
         var rating: Double? = null
         var quality: String? = null
+        var effectiveYearRange = YEAR_RANGE
 
         for (i in (titleIndex + 1) until parts.size) {
             val part = parts[i]
-            val upper = part.uppercase()
 
-            when {
-                // Quality tag (4K, HEVC, LOWQ, +18, UNTERTITEL, IMAX, etc.)
-                upper in QUALITY_TAGS -> {
-                    if (quality == null) quality = upper
+            // Quality tag: lazy uppercase — only allocate when length matches tag range
+            if (quality == null && part.length in 2..11) {
+                val upper = part.uppercase()
+                if (upper in QUALITY_TAGS) {
+                    quality = upper
+                    continue
                 }
-                // Year: exactly 4 digits in effective range (take first match)
-                year == null && part.length == 4 && part.all { it.isDigit() } -> {
+            }
+
+            // Year: exactly 4 digits in effective range (take first match)
+            if (year == null && part.length == 4 && part.all { it.isDigit() }) {
+                val y = part.toIntOrNull()
+                if (y != null && y in effectiveYearRange) {
+                    year = y
+                    continue
+                }
+            }
+
+            // Rating: decimal number in (0.0, 10.0] (take first match).
+            // Parse once — no duplicate toDoubleOrNull() calls.
+            // Requires '.' to distinguish from integer tags or counters.
+            if (rating == null && part.contains('.')) {
+                val parsed = part.toDoubleOrNull()
+                if (parsed != null && parsed > 0.0 && parsed <= 10.0) {
+                    rating = parsed
+                    // Expand year range: rating disambiguates yyyy segments
+                    effectiveYearRange = YEAR_RANGE_WITH_RATING
+                    continue
+                }
+            }
+
+            // Unclassified → add to title
+            titleParts.add(part)
+        }
+
+        // If rating expanded the year range, re-check unclassified title parts for years.
+        // This handles "Title | 1937 | 7.4" where 1937 was skipped in strict mode but
+        // should now be recognized after rating expanded the range.
+        if (year == null && rating != null && titleParts.size > 1) {
+            val iter = titleParts.listIterator(1) // skip index 0 (actual title)
+            while (iter.hasNext()) {
+                val part = iter.next()
+                if (part.length == 4 && part.all { it.isDigit() }) {
                     val y = part.toIntOrNull()
-                    if (y != null && y in effectiveYearRange) {
+                    if (y != null && y in YEAR_RANGE_WITH_RATING) {
                         year = y
-                    } else {
-                        titleParts.add(part)
+                        iter.remove()
+                        break
                     }
                 }
-                // Rating: decimal number in (0.0, 10.0] (take first match).
-                // Requires '.' to distinguish from integer tags or counters.
-                // Verified: no real Xtream data uses integer-only ratings in pipe format.
-                rating == null && part.contains('.') -> {
-                    val parsed = part.toDoubleOrNull()
-                    if (parsed != null && parsed > 0.0 && parsed <= 10.0) {
-                        rating = parsed
-                    } else {
-                        titleParts.add(part)
-                    }
-                }
-                // Everything else is extra title text (or unrecognized tag)
-                else -> titleParts.add(part)
             }
         }
 
