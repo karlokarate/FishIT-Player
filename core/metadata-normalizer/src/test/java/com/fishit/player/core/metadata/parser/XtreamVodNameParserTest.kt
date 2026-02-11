@@ -423,6 +423,35 @@ class XtreamVodNameParserTest {
     }
 
     @Test
+    fun `parse pipe-separated pattern - year outside strict range with rating disambiguates`() {
+        // When a rating segment is present, the yyyy segment is unambiguously a year
+        // even if outside the strict 1960–2030 range. The decimal rating disambiguates.
+        val testCases = listOf(
+            "Schneewittchen | 7.4 | 1937" to Triple("Schneewittchen", 1937, 7.4),
+            "Schneewittchen | 1937 | 7.4" to Triple("Schneewittchen", 1937, 7.4),
+            "Metropolis | 1927 | 8.3" to Triple("Metropolis", 1927, 8.3),
+            "Nosferatu | 8.1 | 1922" to Triple("Nosferatu", 1922, 8.1),
+        )
+
+        testCases.forEach { (input, expected) ->
+            val result = parser.parse(input)
+            assertEquals(expected.first, result.title, "Title mismatch for: $input")
+            assertEquals(expected.second, result.year, "Year mismatch for: $input")
+            assertEquals(expected.third, result.rating, "Rating mismatch for: $input")
+        }
+    }
+
+    @Test
+    fun `parse pipe-separated pattern - year outside strict range without rating falls to scene parser`() {
+        // Without a rating, a yyyy outside 1960–2030 is NOT detected by the pipe-format parser.
+        // But the scene parser still extracts the year from the raw string — which is correct.
+        val input = "Schneewittchen | 1937"
+        val result = parser.parse(input)
+        // Scene parser finds 1937 as a year — correct behavior
+        assertEquals(1937, result.year, "Scene parser should still extract year from raw string")
+    }
+
+    @Test
     fun `parse titles with numbers`() {
         val testCases =
             listOf(

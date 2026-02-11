@@ -45,16 +45,26 @@ object XtreamFormatRules {
     // =========================================================================
 
     /**
-     * Valid year range for pipe-format detection and parsing.
+     * Strict year range — used when NO rating segment is present to disambiguate.
      *
      * Narrowed to 1960–2030 to avoid misclassifying movie titles that ARE year numbers:
      * - "2046" (2004 Wong Kar-wai) → falls OUTSIDE range → treated as title ✅
      * - "1776" (1972 musical)      → falls OUTSIDE range → treated as title ✅
      * - "1917", "1923", "2001"     → fall inside range, but protected by title-segment rule
      *
-     * Combined with the title-segment rule (see [parsePipeFormat]), this gives robust handling.
+     * When a rating segment IS present (e.g. "7.4"), any 4-digit yyyy in [YEAR_RANGE_WITH_RATING]
+     * is accepted because the combination of text+decimal+yyyy is unambiguous.
      */
     private val YEAR_RANGE = 1960..2030
+
+    /**
+     * Extended year range — used when a rating segment IS present.
+     *
+     * When a decimal rating like "7.4" is found alongside a yyyy segment, the yyyy is
+     * unambiguously a year. This allows titles like "Schneewittchen | 7.4 | 1937" to work.
+     * Range 1900–2099 covers all realistic release years without misclassifying.
+     */
+    private val YEAR_RANGE_WITH_RATING = 1900..2099
 
     /**
      * Detect if input uses Xtream pipe-separated format.
@@ -76,16 +86,29 @@ object XtreamFormatRules {
         val parts = input.split('|', limit = 5)
         if (parts.size < 2) return false
 
-        // Check segments 1+ for a valid year.
+        // Scan segments 1+ for year and rating candidates.
         // Segment 0 is always title (or prefix) — never checked as year for detection.
+        var hasYearStrict = false
+        var hasYearExtended = false
+        var hasRating = false
+
         for (i in 1 until parts.size) {
             val seg = parts[i].trim()
             if (seg.length == 4 && seg.all { it.isDigit() }) {
                 val y = seg.toIntOrNull()
-                if (y != null && y in YEAR_RANGE) return true
+                if (y != null) {
+                    if (y in YEAR_RANGE) hasYearStrict = true
+                    if (y in YEAR_RANGE_WITH_RATING) hasYearExtended = true
+                }
+            } else if (seg.contains('.')) {
+                val d = seg.toDoubleOrNull()
+                if (d != null && d > 0.0 && d <= 10.0) hasRating = true
             }
         }
-        return false
+
+        // Accept if: year in strict range, OR (year in extended range AND rating present).
+        // The rating disambiguates: "Schneewittchen | 7.4 | 1937" → clearly a pipe format.
+        return hasYearStrict || (hasYearExtended && hasRating)
     }
 
     /**
@@ -106,7 +129,8 @@ object XtreamFormatRules {
      * - "Title | Rating | Year"             (reversed order — rare)
      * - "1992 | 2024 | 6.6"                (year-as-title: "1992" is the movie title)
      *
-     * Year range: [YEAR_RANGE] to avoid misclassifying far-future/far-past titles.
+     * Year range: [YEAR_RANGE] when no rating present, [YEAR_RANGE_WITH_RATING] when rating
+     * disambiguates (e.g. "Schneewittchen | 7.4 | 1937" → year=1937).
      * Rating: requires decimal point (e.g. "7.4") in range (0.0, 10.0].
      *
      * @return XtreamPipeResult with extracted fields
@@ -132,10 +156,28 @@ object XtreamFormatRules {
         val hasPrefix = parts.size >= 3 && isCountryPrefix(parts[0])
         val titleIndex = if (hasPrefix) 1 else 0
 
+        // Pass 1: scan for rating presence among non-title segments.
+        // This determines which year range to use (strict vs extended).
+        var hasRatingSegment = false
+        for (i in (titleIndex + 1) until parts.size) {
+            val part = parts[i]
+            if (part.contains('.')) {
+                val d = part.toDoubleOrNull()
+                if (d != null && d > 0.0 && d <= 10.0) {
+                    hasRatingSegment = true
+                    break
+                }
+            }
+        }
+
+        // When rating is present, a yyyy segment is unambiguously a year even outside 1960–2030.
+        // Example: "Schneewittchen | 7.4 | 1937" → year=1937 (because 7.4 disambiguates).
+        val effectiveYearRange = if (hasRatingSegment) YEAR_RANGE_WITH_RATING else YEAR_RANGE
+
         // Title segment is ALWAYS at titleIndex — even "1992", "2012", "2001" are movie titles
         val titleParts = mutableListOf(parts[titleIndex])
 
-        // Classify segments after title by content
+        // Pass 2: classify segments after title by content
         var year: Int? = null
         var rating: Double? = null
         var quality: String? = null
@@ -149,10 +191,10 @@ object XtreamFormatRules {
                 upper in QUALITY_TAGS -> {
                     if (quality == null) quality = upper
                 }
-                // Year: exactly 4 digits in YEAR_RANGE (take first match)
+                // Year: exactly 4 digits in effective range (take first match)
                 year == null && part.length == 4 && part.all { it.isDigit() } -> {
                     val y = part.toIntOrNull()
-                    if (y != null && y in YEAR_RANGE) {
+                    if (y != null && y in effectiveYearRange) {
                         year = y
                     } else {
                         titleParts.add(part)
