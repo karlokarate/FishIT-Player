@@ -20,12 +20,18 @@ NEVER_DO:
   - Add Obx* imports in UI/ViewModel/feature modules
   - Call pipelines directly from Workers (use CatalogSyncWorkScheduler)
   - Import pipeline/** or data/** from player/** modules
+  - Create a second implementation when an SSOT already exists for that purpose
+  - Keep duplicate/fallback implementations that serve the same purpose as an SSOT
+  - Skip duplicate findings — ALWAYS consolidate or document + roadmap
 
 ALWAYS_DO:
   - Check /.scope/*.scope.json before editing covered files
   - Read module README.md before modifying files
   - Follow @Multibinds + @IntoSet pattern for playback sources
   - Use NxWorkRepository for UI (not Obx* repositories)
+  - Enforce SSOT: ONE implementation per purpose (see ssot-enforcement.instructions.md)
+  - When duplicates found: CONSOLIDATE into SSOT → DELETE all others
+  - When unused imports/impls found: evaluate need → implement/TODO or DELETE
 ```
 
 ---
@@ -154,6 +160,15 @@ Auto-applied rules in `.github/instructions/*.md`:
 | `feature/**` | `feature-common.instructions.md` |
 
 Full index: `.github/instructions/_index.instructions.md`
+
+### SSOT Enforcement (Global)
+
+**Every agent MUST follow `.github/instructions/ssot-enforcement.instructions.md`:**
+- For every unique purpose → exactly ONE SSOT implementation
+- Duplicates, semantic duplicates, legacy leftovers → CONSOLIDATE or DELETE
+- Unnecessary fallbacks → DELETE (they produce incompatible output)
+- Unused implementations → evaluate: needed → TODO+ROADMAP; not needed → DELETE
+- Naming must be unambiguous repo-wide (see GLOSSARY)
 
 ---
 

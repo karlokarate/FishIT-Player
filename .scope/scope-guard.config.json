@@ -69,11 +69,14 @@
         "AGENTS.md is GENERATED - edit AGENT_RULES_CANONICAL.md instead",
         "Sync via scripts/sync-agent-rules.sh",
         "Path-scoped instructions must match AGENTS.md",
-        "GLOSSARY defines all naming conventions"
+        "GLOSSARY defines all naming conventions",
+        "SSOT Enforcement: ONE implementation per purpose — see ssot-enforcement.instructions.md",
+        "Duplicates MUST be consolidated or deleted — no exceptions, no skipping"
       ],
       "mandatoryReadBeforeEdit": [
         "docs/meta/AGENT_RULES_CANONICAL.md",
-        "contracts/GLOSSARY_v2_naming_and_modules.md"
+        "contracts/GLOSSARY_v2_naming_and_modules.md",
+        ".github/instructions/ssot-enforcement.instructions.md"
       ]
     },
     "scope-system": {

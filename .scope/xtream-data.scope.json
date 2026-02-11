@@ -10,7 +10,7 @@
   ],
   "modules": {
     "infra/data-xtream": {
-      "fileCount": 6,
+      "fileCount": 11,
       "totalLOC": 400,
       "criticalFiles": [
         {
@@ -42,6 +42,26 @@
         },
         {
           "path": "infra/data-nx/src/main/java/com/fishit/player/infra/data/nx/mapper/WorkMapper.kt",
+          "purpose": "Part of xtream-data scope"
+        },
+        {
+          "path": "infra/data-nx/src/main/java/com/fishit/player/infra/data/nx/mapper/base/PlaybackHintsDecoder.kt",
+          "purpose": "Part of xtream-data scope"
+        },
+        {
+          "path": "core/model/src/main/java/com/fishit/player/core/model/util/ResolutionLabel.kt",
+          "purpose": "1"
+        },
+        {
+          "path": "core/model/src/main/java/com/fishit/player/core/model/util/ContainerGuess.kt",
+          "purpose": "Part of xtream-data scope"
+        },
+        {
+          "path": "core/model/src/main/java/com/fishit/player/core/model/util/FileSizeFormatter.kt",
+          "purpose": "1"
+        },
+        {
+          "path": "core/model/src/main/java/com/fishit/player/core/model/util/SourcePriority.kt",
           "purpose": "Part of xtream-data scope"
         }
       ],
@@ -112,5 +132,5 @@
     "NX_WorkVariant": "Playback info (playbackHintsJson with xtream specifics)",
     "NX_WorkRelation": "Series \u2194 Episode links"
   },
-  "lastVerified": "2026-02-09"
+  "lastVerified": "2026-02-11"
 }
