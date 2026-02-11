@@ -89,6 +89,23 @@ class XtreamRawMetadataExtensionsTest {
     }
 
     @Test
+    fun `XtreamEpisode toRawMediaMetadata propagates custom accountLabel`() {
+        val episode =
+            XtreamEpisode(
+                id = 789,
+                seriesId = 456,
+                seasonNumber = 1,
+                episodeNumber = 5,
+                title = "Pilot",
+                containerExtension = "mp4",
+            )
+
+        val raw = episode.toRawMediaMetadata(accountLabel = "user@iptv.server")
+
+        assertEquals("user@iptv.server", raw.sourceLabel)
+    }
+
+    @Test
     fun `XtreamEpisode toRawMediaMetadata uses fallback title when blank`() {
         val episode =
             XtreamEpisode(

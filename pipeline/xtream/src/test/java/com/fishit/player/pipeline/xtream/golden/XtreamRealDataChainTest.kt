@@ -95,6 +95,8 @@ class XtreamRealDataChainTest {
     private val testDataDir = File("test-data/xtream-responses")
     private val fixedNow = 1700000000000L // Deterministic timestamp
     private val accountKey = "xtream:real-test-provider"
+    // Human-readable label: identifier portion without sourceType prefix
+    private val accountLabel = accountKey.removePrefix("xtream:")
 
     private val jsonParser = Json {
         ignoreUnknownKeys = true
@@ -169,8 +171,11 @@ class XtreamRealDataChainTest {
         )
     }
 
-    private fun buildSourceKey(raw: RawMediaMetadata): String =
-        SourceKeyParser.buildSourceKey(raw.sourceType, accountKey, raw.sourceId)
+    private fun buildSourceKey(raw: RawMediaMetadata): String {
+        // Mirror NxCatalogWriter: strip sourceType prefix from accountKey
+        val identifier = accountKey.removePrefix("${raw.sourceType.name.lowercase()}:")
+        return SourceKeyParser.buildSourceKey(raw.sourceType, identifier, raw.sourceId)
+    }
 
     private suspend fun runNxChain(raw: RawMediaMetadata): ChainOutput {
         val normalized = normalizer.normalize(raw)
@@ -265,7 +270,7 @@ class XtreamRealDataChainTest {
         val pipelineJson = FullChainStepSerializer.vodItemToJson(pipeline)
 
         // Step 3: Pipeline → Raw (REAL production function)
-        val raw = pipeline.toRawMetadata(accountLabel = accountKey)
+        val raw = pipeline.toRawMetadata(accountLabel = accountLabel)
 
         // Step 4: Raw → Normalized (REAL production normalizer)
         val normalized = normalizer.normalize(raw)
@@ -294,7 +299,7 @@ class XtreamRealDataChainTest {
 
         val pipeline = transport.toPipelineItem()
         val pipelineJson = FullChainStepSerializer.vodItemToJson(pipeline)
-        val raw = pipeline.toRawMetadata(accountLabel = accountKey)
+        val raw = pipeline.toRawMetadata(accountLabel = accountLabel)
         val normalized = normalizer.normalize(raw)
         val output = runNxChain(raw)
 
@@ -316,7 +321,7 @@ class XtreamRealDataChainTest {
 
         val pipeline = transport.toPipelineItem()
         val pipelineJson = FullChainStepSerializer.vodItemToJson(pipeline)
-        val raw = pipeline.toRawMetadata(accountLabel = accountKey)
+        val raw = pipeline.toRawMetadata(accountLabel = accountLabel)
         val normalized = normalizer.normalize(raw)
         val output = runNxChain(raw)
 
@@ -348,7 +353,7 @@ class XtreamRealDataChainTest {
         )
 
         // Step 3: Direct transport → Raw (detail response has its own mapper)
-        val raw = vodInfo.toRawMediaMetadata(vodItem = vodItem, accountLabel = accountKey)
+        val raw = vodInfo.toRawMediaMetadata(vodItem = vodItem, accountLabel = accountLabel)
 
         // Serialize vodItem as the pipeline step (detail doesn't go through toPipelineItem)
         val pipelineJson = FullChainStepSerializer.vodItemToJson(vodItem)
@@ -380,7 +385,7 @@ class XtreamRealDataChainTest {
 
         val pipeline = transport.toPipelineItem()
         val pipelineJson = FullChainStepSerializer.seriesItemToJson(pipeline)
-        val raw = pipeline.toRawMetadata(accountLabel = accountKey)
+        val raw = pipeline.toRawMetadata(accountLabel = accountLabel)
         val normalized = normalizer.normalize(raw)
         val output = runNxChain(raw)
 
@@ -402,7 +407,7 @@ class XtreamRealDataChainTest {
 
         val pipeline = transport.toPipelineItem()
         val pipelineJson = FullChainStepSerializer.seriesItemToJson(pipeline)
-        val raw = pipeline.toRawMetadata(accountLabel = accountKey)
+        val raw = pipeline.toRawMetadata(accountLabel = accountLabel)
         val normalized = normalizer.normalize(raw)
         val output = runNxChain(raw)
 
@@ -432,7 +437,7 @@ class XtreamRealDataChainTest {
         val pipelineJson = FullChainStepSerializer.episodeToJson(pipeline)
 
         // Step 3: Pipeline → Raw
-        val raw = pipeline.toRawMediaMetadata()
+        val raw = pipeline.toRawMediaMetadata(accountLabel = accountLabel)
 
         // Step 4: Raw → Normalized
         val normalized = normalizer.normalize(raw)
@@ -475,7 +480,7 @@ class XtreamRealDataChainTest {
 
         val pipeline = transport.toPipelineItem()
         val pipelineJson = FullChainStepSerializer.channelToJson(pipeline)
-        val raw = pipeline.toRawMediaMetadata(accountLabel = accountKey)
+        val raw = pipeline.toRawMediaMetadata(accountLabel = accountLabel)
         val normalized = normalizer.normalize(raw)
         val output = runNxChain(raw)
 
@@ -500,7 +505,7 @@ class XtreamRealDataChainTest {
 
         val pipeline = transport.toPipelineItem()
         val pipelineJson = FullChainStepSerializer.channelToJson(pipeline)
-        val raw = pipeline.toRawMediaMetadata(accountLabel = accountKey)
+        val raw = pipeline.toRawMediaMetadata(accountLabel = accountLabel)
         val normalized = normalizer.normalize(raw)
         val output = runNxChain(raw)
 
@@ -521,7 +526,7 @@ class XtreamRealDataChainTest {
 
         val pipeline = transport.toPipelineItem()
         val pipelineJson = FullChainStepSerializer.channelToJson(pipeline)
-        val raw = pipeline.toRawMediaMetadata(accountLabel = accountKey)
+        val raw = pipeline.toRawMediaMetadata(accountLabel = accountLabel)
         val normalized = normalizer.normalize(raw)
         val output = runNxChain(raw)
 
@@ -543,7 +548,7 @@ class XtreamRealDataChainTest {
         for (idx in 0 until count) {
             val transport = vodStreams[idx]
             val pipeline = transport.toPipelineItem()
-            val raw = pipeline.toRawMetadata(accountLabel = accountKey)
+            val raw = pipeline.toRawMetadata(accountLabel = accountLabel)
             val normalized = normalizer.normalize(raw)
             val output = runNxChain(raw)
 

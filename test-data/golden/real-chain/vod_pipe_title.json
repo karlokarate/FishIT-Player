@@ -62,7 +62,7 @@
     "releaseDate": null,
     "isAdult": false,
     "categoryId": "56",
-    "sourceLabel": "xtream:real-test-provider",
+    "sourceLabel": "real-test-provider",
     "epgChannelId": null,
     "tvArchive": 0,
     "tvArchiveDuration": 0,
@@ -141,7 +141,7 @@
       "isDeleted": false
     },
     "sourceRef": {
-      "sourceKey": "src:xtream:xtream:real-test-provider:xtream:vod:800689",
+      "sourceKey": "src:xtream:real-test-provider:xtream:vod:800689",
       "workKey": "movie:heuristic:sisu-road-to-revenge-2025",
       "sourceType": "XTREAM",
       "accountKey": "xtream:real-test-provider",
@@ -156,9 +156,9 @@
       "tvArchiveDuration": 0
     },
     "variant": {
-      "variantKey": "src:xtream:xtream:real-test-provider:xtream:vod:800689#original",
+      "variantKey": "src:xtream:real-test-provider:xtream:vod:800689#original",
       "workKey": "movie:heuristic:sisu-road-to-revenge-2025",
-      "sourceKey": "src:xtream:xtream:real-test-provider:xtream:vod:800689",
+      "sourceKey": "src:xtream:real-test-provider:xtream:vod:800689",
       "label": "Original",
       "isDefault": true,
       "container": "mkv",

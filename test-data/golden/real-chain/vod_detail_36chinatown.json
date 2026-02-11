@@ -198,7 +198,7 @@
     "releaseDate": "2006-04-21",
     "isAdult": false,
     "categoryId": "223",
-    "sourceLabel": "xtream:real-test-provider",
+    "sourceLabel": "real-test-provider",
     "epgChannelId": null,
     "tvArchive": 0,
     "tvArchiveDuration": 0,
@@ -285,7 +285,7 @@
       "isDeleted": false
     },
     "sourceRef": {
-      "sourceKey": "src:xtream:xtream:real-test-provider:xtream:vod:399548",
+      "sourceKey": "src:xtream:real-test-provider:xtream:vod:399548",
       "workKey": "movie:tmdb:20145",
       "sourceType": "XTREAM",
       "accountKey": "xtream:real-test-provider",
@@ -300,9 +300,9 @@
       "tvArchiveDuration": 0
     },
     "variant": {
-      "variantKey": "src:xtream:xtream:real-test-provider:xtream:vod:399548#original",
+      "variantKey": "src:xtream:real-test-provider:xtream:vod:399548#original",
       "workKey": "movie:tmdb:20145",
-      "sourceKey": "src:xtream:xtream:real-test-provider:xtream:vod:399548",
+      "sourceKey": "src:xtream:real-test-provider:xtream:vod:399548",
       "label": "Original",
       "isDefault": true,
       "container": "mkv",

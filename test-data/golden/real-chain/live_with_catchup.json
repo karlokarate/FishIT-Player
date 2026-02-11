@@ -53,7 +53,7 @@
     "releaseDate": null,
     "isAdult": false,
     "categoryId": "129",
-    "sourceLabel": "xtream:real-test-provider",
+    "sourceLabel": "real-test-provider",
     "epgChannelId": "sat1.de",
     "tvArchive": 1,
     "tvArchiveDuration": 3,
@@ -130,7 +130,7 @@
       "isDeleted": false
     },
     "sourceRef": {
-      "sourceKey": "src:xtream:xtream:real-test-provider:xtream:live:50323",
+      "sourceKey": "src:xtream:real-test-provider:xtream:live:50323",
       "workKey": "live_channel:heuristic:de-sat-1",
       "sourceType": "XTREAM",
       "accountKey": "xtream:real-test-provider",
@@ -145,9 +145,9 @@
       "tvArchiveDuration": 3
     },
     "variant": {
-      "variantKey": "src:xtream:xtream:real-test-provider:xtream:live:50323#original",
+      "variantKey": "src:xtream:real-test-provider:xtream:live:50323#original",
       "workKey": "live_channel:heuristic:de-sat-1",
-      "sourceKey": "src:xtream:xtream:real-test-provider:xtream:live:50323",
+      "sourceKey": "src:xtream:real-test-provider:xtream:live:50323",
       "label": "Original",
       "isDefault": true,
       "container": null,

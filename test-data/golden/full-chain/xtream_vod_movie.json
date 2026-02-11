@@ -9,9 +9,9 @@
     "season": null,
     "episode": null,
     "runtimeMs": 10860000,
-    "posterRef": "http:https://image.tmdb.org/t/p/w500/8Gxv8gSFCU0XGDykEGv7zR1n2ua.jpg",
-    "backdropRef": "http:https://image.tmdb.org/t/p/w1280/fm6KqXpk3M2HVveHwCrBSSBaO0V.jpg",
-    "thumbnailRef": null,
+    "poster": "https://image.tmdb.org/t/p/w500/8Gxv8gSFCU0XGDykEGv7zR1n2ua.jpg",
+    "backdrop": "https://image.tmdb.org/t/p/w1280/fm6KqXpk3M2HVveHwCrBSSBaO0V.jpg",
+    "thumbnail": null,
     "rating": 8.1,
     "genres": "Drama, History",
     "plot": "The story of J. Robert Oppenheimer and the Manhattan Project.",
@@ -27,7 +27,7 @@
     "isDeleted": false
   },
   "sourceRef": {
-    "sourceKey": "src:xtream:xtream:premium-iptv:xtream:vod:87654",
+    "sourceKey": "src:xtream:premium-iptv:xtream:vod:87654",
     "workKey": "movie:tmdb:872585",
     "sourceType": "XTREAM",
     "accountKey": "xtream:premium-iptv",
@@ -42,9 +42,9 @@
     "tvArchiveDuration": 0
   },
   "variant": {
-    "variantKey": "src:xtream:xtream:premium-iptv:xtream:vod:87654#original",
+    "variantKey": "src:xtream:premium-iptv:xtream:vod:87654#original",
     "workKey": "movie:tmdb:872585",
-    "sourceKey": "src:xtream:xtream:premium-iptv:xtream:vod:87654",
+    "sourceKey": "src:xtream:premium-iptv:xtream:vod:87654",
     "label": "Original",
     "isDefault": true,
     "container": "mp4",
