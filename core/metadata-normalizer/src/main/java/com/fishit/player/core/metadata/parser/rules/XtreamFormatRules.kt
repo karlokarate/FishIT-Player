@@ -6,6 +6,7 @@
  *
  * Handles provider-specific naming patterns:
  * - Pipe-separated: "Title | Year | Rating | Quality" (and provider variants)
+ * - Reversed order: "Title | Rating | Year" (some providers swap rating/year)
  * - Country-prefix: "CC | Title | Year | Rating"
  * - Live channel cleanup (Unicode decorators)
  *

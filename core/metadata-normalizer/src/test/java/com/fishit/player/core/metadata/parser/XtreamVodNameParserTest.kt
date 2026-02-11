@@ -359,6 +359,24 @@ class XtreamVodNameParserTest {
     }
 
     @Test
+    fun `parse pipe-separated pattern - reversed order Title Rating Year from real data`() {
+        // Real data: some providers use "Title | Rating | Year" instead of "Title | Year | Rating"
+        // The parser classifies by content (not position) so both orders work.
+        val testCases = listOf(
+            "Ant-Man | 7.3 | 2015" to Triple("Ant-Man", 2015, 7.3),
+            "Ant-Man | 7.3  |  2015" to Triple("Ant-Man", 2015, 7.3),
+            "Ant-Man | 7.3 |  2015" to Triple("Ant-Man", 2015, 7.3),
+        )
+
+        testCases.forEach { (input, expected) ->
+            val result = parser.parse(input)
+            assertEquals(expected.first, result.title, "Title mismatch for: $input")
+            assertEquals(expected.second, result.year, "Year mismatch for: $input")
+            assertEquals(expected.third, result.rating, "Rating mismatch for: $input")
+        }
+    }
+
+    @Test
     fun `parse titles with numbers`() {
         val testCases =
             listOf(
