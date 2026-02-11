@@ -1,5 +1,6 @@
 package com.fishit.player.core.persistence.obx
 
+import com.fishit.player.core.model.repository.NxWorkRepository
 import java.text.Normalizer
 import java.util.Locale
 
@@ -10,7 +11,7 @@ import java.util.Locale
  *
  * ## Key Format Specifications
  *
- * - **workKey:** `<workType>:<canonicalSlug>:<year|LIVE>`
+ * - **workKey:** `<workType>:<authority>:<id>` (authority = tmdb | heuristic)
  * - **authorityKey:** `<authority>:<type>:<id>`
  * - **sourceKey:** `<sourceType>:<accountKey>:<sourceId>`
  * - **variantKey:** `<sourceKey>#<qualityTag>:<languageTag>`
@@ -30,39 +31,65 @@ object NxKeyGenerator {
     /**
      * Generate a canonical work key.
      *
-     * Format: `<workType>:<canonicalSlug>:<year|LIVE>`
+     * Format: `<workType>:<authority>:<id>`
+     *
+     * Authority:
+     * - `tmdb` when a TMDB ID is available (stable, globally unique)
+     * - `heuristic` when no external ID is available (slug-based fallback)
+     *
+     * Examples:
+     * - `movie:tmdb:12345`
+     * - `movie:heuristic:the-matrix-1999`
+     * - `episode:tmdb:67890`
+     * - `episode:heuristic:breaking-bad-2008-s02e07`
+     * - `live:heuristic:cnn-live`
+     * - `series:heuristic:game-of-thrones-2011`
      *
      * @param workType Type of work (MOVIE, EPISODE, SERIES, etc.)
      * @param title Canonical title
      * @param year Release year (null for LIVE)
-     * @param season Season number (for EPISODE)
-     * @param episode Episode number (for EPISODE)
+     * @param tmdbId TMDB ID if available (produces stable key)
+     * @param season Season number (for EPISODE heuristic keys)
+     * @param episode Episode number (for EPISODE heuristic keys)
      * @return Canonical work key
      */
     fun workKey(
-        workType: WorkType,
+        workType: NxWorkRepository.WorkType,
         title: String,
         year: Int? = null,
+        tmdbId: Int? = null,
         season: Int? = null,
         episode: Int? = null,
     ): String {
-        val slug = toSlug(title)
-        val yearPart =
-            when {
-                workType == WorkType.LIVE -> "LIVE"
-                year != null -> year.toString()
-                else -> "0000"
-            }
+        val authority = if (tmdbId != null) "tmdb" else "heuristic"
+        val type = workType.name.lowercase()
 
-        return when (workType) {
-            WorkType.EPISODE -> {
-                // Format: EPISODE:<slug>:<year>:S<season>E<episode>
-                val s = (season ?: 1).toString().padStart(2, '0')
-                val e = (episode ?: 1).toString().padStart(2, '0')
-                "${workType.name}:$slug:$yearPart:S${s}E$e"
-            }
-            else -> "${workType.name}:$slug:$yearPart"
+        if (tmdbId != null) {
+            return "$type:$authority:$tmdbId"
         }
+
+        // Heuristic key: slug + year (+ season/episode for episodes)
+        val slug = toSlug(title)
+        val yearPart = when {
+            workType == NxWorkRepository.WorkType.LIVE_CHANNEL -> null // no year for live
+            year != null -> year.toString()
+            else -> "unknown"
+        }
+
+        val id = buildString {
+            append(slug)
+            if (yearPart != null) {
+                append("-")
+                append(yearPart)
+            }
+            if (workType == NxWorkRepository.WorkType.EPISODE && season != null && episode != null) {
+                val s = season.toString().padStart(2, '0')
+                val e = episode.toString().padStart(2, '0')
+                append("-s${s}e$e")
+            }
+        }
+
+        return "$type:$authority:$id"
     }
 
     /**
@@ -71,7 +98,8 @@ object NxKeyGenerator {
     fun seriesKey(
         title: String,
         year: Int? = null,
-    ): String = workKey(WorkType.SERIES, title, year)
+        tmdbId: Int? = null,
+    ): String = workKey(NxWorkRepository.WorkType.SERIES, title, year, tmdbId)
 
     /**
      * Generate an episode work key (convenience method).
@@ -79,9 +107,10 @@ object NxKeyGenerator {
     fun episodeKey(
         seriesTitle: String,
         year: Int? = null,
-        season: Int,
-        episode: Int,
-    ): String = workKey(WorkType.EPISODE, seriesTitle, year, season, episode)
+        tmdbId: Int? = null,
+        season: Int? = null,
+        episode: Int? = null,
+    ): String = workKey(NxWorkRepository.WorkType.EPISODE, seriesTitle, year, tmdbId, season, episode)
 
     // =========================================================================
     // Authority Keys
@@ -380,33 +409,49 @@ object NxKeyGenerator {
     /**
      * Parse a work key into components.
      *
+     * Handles format: `<workType>:<authority>:<id>`
+     * Examples:
+     * - `movie:tmdb:12345` → WorkKeyComponents(MOVIE, "tmdb", 12345, "12345", null, null, null)
+     * - `movie:heuristic:the-matrix-1999` → WorkKeyComponents(MOVIE, "heuristic", null, "the-matrix-1999", 1999, null, null)
+     * - `episode:heuristic:breaking-bad-2008-s02e07` → WorkKeyComponents(EPISODE, "heuristic", null, "breaking-bad-2008-s02e07", 2008, 2, 7)
+     *
      * @param workKey Work key to parse
      * @return Parsed components or null if invalid
      */
     fun parseWorkKey(workKey: String): WorkKeyComponents? {
-        val parts = workKey.split(":")
+        val parts = workKey.split(":", limit = 3)
         if (parts.size < 3) return null
 
-        val workType = WorkType.fromString(parts[0])
-        val slug = parts[1]
-        val yearOrLive = parts[2]
+        val workType = NxWorkRepository.WorkType.entries
+            .find { it.name.equals(parts[0], ignoreCase = true) }
+            ?: NxWorkRepository.WorkType.UNKNOWN
+        val authority = parts[1]
+        val id = parts[2]
 
-        val year = if (yearOrLive == "LIVE") null else yearOrLive.toIntOrNull()
-
-        // Check for episode format: EPISODE:<slug>:<year>:S<season>E<episode>
-        val (season, episode) =
-            if (parts.size >= 4 && workType == WorkType.EPISODE) {
-                val seMatch = Regex("S(\\d+)E(\\d+)").find(parts[3])
-                if (seMatch != null) {
-                    seMatch.groupValues[1].toInt() to seMatch.groupValues[2].toInt()
-                } else {
-                    null to null
-                }
-            } else {
-                null to null
+        return when (authority) {
+            "tmdb" -> {
+                val tmdbId = id.toIntOrNull()
+                WorkKeyComponents(workType, authority, tmdbId, id, null, null, null)
             }
+            "heuristic" -> {
+                // Parse year and optional season/episode from slug-based id
+                // e.g., "the-matrix-1999" or "breaking-bad-2008-s02e07" or "cnn-live"
+                val seMatch = Regex("-s(\\d+)e(\\d+)$").find(id)
+                val season = seMatch?.groupValues?.get(1)?.toIntOrNull()
+                val episode = seMatch?.groupValues?.get(2)?.toIntOrNull()
 
-        return WorkKeyComponents(workType, slug, year, season, episode)
+                // Try to extract year (4-digit number near the end, before optional season/episode)
+                val idWithoutSe = if (seMatch != null) id.substring(0, seMatch.range.first) else id
+                val yearMatch = Regex("-(\\d{4})$").find(idWithoutSe)
+                val year = yearMatch?.groupValues?.get(1)?.toIntOrNull()
+
+                WorkKeyComponents(workType, authority, null, id, year, season, episode)
+            }
+            else -> {
+                // Unknown authority - best-effort parse
+                WorkKeyComponents(workType, authority, null, id, null, null, null)
+            }
+        }
     }
 
     /**
@@ -427,8 +472,10 @@ object NxKeyGenerator {
     }
 
     data class WorkKeyComponents(
-        val workType: WorkType,
-        val slug: String,
+        val workType: NxWorkRepository.WorkType,
+        val authority: String,
+        val tmdbId: Int?,
+        val id: String,
         val year: Int?,
         val season: Int?,
         val episode: Int?,

@@ -1,5 +1,6 @@
 package com.fishit.player.core.persistence.obx
 
+import com.fishit.player.core.model.repository.NxWorkRepository.WorkType
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
@@ -16,19 +17,25 @@ class NxKeyGeneratorTest {
     // =========================================================================
 
     @Test
-    fun `workKey - movie generates correct format`() {
+    fun `workKey - heuristic movie generates correct format`() {
         val key = NxKeyGenerator.workKey(WorkType.MOVIE, "The Matrix", 1999)
-        assertEquals("MOVIE:the-matrix:1999", key)
+        assertEquals("movie:heuristic:the-matrix-1999", key)
     }
 
     @Test
-    fun `workKey - series generates correct format`() {
+    fun `workKey - tmdb movie uses tmdb authority`() {
+        val key = NxKeyGenerator.workKey(WorkType.MOVIE, "The Matrix", 1999, tmdbId = 603)
+        assertEquals("movie:tmdb:603", key)
+    }
+
+    @Test
+    fun `workKey - heuristic series generates correct format`() {
         val key = NxKeyGenerator.workKey(WorkType.SERIES, "Breaking Bad", 2008)
-        assertEquals("SERIES:breaking-bad:2008", key)
+        assertEquals("series:heuristic:breaking-bad-2008", key)
     }
 
     @Test
-    fun `workKey - episode includes season and episode`() {
+    fun `workKey - heuristic episode includes season and episode`() {
         val key =
             NxKeyGenerator.workKey(
                 workType = WorkType.EPISODE,
@@ -37,31 +44,50 @@ class NxKeyGeneratorTest {
                 season = 1,
                 episode = 5,
             )
-        assertEquals("EPISODE:breaking-bad:2008:S01E05", key)
+        assertEquals("episode:heuristic:breaking-bad-2008-s01e05", key)
     }
 
     @Test
-    fun `workKey - live uses LIVE instead of year`() {
-        val key = NxKeyGenerator.workKey(WorkType.LIVE, "CNN Live")
-        assertEquals("LIVE:cnn-live:LIVE", key)
+    fun `workKey - tmdb episode uses tmdb id only`() {
+        val key = NxKeyGenerator.workKey(
+            workType = WorkType.EPISODE,
+            title = "Breaking Bad",
+            year = 2008,
+            tmdbId = 67890,
+            season = 1,
+            episode = 5,
+        )
+        assertEquals("episode:tmdb:67890", key)
     }
 
     @Test
-    fun `workKey - unknown type with no year uses 0000`() {
+    fun `workKey - live omits year`() {
+        val key = NxKeyGenerator.workKey(WorkType.LIVE_CHANNEL, "CNN Live")
+        assertEquals("live_channel:heuristic:cnn-live", key)
+    }
+
+    @Test
+    fun `workKey - unknown type with no year uses unknown`() {
         val key = NxKeyGenerator.workKey(WorkType.UNKNOWN, "Some Content")
-        assertEquals("UNKNOWN:some-content:0000", key)
+        assertEquals("unknown:heuristic:some-content-unknown", key)
     }
 
     @Test
     fun `seriesKey - convenience method works`() {
         val key = NxKeyGenerator.seriesKey("Game of Thrones", 2011)
-        assertEquals("SERIES:game-of-thrones:2011", key)
+        assertEquals("series:heuristic:game-of-thrones-2011", key)
+    }
+
+    @Test
+    fun `seriesKey - tmdb convenience method works`() {
+        val key = NxKeyGenerator.seriesKey("Game of Thrones", 2011, tmdbId = 1399)
+        assertEquals("series:tmdb:1399", key)
     }
 
     @Test
     fun `episodeKey - convenience method works`() {
-        val key = NxKeyGenerator.episodeKey("Game of Thrones", 2011, 3, 9)
-        assertEquals("EPISODE:game-of-thrones:2011:S03E09", key)
+        val key = NxKeyGenerator.episodeKey("Game of Thrones", 2011, season = 3, episode = 9)
+        assertEquals("episode:heuristic:game-of-thrones-2011-s03e09", key)
     }
 
     // =========================================================================
@@ -238,33 +264,47 @@ class NxKeyGeneratorTest {
     // =========================================================================
 
     @Test
-    fun `parseWorkKey - parses movie key`() {
-        val result = NxKeyGenerator.parseWorkKey("MOVIE:the-matrix:1999")
+    fun `parseWorkKey - parses heuristic movie key`() {
+        val result = NxKeyGenerator.parseWorkKey("movie:heuristic:the-matrix-1999")
         assertNotNull(result)
         assertEquals(WorkType.MOVIE, result?.workType)
-        assertEquals("the-matrix", result?.slug)
+        assertEquals("heuristic", result?.authority)
+        assertNull(result?.tmdbId)
+        assertEquals("the-matrix-1999", result?.id)
         assertEquals(1999, result?.year)
         assertNull(result?.season)
         assertNull(result?.episode)
     }
 
     @Test
-    fun `parseWorkKey - parses episode key`() {
-        val result = NxKeyGenerator.parseWorkKey("EPISODE:breaking-bad:2008:S01E05")
+    fun `parseWorkKey - parses tmdb movie key`() {
+        val result = NxKeyGenerator.parseWorkKey("movie:tmdb:603")
+        assertNotNull(result)
+        assertEquals(WorkType.MOVIE, result?.workType)
+        assertEquals("tmdb", result?.authority)
+        assertEquals(603, result?.tmdbId)
+        assertEquals("603", result?.id)
+        assertNull(result?.year)
+    }
+
+    @Test
+    fun `parseWorkKey - parses heuristic episode key with season`() {
+        val result = NxKeyGenerator.parseWorkKey("episode:heuristic:breaking-bad-2008-s01e05")
         assertNotNull(result)
         assertEquals(WorkType.EPISODE, result?.workType)
-        assertEquals("breaking-bad", result?.slug)
+        assertEquals("heuristic", result?.authority)
         assertEquals(2008, result?.year)
         assertEquals(1, result?.season)
         assertEquals(5, result?.episode)
     }
 
     @Test
-    fun `parseWorkKey - parses live key`() {
-        val result = NxKeyGenerator.parseWorkKey("LIVE:cnn-live:LIVE")
+    fun `parseWorkKey - parses live channel key`() {
+        val result = NxKeyGenerator.parseWorkKey("live_channel:heuristic:cnn-live")
         assertNotNull(result)
-        assertEquals(WorkType.LIVE, result?.workType)
-        assertEquals("cnn-live", result?.slug)
+        assertEquals(WorkType.LIVE_CHANNEL, result?.workType)
+        assertEquals("heuristic", result?.authority)
+        assertEquals("cnn-live", result?.id)
         assertNull(result?.year)
     }
 
