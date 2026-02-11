@@ -365,7 +365,7 @@ data class XtreamSeriesStream(
     val cover: String? = null,
     @SerialName("poster_path") val posterPath: String? = null,
     val logo: String? = null,
-    @SerialName("backdrop_path") val backdropPath: String? = null,
+    @SerialName("backdrop_path") val backdropPath: kotlinx.serialization.json.JsonElement? = null,
     @SerialName("category_id") val categoryId: String? = null,
     @SerialName("category_ids") val categoryIds: List<Int>? = null,
     @SerialName("stream_type") val streamType: String? = null,
@@ -398,6 +398,24 @@ data class XtreamSeriesStream(
     /** Extract year from releaseDate if year field is empty */
     val resolvedYear: String?
         get() = year ?: releaseDate?.take(4)?.takeIf { it.toIntOrNull() != null }
+
+    /**
+     * Resolve backdrop_path which can be a JSON string OR array depending on the Xtream panel.
+     * Real API data shows both variants: `"https://..."` and `["https://...", ...]`.
+     */
+    val resolvedBackdropPath: String?
+        get() = when (backdropPath) {
+            is kotlinx.serialization.json.JsonArray ->
+                (backdropPath as kotlinx.serialization.json.JsonArray)
+                    .firstOrNull()
+                    ?.let { (it as? kotlinx.serialization.json.JsonPrimitive)?.content }
+                    ?.takeIf { it.isNotBlank() }
+            is kotlinx.serialization.json.JsonPrimitive ->
+                (backdropPath as kotlinx.serialization.json.JsonPrimitive)
+                    .contentOrNull
+                    ?.takeIf { it.isNotBlank() }
+            else -> null
+        }
 }
 
 // =============================================================================

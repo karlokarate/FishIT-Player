@@ -229,7 +229,7 @@ class XtreamPipelineAdapter
 // Mapping Extensions (Transport → Pipeline)
 // ============================================================================
 
-private fun XtreamVodStream.toPipelineItem(): XtreamVodItem =
+internal fun XtreamVodStream.toPipelineItem(): XtreamVodItem =
     XtreamVodItem(
         id = resolvedId,
         name = name.orEmpty(),
@@ -250,17 +250,12 @@ private fun XtreamVodStream.toPipelineItem(): XtreamVodItem =
         isAdult = isAdult == "1",
     )
 
-private fun XtreamSeriesStream.toPipelineItem(): XtreamSeriesItem =
+internal fun XtreamSeriesStream.toPipelineItem(): XtreamSeriesItem =
     XtreamSeriesItem(
         id = resolvedId,
         name = name.orEmpty(),
         cover = resolvedCover,
-        backdrop =
-            backdropPath?.let {
-                // backdrop_path can be a single string or array in API response
-                // The DTO handles this via @Serializable
-                it
-            },
+        backdrop = resolvedBackdropPath,
         categoryId = categoryId,
         streamType = streamType,
         year = resolvedYear, // Uses year or extracts from releaseDate
@@ -279,7 +274,7 @@ private fun XtreamSeriesStream.toPipelineItem(): XtreamSeriesItem =
         isAdult = isAdult == "1",
     )
 
-private fun XtreamLiveStream.toPipelineItem(): XtreamChannel =
+internal fun XtreamLiveStream.toPipelineItem(): XtreamChannel =
     XtreamChannel(
         id = resolvedId,
         name = name.orEmpty(),
@@ -297,7 +292,7 @@ private fun XtreamLiveStream.toPipelineItem(): XtreamChannel =
         directSource = directSource?.takeIf { it.isNotBlank() },
     )
 
-private fun XtreamSeriesInfo.toEpisodes(
+internal fun XtreamSeriesInfo.toEpisodes(
     seriesId: Int,
     seriesName: String?,
 ): List<XtreamEpisode> {

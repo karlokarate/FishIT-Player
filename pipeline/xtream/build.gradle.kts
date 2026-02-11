@@ -55,4 +55,9 @@ dependencies {
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.2")
     testImplementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.8.0")
     testImplementation("io.mockk:mockk:1.13.12")
+
+    // Real-data chain tests: full Transport → Pipeline → Raw → Normalized → NX chain
+    testImplementation(project(":core:metadata-normalizer"))
+    testImplementation(project(":infra:data-nx"))
+    testImplementation(project(":core:persistence"))
 }
