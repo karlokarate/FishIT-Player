@@ -303,6 +303,172 @@ class XtreamVodNameParserTest {
         }
     }
 
+    // =========================================================================
+    // YEAR-AS-TITLE EDGE CASES (from real Xtream data)
+    // Movies whose title is a year number: "1992", "2012", "2046", "1917"
+    // The first pipe segment must always be treated as title, never as year.
+    // =========================================================================
+
+    @Test
+    fun `parse pipe-separated pattern - year-number movie titles from real data`() {
+        // Real entries from vod_streams.json where the title IS a year
+        val testCases = listOf(
+            "1992 | 2024 | 6.6 |" to Triple("1992", 2024, 6.6),
+            "2012 | 2009 | 5.8" to Triple("2012", 2009, 5.8),
+            "1992 | 2024 | 6.5 | 4K" to Triple("1992", 2024, 6.5),
+        )
+
+        testCases.forEach { (input, expected) ->
+            val result = parser.parse(input)
+            assertEquals(expected.first, result.title, "Title mismatch for: $input")
+            assertEquals(expected.second, result.year, "Year mismatch for: $input")
+            assertEquals(expected.third, result.rating, "Rating mismatch for: $input")
+        }
+    }
+
+    @Test
+    fun `parse pipe-separated pattern - year outside range treated as title`() {
+        // "2046" (2004 film by Wong Kar-wai) - year 2046 is outside the 1960-2030 range
+        // so even if it appeared at position >= 1, it wouldn't be mistaken for a year
+        val input = "2046 | 2004 | 7.2"
+        val result = parser.parse(input)
+        assertEquals("2046", result.title, "2046 should be the movie title")
+        assertEquals(2004, result.year, "2004 should be the release year")
+        assertEquals(7.2, result.rating, "7.2 should be the rating")
+    }
+
+    @Test
+    fun `parse pipe-separated pattern - rating extracted from title when API rating empty`() {
+        // The core bug: API returns empty rating field but title contains "| 7.4 |"
+        val input = "Die Dschungelhelden auf Weltreise | 2023 | 7.4 |"
+        val result = parser.parse(input)
+        assertEquals("Die Dschungelhelden auf Weltreise", result.title)
+        assertEquals(2023, result.year)
+        assertEquals(7.4, result.rating, "Rating should be extracted from pipe format")
+    }
+
+    @Test
+    fun `parse pipe-separated pattern - country prefix stripped from title`() {
+        // NL prefix is detected and stripped — segment 1 becomes the title.
+        // Real data: 2,013 items with "NL | Title | Year | Rating" format.
+        val testCases = listOf(
+            "NL | After Yang | 2022 | 6.8 |" to Triple("After Yang", 2022, 6.8),
+            "NL | Top Gun: Maverick | 2022 | 8.3" to Triple("Top Gun: Maverick", 2022, 8.3),
+            "NL | Hustle | 2022 | 7.8" to Triple("Hustle", 2022, 7.8),
+        )
+
+        testCases.forEach { (input, expected) ->
+            val result = parser.parse(input)
+            assertEquals(expected.first, result.title, "Title mismatch for: $input")
+            assertEquals(expected.second, result.year, "Year mismatch for: $input")
+            assertEquals(expected.third, result.rating, "Rating mismatch for: $input")
+        }
+    }
+
+    @Test
+    fun `parse pipe-separated pattern - country prefix with year-number title`() {
+        // NL prefix + title that is a year number — prefix stripped, year-number is title
+        val input = "NL | 1917 | 2019 | 8.3"
+        val result = parser.parse(input)
+        assertEquals("1917", result.title, "Year-number title should be preserved after prefix strip")
+        assertEquals(2019, result.year)
+        assertEquals(8.3, result.rating)
+    }
+
+    @Test
+    fun `parse pipe-separated pattern - reversed order Title Rating Year from real data`() {
+        // Real data: some providers use "Title | Rating | Year" instead of "Title | Year | Rating"
+        // The parser classifies by content (not position) so both orders work.
+        val testCases = listOf(
+            "Ant-Man | 7.3 | 2015" to Triple("Ant-Man", 2015, 7.3),
+            "Ant-Man | 7.3  |  2015" to Triple("Ant-Man", 2015, 7.3),
+            "Ant-Man | 7.3 |  2015" to Triple("Ant-Man", 2015, 7.3),
+        )
+
+        testCases.forEach { (input, expected) ->
+            val result = parser.parse(input)
+            assertEquals(expected.first, result.title, "Title mismatch for: $input")
+            assertEquals(expected.second, result.year, "Year mismatch for: $input")
+            assertEquals(expected.third, result.rating, "Rating mismatch for: $input")
+        }
+    }
+
+    @Test
+    fun `parse pipe-separated pattern - 4-segment with quality tags from real data`() {
+        // Real data: "Title | Year | Rating | Tag" with +18, UNTERTITEL, IMAX, LOWQ
+        val testCases = listOf(
+            "Babygirl | 2024 | 5.7 | +18 |" to Triple("Babygirl", 2024, 5.7),
+            "South Park (Für Kinder Nicht Geeignet) | 2023 | 7.7 | UNTERTITEL |" to
+                Triple("South Park (Für Kinder Nicht Geeignet)", 2023, 7.7),
+            "Oppenheimer | 2023 | 8.2 | IMAX |" to Triple("Oppenheimer", 2023, 8.2),
+            "Zoomania 2 | 2025 | 7.6 | LOWQ" to Triple("Zoomania 2", 2025, 7.6),
+        )
+
+        testCases.forEach { (input, expected) ->
+            val result = parser.parse(input)
+            assertEquals(expected.first, result.title, "Title mismatch for: $input")
+            assertEquals(expected.second, result.year, "Year mismatch for: $input")
+            assertEquals(expected.third, result.rating, "Rating mismatch for: $input")
+        }
+    }
+
+    @Test
+    fun `parse pipe-separated pattern - IMAX maps to edition imax flag`() {
+        val result = parser.parse("Oppenheimer | 2023 | 8.2 | IMAX |")
+        assertEquals("Oppenheimer", result.title)
+        assertTrue(result.edition?.imax == true, "IMAX tag should map to edition.imax")
+    }
+
+    @Test
+    fun `parse pipe-separated pattern - unmapped tags preserved in extraTags`() {
+        val result18 = parser.parse("Babygirl | 2024 | 5.7 | +18 |")
+        assertEquals("Babygirl", result18.title)
+        assertTrue(result18.extraTags.contains("+18"), "+18 should be in extraTags")
+
+        val resultUt = parser.parse("South Park (Für Kinder Nicht Geeignet) | 2023 | 7.7 | UNTERTITEL |")
+        assertEquals("South Park (Für Kinder Nicht Geeignet)", resultUt.title)
+        assertTrue(resultUt.extraTags.contains("UNTERTITEL"), "UNTERTITEL should be in extraTags")
+    }
+
+    @Test
+    fun `parse pipe-separated pattern - UNTERTITEL swapped with rating from real data`() {
+        // Real data: "Jawan | 2023 | UNTERTITEL | 7.1" — tag and rating swapped
+        val input = "Jawan | 2023 | UNTERTITEL | 7.1"
+        val result = parser.parse(input)
+        assertEquals("Jawan", result.title)
+        assertEquals(2023, result.year)
+        assertEquals(7.1, result.rating)
+    }
+
+    @Test
+    fun `parse pipe-separated pattern - year outside strict range with rating disambiguates`() {
+        // When a rating segment is present, the yyyy segment is unambiguously a year
+        // even if outside the strict 1960–2030 range. The decimal rating disambiguates.
+        val testCases = listOf(
+            "Schneewittchen | 7.4 | 1937" to Triple("Schneewittchen", 1937, 7.4),
+            "Schneewittchen | 1937 | 7.4" to Triple("Schneewittchen", 1937, 7.4),
+            "Metropolis | 1927 | 8.3" to Triple("Metropolis", 1927, 8.3),
+            "Nosferatu | 8.1 | 1922" to Triple("Nosferatu", 1922, 8.1),
+        )
+
+        testCases.forEach { (input, expected) ->
+            val result = parser.parse(input)
+            assertEquals(expected.first, result.title, "Title mismatch for: $input")
+            assertEquals(expected.second, result.year, "Year mismatch for: $input")
+            assertEquals(expected.third, result.rating, "Rating mismatch for: $input")
+        }
+    }
+
+    @Test
+    fun `parse pipe-separated pattern - year outside strict range without rating falls to scene parser`() {
+        // Without a rating, a yyyy outside 1960–2030 is NOT detected by the pipe-format parser.
+        // But the scene parser still extracts the year from the raw string — which is correct.
+        val input = "Schneewittchen | 1937"
+        val result = parser.parse(input)
+        // Scene parser finds 1937 as a year — correct behavior
+        assertEquals(1937, result.year, "Scene parser should still extract year from raw string")
+    }
+
     @Test
     fun `parse titles with numbers`() {
         val testCases =

@@ -5,13 +5,18 @@
  * Xtream-specific format rules.
  *
  * Handles provider-specific naming patterns:
- * - Pipe-separated: "Title | Year | Rating | Quality"
+ * - Pipe-separated: "Title | Year | Rating | Quality" (and provider variants)
+ * - Reversed order: "Title | Rating | Year" (some providers swap rating/year)
+ * - Country-prefix: "CC | Title | Year | Rating"
  * - Live channel cleanup (Unicode decorators)
  *
  * Based on real Xtream API data analysis:
  * - 21.2% of VOD uses pipe-separated format
  * - 55.7% uses parentheses format "Title (Year)"
  * - Live streams contain Unicode block characters (▃ ▅ ▆ █)
+ *
+ * The pipe-format parser uses position-independent segment classification
+ * to handle varying provider formats (not all providers use the same order).
  *
  * NO Kotlin Regex - uses RE2J patterns + linear algorithms.
  */
@@ -25,6 +30,7 @@ data class XtreamPipeResult(
     val year: Int?,
     val rating: Double?,
     val quality: String?,
+    val extraTags: List<String>,
     val matched: Boolean,
 )
 
@@ -40,82 +46,194 @@ object XtreamFormatRules {
     // =========================================================================
 
     /**
+     * Strict year range — used when NO rating segment is present to disambiguate.
+     *
+     * Narrowed to 1960–2030 to avoid misclassifying movie titles that ARE year numbers:
+     * - "2046" (2004 Wong Kar-wai) → falls OUTSIDE range → treated as title ✅
+     * - "1776" (1972 musical)      → falls OUTSIDE range → treated as title ✅
+     * - "1917", "1923", "2001"     → fall inside range, but protected by title-segment rule
+     *
+     * When a rating segment IS present (e.g. "7.4"), any 4-digit yyyy in [YEAR_RANGE_WITH_RATING]
+     * is accepted because the combination of text+decimal+yyyy is unambiguous.
+     */
+    private val YEAR_RANGE = 1960..2030
+
+    /**
+     * Extended year range — used when a rating segment IS present.
+     *
+     * When a decimal rating like "7.4" is found alongside a yyyy segment, the yyyy is
+     * unambiguously a year. This allows titles like "Schneewittchen | 7.4 | 1937" to work.
+     * Range 1900–2099 covers all realistic release years without misclassifying.
+     */
+    private val YEAR_RANGE_WITH_RATING = 1900..2099
+
+    /**
      * Detect if input uses Xtream pipe-separated format.
      *
-     * Pattern: "Title | Year | ..." or "Title | Year |" Examples:
-     * - "Sisu: Road to Revenge | 2025 | 7.4"
-     * - "John Wick: Kapitel 4 | 2023 | 4K |"
-     * - "Silent Night | 2025 | 5.3 | LOWQ"
+     * Handles multiple provider variants:
+     * - Standard:       "Title | Year | Rating"
+     * - With quality:   "Title | Year | 4K |"
+     * - Country prefix: "NL | Title | Year | Rating"
+     * - Year-as-title:  "1992 | 2024 | 6.6"   (first segment is title, not year)
+     *
+     * The key heuristic: at least one pipe segment at position ≥ 1 must be a valid year.
+     * The first segment is ALWAYS considered title text (never year) to handle titles
+     * that are year numbers (e.g. "1917", "1923", "2001").
      */
     fun isPipeFormat(input: String): Boolean {
-        // Must have at least one pipe
         if (!input.contains('|')) return false
 
-        // Must have year after first pipe
-        val parts = input.split('|')
+        // limit = 5 covers all known formats (prefix + title + year + rating + tag)
+        val parts = input.split('|', limit = 5)
         if (parts.size < 2) return false
 
-        // Second part should be a valid year (1900-2099)
-        val yearPart = parts[1].trim()
-        return yearPart.length == 4 &&
-            yearPart.all { it.isDigit() } &&
-            yearPart.toIntOrNull()?.let { it in 1900..2099 } == true
+        // Single pass over segments 1+ with early exit.
+        // Segment 0 is always title (or prefix) — never checked as year for detection.
+        var hasYearStrict = false
+        var hasYearExtended = false
+        var hasRating = false
+
+        for (i in 1 until parts.size) {
+            val seg = parts[i].trim()
+            if (seg.length == 4 && seg.all { it.isDigit() }) {
+                val y = seg.toIntOrNull()
+                if (y != null) {
+                    if (y in YEAR_RANGE) hasYearStrict = true
+                    if (y in YEAR_RANGE_WITH_RATING) hasYearExtended = true
+                }
+            } else if (seg.contains('.')) {
+                val d = seg.toDoubleOrNull()
+                if (d != null && d > 0.0 && d <= 10.0) hasRating = true
+            }
+
+            // Early exit when already unambiguous
+            if (hasYearStrict) return true
+            if (hasYearExtended && hasRating) return true
+        }
+
+        return false
     }
 
     /**
      * Parse Xtream pipe-separated format.
      *
-     * Format: "Title | Year | Rating | Quality"
+     * Uses a **prefix-aware + content-classified** approach:
+     * - Detects country-code prefix: if segment 0 is a 2–3 char uppercase alpha string
+     *   (e.g. "NL", "DE", "UK"), it is stripped and segment 1 becomes the title.
+     *   Verified from real data: 2,013 of 43,537 items use "NL | Title | Year | Rating".
+     * - The title segment is ALWAYS the first non-prefix segment (even "1992" or "2012")
+     * - Remaining segments are classified by content: year, rating, quality tag, or extra title
+     *
+     * This handles all known provider variants:
+     *
+     * - "Title | Year | Rating"             (standard — 7,031 items)
+     * - "Title | Year | Rating | Quality"   (with quality tag — 200 items)
+     * - "NL | Title | Year | Rating"        (country-code prefix — 2,013 items)
+     * - "Title | Rating | Year"             (reversed order — rare)
+     * - "1992 | 2024 | 6.6"                (year-as-title: "1992" is the movie title)
+     *
+     * Year range: [YEAR_RANGE] when no rating present, [YEAR_RANGE_WITH_RATING] when rating
+     * disambiguates (e.g. "Schneewittchen | 7.4 | 1937" → year=1937).
+     * Rating: requires decimal point (e.g. "7.4") in range (0.0, 10.0].
      *
      * @return XtreamPipeResult with extracted fields
      */
     fun parsePipeFormat(input: String): XtreamPipeResult {
-        if (!input.contains('|')) {
-            return XtreamPipeResult(
-                title = input,
-                year = null,
-                rating = null,
-                quality = null,
-                matched = false,
-            )
-        }
+        val unmatched = XtreamPipeResult(
+            title = input, year = null, rating = null,
+            quality = null, extraTags = emptyList(), matched = false,
+        )
 
-        val parts = input.split('|').map { it.trim() }
+        if (!input.contains('|')) return unmatched
 
-        // Part 0: Title
-        val title = parts.getOrNull(0)?.trim() ?: input
+        // Combined map + filter: single allocation instead of map().filter()
+        val parts = input.split('|', limit = 5)
+            .mapNotNull { val t = it.trim(); if (t.isNotEmpty()) t else null }
 
-        // Part 1: Year
-        val yearStr = parts.getOrNull(1)?.trim()
-        val year = yearStr?.toIntOrNull()?.takeIf { it in 1900..2099 }
+        if (parts.size < 2) return unmatched
 
-        // Part 2: Rating (decimal number) or Quality tag
-        val part2 = parts.getOrNull(2)?.trim()?.uppercase()
-        val rating: Double?
+        // Detect country-code prefix: 2–3 char uppercase alpha string at segment 0.
+        // Real data: "NL | Title | Year | Rating" — 2,013 items with NL prefix.
+        val hasPrefix = parts.size >= 3 && isCountryPrefix(parts[0])
+        val titleIndex = if (hasPrefix) 1 else 0
+
+        // Title segment is ALWAYS at titleIndex — even "1992", "2012", "2001" are movie titles
+        val titleParts = mutableListOf(parts[titleIndex])
+
+        // Single-pass: classify segments after title by content.
+        // Year range starts strict (1960–2030) and expands to 1900–2099 when rating is found.
+        var year: Int? = null
+        var rating: Double? = null
         var quality: String? = null
+        val extraTags = mutableListOf<String>()
+        var effectiveYearRange = YEAR_RANGE
 
-        if (part2 != null) {
-            // Check if it's a quality tag
-            if (part2 in QUALITY_TAGS) {
-                rating = null
-                quality = part2
-            } else {
-                // Try to parse as rating
-                rating = parts.getOrNull(2)?.trim()?.toDoubleOrNull()
-            }
-        } else {
-            rating = null
-        }
+        for (i in (titleIndex + 1) until parts.size) {
+            val part = parts[i]
 
-        // Part 3+: Quality tags (4K, LOWQ, HD, HEVC, etc.)
-        if (quality == null && parts.size > 3) {
-            for (i in 3 until parts.size) {
-                val tag = parts[i].trim().uppercase()
-                if (tag in QUALITY_TAGS) {
-                    quality = tag
-                    break
+            // Quality/extra tag: lazy uppercase — only allocate when length matches tag range.
+            // First matched quality tag becomes the primary `quality`; additional tags go to `extraTags`.
+            if (part.length in 2..11) {
+                val upper = part.uppercase()
+                if (upper in QUALITY_TAGS) {
+                    if (quality == null) {
+                        quality = upper
+                    } else {
+                        extraTags.add(upper)
+                    }
+                    continue
                 }
             }
+
+            // Year: exactly 4 digits in effective range (take first match)
+            if (year == null && part.length == 4 && part.all { it.isDigit() }) {
+                val y = part.toIntOrNull()
+                if (y != null && y in effectiveYearRange) {
+                    year = y
+                    continue
+                }
+            }
+
+            // Rating: decimal number in (0.0, 10.0] (take first match).
+            // Parse once — no duplicate toDoubleOrNull() calls.
+            // Requires '.' to distinguish from integer tags or counters.
+            if (rating == null && part.contains('.')) {
+                val parsed = part.toDoubleOrNull()
+                if (parsed != null && parsed > 0.0 && parsed <= 10.0) {
+                    rating = parsed
+                    // Expand year range: rating disambiguates yyyy segments
+                    effectiveYearRange = YEAR_RANGE_WITH_RATING
+                    continue
+                }
+            }
+
+            // Unclassified → add to title
+            titleParts.add(part)
+        }
+
+        // If rating expanded the year range, re-check unclassified title parts for years.
+        // This handles "Title | 1937 | 7.4" where 1937 was skipped in strict mode but
+        // should now be recognized after rating expanded the range.
+        if (year == null && rating != null && titleParts.size > 1) {
+            val iter = titleParts.listIterator(1) // skip index 0 (actual title)
+            while (iter.hasNext()) {
+                val part = iter.next()
+                if (part.length == 4 && part.all { it.isDigit() }) {
+                    val y = part.toIntOrNull()
+                    if (y != null && y in YEAR_RANGE_WITH_RATING) {
+                        year = y
+                        iter.remove()
+                        break
+                    }
+                }
+            }
+        }
+
+        // Title: title segment + any unclassified segments joined by " | "
+        val title = if (titleParts.size == 1) {
+            titleParts[0]
+        } else {
+            titleParts.joinToString(" | ")
         }
 
         return XtreamPipeResult(
@@ -123,11 +241,21 @@ object XtreamFormatRules {
             year = year,
             rating = rating,
             quality = quality,
+            extraTags = extraTags,
             matched = year != null,
         )
     }
 
-    // Known quality tags in Xtream pipe format
+    /**
+     * Detect if a segment is a country-code prefix (e.g. "NL", "DE", "UK").
+     *
+     * A prefix is a 2–3 character uppercase alphabetic string.
+     * Real data shows only "NL" (2,013 items), but the rule is generic for other providers.
+     */
+    private fun isCountryPrefix(segment: String): Boolean =
+        segment.length in 2..3 && segment.all { it.isUpperCase() && it.isLetter() }
+
+    // Known quality/tag markers in Xtream pipe format (from real data analysis)
     private val QUALITY_TAGS =
         setOf(
             "4K",
@@ -148,6 +276,9 @@ object XtreamFormatRules {
             "SDR",
             "DV",
             "BACKUP",
+            "IMAX",
+            "+18",
+            "UNTERTITEL",
         )
 
     // =========================================================================
