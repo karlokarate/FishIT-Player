@@ -91,17 +91,45 @@ class NxCanonicalMediaRepositoryImpl @Inject constructor(
         val now = System.currentTimeMillis()
         val enrichment = workEntityBuilder.build(normalized, workKey, now)
 
-        // Try enrichment first (only fills missing fields on existing work)
-        val result = workRepository.enrichIfAbsent(workKey, enrichment)
-
-        if (result == null) {
-            // Work doesn't exist yet → full upsert
-            workRepository.upsert(enrichment)
+        // --- Dual-Lookup Strategy ---
+        // Step 1: Try enrichment by heuristic workKey (primary path)
+        val enrichedByKey = workRepository.enrichIfAbsent(workKey, enrichment)
+        if (enrichedByKey != null) {
+            return@withContext CanonicalMediaId(
+                kind = mediaTypeToKind(normalized.mediaType),
+                key = CanonicalId(enrichedByKey.workKey),
+            )
         }
+
+        // Step 2: tmdbId fallback — find existing entity that was created with
+        //         a different slug (title variation) or old tmdb-format workKey.
+        //         Prevents duplicates across key format migration and title aliases.
+        //         Uses same tmdbId source as WorkEntityBuilder to avoid lookup misses.
+        val tmdbId = (normalized.tmdb ?: normalized.externalIds.tmdb)?.id?.toString()
+        if (tmdbId != null) {
+            val existingByTmdb = workBox.query(
+                NX_Work_.tmdbId.equal(tmdbId),
+            ).build().findFirst()
+
+            if (existingByTmdb != null) {
+                // Entity exists with different workKey → enrich via its actual key
+                val enrichedByTmdb = workRepository.enrichIfAbsent(
+                    existingByTmdb.workKey, enrichment,
+                )
+                val actualKey = enrichedByTmdb?.workKey ?: existingByTmdb.workKey
+                return@withContext CanonicalMediaId(
+                    kind = mediaTypeToKind(normalized.mediaType),
+                    key = CanonicalId(actualKey),
+                )
+            }
+        }
+
+        // Step 3: No existing entity found → create new
+        val created = workRepository.upsert(enrichment)
 
         CanonicalMediaId(
             kind = mediaTypeToKind(normalized.mediaType),
-            key = CanonicalId(workKey),
+            key = CanonicalId(created.workKey),
         )
     }
 
@@ -436,18 +464,27 @@ class NxCanonicalMediaRepositoryImpl @Inject constructor(
             .build()
             .findFirst() ?: return@withContext
 
-        // Update only non-null fields from enriched
+        // TMDB data is authoritative — always overwrite non-null fields.
+        // AUTHORITY_WINS: poster, backdrop, thumbnail (TMDB images replace pipeline images)
         enriched.poster?.let { work.poster = it }
         enriched.backdrop?.let { work.backdrop = it }
         enriched.thumbnail?.let { work.thumbnail = it }
+        // AUTHORITY_WINS: plot, rating, durationMs, genres, director, cast
         enriched.plot?.let { work.plot = it }
         enriched.rating?.let { work.rating = it }
         enriched.durationMs?.let { work.durationMs = it }
         enriched.genres?.let { work.genres = it }
         enriched.director?.let { work.director = it }
         enriched.cast?.let { work.cast = it }
+        // ALWAYS_UPDATE: external IDs
         enriched.externalIds.effectiveTmdbId?.let { work.tmdbId = it.toString() }
         enriched.externalIds.imdbId?.let { work.imdbId = it }
+
+        // Update authorityKey when tmdbId changes (cross-reference index)
+        enriched.externalIds.effectiveTmdbId?.let { newTmdbId ->
+            val workType = work.workType.lowercase()
+            work.authorityKey = NxKeyGenerator.authorityKey("TMDB", workType, newTmdbId.toString())
+        }
 
         work.updatedAt = resolvedAt
         workBox.put(work)
@@ -522,7 +559,8 @@ class NxCanonicalMediaRepositoryImpl @Inject constructor(
             workType = workType,
             title = normalized.canonicalTitle,
             year = normalized.year,
-            tmdbId = normalized.tmdb?.id,
+            // tmdbId intentionally NOT passed — workKey is always heuristic.
+            // tmdbId is stored separately on NX_Work and used via Dual-Lookup.
             season = normalized.season,
             episode = normalized.episode,
         )
