@@ -70,6 +70,7 @@ import com.fishit.player.infra.logging.UnifiedLog
 import io.objectbox.BoxStore
 import io.objectbox.kotlin.boxFor
 import io.objectbox.query.QueryCondition
+import io.objectbox.query.QueryBuilder.StringOrder
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
@@ -124,7 +125,7 @@ class NxXtreamCatalogRepositoryImpl
                 sourceRefQuery.asFlow(),
             ) { works, sourceRefs ->
                 val sourceKeysByWorkKey = sourceRefs
-                    .groupBy { it.work.target?.workKey }
+                    .groupBy { it.workKey }
                     .mapValues { (_, refs) -> refs.firstOrNull() }
 
                 works.mapNotNull { work ->
@@ -151,7 +152,7 @@ class NxXtreamCatalogRepositoryImpl
                 sourceRefQuery.asFlow(),
             ) { works, sourceRefs ->
                 val sourceKeysByWorkKey = sourceRefs
-                    .groupBy { it.work.target?.workKey }
+                    .groupBy { it.workKey }
                     .mapValues { (_, refs) -> refs.firstOrNull() }
 
                 works.mapNotNull { work ->
@@ -215,13 +216,17 @@ class NxXtreamCatalogRepositoryImpl
                 .build()
                 .find(offset.toLong(), limit.toLong())
 
-            // Get source refs for these works
+            // Get source refs for these works — indexed oneOf() query (no full scan)
             val workKeys = works.map { it.workKey }
-            val sourceRefs = sourceRefBox.query(
-                NX_WorkSourceRef_.sourceType.equal(SOURCE_TYPE),
-            ).build().find().filter { it.work.target?.workKey in workKeys }
+            val workKeySet = workKeys.toSet()
+            val sourceRefs = if (workKeys.isNotEmpty()) {
+                sourceRefBox.query(
+                    NX_WorkSourceRef_.sourceType.equal(SOURCE_TYPE)
+                        .and(NX_WorkSourceRef_.workKey.oneOf(workKeys.toTypedArray(), StringOrder.CASE_SENSITIVE)),
+                ).build().find()
+            } else emptyList()
 
-            val sourceRefMap = sourceRefs.associateBy { it.work.target?.workKey }
+            val sourceRefMap = sourceRefs.associateBy { it.workKey }
 
             works.mapNotNull { work ->
                 val sourceRef = sourceRefMap[work.workKey] ?: return@mapNotNull null
@@ -265,11 +270,14 @@ class NxXtreamCatalogRepositoryImpl
                 ).build().find(0, limit.toLong())
 
                 val workKeys = works.map { it.workKey }
-                val sourceRefs = sourceRefBox.query(
-                    NX_WorkSourceRef_.sourceType.equal(SOURCE_TYPE),
-                ).build().find().filter { it.work.target?.workKey in workKeys }
+                val sourceRefs = if (workKeys.isNotEmpty()) {
+                    sourceRefBox.query(
+                        NX_WorkSourceRef_.sourceType.equal(SOURCE_TYPE)
+                            .and(NX_WorkSourceRef_.workKey.oneOf(workKeys.toTypedArray(), StringOrder.CASE_SENSITIVE)),
+                    ).build().find()
+                } else emptyList()
 
-                val sourceRefMap = sourceRefs.associateBy { it.work.target?.workKey }
+                val sourceRefMap = sourceRefs.associateBy { it.workKey }
 
                 works.mapNotNull { work ->
                     val sourceRef = sourceRefMap[work.workKey] ?: return@mapNotNull null

@@ -85,6 +85,15 @@ class NxWorkRepositoryImpl @Inject constructor(
             ?.toDomain()
     }
 
+    override suspend fun getBatch(workKeys: List<String>): Map<String, Work> = withContext(Dispatchers.IO) {
+        if (workKeys.isEmpty()) return@withContext emptyMap()
+
+        box.query(NX_Work_.workKey.oneOf(workKeys.toTypedArray(), StringOrder.CASE_SENSITIVE))
+            .build()
+            .find()
+            .associate { it.workKey to it.toDomain() }
+    }
+
     override fun observe(workKey: String): Flow<Work?> {
         return box.query(NX_Work_.workKey.equal(workKey, StringOrder.CASE_SENSITIVE))
             .build()
@@ -373,7 +382,7 @@ class NxWorkRepositoryImpl @Inject constructor(
      * - MONOTONIC_UP: recognitionState → only upgrade (lower ordinal = higher confidence)
      * - AUTO: updatedAt → always current time
      */
-    override suspend fun enrichIfAbsent(workKey: String, enrichment: Work): Work? =
+    override suspend fun enrichIfAbsent(workKey: String, enrichment: NxWorkRepository.Enrichment): NxWorkRepository.Work? =
         withContext(Dispatchers.IO) {
             val existing = box.query(NX_Work_.workKey.equal(workKey, StringOrder.CASE_SENSITIVE))
                 .build()

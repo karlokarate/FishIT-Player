@@ -97,11 +97,53 @@ interface NxWorkRepository {
         val isDeleted: Boolean = false,
     )
 
+    /**
+     * Enrichment payload for [enrichIfAbsent].
+     *
+     * Contains **only** the fields that enrichment can touch — callers never need
+     * to supply dummy values for IMMUTABLE fields like `type` or `displayTitle`.
+     * All fields default to `null` / identity so callers specify only what they have.
+     */
+    data class Enrichment(
+        // ENRICH_ONLY — set on entity only if currently null/default
+        val season: Int? = null,
+        val episode: Int? = null,
+        val runtimeMs: Long? = null,
+        val poster: ImageRef? = null,
+        val backdrop: ImageRef? = null,
+        val thumbnail: ImageRef? = null,
+        val rating: Double? = null,
+        val genres: String? = null,
+        val plot: String? = null,
+        val director: String? = null,
+        val cast: String? = null,
+        val trailer: String? = null,
+        val releaseDate: String? = null,
+        // ALWAYS_UPDATE — always overwrite with new non-null value
+        val tmdbId: String? = null,
+        val imdbId: String? = null,
+        val tvdbId: String? = null,
+        // MONOTONIC_UP — only upgrade, never downgrade
+        val recognitionState: RecognitionState = RecognitionState.HEURISTIC,
+    )
+
     // ──────────────────────────────────────────────────────────────────────
     // Single item
     // ──────────────────────────────────────────────────────────────────────
 
     suspend fun get(workKey: String): Work?
+
+    /**
+     * Batch lookup works by multiple work keys.
+     *
+     * **Performance Critical:** Use this instead of calling get() in a loop!
+     * Required for efficient episode index building where hundreds of episodes
+     * need their Work data loaded.
+     *
+     * @param workKeys List of work keys to lookup
+     * @return Map of workKey → Work. Missing keys will not be in the map.
+     */
+    suspend fun getBatch(workKeys: List<String>): Map<String, Work>
 
     fun observe(workKey: String): Flow<Work?>
 
@@ -269,10 +311,10 @@ interface NxWorkRepository {
      * - **AUTO**: updatedAtMs always set to current time
      *
      * @param workKey Key of the work to enrich
-     * @param enrichment Work containing the enrichment data
+     * @param enrichment Enrichment data (only enrichable fields, all optional)
      * @return Updated work, or null if workKey doesn't exist
      */
-    suspend fun enrichIfAbsent(workKey: String, enrichment: Work): Work?
+    suspend fun enrichIfAbsent(workKey: String, enrichment: Enrichment): Work?
 
     suspend fun upsertBatch(works: List<Work>): List<Work>
 
@@ -281,3 +323,28 @@ interface NxWorkRepository {
      */
     suspend fun softDelete(workKey: String): Boolean
 }
+
+/**
+ * Converts a full [NxWorkRepository.Work] into an [NxWorkRepository.Enrichment],
+ * extracting only the enrichable fields. Used by callers that already have a full
+ * Work (e.g., from [WorkEntityBuilder.build]) to pass into [NxWorkRepository.enrichIfAbsent].
+ */
+fun NxWorkRepository.Work.toEnrichment(): NxWorkRepository.Enrichment = NxWorkRepository.Enrichment(
+    season = season,
+    episode = episode,
+    runtimeMs = runtimeMs,
+    poster = poster,
+    backdrop = backdrop,
+    thumbnail = thumbnail,
+    rating = rating,
+    genres = genres,
+    plot = plot,
+    director = director,
+    cast = cast,
+    trailer = trailer,
+    releaseDate = releaseDate,
+    tmdbId = tmdbId,
+    imdbId = imdbId,
+    tvdbId = tvdbId,
+    recognitionState = recognitionState,
+)

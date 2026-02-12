@@ -13,7 +13,7 @@ import com.fishit.player.infra.data.nx.mapper.base.PlaybackHintsDecoder
  */
 fun NX_WorkVariant.toDomain(): Variant = Variant(
     variantKey = variantKey,
-    workKey = work.target?.workKey ?: "",
+    workKey = workKey.ifEmpty { work.target?.workKey ?: "" },
     sourceKey = sourceKey,
     label = buildLabel(),
     isDefault = qualityTag == "source",
@@ -40,6 +40,7 @@ fun Variant.toEntity(existingEntity: NX_WorkVariant? = null): NX_WorkVariant {
         variantKey = variantKey,
         qualityTag = qualityHeight?.let { "${it}p" } ?: "source",
         languageTag = audioLang ?: "original",
+        workKey = this.workKey,
         // Legacy fields kept for backwards compatibility (may be null with new JSON storage)
         playbackUrl = playbackHints[PlaybackHintKeys.Xtream.DIRECT_SOURCE]
             ?: playbackHints["url"]

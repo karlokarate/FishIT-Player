@@ -35,6 +35,33 @@ class NxWorkVariantRepositoryImpl @Inject constructor(
     private val box by lazy { boxStore.boxFor<NX_WorkVariant>() }
     private val workBox by lazy { boxStore.boxFor<NX_Work>() }
 
+    init {
+        // One-time backfill on background thread to avoid ANR.
+        // Reactive Flows auto-correct when put() triggers re-emission.
+        Thread({
+            backfillDenormalizedWorkKeys()
+        }, "backfill-variant-workKey").start()
+    }
+
+    private fun backfillDenormalizedWorkKeys() {
+        val varBox = boxStore.boxFor(NX_WorkVariant::class.java)
+        val empty = varBox.query(
+            NX_WorkVariant_.workKey.equal("", StringOrder.CASE_SENSITIVE),
+        ).build().find()
+        if (empty.isEmpty()) return
+        val updated = empty.mapNotNull { entity ->
+            val wk = entity.work.target?.workKey
+            if (!wk.isNullOrBlank()) {
+                entity.workKey = wk
+                entity
+            } else null
+        }
+        if (updated.isNotEmpty()) {
+            varBox.put(updated)
+            UnifiedLog.i("NxWorkVariantRepo") { "Backfilled workKey on ${updated.size} pre-migration variants" }
+        }
+    }
+
     // ──────────────────────────────────────────────────────────────────────
     // Reads
     // ──────────────────────────────────────────────────────────────────────
@@ -47,27 +74,36 @@ class NxWorkVariantRepositoryImpl @Inject constructor(
     }
 
     override fun observeByWorkKey(workKey: String): Flow<List<Variant>> {
-        val workId = workBox.query(NX_Work_.workKey.equal(workKey, StringOrder.CASE_SENSITIVE))
-            .build()
-            .findFirst()?.id ?: 0L
-
-        // Use full table scan with in-memory filter for ToOne relation
-        // TODO: Optimize with proper ObjectBox link query if needed for large datasets
-        return box.query()
+        // Indexed query on denormalized workKey field — no full table scan
+        return box.query(NX_WorkVariant_.workKey.equal(workKey, StringOrder.CASE_SENSITIVE))
             .build()
             .asFlow()
-            .map { list -> list.filter { it.work.targetId == workId }.map { it.toDomain() } }
+            .map { list -> list.map { it.toDomain() } }
     }
 
     override suspend fun findByWorkKey(workKey: String): List<Variant> = withContext(Dispatchers.IO) {
-        val workId = workBox.query(NX_Work_.workKey.equal(workKey, StringOrder.CASE_SENSITIVE))
+        box.query(NX_WorkVariant_.workKey.equal(workKey, StringOrder.CASE_SENSITIVE))
             .build()
-            .findFirst()?.id ?: return@withContext emptyList()
-
-        // Filter in memory by work.targetId
-        box.all
-            .filter { it.work.targetId == workId }
+            .find()
             .map { it.toDomain() }
+    }
+
+    override suspend fun findByWorkKeysBatch(workKeys: List<String>): Map<String, List<Variant>> = withContext(Dispatchers.IO) {
+        if (workKeys.isEmpty()) return@withContext emptyMap()
+
+        // Indexed oneOf() query on denormalized workKey field — no full table scan
+        val result = mutableMapOf<String, MutableList<Variant>>()
+        box.query(NX_WorkVariant_.workKey.oneOf(workKeys.toTypedArray(), StringOrder.CASE_SENSITIVE))
+            .build()
+            .find()
+            .forEach { entity ->
+                val wk = entity.workKey
+                if (wk.isNotEmpty()) {
+                    result.getOrPut(wk) { mutableListOf() }.add(entity.toDomain())
+                }
+            }
+
+        result
     }
 
     override suspend fun findBySourceKey(sourceKey: String): List<Variant> = withContext(Dispatchers.IO) {

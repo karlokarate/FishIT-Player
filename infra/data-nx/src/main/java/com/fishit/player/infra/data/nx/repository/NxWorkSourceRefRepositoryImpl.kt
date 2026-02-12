@@ -37,6 +37,33 @@ class NxWorkSourceRefRepositoryImpl @Inject constructor(
     private val box by lazy { boxStore.boxFor<NX_WorkSourceRef>() }
     private val workBox by lazy { boxStore.boxFor<NX_Work>() }
 
+    init {
+        // One-time backfill on background thread to avoid ANR.
+        // Reactive Flows auto-correct when put() triggers re-emission.
+        Thread({
+            backfillDenormalizedWorkKeys()
+        }, "backfill-srcref-workKey").start()
+    }
+
+    private fun backfillDenormalizedWorkKeys() {
+        val srcBox = boxStore.boxFor(NX_WorkSourceRef::class.java)
+        val empty = srcBox.query(
+            NX_WorkSourceRef_.workKey.equal("", StringOrder.CASE_SENSITIVE),
+        ).build().find()
+        if (empty.isEmpty()) return
+        val updated = empty.mapNotNull { entity ->
+            val wk = entity.work.target?.workKey
+            if (!wk.isNullOrBlank()) {
+                entity.workKey = wk
+                entity
+            } else null
+        }
+        if (updated.isNotEmpty()) {
+            srcBox.put(updated)
+            UnifiedLog.i("NxWorkSourceRefRepo") { "Backfilled workKey on ${updated.size} pre-migration source refs" }
+        }
+    }
+
     // ──────────────────────────────────────────────────────────────────────
     // Reads
     // ──────────────────────────────────────────────────────────────────────
@@ -49,62 +76,39 @@ class NxWorkSourceRefRepositoryImpl @Inject constructor(
     }
 
     override fun observeByWorkKey(workKey: String): Flow<List<SourceRef>> {
-        // Get work entity to find its ID for filtering
-        val workId = workBox.query(NX_Work_.workKey.equal(workKey, StringOrder.CASE_SENSITIVE))
-            .build()
-            .findFirst()?.id ?: 0L
-
-        // Use full table scan with in-memory filter for ToOne relation
-        // TODO: Optimize with proper ObjectBox link query if needed for large datasets
-        return box.query()
+        // Indexed query on denormalized workKey field — no full table scan
+        return box.query(NX_WorkSourceRef_.workKey.equal(workKey, StringOrder.CASE_SENSITIVE))
             .build()
             .asFlow()
-            .map { list -> list.filter { it.work.targetId == workId }.map { it.toDomain() } }
+            .map { list -> list.map { it.toDomain() } }
     }
 
     override suspend fun findByWorkKey(workKey: String): List<SourceRef> = withContext(Dispatchers.IO) {
-        val workId = workBox.query(NX_Work_.workKey.equal(workKey, StringOrder.CASE_SENSITIVE))
+        // Indexed query on denormalized workKey field — no full table scan
+        box.query(NX_WorkSourceRef_.workKey.equal(workKey, StringOrder.CASE_SENSITIVE))
             .build()
-            .findFirst()?.id ?: return@withContext emptyList()
-
-        // Filter in memory by work.targetId
-        box.all
-            .filter { it.work.targetId == workId }
+            .find()
             .map { it.toDomain() }
     }
 
     /**
      * Batch lookup source refs for multiple work keys.
      *
-     * **Performance Critical:** This is the optimized path for Home/Library loading.
-     * Instead of N queries for N works, this does 2 queries total:
-     * 1. One query to get work IDs from work keys
-     * 2. One query to get all source refs (filtered in memory by work ID set)
-     *
-     * For 40,000 works, this reduces from 80,000+ queries to 2 queries.
+     * **Performance Critical:** Uses single indexed `oneOf()` query on
+     * denormalized `workKey` field — O(k) on requested keys, not O(n) on table size.
      */
     override suspend fun findByWorkKeysBatch(workKeys: List<String>): Map<String, List<SourceRef>> = withContext(Dispatchers.IO) {
         if (workKeys.isEmpty()) return@withContext emptyMap()
 
-        // Step 1: Batch lookup work entities to get their IDs
-        val works = workBox.query(NX_Work_.workKey.oneOf(workKeys.toTypedArray(), StringOrder.CASE_SENSITIVE))
+        // Indexed oneOf() query on denormalized workKey field — no full table scan
+        val result = mutableMapOf<String, MutableList<SourceRef>>()
+        box.query(NX_WorkSourceRef_.workKey.oneOf(workKeys.toTypedArray(), StringOrder.CASE_SENSITIVE))
             .build()
             .find()
-        val workIdToKey = works.associate { it.id to it.workKey }
-        val workIds = workIdToKey.keys
-
-        if (workIds.isEmpty()) return@withContext emptyMap()
-
-        // Step 2: Get all source refs and filter by work ID set
-        // Using a single pass through all source refs is faster than N individual queries
-        val result = mutableMapOf<String, MutableList<SourceRef>>()
-
-        box.all
-            .filter { it.work.targetId in workIds }
             .forEach { entity ->
-                val workKey = workIdToKey[entity.work.targetId]
-                if (workKey != null) {
-                    result.getOrPut(workKey) { mutableListOf() }.add(entity.toDomain())
+                val wk = entity.workKey
+                if (wk.isNotEmpty()) {
+                    result.getOrPut(wk) { mutableListOf() }.add(entity.toDomain())
                 }
             }
 
@@ -367,8 +371,8 @@ class NxWorkSourceRefRepositoryImpl @Inject constructor(
                 entity.sourceKey.contains(":episode:", ignoreCase = true)
             }
             .mapNotNull { entity ->
-                // Get workKey from the linked work entity
-                entity.work.target?.workKey
+                // Use denormalized workKey (avoids N ToOne lazy loads)
+                entity.workKey.ifEmpty { null }
             }
             .toSet()
     }

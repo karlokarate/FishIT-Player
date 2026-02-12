@@ -225,6 +225,13 @@ data class NX_WorkSourceRef(
     var tvArchive: Int = 0,
     /** TV archive duration in days (catchup window) */
     var tvArchiveDuration: Int = 0,
+    // === Denormalized FK ===
+    /**
+     * Denormalized work key for indexed batch lookups via `oneOf()`.
+     * Mirrors `work.target.workKey` — set by write operations.
+     * Avoids `box.all` full table scans in `findByWorkKeysBatch()`.
+     */
+    @Index var workKey: String = "",
     // === Timestamps ===
     var discoveredAt: Long = System.currentTimeMillis(),
     var lastSeenAt: Long = System.currentTimeMillis(),
@@ -298,6 +305,13 @@ data class NX_WorkVariant(
     // === Source Link ===
     /** Source reference key */
     @Index var sourceKey: String = "",
+    // === Denormalized FK ===
+    /**
+     * Denormalized work key for indexed batch lookups via `oneOf()`.
+     * Mirrors `work.target.workKey` — set by write operations.
+     * Avoids `box.all` full table scans in `findByWorkKeysBatch()`.
+     */
+    @Index var workKey: String = "",
     // === Timestamps ===
     var createdAt: Long = System.currentTimeMillis(),
 ) {
@@ -326,6 +340,12 @@ data class NX_WorkRelation(
     var season: Int? = null,
     var episode: Int? = null,
     var createdAt: Long = System.currentTimeMillis(),
+    /**
+     * Denormalized parent workKey for indexed queries.
+     * Populated from parentWork.target.workKey on write.
+     * INV-PERF: Enables B+ tree lookup instead of box.all full scan.
+     */
+    @Index var parentWorkKey: String = "",
 ) {
     /** Parent work (e.g., series) */
     lateinit var parentWork: ToOne<NX_Work>

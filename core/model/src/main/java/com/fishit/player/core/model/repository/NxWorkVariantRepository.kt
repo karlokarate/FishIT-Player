@@ -52,6 +52,18 @@ interface NxWorkVariantRepository {
 
     suspend fun findByWorkKey(workKey: String): List<Variant>
 
+    /**
+     * Batch lookup variants for multiple work keys.
+     *
+     * **Performance Critical:** Use this instead of calling findByWorkKey() in a loop!
+     * Required for efficient episode index building where hundreds of episodes
+     * need their variant data loaded.
+     *
+     * @param workKeys List of work keys to lookup
+     * @return Map of workKey → List<Variant>. Missing keys will not be in the map.
+     */
+    suspend fun findByWorkKeysBatch(workKeys: List<String>): Map<String, List<Variant>>
+
     suspend fun findBySourceKey(sourceKey: String): List<Variant>
 
     /**

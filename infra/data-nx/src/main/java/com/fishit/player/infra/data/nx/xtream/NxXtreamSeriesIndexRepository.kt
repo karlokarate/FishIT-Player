@@ -83,11 +83,10 @@ class NxXtreamSeriesIndexRepository @Inject constructor(
 
         // Check if any episode relation was updated recently
         val cutoff = System.currentTimeMillis() - SeasonIndexItem.SEASON_INDEX_TTL_MS
-        // For NX, we use the work's updatedAtMs as proxy for freshness
-        episodes.any { relation ->
-            val episodeWork = workRepository.get(relation.childWorkKey)
-            episodeWork?.updatedAtMs?.let { it > cutoff } ?: false
-        }
+        // Batch-fetch all episode works (avoids N+1 individual get() calls)
+        val workKeys = episodes.map { it.childWorkKey }
+        val works = workRepository.getBatch(workKeys)
+        works.values.any { it.updatedAtMs > cutoff }
     }
 
     override suspend fun upsertSeasons(seriesId: Int, seasons: List<SeasonIndexItem>) {
@@ -229,10 +228,10 @@ class NxXtreamSeriesIndexRepository @Inject constructor(
         if (episodes.isEmpty()) return@withContext false
 
         val cutoff = System.currentTimeMillis() - EpisodeIndexItem.INDEX_TTL_MS
-        episodes.any { relation ->
-            val episodeWork = workRepository.get(relation.childWorkKey)
-            episodeWork?.updatedAtMs?.let { it > cutoff } ?: false
-        }
+        // Batch-fetch all episode works (avoids N+1 individual get() calls)
+        val workKeys = episodes.map { it.childWorkKey }
+        val works = workRepository.getBatch(workKeys)
+        works.values.any { it.updatedAtMs > cutoff }
     }
 
     override suspend fun upsertEpisodes(episodes: List<EpisodeIndexItem>) = withContext(Dispatchers.IO) {
@@ -244,12 +243,17 @@ class NxXtreamSeriesIndexRepository @Inject constructor(
         // Look up series NX_Work for title+year (needed for episode workKey)
         val seriesWork = seriesWorkKey?.let { workRepository.get(it) }
 
+        // ── Collect all entities first, then 4 batch writes ──────────────
+        val works = mutableListOf<NxWorkRepository.Work>()
+        val sourceRefs = mutableListOf<NxWorkSourceRefRepository.SourceRef>()
+        val relations = mutableListOf<NxWorkRelationRepository.Relation>()
+        val variants = mutableListOf<NxWorkVariantRepository.Variant>()
+
         for (episode in episodes) {
-            // Build episode workKey — delegates to NxKeyGenerator SSOT
             val episodeWorkKey = buildEpisodeWorkKey(episode, seriesWork)
 
-            // Upsert episode as NX_Work — ALL metadata preserved
-            val episodeWork = NxWorkRepository.Work(
+            // NX_Work — ALL metadata preserved
+            works += NxWorkRepository.Work(
                 workKey = episodeWorkKey,
                 type = WorkType.EPISODE,
                 displayTitle = episode.title ?: "Episode ${episode.episodeNumber}",
@@ -261,16 +265,15 @@ class NxXtreamSeriesIndexRepository @Inject constructor(
                 backdrop = ImageRef.fromString(episode.coverUrl),
                 thumbnail = ImageRef.fromString(episode.thumbnailUrl),
                 rating = episode.rating,
-                plot = episode.plot, // Full plot — never truncated
+                plot = episode.plot,
                 releaseDate = episode.airDate,
                 tmdbId = episode.tmdbId?.toString(),
                 createdAtMs = episode.addedTimestamp?.toLongOrNull() ?: 0L,
                 updatedAtMs = episode.lastUpdatedMs,
             )
-            workRepository.upsert(episodeWork)
 
-            // Upsert source ref
-            val sourceRef = NxWorkSourceRefRepository.SourceRef(
+            // SourceRef
+            sourceRefs += NxWorkSourceRefRepository.SourceRef(
                 sourceKey = episode.sourceKey,
                 workKey = episodeWorkKey,
                 sourceType = SourceType.XTREAM,
@@ -280,35 +283,43 @@ class NxXtreamSeriesIndexRepository @Inject constructor(
                 sourceTitle = episode.title,
                 lastSeenAtMs = episode.lastUpdatedMs,
             )
-            sourceRefRepository.upsert(sourceRef)
 
-            // Link episode to series via NX_WorkRelation (if series exists)
+            // Relation (series → episode link)
             if (seriesWorkKey != null) {
-                val relation = NxWorkRelationRepository.Relation(
+                relations += NxWorkRelationRepository.Relation(
                     parentWorkKey = seriesWorkKey,
                     childWorkKey = episodeWorkKey,
                     relationType = RelationType.SERIES_EPISODE,
                     seasonNumber = episode.seasonNumber,
                     episodeNumber = episode.episodeNumber,
-                    orderIndex = episode.seasonNumber * 1000 + episode.episodeNumber, // Composite sort order
+                    orderIndex = episode.seasonNumber * 1000 + episode.episodeNumber,
                 )
-                relationRepository.upsert(relation)
             }
 
-            // Upsert playback variant — ALL technical metadata preserved
+            // Variant — only if technical metadata exists
             val hintsJson = episode.playbackHintsJson
             val hasVariantData = !hintsJson.isNullOrEmpty() ||
                 episode.videoCodec != null || episode.audioCodec != null || episode.bitrateKbps != null
 
             if (hasVariantData) {
                 val variantKey = "v:${episode.sourceKey}:default"
-                val playbackUrl = hintsJson?.let { extractPlaybackUrlFromHints(it) }
-                val containerExt = hintsJson?.let { extractContainerFromHints(it) }
+                val playbackUrl = hintsJson?.let { extractPlaybackUrlFromHints(it) }?.ifEmpty { null }
+                val containerExt = hintsJson?.let { extractContainerFromHints(it) }?.ifEmpty { null }
 
-                // Build playbackHints map — includes ALL source-specific data
                 val playbackHints = buildMap<String, String> {
+                    // ── Critical Xtream identification (required for URL building) ──
+                    put(PlaybackHintKeys.Xtream.CONTENT_TYPE, PlaybackHintKeys.Xtream.CONTENT_SERIES)
+                    put(PlaybackHintKeys.Xtream.SERIES_ID, episode.seriesId.toString())
+                    put(PlaybackHintKeys.Xtream.SEASON_NUMBER, episode.seasonNumber.toString())
+                    put(PlaybackHintKeys.Xtream.EPISODE_NUMBER, episode.episodeNumber.toString())
+                    episode.episodeId?.let {
+                        put(PlaybackHintKeys.Xtream.EPISODE_ID, it.toString())
+                        put(PlaybackHintKeys.Xtream.STREAM_ID, it.toString())
+                    }
+                    // ── Playback URLs & container ──
                     playbackUrl?.let { put(PlaybackHintKeys.Xtream.DIRECT_SOURCE, it) }
                     containerExt?.let { put(PlaybackHintKeys.Xtream.CONTAINER_EXT, it) }
+                    // ── Technical metadata ──
                     episode.customSid?.let { put("custom_sid", it) }
                     episode.videoWidth?.let { put(PlaybackHintKeys.VIDEO_WIDTH, it.toString()) }
                     episode.videoAspectRatio?.let { put("aspect_ratio", it) }
@@ -317,13 +328,12 @@ class NxXtreamSeriesIndexRepository @Inject constructor(
                     episode.durationString?.let { put("duration_display", it) }
                 }
 
-                val variant = NxWorkVariantRepository.Variant(
+                variants += NxWorkVariantRepository.Variant(
                     variantKey = variantKey,
                     workKey = episodeWorkKey,
                     sourceKey = episode.sourceKey,
                     label = "source",
                     isDefault = true,
-                    // Technical metadata in dedicated fields
                     qualityHeight = episode.videoHeight,
                     bitrateKbps = episode.bitrateKbps,
                     container = containerExt,
@@ -334,11 +344,23 @@ class NxXtreamSeriesIndexRepository @Inject constructor(
                     playbackHints = playbackHints,
                     updatedAtMs = episode.lastUpdatedMs,
                 )
-                variantRepository.upsert(variant)
             }
         }
 
-        UnifiedLog.d(TAG) { "upsertEpisodes: Persisted ${episodes.size} episodes for series $seriesId" }
+        // ── 4 batch writes (each uses runInTx internally) ────────────────
+        workRepository.upsertBatch(works)
+        sourceRefRepository.upsertBatch(sourceRefs)
+        if (relations.isNotEmpty()) {
+            relationRepository.upsertBatch(relations)
+        }
+        if (variants.isNotEmpty()) {
+            variantRepository.upsertBatch(variants)
+        }
+
+        UnifiedLog.d(TAG) {
+            "upsertEpisodes: Batch-persisted ${episodes.size} episodes " +
+                "(${works.size}W/${sourceRefs.size}S/${relations.size}R/${variants.size}V) for series $seriesId"
+        }
     }
 
     override suspend fun updatePlaybackHints(sourceKey: String, hintsJson: String?) = withContext(Dispatchers.IO) {
@@ -493,13 +515,17 @@ class NxXtreamSeriesIndexRepository @Inject constructor(
         val relations = relationRepository.findEpisodesForSeries(seriesWorkKey)
         if (relations.isEmpty()) return emptyList()
 
+        // Batch-fetch all episode works in ONE query (avoids N+1)
+        val allWorkKeys = relations.map { it.childWorkKey }
+        val works = workRepository.getBatch(allWorkKeys)
+
         // Group by season number
         val seasonGroups = relations.groupBy { it.seasonNumber ?: 0 }
 
         return seasonGroups.map { (seasonNumber, episodes) ->
-            // Get latest update time from episodes
+            // Get latest update time from pre-fetched works
             val latestUpdate = episodes.maxOfOrNull { relation ->
-                workRepository.get(relation.childWorkKey)?.updatedAtMs ?: 0L
+                works[relation.childWorkKey]?.updatedAtMs ?: 0L
             } ?: System.currentTimeMillis()
 
             SeasonIndexItem(
@@ -516,6 +542,9 @@ class NxXtreamSeriesIndexRepository @Inject constructor(
 
     /**
      * Build episode index from relations and works.
+     *
+     * Uses batch queries (3 total) instead of N+1 individual queries per episode.
+     * For a series with 274 episodes, this reduces ~822 queries to 4.
      */
     private suspend fun buildEpisodeIndex(
         seriesId: Int,
@@ -526,11 +555,19 @@ class NxXtreamSeriesIndexRepository @Inject constructor(
             .filter { it.seasonNumber == seasonNumber }
             .sortedBy { it.episodeNumber }
 
+        if (relations.isEmpty()) return emptyList()
+
+        // Batch-fetch ALL data in 3 queries (instead of 3*N)
+        val childKeys = relations.map { it.childWorkKey }
+        val works = workRepository.getBatch(childKeys)
+        val sourceRefs = sourceRefRepository.findByWorkKeysBatch(childKeys)
+        val variants = variantRepository.findByWorkKeysBatch(childKeys)
+
         return relations.mapNotNull { relation ->
-            val episodeWork = workRepository.get(relation.childWorkKey) ?: return@mapNotNull null
-            val sourceRefs = sourceRefRepository.findByWorkKey(relation.childWorkKey)
-            val xtreamSourceRef = sourceRefs.find { it.sourceType == SourceType.XTREAM }
-            val variants = variantRepository.findByWorkKey(relation.childWorkKey)
+            val episodeWork = works[relation.childWorkKey] ?: return@mapNotNull null
+            val episodeSourceRefs = sourceRefs[relation.childWorkKey] ?: emptyList()
+            val xtreamSourceRef = episodeSourceRefs.find { it.sourceType == SourceType.XTREAM }
+            val episodeVariants = variants[relation.childWorkKey] ?: emptyList()
 
             val sourceKey = xtreamSourceRef?.sourceKey
                 ?: SourceKeyParser.buildSourceKey(
@@ -539,7 +576,7 @@ class NxXtreamSeriesIndexRepository @Inject constructor(
                     "episode:series:${seriesId}:s${seasonNumber}:e${relation.episodeNumber}",
                 )
 
-            val defaultVariant = variants.firstOrNull()
+            val defaultVariant = episodeVariants.firstOrNull()
 
             EpisodeIndexItem(
                 seriesId = seriesId,

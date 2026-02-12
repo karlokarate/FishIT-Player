@@ -14,7 +14,7 @@ import com.fishit.player.core.persistence.obx.NX_WorkSourceRef
  */
 fun NX_WorkSourceRef.toDomain(): SourceRef = SourceRef(
     sourceKey = sourceKey,
-    workKey = work.target?.workKey ?: "",
+    workKey = workKey.ifEmpty { work.target?.workKey ?: "" },
     sourceType = SourceTypeMapper.toSourceType(sourceType),
     accountKey = accountKey,
     sourceItemKind = deriveSourceItemKind(),
@@ -43,6 +43,7 @@ fun SourceRef.toEntity(existingEntity: NX_WorkSourceRef? = null): NX_WorkSourceR
         accountKey = accountKey,
         sourceId = sourceItemKey,
         rawTitle = sourceTitle,
+        workKey = this.workKey,
         epgChannelId = epgChannelId,
         tvArchive = tvArchive,
         tvArchiveDuration = tvArchiveDuration,

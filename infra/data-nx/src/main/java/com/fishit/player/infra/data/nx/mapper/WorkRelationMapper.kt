@@ -37,4 +37,5 @@ internal fun NxWorkRelationRepository.Relation.toEntity(): NX_WorkRelation = NX_
     season = seasonNumber,
     episode = episodeNumber,
     createdAt = if (createdAtMs > 0) createdAtMs else System.currentTimeMillis(),
+    parentWorkKey = parentWorkKey,
 )

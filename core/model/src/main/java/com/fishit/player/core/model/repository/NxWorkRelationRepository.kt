@@ -55,6 +55,12 @@ interface NxWorkRelationRepository {
 
     suspend fun upsert(relation: Relation): Relation
 
+    /**
+     * Batch upsert relations within a single transaction.
+     * Deduplicates by (parentWorkKey, childWorkKey, relationType).
+     */
+    suspend fun upsertBatch(relations: List<Relation>): List<Relation>
+
     suspend fun delete(
         parentWorkKey: String,
         childWorkKey: String,
