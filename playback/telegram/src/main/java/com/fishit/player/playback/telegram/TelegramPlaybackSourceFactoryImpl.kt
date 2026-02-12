@@ -1,6 +1,7 @@
 package com.fishit.player.playback.telegram
 
 import com.fishit.player.core.model.PlaybackHintKeys
+import com.fishit.player.core.model.SourceIdParser
 import com.fishit.player.core.playermodel.PlaybackContext
 import com.fishit.player.core.playermodel.SourceType
 import com.fishit.player.infra.logging.UnifiedLog
@@ -90,16 +91,11 @@ class TelegramPlaybackSourceFactoryImpl
             return chatIdFromExtras to messageIdFromExtras
         }
 
-        // Try sourceKey "msg:chatId:messageId"
+        // Try sourceKey "msg:chatId:messageId" via SourceIdParser SSOT
         val sourceKey = context.sourceKey
-        if (sourceKey != null && sourceKey.startsWith("msg:")) {
-            val parts = sourceKey.split(":")
-            if (parts.size >= 3) {
-                val chatId = parts[1].toLongOrNull()
-                val messageId = parts[2].toLongOrNull()
-                if (chatId != null && messageId != null) {
-                    return chatId to messageId
-                }
+        if (sourceKey != null) {
+            SourceIdParser.parseTelegramSourceId(sourceKey)?.let { (chatId, messageId) ->
+                return chatId to messageId
             }
         }
 

@@ -50,6 +50,7 @@ import com.fishit.player.core.model.RawMediaMetadata
 import com.fishit.player.core.model.SourceType
 import com.fishit.player.core.model.TmdbMediaType
 import com.fishit.player.core.model.ids.XtreamIdCodec
+import com.fishit.player.core.model.ids.XtreamParsedSourceId
 import com.fishit.player.core.model.TmdbRef
 import com.fishit.player.core.model.repository.NxWorkRepository
 import com.fishit.player.core.model.repository.NxWorkRepository.WorkType
@@ -62,6 +63,7 @@ import com.fishit.player.core.persistence.obx.NX_WorkSourceRef
 import com.fishit.player.core.persistence.obx.NX_WorkSourceRef_
 import com.fishit.player.core.persistence.obx.NX_Work_
 import com.fishit.player.infra.data.nx.mapper.MediaTypeMapper
+import com.fishit.player.infra.data.nx.mapper.SourceKeyParser
 import com.fishit.player.infra.data.nx.mapper.WorkTypeMapper
 import com.fishit.player.infra.data.xtream.XtreamCatalogRepository
 import com.fishit.player.infra.logging.UnifiedLog
@@ -385,16 +387,24 @@ class NxXtreamCatalogRepositoryImpl
         /**
          * Find NX_WorkSourceRef by legacy sourceId format.
          *
+         * Delegates to [XtreamIdCodec] SSOT for parsing legacy format,
+         * then searches for matching NX sourceKey.
+         *
          * Legacy format: "xtream:vod:{id}" or "xtream:series:{id}" or "xtream:episode:{seriesId}:{season}:{episode}"
          * NX sourceKey: "src:xtream:{accountKey}:vod:{id}"
          */
         private fun findSourceRefByLegacyId(legacySourceId: String): NX_WorkSourceRef? {
-            // Extract the item type and ID from legacy format
-            val parts = legacySourceId.split(":")
-            if (parts.size < 3 || parts[0] != "xtream") return null
+            val parsed = XtreamIdCodec.parse(legacySourceId) ?: return null
 
-            val itemType = parts[1] // vod, series, or episode
-            val searchPattern = ":$itemType:${parts.drop(2).joinToString(":")}"
+            // Build search pattern from parsed result
+            val searchPattern = when (parsed) {
+                is XtreamParsedSourceId.Vod -> ":vod:${parsed.vodId}"
+                is XtreamParsedSourceId.Series -> ":series:${parsed.seriesId}"
+                is XtreamParsedSourceId.Episode -> ":episode:${parsed.episodeId}"
+                is XtreamParsedSourceId.EpisodeComposite ->
+                    ":episode:series:${parsed.seriesId}:s${parsed.season}:e${parsed.episode}"
+                is XtreamParsedSourceId.Live -> ":live:${parsed.channelId}"
+            }
 
             return sourceRefBox.query(
                 NX_WorkSourceRef_.sourceType.equal(SOURCE_TYPE)
@@ -424,8 +434,8 @@ class NxXtreamCatalogRepositoryImpl
          * - imdbId → externalIds.imdbId
          */
         private fun NX_Work.toRawMediaMetadataVod(sourceRef: NX_WorkSourceRef): RawMediaMetadata {
-            // Extract vodId from sourceKey for playback hints
-            val vodId = extractIdFromSourceKey(sourceRef.sourceKey, "vod")
+            // Extract vodId from sourceKey for playback hints (SSOT: SourceKeyParser)
+            val vodId = SourceKeyParser.extractItemKey(sourceRef.sourceKey)
 
             val hints = buildMap {
                 put(PlaybackHintKeys.Xtream.CONTENT_TYPE, PlaybackHintKeys.Xtream.CONTENT_VOD)
@@ -453,7 +463,7 @@ class NxXtreamCatalogRepositoryImpl
         }
 
         private fun NX_Work.toRawMediaMetadataSeries(sourceRef: NX_WorkSourceRef): RawMediaMetadata {
-            val seriesId = extractIdFromSourceKey(sourceRef.sourceKey, "series")
+            val seriesId = SourceKeyParser.extractItemKey(sourceRef.sourceKey)
 
             val hints = buildMap {
                 put(PlaybackHintKeys.Xtream.CONTENT_TYPE, PlaybackHintKeys.Xtream.CONTENT_SERIES)
@@ -480,15 +490,16 @@ class NxXtreamCatalogRepositoryImpl
         }
 
         private fun NX_Work.toRawMediaMetadataEpisode(sourceRef: NX_WorkSourceRef): RawMediaMetadata {
-            // Extract episode info from sourceKey or work fields
-            val episodeInfo = extractEpisodeInfoFromSourceKey(sourceRef.sourceKey)
+            // Extract episode info from sourceKey (SSOT: SourceKeyParser)
+            val episodeInfo = SourceKeyParser.extractXtreamEpisodeInfo(sourceRef.sourceKey)
+            val episodeId = SourceKeyParser.extractXtreamEpisodeId(sourceRef.sourceKey)
 
             val hints = buildMap {
                 put(PlaybackHintKeys.Xtream.CONTENT_TYPE, PlaybackHintKeys.Xtream.CONTENT_SERIES)
-                episodeInfo?.seriesId?.let { put(PlaybackHintKeys.Xtream.SERIES_ID, it) }
+                episodeInfo?.seriesId?.let { put(PlaybackHintKeys.Xtream.SERIES_ID, it.toString()) }
                 season?.let { put(PlaybackHintKeys.Xtream.SEASON_NUMBER, it.toString()) }
                 episode?.let { put(PlaybackHintKeys.Xtream.EPISODE_NUMBER, it.toString()) }
-                episodeInfo?.episodeId?.let { put(PlaybackHintKeys.Xtream.EPISODE_ID, it) }
+                episodeId?.let { put(PlaybackHintKeys.Xtream.EPISODE_ID, it.toString()) }
             }
 
             return RawMediaMetadata(
@@ -499,7 +510,7 @@ class NxXtreamCatalogRepositoryImpl
                 durationMs = durationMs,
                 sourceType = SourceType.XTREAM,
                 sourceLabel = "Xtream Episode",
-                sourceId = XtreamIdCodec.episodeCompositeOrUnknown(episodeInfo?.seriesId, season, episode),
+                sourceId = XtreamIdCodec.episodeCompositeOrUnknown(episodeInfo?.seriesId?.toString(), season, episode),
                 thumbnail = thumbnail ?: poster,
                 externalIds = buildExternalIds(TmdbMediaType.TV),
                 rating = rating,
@@ -520,38 +531,4 @@ class NxXtreamCatalogRepositoryImpl
             return ExternalIds(tmdb = tmdbRef, imdbId = imdbId)
         }
 
-        /**
-         * Extract ID from NX sourceKey format.
-         *
-         * sourceKey format: "src:xtream:{accountKey}:{itemKind}:{itemId}"
-         * Example: "src:xtream:myserver:vod:12345"
-         */
-        private fun extractIdFromSourceKey(sourceKey: String, itemKind: String): String? {
-            val pattern = Regex(":$itemKind:([^:]+)")
-            return pattern.find(sourceKey)?.groupValues?.getOrNull(1)
-        }
-
-        /**
-         * Extract episode info from sourceKey.
-         *
-         * Episode sourceKey: "src:xtream:{accountKey}:episode:{seriesId}:{season}:{episodeNum}"
-         * or with episodeId: "src:xtream:{accountKey}:episode:{seriesId}:{season}:{episodeNum}:{episodeId}"
-         */
-        private data class EpisodeInfo(
-            val seriesId: String,
-            val season: Int,
-            val episodeNum: Int,
-            val episodeId: String?,
-        )
-
-        private fun extractEpisodeInfoFromSourceKey(sourceKey: String): EpisodeInfo? {
-            val pattern = Regex(":episode:([^:]+):([^:]+):([^:]+)(?::([^:]+))?")
-            val match = pattern.find(sourceKey) ?: return null
-            return EpisodeInfo(
-                seriesId = match.groupValues[1],
-                season = match.groupValues[2].toIntOrNull() ?: 0,
-                episodeNum = match.groupValues[3].toIntOrNull() ?: 0,
-                episodeId = match.groupValues.getOrNull(4)?.takeIf { it.isNotBlank() },
-            )
-        }
     }

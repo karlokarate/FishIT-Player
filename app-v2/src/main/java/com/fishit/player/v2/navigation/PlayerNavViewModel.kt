@@ -140,16 +140,22 @@ class PlayerNavViewModel
                                     XtreamPlaybackSourceFactoryImpl.EXTRA_CONTENT_TYPE,
                                     XtreamPlaybackSourceFactoryImpl.CONTENT_TYPE_SERIES,
                                 )
-                                // Episode ID extraction: format is :episode:<episodeId> or :episode:<seriesId>:<season>:<episode>
-                                extractXtreamItemId(sourceIdValue, XtreamContentType.EPISODE)?.let { episodePart ->
-                                    val parts = episodePart.split(":")
-                                    if (parts.size >= 3) {
-                                        putIfAbsent(XtreamPlaybackSourceFactoryImpl.EXTRA_SERIES_ID, parts[0])
-                                        putIfAbsent(XtreamPlaybackSourceFactoryImpl.EXTRA_SEASON_NUMBER, parts[1])
-                                        putIfAbsent(XtreamPlaybackSourceFactoryImpl.EXTRA_EPISODE_NUMBER, parts[2])
-                                    } else if (parts.isNotEmpty()) {
-                                        // Just episode ID
-                                        putIfAbsent(XtreamPlaybackSourceFactoryImpl.EXTRA_EPISODE_ID, parts[0])
+                                // Episode ID extraction via XtreamIdCodec SSOT
+                                val episodeParsed = XtreamIdCodec.parse(sourceIdValue)
+                                when (episodeParsed) {
+                                    is com.fishit.player.core.model.ids.XtreamParsedSourceId.EpisodeComposite -> {
+                                        putIfAbsent(XtreamPlaybackSourceFactoryImpl.EXTRA_SERIES_ID, episodeParsed.seriesId.toString())
+                                        putIfAbsent(XtreamPlaybackSourceFactoryImpl.EXTRA_SEASON_NUMBER, episodeParsed.season.toString())
+                                        putIfAbsent(XtreamPlaybackSourceFactoryImpl.EXTRA_EPISODE_NUMBER, episodeParsed.episode.toString())
+                                    }
+                                    is com.fishit.player.core.model.ids.XtreamParsedSourceId.Episode -> {
+                                        putIfAbsent(XtreamPlaybackSourceFactoryImpl.EXTRA_EPISODE_ID, episodeParsed.episodeId.toString())
+                                    }
+                                    else -> {
+                                        // Fallback: try extractXtreamItemId for non-standard formats
+                                        extractXtreamItemId(sourceIdValue, XtreamContentType.EPISODE)?.let { episodePart ->
+                                            putIfAbsent(XtreamPlaybackSourceFactoryImpl.EXTRA_EPISODE_ID, episodePart)
+                                        }
                                     }
                                 }
                             }
@@ -180,13 +186,12 @@ class PlayerNavViewModel
                         }
                     }
                     com.fishit.player.core.model.SourceType.TELEGRAM -> {
-                        if (sourceIdValue.startsWith("msg:")) {
-                            val parts = sourceIdValue.removePrefix("msg:").split(":")
-                            if (parts.size >= 2) {
-                                putIfAbsent("chatId", parts[0])
-                                putIfAbsent("messageId", parts[1])
+                        // Parse via SourceIdParser SSOT (handles msg:, telegram:, tg: formats)
+                        com.fishit.player.core.model.SourceIdParser.parseTelegramSourceId(sourceIdValue)
+                            ?.let { (chatId, messageId) ->
+                                putIfAbsent("chatId", chatId.toString())
+                                putIfAbsent("messageId", messageId.toString())
                             }
-                        }
                     }
                     else -> {
                         put("sourceId", sourceIdValue)
@@ -364,23 +369,24 @@ class PlayerNavViewModel
         }
 
         /**
-         * Parses Xtream VOD sourceId format.
+         * Parses Xtream VOD sourceId format via XtreamIdCodec SSOT.
          *
          * Supports both:
-         * - Legacy: xtream:vod:{id} or xtream:vod:{id}:{ext}
+         * - Legacy: xtream:vod:{id}
          * - NX: src:xtream:account:vod:{id}
          *
          * @return Parsed ID and optional extension, or null if invalid format
          */
         private fun parseXtreamVodSourceId(sourceId: String): XtreamSourceIdParts? {
+            val vodId = XtreamIdCodec.extractVodId(sourceId)?.toInt()
+            if (vodId != null) {
+                return XtreamSourceIdParts(vodId, extension = null)
+            }
+            // Fallback for non-standard formats: try extractXtreamItemId
             if (!sourceId.contains(":vod:")) return null
-
             val idStr = extractXtreamItemId(sourceId, XtreamContentType.VOD) ?: return null
-            // ID might contain extension suffix like "123:mp4"
-            val parts = idStr.split(":")
-            val id = parts.getOrNull(0)?.toIntOrNull() ?: return null
-            val extension = parts.getOrNull(1)?.takeIf { it.isNotBlank() }
-            return XtreamSourceIdParts(id, extension)
+            val id = idStr.toIntOrNull() ?: return null
+            return XtreamSourceIdParts(id, extension = null)
         }
 
         /** Parsed components of Xtream sourceId */

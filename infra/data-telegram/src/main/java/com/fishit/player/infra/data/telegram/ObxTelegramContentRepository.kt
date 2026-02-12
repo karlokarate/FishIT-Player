@@ -13,6 +13,7 @@ import com.fishit.player.core.persistence.ObjectBoxFlow.asFlow
 import com.fishit.player.core.persistence.obx.ObxTelegramMessage
 import com.fishit.player.core.persistence.obx.ObxTelegramMessage_
 import com.fishit.player.infra.logging.UnifiedLog
+import com.fishit.player.infra.transport.telegram.TelegramRemoteId
 import io.objectbox.BoxStore
 import io.objectbox.kotlin.boxFor
 import io.objectbox.query.QueryBuilder
@@ -275,7 +276,7 @@ class ObxTelegramContentRepository
                 durationMs = durationSecs?.let { it * 1000L },
                 sourceType = SourceType.TELEGRAM,
                 sourceLabel = "Telegram Chat: $chatId",
-                sourceId = "msg:$chatId:$messageId",
+                sourceId = TelegramRemoteId(chatId, messageId).toSourceKey(),
                 pipelineIdTag = PipelineIdTag.TELEGRAM,
                 mediaType = derivedMediaType,
                 thumbnail = thumbnailRef,
@@ -337,11 +338,8 @@ class ObxTelegramContentRepository
         }
 
         private fun parseSourceId(sourceId: String): Pair<Long, Long>? {
-            val parts = sourceId.split(":")
-            if (parts.size < 3 || parts[0] != "msg") return null
-            val chatId = parts[1].toLongOrNull() ?: return null
-            val messageId = parts[2].toLongOrNull() ?: return null
-            return chatId to messageId
+            val remoteId = TelegramRemoteId.fromSourceKey(sourceId) ?: return null
+            return remoteId.chatId to remoteId.messageId
         }
 
         // =========================================================================

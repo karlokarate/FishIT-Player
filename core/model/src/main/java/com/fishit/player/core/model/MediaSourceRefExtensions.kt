@@ -2,6 +2,7 @@ package com.fishit.player.core.model
 
 import com.fishit.player.core.model.ids.PipelineItemId
 import com.fishit.player.core.model.ids.XtreamIdCodec
+import com.fishit.player.core.model.ids.XtreamParsedSourceId
 
 /**
  * Extension functions for creating MediaSourceRef from various pipeline items.
@@ -198,7 +199,7 @@ object SourceIdParser {
     fun extractSourceType(sourceId: String): SourceType? {
         val prefix = sourceId.substringBefore(":")
         return when (prefix.lowercase()) {
-            "telegram", "tg" -> SourceType.TELEGRAM
+            "telegram", "tg", "msg" -> SourceType.TELEGRAM
             "xtream", "xc" -> SourceType.XTREAM
             "io", "file", "local" -> SourceType.IO
             "audiobook", "book" -> SourceType.AUDIOBOOK
@@ -207,8 +208,9 @@ object SourceIdParser {
         }
     }
 
-    /** Check if source ID is from Telegram. */
-    fun isTelegram(sourceId: String): Boolean = sourceId.startsWith("telegram:") || sourceId.startsWith("tg:")
+    /** Check if source ID is from Telegram (handles telegram:, tg:, msg: prefixes). */
+    fun isTelegram(sourceId: String): Boolean =
+        sourceId.startsWith("telegram:") || sourceId.startsWith("tg:") || sourceId.startsWith("msg:")
 
     /** Check if source ID is from Xtream. */
     fun isXtream(sourceId: String): Boolean = sourceId.startsWith("xtream:") || sourceId.startsWith("xc:")
@@ -220,8 +222,14 @@ object SourceIdParser {
             sourceId.startsWith("local:")
 
     /**
-     * Extract Telegram chat ID and message ID from source ID. e.g., "telegram:123:456" → Pair(123L,
-     * 456L)
+     * Extract Telegram chat ID and message ID from source ID.
+     *
+     * Handles all Telegram source ID formats:
+     * - `telegram:{chatId}:{messageId}`
+     * - `tg:{chatId}:{messageId}`
+     * - `msg:{chatId}:{messageId}`
+     *
+     * @return Pair(chatId, messageId) or null if invalid
      */
     fun parseTelegramSourceId(sourceId: String): Pair<Long, Long>? {
         if (!isTelegram(sourceId)) return null
@@ -234,53 +242,29 @@ object SourceIdParser {
         }
     }
 
-    /** Extract Xtream VOD ID from source ID. e.g., "xtream:vod:789" → 789 */
-    fun parseXtreamVodId(sourceId: String): Int? {
-        if (!isXtream(sourceId)) return null
-        if (!sourceId.contains(":vod:")) return null
-        val parts = sourceId.split(":")
-        if (parts.size < 3) return null
-        return parts[2].toIntOrNull()
-    }
+    /**
+     * Extract Xtream VOD ID from source ID. e.g., "xtream:vod:789" → 789
+     *
+     * Delegates to [XtreamIdCodec] SSOT.
+     */
+    fun parseXtreamVodId(sourceId: String): Int? =
+        XtreamIdCodec.extractVodId(sourceId)?.toInt()
 
     /**
      * Extract Xtream episode identity.
      *
-     * Supported formats:
-     * - xtream:episode:{seriesId}:{season}:{episode}
-     * - xtream:episode:{seriesId}:{season}:{episode}:... (extra segments ignored)
-     * - (legacy) xtream:series:{seriesId}:S01E05
+     * Delegates to [XtreamIdCodec] SSOT. Supports all formats:
+     * - `xtream:episode:{seriesId}:{season}:{episode}` (legacy)
+     * - `xtream:episode:series:{seriesId}:s{season}:e{episode}` (composite)
+     *
+     * @return Triple(seriesId, season, episode) or null
      */
     fun parseXtreamEpisodeId(sourceId: String): Triple<Int, Int, Int>? {
-        if (!isXtream(sourceId)) return null
-
-        // Preferred v2 format: xtream:episode:seriesId:season:episode
-        if (sourceId.contains(":episode:")) {
-            val parts = sourceId.split(":")
-            // [xtream, episode, seriesId, season, episode, ...]
-            if (parts.size >= 5) {
-                val seriesId = parts[2].toIntOrNull() ?: return null
-                val season = parts[3].toIntOrNull() ?: return null
-                val episode = parts[4].toIntOrNull() ?: return null
-                return Triple(seriesId, season, episode)
-            }
+        val parsed = XtreamIdCodec.parse(sourceId) ?: return null
+        return when (parsed) {
+            is XtreamParsedSourceId.EpisodeComposite ->
+                Triple(parsed.seriesId.toInt(), parsed.season, parsed.episode)
+            else -> null
         }
-
-        // Legacy format: xtream:series:{seriesId}:S01E05
-        if (sourceId.contains(":series:")) {
-            val regex = Regex("""xtream:series:(\d+):S(\d+)E(\d+)""")
-            val match = regex.find(sourceId) ?: return null
-            return try {
-                Triple(
-                    match.groupValues[1].toInt(),
-                    match.groupValues[2].toInt(),
-                    match.groupValues[3].toInt(),
-                )
-            } catch (e: Exception) {
-                null
-            }
-        }
-
-        return null
     }
 }

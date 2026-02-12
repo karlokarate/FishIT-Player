@@ -120,34 +120,10 @@ object SourceSelection {
     }
 
     /**
-     * Extracts SourceType from sourceKey string.
-     *
-     * @param sourceKey The sourceKey to parse
-     * @return Extracted SourceType or null if cannot determine
+     * Delegates to [SourceKeyBridge] — the SSOT for sourceType extraction in feature/detail.
      */
-    private fun extractSourceTypeFromKey(sourceKey: String): SourceType? {
-        val parts = sourceKey.split(":")
-        if (parts.isEmpty()) return null
-
-        // Determine format and extract sourceType candidate
-        val sourceTypeCandidate = when {
-            // NX format: src:xtream:account:... → index 1
-            parts.size >= 2 && parts[0] == "src" -> parts[1]
-            // Legacy format: xtream:vod:... → index 0
-            parts.isNotEmpty() -> parts[0]
-            else -> return null
-        }
-
-        // Map to SourceType enum
-        return when (sourceTypeCandidate.lowercase()) {
-            "telegram", "tg" -> SourceType.TELEGRAM
-            "xtream", "xc" -> SourceType.XTREAM
-            "io", "file", "local" -> SourceType.IO
-            "audiobook" -> SourceType.AUDIOBOOK
-            "plex" -> SourceType.PLEX
-            else -> null
-        }
-    }
+    private fun extractSourceTypeFromKey(sourceKey: String): SourceType? =
+        SourceKeyBridge.extractSourceType(sourceKey)
 
     /**
      * Check if the active source has all required playbackHints for playback.

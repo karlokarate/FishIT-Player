@@ -13,6 +13,7 @@ package com.fishit.player.infra.data.nx.writer.builder
 
 import com.fishit.player.core.model.RawMediaMetadata
 import com.fishit.player.core.model.SourceType as CoreSourceType
+import com.fishit.player.core.model.ids.XtreamIdCodec
 import com.fishit.player.core.model.repository.NxWorkSourceRefRepository
 import com.fishit.player.core.model.repository.NxWorkSourceRefRepository.SourceItemKind
 import com.fishit.player.infra.data.nx.mapper.SourceItemKindMapper
@@ -70,28 +71,28 @@ class SourceRefBuilder @Inject constructor() {
     /**
      * Extract clean item key - just the numeric ID.
      *
+     * Delegates to [XtreamIdCodec] SSOT for Xtream formats.
+     *
      * Examples:
      * - "xtream:vod:12345" → "12345"
      * - "12345" → "12345"
      * - "msg:123:456" → "msg:123:456" (Telegram format preserved)
      */
     private fun extractCleanItemKey(sourceId: String): String {
-        // Handle legacy sourceId format (not sourceKey format)
-        // xtream:vod:12345 → 12345
-        // xtream:live:67890 → 67890
-        val parts = sourceId.split(":")
-        
-        // For Xtream legacy format: xtream:vod:12345
-        if (parts.size >= 3 && parts[0] == "xtream") {
-            return parts[2]
+        // Xtream legacy format: delegate to XtreamIdCodec SSOT
+        val parsed = XtreamIdCodec.parse(sourceId)
+        if (parsed != null) {
+            return when (parsed) {
+                is com.fishit.player.core.model.ids.XtreamParsedSourceId.Vod -> parsed.vodId.toString()
+                is com.fishit.player.core.model.ids.XtreamParsedSourceId.Series -> parsed.seriesId.toString()
+                is com.fishit.player.core.model.ids.XtreamParsedSourceId.Episode -> parsed.episodeId.toString()
+                is com.fishit.player.core.model.ids.XtreamParsedSourceId.EpisodeComposite ->
+                    "series:${parsed.seriesId}:s${parsed.season}:e${parsed.episode}"
+                is com.fishit.player.core.model.ids.XtreamParsedSourceId.Live -> parsed.channelId.toString()
+            }
         }
-        
-        // For Telegram format: msg:chatId:messageId
-        if (parts.size >= 3 && parts[0] == "msg") {
-            return sourceId  // Keep full format
-        }
-        
-        // Already numeric or other format
+
+        // For Telegram and other formats: preserve full sourceId
         return sourceId
     }
 

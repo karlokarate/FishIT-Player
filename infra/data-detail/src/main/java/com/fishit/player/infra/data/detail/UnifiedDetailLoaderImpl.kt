@@ -233,7 +233,7 @@ class UnifiedDetailLoaderImpl
         // Try multiple sourceId patterns to find the media
         // Priority order: legacy format first (most common), then new format patterns
         val sourceIdPatterns = listOf(
-            "xtream:series:$seriesId", // Legacy format
+            XtreamIdCodec.series(seriesId), // Legacy format via SSOT
         )
 
         for (pattern in sourceIdPatterns) {
@@ -272,7 +272,7 @@ class UnifiedDetailLoaderImpl
 
         // Try multiple sourceId patterns to find the media
         val sourceIdPatterns = listOf(
-            "xtream:vod:$vodId", // Legacy format without extension
+            XtreamIdCodec.vod(vodId), // Legacy format via SSOT
         )
 
         for (pattern in sourceIdPatterns) {

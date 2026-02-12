@@ -289,15 +289,16 @@ class DefaultTelegramClient(
     // ── Internal ────────────────────────────────────────────────────────────
 
     private fun parseRemoteIdParts(remoteId: String): Pair<Long, Long>? {
-        val parts = if (remoteId.startsWith("msg:")) {
-            remoteId.removePrefix("msg:").split(":")
-        } else {
-            remoteId.split(":")
-        }
-        if (parts.size < 2) return null
-        val chatId = parts[0].toLongOrNull() ?: return null
-        val messageId = parts[1].toLongOrNull() ?: return null
-        return chatId to messageId
+        return TelegramRemoteId.fromSourceKey(remoteId)?.let { it.chatId to it.messageId }
+            ?: run {
+                // Fallback: try plain "chatId:messageId" format (no prefix)
+                val parts = remoteId.split(":")
+                if (parts.size >= 2) {
+                    val chatId = parts[0].toLongOrNull() ?: return null
+                    val messageId = parts[1].toLongOrNull() ?: return null
+                    chatId to messageId
+                } else null
+            }
     }
 }
 
@@ -337,7 +338,7 @@ internal object MessageParser {
                     duration = c["duration"]?.jsonPrimitive?.int ?: 0,
                     fileSize = c["fileSize"]?.jsonPrimitive?.longOrNull ?: 0L,
                     fileName = c["fileName"]?.jsonPrimitive?.content,
-                    title = null, performer = null, thumbnail = null,
+                    title = null, performer = null,
                     caption = c["caption"]?.jsonPrimitive?.content ?: "",
                 )
                 "document" -> TgContent.Document(

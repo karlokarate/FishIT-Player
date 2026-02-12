@@ -3,6 +3,7 @@ package com.fishit.player.feature.detail
 import com.fishit.player.core.model.CanonicalMediaId
 import com.fishit.player.core.model.MediaSourceRef
 import com.fishit.player.core.model.PlaybackHintKeys
+import com.fishit.player.core.model.SourceIdParser
 import com.fishit.player.core.model.SourceType
 import com.fishit.player.core.model.repository.CanonicalMediaRepository
 import com.fishit.player.core.playermodel.PlaybackContext
@@ -165,37 +166,34 @@ class PlayMediaUseCase
                         // First, add all playbackHints (authoritative source)
                         putAll(hints)
 
-                        // Parse sourceId for backwards compatibility and fill in missing data
-                        when {
-                            sourceIdValue.contains(":vod:") -> {
+                        // Parse sourceId via XtreamIdCodec SSOT for backwards compatibility
+                        val parsed = com.fishit.player.core.model.ids.XtreamIdCodec.parse(sourceIdValue)
+                        when (parsed) {
+                            is com.fishit.player.core.model.ids.XtreamParsedSourceId.Vod -> {
                                 putIfAbsent(PlaybackHintKeys.Xtream.CONTENT_TYPE, PlaybackHintKeys.Xtream.CONTENT_VOD)
-                                // Accept legacy format: xtream:vod:{id}:{ext}
-                                val vodId =
-                                    sourceIdValue
-                                        .removePrefix("xtream:vod:")
-                                        .split(":")
-                                        .firstOrNull()
-                                        .orEmpty()
-                                putIfAbsent(PlaybackHintKeys.Xtream.VOD_ID, vodId)
+                                putIfAbsent(PlaybackHintKeys.Xtream.VOD_ID, parsed.vodId.toString())
                             }
-                            sourceIdValue.contains(":series:") -> {
+                            is com.fishit.player.core.model.ids.XtreamParsedSourceId.Series -> {
                                 putIfAbsent(PlaybackHintKeys.Xtream.CONTENT_TYPE, PlaybackHintKeys.Xtream.CONTENT_SERIES)
-                                putIfAbsent(PlaybackHintKeys.Xtream.SERIES_ID, sourceIdValue.removePrefix("xtream:series:"))
+                                putIfAbsent(PlaybackHintKeys.Xtream.SERIES_ID, parsed.seriesId.toString())
                             }
-                            sourceIdValue.contains(":episode:") -> {
-                                // Format: xtream:episode:seriesId:season:episode
-                                val parts = sourceIdValue.removePrefix("xtream:episode:").split(":")
-                                if (parts.size >= 3) {
-                                    putIfAbsent(PlaybackHintKeys.Xtream.CONTENT_TYPE, PlaybackHintKeys.Xtream.CONTENT_SERIES)
-                                    putIfAbsent(PlaybackHintKeys.Xtream.SERIES_ID, parts[0])
-                                    putIfAbsent(PlaybackHintKeys.Xtream.SEASON_NUMBER, parts[1])
-                                    putIfAbsent(PlaybackHintKeys.Xtream.EPISODE_NUMBER, parts[2])
-                                    // NOTE: episodeId is NOT in sourceId - it MUST come from playbackHints
-                                }
+                            is com.fishit.player.core.model.ids.XtreamParsedSourceId.EpisodeComposite -> {
+                                putIfAbsent(PlaybackHintKeys.Xtream.CONTENT_TYPE, PlaybackHintKeys.Xtream.CONTENT_SERIES)
+                                putIfAbsent(PlaybackHintKeys.Xtream.SERIES_ID, parsed.seriesId.toString())
+                                putIfAbsent(PlaybackHintKeys.Xtream.SEASON_NUMBER, parsed.season.toString())
+                                putIfAbsent(PlaybackHintKeys.Xtream.EPISODE_NUMBER, parsed.episode.toString())
+                                // NOTE: episodeId is NOT in sourceId - it MUST come from playbackHints
                             }
-                            sourceIdValue.contains(":live:") -> {
+                            is com.fishit.player.core.model.ids.XtreamParsedSourceId.Episode -> {
+                                putIfAbsent(PlaybackHintKeys.Xtream.CONTENT_TYPE, PlaybackHintKeys.Xtream.CONTENT_SERIES)
+                                // Direct episode ID available
+                            }
+                            is com.fishit.player.core.model.ids.XtreamParsedSourceId.Live -> {
                                 putIfAbsent(PlaybackHintKeys.Xtream.CONTENT_TYPE, PlaybackHintKeys.Xtream.CONTENT_LIVE)
-                                putIfAbsent(PlaybackHintKeys.Xtream.STREAM_ID, sourceIdValue.removePrefix("xtream:live:"))
+                                putIfAbsent(PlaybackHintKeys.Xtream.STREAM_ID, parsed.channelId.toString())
+                            }
+                            null -> {
+                                // Unknown Xtream format — no backwards compatibility extras
                             }
                         }
 
@@ -208,13 +206,10 @@ class PlayMediaUseCase
                         // First, add all playbackHints
                         putAll(hints)
 
-                        // Parse Telegram source ID: msg:chatId:messageId (fallback)
-                        if (sourceIdValue.startsWith("msg:")) {
-                            val parts = sourceIdValue.removePrefix("msg:").split(":")
-                            if (parts.size >= 2) {
-                                putIfAbsent(PlaybackHintKeys.Telegram.CHAT_ID, parts[0])
-                                putIfAbsent(PlaybackHintKeys.Telegram.MESSAGE_ID, parts[1])
-                            }
+                        // Parse Telegram source ID via SourceIdParser SSOT (handles msg:, telegram:, tg: formats)
+                        SourceIdParser.parseTelegramSourceId(sourceIdValue)?.let { (chatId, messageId) ->
+                            putIfAbsent(PlaybackHintKeys.Telegram.CHAT_ID, chatId.toString())
+                            putIfAbsent(PlaybackHintKeys.Telegram.MESSAGE_ID, messageId.toString())
                         }
                     }
                     SourceType.IO, SourceType.LOCAL -> {
@@ -289,40 +284,12 @@ class PlayMediaUseCase
             }
 
         /**
-         * Extracts sourceType from sourceKey as fallback when MediaSourceRef.sourceType is UNKNOWN.
-         *
-         * **CRITICAL FIX:** This is a safety fallback for the bug where legacy repositories
-         * don't convert String sourceType to Enum correctly.
-         *
-         * **Supported formats:**
-         * - NX format: `src:xtream:account:category:id` → XTREAM
-         * - Legacy format: `xtream:vod:123` → XTREAM
-         * - Telegram: `telegram:chatId:messageId` → TELEGRAM
-         *
-         * @param sourceKey The sourceKey to parse
-         * @return Mapped PlayerModel SourceType or null if cannot determine
+         * Delegates to [SourceKeyBridge] and converts to player-model SourceType.
          */
         private fun extractSourceTypeFromKey(sourceKey: String): com.fishit.player.core.playermodel.SourceType? {
-            // Split by colon
-            val parts = sourceKey.split(":")
-            if (parts.isEmpty()) return null
-
-            // Check first two segments for sourceType
-            // NX format: src:xtream:... → index 1
-            // Legacy format: xtream:vod:... → index 0
-            val sourceTypeCandidate = when {
-                parts.size >= 2 && parts[0] == "src" -> parts[1] // NX format
-                parts.isNotEmpty() -> parts[0] // Legacy format
-                else -> return null
-            }
-
-            // Map to PlayerModel SourceType
-            return when (sourceTypeCandidate.lowercase()) {
-                "telegram", "tg" -> com.fishit.player.core.playermodel.SourceType.TELEGRAM
-                "xtream", "xc" -> com.fishit.player.core.playermodel.SourceType.XTREAM
-                "io", "file", "local" -> com.fishit.player.core.playermodel.SourceType.FILE
-                "audiobook" -> com.fishit.player.core.playermodel.SourceType.AUDIOBOOK
-                else -> null // Unknown - let caller handle
+            val coreType = SourceKeyBridge.extractSourceType(sourceKey) ?: return null
+            return mapToPlayerSourceType(coreType).takeIf {
+                it != com.fishit.player.core.playermodel.SourceType.UNKNOWN
             }
         }
 

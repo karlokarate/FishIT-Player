@@ -252,9 +252,10 @@ class XtreamIdCodecTest {
         XtreamIdCodec.vod(0L)
     }
 
-    @Test(expected = IllegalArgumentException::class)
-    fun `vod rejects negative ID`() {
-        XtreamIdCodec.vod(-1L)
+    @Test
+    fun `vod accepts negative ID for test content`() {
+        // Negative IDs are valid per KDoc: "may be negative for test content"
+        assertEquals("xtream:vod:-1", XtreamIdCodec.vod(-1L))
     }
 
     @Test(expected = IllegalArgumentException::class)
