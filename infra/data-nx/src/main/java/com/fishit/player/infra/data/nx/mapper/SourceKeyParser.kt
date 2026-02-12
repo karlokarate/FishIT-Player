@@ -71,6 +71,12 @@ data class ParsedSourceKey(
  */
 object SourceKeyParser {
 
+    /**
+     * Pattern for XtreamIdCodec composite episode itemKey: `series:{seriesId}:s{season}:e{episode}`
+     * Captures: group(1)=seriesId (may be negative), group(2)=season, group(3)=episode
+     */
+    private val EPISODE_CODEC_PATTERN = Regex("""^series:(-?\d+):s(\d+):e(\d+)$""")
+
     // =========================================================================
     // Builder Functions
     // =========================================================================
@@ -238,7 +244,8 @@ object SourceKeyParser {
      *
      * Handles:
      * 1. Direct episode ID: `src:xtream:account:episode:12345` → 12345
-     * 2. Composite format: `src:xtream:account:episode:100_1_5` → 5 (episode number)
+     * 2. Underscore composite: `src:xtream:account:episode:100_1_5` → 5 (episode number)
+     * 3. XtreamIdCodec composite: `src:xtream:account:episode:series:100:s1:e5` → 5 (episode number)
      *
      * This replaces NxXtreamSeriesIndexRepository.extractEpisodeIdFromSourceKey().
      *
@@ -254,10 +261,16 @@ object SourceKeyParser {
         // Try direct numeric ID first
         itemKey.toIntOrNull()?.let { return it }
         
-        // Try composite format: seriesId_season_episode
-        val parts = itemKey.split("_")
-        if (parts.size >= 3) {
-            return parts[2].toIntOrNull()
+        // Try underscore composite format: seriesId_season_episode
+        val underscoreParts = itemKey.split("_")
+        if (underscoreParts.size >= 3) {
+            return underscoreParts[2].toIntOrNull()
+        }
+        
+        // Try XtreamIdCodec composite format: series:{seriesId}:s{season}:e{episode}
+        val codecMatch = EPISODE_CODEC_PATTERN.find(itemKey)
+        if (codecMatch != null) {
+            return codecMatch.groupValues[3].toIntOrNull()
         }
         
         return null
@@ -266,7 +279,9 @@ object SourceKeyParser {
     /**
      * Extract Xtream series ID from episode sourceKey.
      *
-     * Handles composite format: `src:xtream:account:episode:100_1_5` → 100
+     * Handles:
+     * - Underscore composite: `src:xtream:account:episode:100_1_5` → 100
+     * - XtreamIdCodec composite: `src:xtream:account:episode:series:100:s1:e5` → 100
      *
      * @param sourceKey The source key string
      * @return Series ID or null
@@ -277,14 +292,65 @@ object SourceKeyParser {
         // Parse as sourceKey
         val itemKey = extractItemKey(sourceKey) ?: return null
         
-        // Composite format: seriesId_season_episode
-        val parts = itemKey.split("_")
-        if (parts.size >= 3) {
-            return parts[0].toIntOrNull()
+        // Underscore composite format: seriesId_season_episode
+        val underscoreParts = itemKey.split("_")
+        if (underscoreParts.size >= 3) {
+            return underscoreParts[0].toIntOrNull()
+        }
+        
+        // XtreamIdCodec composite format: series:{seriesId}:s{season}:e{episode}
+        val codecMatch = EPISODE_CODEC_PATTERN.find(itemKey)
+        if (codecMatch != null) {
+            return codecMatch.groupValues[1].toIntOrNull()
         }
         
         return null
     }
+
+    /**
+     * Extract full episode info (seriesId, season, episodeNumber) from episode sourceKey.
+     *
+     * Handles:
+     * - Underscore composite: `src:xtream:account:episode:100_1_5` → (100, 1, 5)
+     * - XtreamIdCodec composite: `src:xtream:account:episode:series:100:s1:e5` → (100, 1, 5)
+     *
+     * @param sourceKey The source key string
+     * @return Triple of (seriesId, season, episode) or null
+     */
+    fun extractXtreamEpisodeInfo(sourceKey: String?): EpisodeInfo? {
+        if (sourceKey.isNullOrBlank()) return null
+        
+        val itemKey = extractItemKey(sourceKey) ?: return null
+        
+        // Underscore composite: seriesId_season_episode
+        val underscoreParts = itemKey.split("_")
+        if (underscoreParts.size >= 3) {
+            val seriesId = underscoreParts[0].toIntOrNull() ?: return null
+            val season = underscoreParts[1].toIntOrNull() ?: return null
+            val episode = underscoreParts[2].toIntOrNull() ?: return null
+            return EpisodeInfo(seriesId, season, episode)
+        }
+        
+        // XtreamIdCodec composite: series:{seriesId}:s{season}:e{episode}
+        val codecMatch = EPISODE_CODEC_PATTERN.find(itemKey)
+        if (codecMatch != null) {
+            val seriesId = codecMatch.groupValues[1].toIntOrNull() ?: return null
+            val season = codecMatch.groupValues[2].toIntOrNull() ?: return null
+            val episode = codecMatch.groupValues[3].toIntOrNull() ?: return null
+            return EpisodeInfo(seriesId, season, episode)
+        }
+        
+        return null
+    }
+
+    /**
+     * Parsed episode identity components.
+     */
+    data class EpisodeInfo(
+        val seriesId: Int,
+        val season: Int,
+        val episodeNumber: Int,
+    )
 
     // =========================================================================
     // Telegram-Specific Helpers

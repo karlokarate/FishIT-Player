@@ -214,7 +214,8 @@ class NxCatalogWriter @Inject constructor(
             workType = workType,
             title = normalized.canonicalTitle,
             year = normalized.year,
-            tmdbId = normalized.tmdb?.id,
+            // tmdbId intentionally NOT passed — workKey is always heuristic.
+            // tmdbId is stored separately on NX_Work and used via Dual-Lookup.
             season = normalized.season,
             episode = normalized.episode,
         )

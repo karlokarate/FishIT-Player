@@ -1,5 +1,6 @@
 package com.fishit.player.core.persistence.obx
 
+import com.fishit.player.core.model.SourceType
 import com.fishit.player.core.model.repository.NxWorkRepository.WorkType
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -119,38 +120,11 @@ class NxKeyGeneratorTest {
     }
 
     // =========================================================================
-    // Source Key Tests
+    // Source Key Tests — REMOVED
     // =========================================================================
-
-    @Test
-    fun `sourceKey - generates correct format`() {
-        val key = NxKeyGenerator.sourceKey(SourceType.TELEGRAM, "acc123", "chat_msg_456")
-        assertEquals("telegram:acc123:chat_msg_456", key)
-    }
-
-    @Test(expected = IllegalArgumentException::class)
-    fun `sourceKey - throws when accountKey is blank (INV-13)`() {
-        NxKeyGenerator.sourceKey(SourceType.TELEGRAM, "", "123")
-    }
-
-    @Test
-    fun `telegramSourceKey - generates correct format`() {
-        val key = NxKeyGenerator.telegramSourceKey("acc123", -1001234567890L, 42)
-        assertEquals("telegram:acc123:-1001234567890_42", key)
-    }
-
-    @Test
-    fun `xtreamSourceKey - generates correct format`() {
-        val key = NxKeyGenerator.xtreamSourceKey("xtream_abc", "movie", 12345)
-        assertEquals("xtream:xtream_abc:movie_12345", key)
-    }
-
-    @Test
-    fun `localSourceKey - generates hash-based key`() {
-        val key = NxKeyGenerator.localSourceKey("/storage/movies/movie.mp4")
-        assertNotNull(key)
-        assert(key.startsWith("local:local:"))
-    }
+    // sourceKey building/parsing is SSOT of SourceKeyParser (infra/data-nx).
+    // NxKeyGenerator no longer contains sourceKey generation methods.
+    // See SourceKeyParserTest for source key tests.
 
     // =========================================================================
     // Variant Key Tests
@@ -314,18 +288,5 @@ class NxKeyGeneratorTest {
         assertNull(result)
     }
 
-    @Test
-    fun `parseSourceKey - parses telegram key`() {
-        val result = NxKeyGenerator.parseSourceKey("telegram:acc123:-1001234567890_42")
-        assertNotNull(result)
-        assertEquals(SourceType.TELEGRAM, result?.sourceType)
-        assertEquals("acc123", result?.accountKey)
-        assertEquals("-1001234567890_42", result?.sourceId)
-    }
-
-    @Test
-    fun `parseSourceKey - invalid key returns null`() {
-        val result = NxKeyGenerator.parseSourceKey("invalid")
-        assertNull(result)
-    }
+    // parseSourceKey tests REMOVED — sourceKey parsing is SSOT of SourceKeyParser (infra/data-nx)
 }

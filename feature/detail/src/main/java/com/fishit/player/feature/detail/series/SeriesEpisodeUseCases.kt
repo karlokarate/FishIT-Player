@@ -5,6 +5,8 @@ import com.fishit.player.core.detail.domain.EpisodePlaybackHints
 import com.fishit.player.core.detail.domain.SeasonIndexItem
 import com.fishit.player.core.detail.domain.UnifiedDetailLoader
 import com.fishit.player.core.detail.domain.XtreamSeriesIndexRepository
+import com.fishit.player.core.model.ids.XtreamIdCodec
+import com.fishit.player.core.model.ids.XtreamParsedSourceId
 import com.fishit.player.infra.logging.UnifiedLog
 import com.fishit.player.infra.priority.ApiPriorityDispatcher
 import kotlinx.coroutines.flow.Flow
@@ -278,10 +280,6 @@ class EnsureEpisodePlaybackReadyUseCase
         private val repository: XtreamSeriesIndexRepository,
         private val unifiedDetailLoader: UnifiedDetailLoader,
     ) {
-        companion object {
-            private const val TAG = "EnsureEpisodePlayback"
-            private const val ENRICHMENT_TIMEOUT_MS = 10_000L // 10 seconds
-        }
 
         /**
          * Result of playback readiness check.
@@ -308,7 +306,12 @@ class EnsureEpisodePlaybackReadyUseCase
         /**
          * Ensure episode is ready for playback.
          *
-         * @param sourceKey The episode source key (e.g., "xtream:episode:123:1:5")
+         * **Supported sourceKey formats:**
+         * - NX format: `src:xtream:{account}:episode:series:{seriesId}:s{season}:e{episode}`
+         * - NX fallback: `src:xtream:{account}:episode:{seriesId}_{season}_{episode}`
+         * - Legacy format: `xtream:episode:{seriesId}:{season}:{episode}`
+         *
+         * @param sourceKey The episode source key
          * @param forceEnrich Force re-enrichment even if hints exist
          * @return Ready result with hints, or Failed if enrichment fails
          */
@@ -327,15 +330,13 @@ class EnsureEpisodePlaybackReadyUseCase
                 }
             }
 
-            // Step 2: Parse sourceKey to extract IDs
-            val parts = sourceKey.split(":")
-            if (parts.size < 5 || parts[0] != "xtream" || parts[1] != "episode") {
-                return Result.Failed(sourceKey, "Invalid sourceKey format")
-            }
+            // Step 2: Parse sourceKey to extract IDs — supports multiple formats
+            val episodeIds = parseEpisodeIds(sourceKey)
+                ?: return Result.Failed(sourceKey, "Invalid sourceKey format: $sourceKey")
 
-            val seriesId = parts[2].toIntOrNull() ?: return Result.Failed(sourceKey, "Invalid seriesId")
-            val seasonNumber = parts[3].toIntOrNull() ?: return Result.Failed(sourceKey, "Invalid seasonNumber")
-            val episodeNumber = parts[4].toIntOrNull() ?: return Result.Failed(sourceKey, "Invalid episodeNumber")
+            val seriesId = episodeIds.seriesId
+            val seasonNumber = episodeIds.season
+            val episodeNumber = episodeIds.episode
 
             // Step 3: Fetch from API via UnifiedDetailLoader with timeout
             UnifiedLog.d(TAG) { "Enriching episode $sourceKey via UnifiedDetailLoader (series=$seriesId, s=$seasonNumber, e=$episodeNumber)" }
@@ -392,5 +393,33 @@ class EnsureEpisodePlaybackReadyUseCase
             } catch (e: Exception) {
                 null
             }
+        }
+
+        /**
+         * Parse episode IDs from sourceKey — delegates to XtreamIdCodec SSOT.
+         *
+         * XtreamIdCodec.parse() handles ALL formats:
+         * - NX: `src:xtream:{account}:episode:series:{seriesId}:s{season}:e{episode}`
+         * - NX underscore: `src:xtream:{account}:episode:{seriesId}_{season}_{episode}`
+         * - Legacy composite: `xtream:episode:series:{seriesId}:s{season}:e{episode}`
+         * - Legacy numeric: `xtream:episode:{seriesId}:{season}:{episode}`
+         */
+        private fun parseEpisodeIds(sourceKey: String): ParsedEpisodeIds? {
+            val parsed = XtreamIdCodec.parse(sourceKey)
+            if (parsed is XtreamParsedSourceId.EpisodeComposite) {
+                return ParsedEpisodeIds(parsed.seriesId.toInt(), parsed.season, parsed.episode)
+            }
+            return null
+        }
+
+        private data class ParsedEpisodeIds(
+            val seriesId: Int,
+            val season: Int,
+            val episode: Int,
+        )
+
+        companion object {
+            private const val TAG = "EnsureEpisodePlaybackReady"
+            private const val ENRICHMENT_TIMEOUT_MS = 15_000L
         }
     }

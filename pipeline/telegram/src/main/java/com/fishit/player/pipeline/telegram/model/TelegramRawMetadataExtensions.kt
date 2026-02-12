@@ -7,6 +7,7 @@ import com.fishit.player.core.model.PlaybackHintKeys
 import com.fishit.player.core.model.RawMediaMetadata
 import com.fishit.player.core.model.SourceType
 import com.fishit.player.core.model.TmdbRef
+import com.fishit.player.infra.transport.telegram.TelegramRemoteId
 
 /**
  * Extensions for converting Telegram pipeline models to RawMediaMetadata.
@@ -110,7 +111,7 @@ fun TelegramMediaItem.toRawMediaMetadata(): RawMediaMetadata {
         sourceType = SourceType.TELEGRAM,
         sourceLabel = buildTelegramSourceLabel(),
         // Stable pipeline item ID: message identity (remoteId moves to playbackHints)
-        sourceId = "msg:$chatId:$messageId",
+        sourceId = TelegramRemoteId(chatId, messageId).toSourceKey(),
         // === Pipeline Identity (v2) ===
         pipelineIdTag = PipelineIdTag.TELEGRAM,
         // === ImageRef from TelegramImageRefExtensions ===

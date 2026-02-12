@@ -11,6 +11,7 @@ import com.fishit.player.core.model.SourceType
 import com.fishit.player.core.model.TmdbMediaType
 import com.fishit.player.core.model.TmdbRef
 import com.fishit.player.core.model.ids.PipelineItemId
+import com.fishit.player.core.model.ids.XtreamIdCodec
 import com.fishit.player.core.model.repository.CanonicalMediaRepository
 import com.fishit.player.core.model.repository.CanonicalMediaWithSources
 import com.fishit.player.infra.logging.UnifiedLog
@@ -254,40 +255,28 @@ class DetailEnrichmentServiceImpl
         /**
          * Check if sourceKey represents a VOD item.
          *
-         * Formats:
-         * - `src:xtream:{accountKey}:vod:{id}`
-         * - `xtream:vod:{id}` or `xtream:vod:{id}:{ext}`
+         * Delegates to XtreamIdCodec SSOT for legacy format and
+         * SourceKeyParser for NX format.
          */
         private fun isVodSourceKey(sourceId: String): Boolean {
-            val parts = sourceId.split(":")
-            // New format: src:xtream:{accountKey}:vod:{id}
-            if (parts.size >= 5 && parts[0] == "src" && parts[1] == "xtream" && parts[3] == "vod") {
-                return true
-            }
             // Legacy format: xtream:vod:{id}
-            if (parts.size >= 3 && parts[0] == "xtream" && parts[1] == "vod") {
-                return true
-            }
-            return false
+            if (XtreamIdCodec.isVod(sourceId)) return true
+            // NX format: src:xtream:{accountKey}:vod:{id}
+            val parsed = com.fishit.player.infra.data.nx.mapper.SourceKeyParser.parse(sourceId)
+            return parsed?.itemKind == "vod"
         }
 
         /**
          * Check if sourceKey represents a Series item.
          *
-         * Formats:
-         * - `src:xtream:{accountKey}:series:{id}`
-         * - `xtream:series:{id}`
+         * Delegates to XtreamIdCodec SSOT for legacy format and
+         * SourceKeyParser for NX format.
          */
         private fun isSeriesSourceKey(sourceId: String): Boolean {
-            val parts = sourceId.split(":")
-            // New format: src:xtream:{accountKey}:series:{id}
-            if (parts.size >= 5 && parts[0] == "src" && parts[1] == "xtream" && parts[3] == "series") {
-                return true
-            }
             // Legacy format: xtream:series:{id}
-            if (parts.size >= 3 && parts[0] == "xtream" && parts[1] == "series") {
-                return true
-            }
-            return false
+            if (XtreamIdCodec.isSeries(sourceId)) return true
+            // NX format: src:xtream:{accountKey}:series:{id}
+            val parsed = com.fishit.player.infra.data.nx.mapper.SourceKeyParser.parse(sourceId)
+            return parsed?.itemKind == "series"
         }
     }

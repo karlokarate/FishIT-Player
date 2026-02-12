@@ -352,4 +352,56 @@ class SourceKeyParserTest {
         assertEquals(15, SourceKeyParser.extractXtreamEpisodeId(sourceKey))
         assertEquals(100, SourceKeyParser.extractXtreamSeriesIdFromEpisode(sourceKey))
     }
+
+    // =========================================================================
+    // Negative ID Tests — Real providers use negative IDs (e.g. -441)
+    // =========================================================================
+
+    @Test
+    fun `extractXtreamEpisodeId - codec format with negative seriesId`() {
+        // Runtime path: episodeComposite(-441, 1, 5) → stored as "series:-441:s1:e5" itemKey
+        assertEquals(5, SourceKeyParser.extractXtreamEpisodeId("src:xtream:server:episode:series:-441:s1:e5"))
+    }
+
+    @Test
+    fun `extractXtreamSeriesIdFromEpisode - codec format with negative seriesId`() {
+        assertEquals(-441, SourceKeyParser.extractXtreamSeriesIdFromEpisode("src:xtream:server:episode:series:-441:s1:e5"))
+    }
+
+    @Test
+    fun `extractXtreamEpisodeId - underscore format with negative seriesId`() {
+        assertEquals(5, SourceKeyParser.extractXtreamEpisodeId("src:xtream:server:episode:-441_1_5"))
+    }
+
+    @Test
+    fun `extractXtreamSeriesIdFromEpisode - underscore format with negative seriesId`() {
+        assertEquals(-441, SourceKeyParser.extractXtreamSeriesIdFromEpisode("src:xtream:server:episode:-441_1_5"))
+    }
+
+    @Test
+    fun `extractXtreamStreamId - negative series ID`() {
+        assertEquals("-441", SourceKeyParser.extractXtreamStreamId("src:xtream:server:series:-441"))
+    }
+
+    @Test
+    fun `extractXtreamStreamId - negative vod ID`() {
+        assertEquals("-123", SourceKeyParser.extractXtreamStreamId("src:xtream:server:vod:-123"))
+    }
+
+    @Test
+    fun `extractNumericItemKey - negative series ID`() {
+        assertEquals(-441L, SourceKeyParser.extractNumericItemKey("src:xtream:server:series:-441"))
+    }
+
+    @Test
+    fun `integration - negative seriesId episode sourceKey with all extractions`() {
+        val sourceKey = "src:xtream:myserver:episode:series:-441:s1:e5"
+        
+        assertEquals("xtream", SourceKeyParser.extractSourceType(sourceKey))
+        assertEquals("myserver", SourceKeyParser.extractAccountKey(sourceKey))
+        assertEquals("episode", SourceKeyParser.extractItemKind(sourceKey))
+        assertEquals("series:-441:s1:e5", SourceKeyParser.extractItemKey(sourceKey))
+        assertEquals(5, SourceKeyParser.extractXtreamEpisodeId(sourceKey))
+        assertEquals(-441, SourceKeyParser.extractXtreamSeriesIdFromEpisode(sourceKey))
+    }
 }

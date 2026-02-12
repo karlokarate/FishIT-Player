@@ -14,6 +14,8 @@ import com.fishit.player.core.model.PlaybackHintKeys
 import com.fishit.player.core.model.SourceType
 import com.fishit.player.core.model.ids.CanonicalId
 import com.fishit.player.core.model.ids.PipelineItemId
+import com.fishit.player.core.model.ids.XtreamIdCodec
+import com.fishit.player.core.model.ids.XtreamParsedSourceId
 import com.fishit.player.core.model.repository.CanonicalMediaWithSources
 import com.fishit.player.core.model.repository.CanonicalResumeInfo
 import com.fishit.player.core.detail.domain.DetailEnrichmentService
@@ -600,35 +602,31 @@ class UnifiedDetailViewModel
             val key = canonicalId.key.value
             val media = _state.value.media
 
-            // PRIORITY 1: Extract from Xtream source ID (most reliable)
+            // PRIORITY 1: Extract from Xtream source ID (most reliable) via XtreamIdCodec SSOT
             if (media != null) {
                 // Try to extract from first Xtream source
                 val xtreamSource = media.sources.find { it.sourceId.value.startsWith("xtream:") }
                 if (xtreamSource != null) {
-                    // Parse source ID formats:
-                    // - Series: "xtream:series:12345"
-                    // - Episode: "xtream:series:12345:episode:54321"
-                    val parts = xtreamSource.sourceId.value.split(":")
-                    val seriesId = when {
-                        parts.size == 3 && parts[1] == "series" -> parts[2].toIntOrNull()
-                        parts.size >= 5 && parts[1] == "series" && parts[3] == "episode" -> parts[2].toIntOrNull()
+                    val parsed = XtreamIdCodec.parse(xtreamSource.sourceId.value)
+                    val seriesId = when (parsed) {
+                        is XtreamParsedSourceId.Series -> parsed.seriesId.toInt()
+                        is XtreamParsedSourceId.EpisodeComposite -> parsed.seriesId.toInt()
                         else -> null
                     }
                     if (seriesId != null) return seriesId
                 }
             }
 
-            // PRIORITY 2: Try to parse from canonical key if it follows Xtream pattern
-            // NX format: src:xtream:<account>:series:<id> or legacy: xtream:series:<id>
-            if (key.contains(":series:")) {
-                // Extract series ID from pattern: ...series:<id>...
-                val seriesIndex = key.indexOf(":series:")
-                if (seriesIndex >= 0) {
-                    val afterSeries = key.substring(seriesIndex + ":series:".length)
-                    val potentialId = afterSeries.split(":").firstOrNull()?.toIntOrNull()
-                    if (potentialId != null) return potentialId
-                }
+            // PRIORITY 2: Try to parse from canonical key via XtreamIdCodec SSOT
+            // Handles both NX format (src:xtream:{account}:series:{id}) and
+            // legacy format (xtream:series:{id})
+            val parsedKey = XtreamIdCodec.parse(key)
+            val keySeriesId = when (parsedKey) {
+                is XtreamParsedSourceId.Series -> parsedKey.seriesId.toInt()
+                is XtreamParsedSourceId.EpisodeComposite -> parsedKey.seriesId.toInt()
+                else -> null
             }
+            if (keySeriesId != null) return keySeriesId
 
             // PRIORITY 3: Canonical key format "series:<slug>:<year>" - no numeric ID
             // This is normal for normalized series without Xtream source

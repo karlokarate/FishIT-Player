@@ -12,7 +12,7 @@
  *
  * ## Key Mapping
  * - seriesId (Int) → sourceKey `src:xtream:<account>:series:<seriesId>`
- * - episodeId → sourceKey `src:xtream:<account>:episode:<seriesId>_<season>_<episode>`
+ * - episodeId → sourceKey `src:xtream:<account>:episode:series:<seriesId>:s<season>:e<episode>` (XtreamIdCodec composite)
  *
  * @see com.fishit.player.core.detail.domain.XtreamSeriesIndexRepository
  */
@@ -33,6 +33,7 @@ import com.fishit.player.core.model.repository.NxWorkSourceRefRepository.SourceI
 import com.fishit.player.core.model.repository.NxWorkSourceRefRepository.SourceType
 import com.fishit.player.core.model.repository.NxWorkVariantRepository
 import com.fishit.player.core.model.PlaybackHintKeys
+import com.fishit.player.core.persistence.obx.NxKeyGenerator
 import com.fishit.player.infra.data.nx.mapper.SourceKeyParser
 import com.fishit.player.infra.data.nx.mapper.base.PlaybackHintsDecoder
 import com.fishit.player.infra.logging.UnifiedLog
@@ -165,18 +166,13 @@ class NxXtreamSeriesIndexRepository @Inject constructor(
             ?: return@withContext null
 
         // Extract seriesId, seasonNumber, episodeNumber from sourceKey
-        // Format: src:xtream:<account>:episode:<seriesId>_<season>_<episode>
-        val seriesId = SourceKeyParser.extractXtreamSeriesIdFromEpisode(sourceKey)
+        // Format: src:xtream:<account>:episode:series:{seriesId}:s{season}:e{episode}
+        //     or: src:xtream:<account>:episode:{seriesId}_{season}_{episode}
+        val episodeInfo = SourceKeyParser.extractXtreamEpisodeInfo(sourceKey)
             ?: return@withContext null
-        
-        val itemKey = SourceKeyParser.extractItemKey(sourceKey)
-        if (itemKey == null) return@withContext null
-        
-        val episodeParts = itemKey.split("_")
-        if (episodeParts.size < 3) return@withContext null
-        
-        val seasonNumber = episodeParts[1].toIntOrNull() ?: return@withContext null
-        val episodeNumber = episodeParts[2].toIntOrNull() ?: return@withContext null
+        val seriesId = episodeInfo.seriesId
+        val seasonNumber = episodeInfo.season
+        val episodeNumber = episodeInfo.episodeNumber
 
         // Get variant for playback hints
         val variants = variantRepository.findByWorkKey(episodeWork.workKey)
@@ -245,9 +241,12 @@ class NxXtreamSeriesIndexRepository @Inject constructor(
         val seriesId = episodes.first().seriesId
         val seriesWorkKey = findSeriesWorkKeyBySeriesId(seriesId)
 
+        // Look up series NX_Work for title+year (needed for episode workKey)
+        val seriesWork = seriesWorkKey?.let { workRepository.get(it) }
+
         for (episode in episodes) {
-            // Build episode workKey
-            val episodeWorkKey = buildEpisodeWorkKey(episode)
+            // Build episode workKey — delegates to NxKeyGenerator SSOT
+            val episodeWorkKey = buildEpisodeWorkKey(episode, seriesWork)
 
             // Upsert episode as NX_Work — ALL metadata preserved
             val episodeWork = NxWorkRepository.Work(
@@ -534,7 +533,11 @@ class NxXtreamSeriesIndexRepository @Inject constructor(
             val variants = variantRepository.findByWorkKey(relation.childWorkKey)
 
             val sourceKey = xtreamSourceRef?.sourceKey
-                ?: "src:xtream:unknown:episode:${seriesId}_${seasonNumber}_${relation.episodeNumber}"
+                ?: SourceKeyParser.buildSourceKey(
+                    com.fishit.player.core.model.SourceType.XTREAM,
+                    "unknown",
+                    "episode:series:${seriesId}:s${seasonNumber}:e${relation.episodeNumber}",
+                )
 
             val defaultVariant = variants.firstOrNull()
 
@@ -577,13 +580,26 @@ class NxXtreamSeriesIndexRepository @Inject constructor(
         }
     }
 
-    private fun buildEpisodeWorkKey(episode: EpisodeIndexItem): String {
-        val slug = (episode.title ?: "episode-${episode.episodeNumber}")
-            .lowercase()
-            .replace(Regex("[^a-z0-9]+"), "-")
-            .trim('-')
-            .take(30)
-        return "episode:${episode.seriesId}-s${episode.seasonNumber}e${episode.episodeNumber}-$slug:unknown"
+    /**
+     * Build episode workKey using [NxKeyGenerator.episodeKey] — SSOT.
+     *
+     * Uses the series title from DB to match NxCatalogWriter's key format.
+     * Falls back to episode title when series Work is unavailable.
+     */
+    private fun buildEpisodeWorkKey(
+        episode: EpisodeIndexItem,
+        seriesWork: NxWorkRepository.Work?,
+    ): String {
+        val title = seriesWork?.displayTitle
+            ?: episode.title
+            ?: "episode-${episode.episodeNumber}"
+        val year = seriesWork?.year
+        return NxKeyGenerator.episodeKey(
+            seriesTitle = title,
+            year = year,
+            season = episode.seasonNumber,
+            episode = episode.episodeNumber,
+        )
     }
 
     private fun extractPlaybackUrlFromHints(hintsJson: String): String? {

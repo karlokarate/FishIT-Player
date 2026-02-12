@@ -3,7 +3,6 @@ package com.fishit.player.core.persistence.obx
 import com.fishit.player.core.model.SourceType
 import com.fishit.player.core.model.repository.NxWorkRepository
 import com.fishit.player.core.model.util.SlugGenerator
-import java.text.Normalizer
 import java.util.Locale
 
 /**
@@ -13,9 +12,9 @@ import java.util.Locale
  *
  * ## Key Format Specifications
  *
- * - **workKey:** `<workType>:<authority>:<id>` (authority = tmdb | heuristic)
+ * - **workKey:** `<workType>:heuristic:<slug>` (always heuristic for immutability)
  * - **authorityKey:** `<authority>:<type>:<id>`
- * - **sourceKey:** `<sourceType>:<accountKey>:<sourceId>`
+ * - **sourceKey:** Handled by `SourceKeyParser` (infra/data-nx). Format: `src:<sourceType>:<accountKey>:<sourceId>`
  * - **variantKey:** `<sourceKey>#<qualityTag>:<languageTag>`
  * - **categoryKey:** `<sourceType>:<accountKey>:<categoryId>`
  *
@@ -33,26 +32,24 @@ object NxKeyGenerator {
     /**
      * Generate a canonical work key.
      *
-     * Format: `<workType>:<authority>:<id>`
+     * Format: `<workType>:heuristic:<slug-year>` — **always heuristic**.
      *
-     * Authority:
-     * - `tmdb` when a TMDB ID is available (stable, globally unique)
-     * - `heuristic` when no external ID is available (slug-based fallback)
+     * The authority is always `heuristic` (slug-based) to guarantee workKey
+     * immutability. tmdbId is stored as a separate indexed field on NX_Work
+     * and used for cross-reference via Dual-Lookup.
      *
      * Examples:
-     * - `movie:tmdb:12345`
-     * - `movie:heuristic:the-matrix-1999`
-     * - `episode:tmdb:67890`
+     * - `movie:heuristic:matrix-1999`
      * - `episode:heuristic:breaking-bad-2008-s02e07`
-     * - `live:heuristic:cnn-live`
+     * - `live_channel:heuristic:cnn-live`
      * - `series:heuristic:game-of-thrones-2011`
      *
      * @param workType Type of work (MOVIE, EPISODE, SERIES, etc.)
-     * @param title Canonical title
+     * @param title Canonical title (articles stripped by [SlugGenerator])
      * @param year Release year (null for LIVE)
-     * @param tmdbId TMDB ID if available (produces stable key)
-     * @param season Season number (for EPISODE heuristic keys)
-     * @param episode Episode number (for EPISODE heuristic keys)
+     * @param tmdbId Unused — kept for API compat. tmdbId is stored on NX_Work directly.
+     * @param season Season number (for EPISODE keys)
+     * @param episode Episode number (for EPISODE keys)
      * @return Canonical work key
      */
     fun workKey(
@@ -153,65 +150,12 @@ object NxKeyGenerator {
     fun tvdbKey(id: Int): String = authorityKey("tvdb", "series", id.toString())
 
     // =========================================================================
-    // Source Keys
+    // Source Keys — SSOT is SourceKeyParser (infra/data-nx)
     // =========================================================================
-
-    /**
-     * Generate a source key.
-     *
-     * Format: `<sourceType>:<accountKey>:<sourceId>`
-     *
-     * **INV-13:** accountKey is mandatory.
-     *
-     * @param sourceType Source type (telegram, xtream, local, plex)
-     * @param accountKey Account identifier (mandatory)
-     * @param sourceId Source-specific item identifier
-     * @return Source key
-     */
-    fun sourceKey(
-        sourceType: SourceType,
-        accountKey: String,
-        sourceId: String,
-    ): String {
-        require(accountKey.isNotBlank()) { "accountKey is mandatory (INV-13)" }
-        return "${sourceType.name.lowercase()}:$accountKey:$sourceId"
-    }
-
-    /**
-     * Generate Telegram source key.
-     *
-     * @param accountKey Telegram account key (e.g., phone hash)
-     * @param chatId Telegram chat ID
-     * @param messageId Telegram message ID
-     */
-    fun telegramSourceKey(
-        accountKey: String,
-        chatId: Long,
-        messageId: Long,
-    ): String = sourceKey(SourceType.TELEGRAM, accountKey, "${chatId}_$messageId")
-
-    /**
-     * Generate Xtream source key.
-     *
-     * @param accountKey Xtream account key
-     * @param streamType Type of stream (live, movie, series, episode)
-     * @param streamId Xtream stream ID
-     */
-    fun xtreamSourceKey(
-        accountKey: String,
-        streamType: String,
-        streamId: Int,
-    ): String = sourceKey(SourceType.XTREAM, accountKey, "${streamType}_$streamId")
-
-    /**
-     * Generate local file source key.
-     *
-     * @param filePath Absolute file path
-     */
-    fun localSourceKey(filePath: String): String {
-        val hash = filePath.hashCode().toUInt().toString(16)
-        return sourceKey(SourceType.LOCAL, "local", hash)
-    }
+    // sourceKey building and parsing is handled by SourceKeyParser.buildSourceKey()
+    // and SourceKeyParser.parse(). Format: src:{sourceType}:{accountKey}:{sourceId}
+    // Do NOT add sourceKey generation here — it would produce a different format
+    // (without "src:" prefix) that conflicts with the actual database format.
 
     // =========================================================================
     // Variant Keys
@@ -448,27 +392,6 @@ object NxKeyGenerator {
         }
     }
 
-    /**
-     * Parse a source key into components.
-     *
-     * @param sourceKey Source key to parse
-     * @return Parsed components or null if invalid
-     */
-    fun parseSourceKey(sourceKey: String): SourceKeyComponents? {
-        val parts = sourceKey.split(":", limit = 3)
-        if (parts.size < 3) return null
-
-        val sourceType = try {
-            SourceType.valueOf(parts[0].uppercase())
-        } catch (_: IllegalArgumentException) {
-            SourceType.UNKNOWN
-        }
-        val accountKey = parts[1]
-        val sourceId = parts[2]
-
-        return SourceKeyComponents(sourceType, accountKey, sourceId)
-    }
-
     data class WorkKeyComponents(
         val workType: NxWorkRepository.WorkType,
         val authority: String,
@@ -479,9 +402,7 @@ object NxKeyGenerator {
         val episode: Int?,
     )
 
-    data class SourceKeyComponents(
-        val sourceType: SourceType,
-        val accountKey: String,
-        val sourceId: String,
-    )
+    // NOTE: SourceKey parsing is handled by SourceKeyParser.parse() in infra/data-nx.
+    // Format: src:{sourceType}:{accountKey}:{itemKind}:{itemKey}
+    // Do NOT add parseSourceKey() here — it would use a different format.
 }

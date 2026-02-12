@@ -37,6 +37,9 @@ object XtreamIdCodec {
     /** Xtream source type prefix */
     const val PREFIX = "xtream"
 
+    /** Legacy series-episode format: S{season}E{episode} (case-insensitive) */
+    private val LEGACY_SERIES_EPISODE_REGEX = Regex("""[Ss](\d+)[Ee](\d+)""")
+
     // =========================================================================
     // Format Functions (String Generation)
     // =========================================================================
@@ -259,15 +262,31 @@ object XtreamIdCodec {
     /**
      * Parse a source ID string to typed representation.
      *
+     * Handles ALL Xtream identity formats:
+     * - Legacy: `xtream:vod:123`, `xtream:series:456`, `xtream:episode:789`
+     * - Legacy composite: `xtream:episode:series:{seriesId}:s{season}:e{episode}`
+     * - Legacy composite (numeric): `xtream:episode:{seriesId}:{season}:{episode}`
+     * - NX sourceKey: `src:xtream:{account}:{kind}:{...}` (strips prefix, re-parses)
+     *
      * Returns null if:
-     * - String doesn't start with "xtream:"
+     * - String is not a recognized Xtream format
      * - Format is invalid
      * - IDs are zero (not valid)
      *
-     * @param sourceId Raw source ID string
+     * @param sourceId Raw source ID or NX sourceKey string
      * @return Parsed source ID or null if invalid
      */
     fun parse(sourceId: String): XtreamParsedSourceId? {
+        // NX format: src:xtream:{account}:{kind}:{...}
+        // Strip prefix and re-parse as xtream:{kind}:{...}
+        if (sourceId.startsWith("src:$PREFIX:") || sourceId.startsWith("src:xc:")) {
+            val nxParts = sourceId.split(":", limit = 4)
+            if (nxParts.size >= 4) {
+                return parse("$PREFIX:${nxParts[3]}")
+            }
+            return null
+        }
+
         if (!sourceId.startsWith("$PREFIX:")) return null
 
         val parts = sourceId.split(':')
@@ -278,9 +297,7 @@ object XtreamIdCodec {
                 ?.takeIf { it != 0L }
                 ?.let { XtreamParsedSourceId.Vod(it) }
 
-            "series" -> parts.getOrNull(2)?.toLongOrNull()
-                ?.takeIf { it != 0L }
-                ?.let { XtreamParsedSourceId.Series(it) }
+            "series" -> parseSeries(parts)
 
             "live" -> parts.getOrNull(2)?.toLongOrNull()
                 ?.takeIf { it != 0L }
@@ -295,13 +312,25 @@ object XtreamIdCodec {
     /**
      * Parse episode source ID.
      *
-     * Handles both formats:
-     * - `xtream:episode:{episodeId}` (stable)
-     * - `xtream:episode:series:{seriesId}:s{season}:e{episode}` (composite)
+     * Handles all formats:
+     * - `xtream:episode:{episodeId}` (stable, direct ID)
+     * - `xtream:episode:series:{seriesId}:s{season}:e{episode}` (XtreamIdCodec composite)
+     * - `xtream:episode:{seriesId}:{season}:{episode}` (legacy composite)
+     * - `xtream:episode:{seriesId}_{season}_{episode}` (NX underscore legacy)
      */
     private fun parseEpisode(parts: List<String>): XtreamParsedSourceId? {
         // Format A: xtream:episode:{episodeId}
         if (parts.size == 3) {
+            // Check for underscore legacy format first: {seriesId}_{season}_{episode}
+            if (parts[2].contains('_')) {
+                val subParts = parts[2].split('_')
+                if (subParts.size == 3) {
+                    val seriesId = subParts[0].toLongOrNull()?.takeIf { it != 0L } ?: return null
+                    val season = subParts[1].toIntOrNull()?.takeIf { it >= 0 } ?: return null
+                    val episode = subParts[2].toIntOrNull()?.takeIf { it >= 0 } ?: return null
+                    return XtreamParsedSourceId.EpisodeComposite(seriesId, season, episode)
+                }
+            }
             return parts[2].toLongOrNull()
                 ?.takeIf { it != 0L }
                 ?.let { XtreamParsedSourceId.Episode(it) }
@@ -315,7 +344,41 @@ object XtreamIdCodec {
             return XtreamParsedSourceId.EpisodeComposite(seriesId, season, episode)
         }
 
+        // Format C (legacy): xtream:episode:{seriesId}:{season}:{episode}
+        if (parts.size == 5) {
+            val seriesId = parts[2].toLongOrNull()?.takeIf { it != 0L } ?: return null
+            val season = parts[3].toIntOrNull()?.takeIf { it >= 0 } ?: return null
+            val episode = parts[4].toIntOrNull()?.takeIf { it >= 0 } ?: return null
+            return XtreamParsedSourceId.EpisodeComposite(seriesId, season, episode)
+        }
+
         return null
+    }
+
+    /**
+     * Parse series source ID.
+     *
+     * Handles:
+     * - `xtream:series:{seriesId}` (standard)
+     * - `xtream:series:{seriesId}:S{season}E{episode}` (legacy episode-on-series)
+     *
+     * The legacy format encodes an episode reference on a series sourceId.
+     * Returns [XtreamParsedSourceId.EpisodeComposite] for the legacy format.
+     */
+    private fun parseSeries(parts: List<String>): XtreamParsedSourceId? {
+        val seriesId = parts.getOrNull(2)?.toLongOrNull()?.takeIf { it != 0L } ?: return null
+
+        // Legacy format: xtream:series:{seriesId}:S{season}E{episode}
+        if (parts.size == 4) {
+            val sxex = LEGACY_SERIES_EPISODE_REGEX.matchEntire(parts[3])
+            if (sxex != null) {
+                val season = sxex.groupValues[1].toIntOrNull()?.takeIf { it >= 0 } ?: return null
+                val episode = sxex.groupValues[2].toIntOrNull()?.takeIf { it >= 0 } ?: return null
+                return XtreamParsedSourceId.EpisodeComposite(seriesId, season, episode)
+            }
+        }
+
+        return XtreamParsedSourceId.Series(seriesId)
     }
 
     // =========================================================================
