@@ -208,14 +208,14 @@ For v1 roadmap history, see `legacy/docs/ROADMAP_v1.md`.
 - [x] TDLib integration via typed interfaces
 - [x] Structured bundle detection (PHOTO + TEXT + VIDEO)
 - [x] remoteId-first architecture
+- [x] TDLib→Telethon migration (Issue #703, Telethon sidecar proxy via Chaquopy)
 - [ ] **Bundle albumId support:** Add albumId to TgMessage when transport exposes it (pipeline/telegram/TelegramMessageBundler.kt:147)
-- [ ] **Telegram Pipeline Redesign** → `docs/v2/TELEGRAM_PIPELINE_REDESIGN_CONTRACT.md`
-  - [ ] Phase 1: Update `tdl-coroutines` to v8.0.0 (TDLib 1.8.60)
-  - [ ] Phase 2: Transport platinum (RetryPolicy, PaginatedScanner, RateLimiter)
-  - [ ] Phase 3: Fix `toRawMediaMetadata()` — close 17 field gaps vs Xtream
-  - [ ] Phase 4: Implement `TelegramSyncService` (mirrors `XtreamSyncService`)
-  - [ ] Phase 5: Wire `syncTelegram()` in orchestrator (replace stub)
-  - [ ] Phase 6: Verification — field parity audit, incremental sync, error recovery
+- [ ] **Telegram Chain Parity** → `docs/v2/TELEGRAM_CHAIN_PARITY_PLAN.md` (Section 12)
+  - [ ] TelegramSyncService + DefaultTelegramSyncService
+  - [ ] TelegramSessionBootstrap + TelegramChatPreloader
+  - [ ] Chat Selection UI (analog CategorySelectionScreen)
+  - [ ] Entity Cleanup (TelegramRemoteId → TelegramMessageId, NX-only)
+  - [ ] Timeout/Retry Optimization (TelegramTransportConfig SSOT)
 
 ### Xtream Pipeline ✅ COMPLETE
 
@@ -549,6 +549,63 @@ GET /player_api.php?action=get_series&category_id=X
 - If category fetch fails, offer "Sync All" fallback button
 - Store category selection separately from content sync state
 - Allow skipping category selection (default = all categories)
+
+---
+
+## 12. Telegram Chain Parity (Xtream-Blueprint-Abgleich)
+
+**Status:** 🚧 Audit abgeschlossen, Implementierung ausstehend  
+**Goal:** Die Telegram-Chain strukturell identisch zur Xtream-Chain aufbauen — gleiche Layer, Patterns, Lifecycle-Hooks.  
+**Fahrplan:** `docs/v2/TELEGRAM_CHAIN_PARITY_PLAN.md` (vollständiges Audit + Implementierungsplan)
+
+**Kontext:** Nach TDLib→Telethon-Migration (Issue #703, 5 Commits) fehlen wesentliche Infrastruktur-Komponenten.
+
+### Phase 1: Infrastruktur 🔲 PLANNED
+
+- [ ] `TelegramTransportConfig` — Timeout/Retry SSOT (analog `XtreamTransportConfig`)
+- [ ] `TelegramSyncService` interface + `DefaultTelegramSyncService` — Single Entry Point
+- [ ] Worker-Stub `syncTelegram()` durch Service-Aufruf ersetzen
+- [ ] DI-Modul: `TelegramSyncModule`
+
+### Phase 2: Session & Bootstrap 🔲 PLANNED
+
+- [ ] `TelegramSessionBootstrap` — Auto-Init bei App-Start (analog `XtreamSessionBootstrap`)
+- [ ] `TelegramChatPreloader` — Chat-Liste cachen + persistieren (analog `XtreamCategoryPreloader`)
+- [ ] `NxTelegramChatSelectionRepository` interface (analog `NxCategorySelectionRepository`)
+
+### Phase 3: Persistence & Data 🔲 PLANNED
+
+- [ ] `NX_TelegramChatSelection` Entity in ObjectBox
+- [ ] `NxTelegramChatSelectionRepositoryImpl` — CRUD + Sync-Gate
+- [ ] Sync-Gate: `isChatSelectionComplete()` / `setChatSelectionComplete()`
+
+### Phase 4: Chat Selection UI 🔲 PLANNED
+
+- [ ] `ChatSelectionScreen` Composable (analog `CategorySelectionScreen`)
+- [ ] `ChatSelectionViewModel` (analog `CategorySelectionViewModel`)
+- [ ] Navigation-Route `Routes.TELEGRAM_CHAT_SELECTION`
+- [ ] Settings-Eintrag: "Telegram Chats" (nur wenn `telegramActive`)
+- [ ] Sync-Gate im Worker (`isChatSelectionComplete()` prüfen)
+
+### Phase 5: Cleanup & Rename 🔲 PLANNED
+
+- [ ] Rename `TelegramRemoteId` → `TelegramMessageId`
+- [ ] Rename `resolveRemoteId()` → `resolveMessageMedia()`
+- [ ] `ObxTelegramContentRepository` deprecieren → Delete (NX-only)
+- [ ] `PlaybackHintKeys.Telegram.REMOTE_ID` evaluieren
+
+### Phase 6: Timeout-Tuning 🔲 PLANNED
+
+- [ ] OkHttp-Clients auf `TelegramTransportConfig` umstellen (10s connect, 30s API-read)
+- [ ] Telethon connect timeout + FloodWait cap (max 120s)
+- [ ] File chunk size: 512KB → 1MB
+- [ ] Pagination-Hardening: per-batch timeout (60s)
+
+### Phase 7: Verifikation 🔲 PLANNED
+
+- [ ] Full-Chain Test: Bootstrap → Auth → Chats → Selection → Sync → Playback
+- [ ] Architektur-Tests aktualisieren
+- [ ] Build-Verifikation (`:app-v2:assembleDebug`)
 
 ---
 

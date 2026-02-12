@@ -446,3 +446,27 @@
 {"action":"assign_pending","filePath":"infra/data-nx/src/main/java/com/fishit/player/infra/data/nx/repository/NxWorkDiagnosticsImpl.kt","scopeId":"xtream-data","status":"REQUIRES_USER_CONFIRMATION","agentMode":"interactive","timestamp":"2026-02-11T11:18:20.125Z"}
 {"action":"confirm","filePath":"infra/data-nx/src/main/java/com/fishit/player/infra/data/nx/repository/NxWorkDiagnosticsImpl.kt","scopeId":"xtream-data","status":"CONFIRMED","timestamp":"2026-02-11T11:18:23.958Z"}
 {"action":"reload","status":"COMPLETED","details":"Reloaded 15 scopes (was 15)","timestamp":"2026-02-11T11:18:43.069Z"}
+{"action":"check","filePath":"infra/transport-telegram/build.gradle.kts","status":"BUNDLE_BLOCKED","agentMode":"interactive","details":"gradle-config","timestamp":"2026-02-12T11:47:10.046Z"}
+{"action":"check","filePath":"settings.gradle.kts","status":"BUNDLE_BLOCKED","agentMode":"interactive","details":"gradle-config","timestamp":"2026-02-12T11:47:10.047Z"}
+{"action":"check","filePath":"infra/transport-telegram/src/main/python/tg_proxy.py","status":"UNTRACKED","agentMode":"interactive","timestamp":"2026-02-12T11:47:10.047Z"}
+{"action":"check","filePath":"infra/transport-telegram/src/main/java/com/fishit/player/infra/transport/telegram/internal/DefaultTelegramClient.kt","status":"BLOCKED","agentMode":"interactive","scopeId":"telegram-transport","timestamp":"2026-02-12T11:47:10.048Z"}
+{"action":"read_bundle","scopeId":"gradle-config","status":"ACKNOWLEDGED","timestamp":"2026-02-12T11:47:15.505Z"}
+{"action":"read","scopeId":"telegram-transport","status":"ACKNOWLEDGED","timestamp":"2026-02-12T11:47:15.506Z"}
+{"action":"check","filePath":"infra/data-nx/src/main/java/com/fishit/player/infra/data/nx/repository/NxWorkRepositoryImpl.kt","status":"UNTRACKED","agentMode":"interactive","timestamp":"2026-02-12T11:53:38.857Z"}
+{"action":"check","filePath":"infra/data-nx/src/main/java/com/fishit/player/infra/data/nx/canonical/NxCanonicalMediaRepositoryImpl.kt","status":"UNTRACKED","agentMode":"interactive","timestamp":"2026-02-12T11:53:46.604Z"}
+{"action":"check","filePath":"infra/data-nx/src/main/java/com/fishit/player/infra/data/nx/writer/NxCatalogWriter.kt","status":"UNTRACKED","agentMode":"interactive","timestamp":"2026-02-12T11:53:52.335Z"}
+{"action":"check","filePath":"infra/data-nx/src/main/java/com/fishit/player/infra/data/nx/xtream/NxXtreamSeriesIndexRepository.kt","status":"RELATED_UNREAD","agentMode":"interactive","scopeId":"xtream-data","timestamp":"2026-02-12T11:59:16.609Z"}
+{"action":"check","filePath":"playback/telegram/src/main/java/com/fishit/player/playback/telegram/TelegramPlaybackSourceFactoryImpl.kt","status":"BLOCKED","agentMode":"interactive","scopeId":"telegram-playback","timestamp":"2026-02-12T12:00:16.309Z"}
+{"action":"check","filePath":"playback/telegram/build.gradle.kts","status":"BUNDLE_ALLOWED","agentMode":"interactive","details":"gradle-config","timestamp":"2026-02-12T12:00:16.309Z"}
+{"action":"check","filePath":"app-v2/src/main/java/com/fishit/player/v2/di/TelegramAuthModule.kt","status":"UNTRACKED","agentMode":"interactive","timestamp":"2026-02-12T12:00:16.310Z"}
+{"action":"read","scopeId":"telegram-playback","status":"ACKNOWLEDGED","timestamp":"2026-02-12T12:00:21.895Z"}
+{"action":"check","filePath":"core/persistence/src/main/java/com/fishit/player/core/persistence/obx/CanonicalKeyGenerator.kt","status":"ALLOWED","agentMode":"interactive","scopeId":"persistence","timestamp":"2026-02-12T12:10:15.472Z"}
+{"action":"check","filePath":"core/persistence/src/main/java/com/fishit/player/core/persistence/obx/NxKeyGenerator.kt","status":"ALLOWED","agentMode":"interactive","scopeId":"persistence","timestamp":"2026-02-12T12:10:15.472Z"}
+{"action":"check","filePath":"core/persistence/src/test/java/com/fishit/player/core/persistence/obx/CanonicalKeyGeneratorTest.kt","status":"ALLOWED","agentMode":"interactive","scopeId":"persistence","timestamp":"2026-02-12T12:10:15.472Z"}
+{"action":"check","filePath":"feature/detail/src/main/java/com/fishit/player/feature/detail/SourceKeyBridge.kt","status":"UNTRACKED","agentMode":"interactive","timestamp":"2026-02-12T12:25:09.502Z"}
+{"action":"check","filePath":"feature/detail/src/main/java/com/fishit/player/feature/detail/PlayMediaUseCase.kt","status":"UNTRACKED","agentMode":"interactive","timestamp":"2026-02-12T12:25:09.503Z"}
+{"action":"check","filePath":"feature/detail/src/main/java/com/fishit/player/feature/detail/SourceSelection.kt","status":"UNTRACKED","agentMode":"interactive","timestamp":"2026-02-12T12:25:09.503Z"}
+{"action":"check","filePath":"infra/data-nx/src/main/java/com/fishit/player/infra/data/nx/mapper/SourceKeyParser.kt","status":"UNTRACKED","agentMode":"interactive","timestamp":"2026-02-12T12:25:09.503Z"}
+{"action":"check","filePath":"docs/v2/TELEGRAM_CHAIN_PARITY_PLAN.md","status":"UNTRACKED","agentMode":"interactive","timestamp":"2026-02-12T13:11:01.370Z"}
+{"action":"check","filePath":"ROADMAP.md","status":"UNTRACKED","agentMode":"interactive","timestamp":"2026-02-12T13:11:01.371Z"}
+{"action":"check","filePath":"infra/transport-telegram/src/main/java/com/fishit/player/infra/transport/telegram/internal/DefaultTelegramClient.kt","status":"RELATED_UNREAD","agentMode":"interactive","scopeId":"telegram-transport","timestamp":"2026-02-12T13:19:10.398Z"}
