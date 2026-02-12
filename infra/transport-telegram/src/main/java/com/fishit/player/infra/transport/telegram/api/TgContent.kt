@@ -6,7 +6,7 @@ package com.fishit.player.infra.transport.telegram.api
  * Photos in Telegram are sent in multiple sizes (thumbnail, medium, large).
  * This represents one size variant.
  *
- * @property fileId TDLib file ID for this size
+ * @property fileId Telegram API file ID for this size
  * @property remoteId Stable remote file identifier
  * @property width Width in pixels
  * @property height Height in pixels
@@ -23,7 +23,7 @@ data class TgPhotoSize(
 /**
  * Thumbnail descriptor for media content.
  *
- * @property fileId TDLib file ID
+ * @property fileId Telegram API file ID
  * @property remoteId Stable remote file identifier
  * @property width Width in pixels
  * @property height Height in pixels
@@ -68,22 +68,22 @@ data class TgMinithumbnail(
  * Transport-layer content descriptor for Telegram message content.
  *
  * Sealed interface representing different media types that can be
- * contained in a Telegram message. No TDLib dependencies.
+ * contained in a Telegram message. No Telegram API dependencies.
  *
  * **v2 Architecture:**
- * - Transport maps TDLib MessageContent to these DTOs
+ * - Transport maps Telegram API MessageContent to these DTOs
  * - Pipeline filters and classifies these into RawMediaMetadata
  * - No normalization happens here (that's pipeline's job)
  *
  * **Note on file IDs:**
- * - `fileId` is TDLib's internal ID, may become stale
+ * - `fileId` is Telegram API's internal ID, may become stale
  * - `remoteId` is stable and can be used to re-resolve files
  */
 sealed interface TgContent {
     /**
      * Video content (MP4, MOV, etc.)
      *
-     * @property fileId TDLib file ID
+     * @property fileId Telegram API file ID
      * @property remoteId Stable remote file identifier
      * @property fileName Original file name
      * @property mimeType MIME type (e.g., "video/mp4")
@@ -91,7 +91,7 @@ sealed interface TgContent {
      * @property width Video width in pixels
      * @property height Video height in pixels
      * @property fileSize File size in bytes
-     * @property supportsStreaming Whether TDLib indicates streaming support
+     * @property supportsStreaming Whether Telegram API indicates streaming support
      * @property caption Message caption text
      */
     data class Video(
@@ -112,7 +112,7 @@ sealed interface TgContent {
     /**
      * Audio content (music files)
      *
-     * @property fileId TDLib file ID
+     * @property fileId Telegram API file ID
      * @property remoteId Stable remote file identifier
      * @property fileName Original file name
      * @property mimeType MIME type (e.g., "audio/mpeg")
@@ -139,7 +139,7 @@ sealed interface TgContent {
     /**
      * Document/file content
      *
-     * @property fileId TDLib file ID
+     * @property fileId Telegram API file ID
      * @property remoteId Stable remote file identifier
      * @property fileName Original file name
      * @property mimeType MIME type
@@ -172,7 +172,7 @@ sealed interface TgContent {
     /**
      * Voice message content
      *
-     * @property fileId TDLib file ID
+     * @property fileId Telegram API file ID
      * @property remoteId Stable remote file identifier
      * @property duration Duration in seconds
      * @property mimeType MIME type
@@ -191,7 +191,7 @@ sealed interface TgContent {
     /**
      * Video note (round video message)
      *
-     * @property fileId TDLib file ID
+     * @property fileId Telegram API file ID
      * @property remoteId Stable remote file identifier
      * @property duration Duration in seconds
      * @property length Video dimension (square)
@@ -210,7 +210,7 @@ sealed interface TgContent {
     /**
      * Animation (GIF/MP4 animation)
      *
-     * @property fileId TDLib file ID
+     * @property fileId Telegram API file ID
      * @property remoteId Stable remote file identifier
      * @property fileName Original file name
      * @property mimeType MIME type

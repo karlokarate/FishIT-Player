@@ -20,7 +20,7 @@ import android.app.Application
  *
  * **What we add:**
  * - Custom watchers for Player components
- * - TDLib-related objects that hold native resources
+ * - Telegram API-related objects that hold native resources
  * - Long-lived coroutine scopes that might retain Context
  *
  * **Usage:**
@@ -147,19 +147,19 @@ object LeakCanaryConfig {
     }
 
     /**
-     * Watch a TDLib-related object for leaks.
+     * Watch a Telegram API-related object for leaks.
      *
-     * TDLib objects may hold native resources and MUST be properly released.
+     * Telegram API objects may hold native resources and MUST be properly released.
      * No-op if LeakCanary is not available.
      *
      * @param watchedObject The object to watch
      * @param description Human-readable description
      */
-    fun watchTdLibObject(
+    fun watchTelegramObject(
         watchedObject: Any,
         description: String,
     ) {
-        watchObject(watchedObject, "TDLib: $description")
+        watchObject(watchedObject, "Telegram API: $description")
     }
 
     /**

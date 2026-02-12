@@ -11,12 +11,12 @@ import kotlinx.coroutines.flow.Flow
  * this interface to fetch messages for catalog ingestion.
  *
  * **v2 Architecture:**
- * - Returns [TgMessage], [TgChat] wrapper types (not raw TDLib DTOs)
+ * - Returns [TgMessage], [TgChat] wrapper types (not raw Telegram API DTOs)
  * - No media classification/normalization (belongs in pipeline)
  * - No persistence (belongs in data layer)
  *
  * **Paging Rule (critical):**
- * Per TDLib semantics, `getChatHistory` requires:
+ * Per Telegram API semantics, `getChatHistory` requires:
  * - First page: `fromMessageId=0`, `offset=0`
  * - Subsequent pages: `fromMessageId=oldestMsgId`, `offset=-1` (to avoid duplicates)
  *

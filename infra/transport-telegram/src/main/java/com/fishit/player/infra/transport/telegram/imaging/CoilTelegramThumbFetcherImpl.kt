@@ -24,7 +24,7 @@ import com.fishit.player.infra.transport.telegram.TelegramThumbFetcher as Transp
  *
  * **Architecture:**
  * - core:ui-imaging defines the [TelegramThumbFetcher] interface (Coil-facing)
- * - infra:transport-telegram provides [TransportThumbFetcher] (TDLib-facing)
+ * - infra:transport-telegram provides [TransportThumbFetcher] (Telethon proxy-facing)
  * - This implementation bridges the two
  *
  * **v2 Migration:**

@@ -1,50 +1,50 @@
 package com.fishit.player.infra.transport.telegram.api
 
 /**
- * Transport-layer TDLib authentication state.
+ * Transport-layer Telegram authentication state.
  *
- * Sealed interface representing TDLib authorization states without
- * exposing TDLib types. Maps directly to TDLib AuthorizationState events.
+ * Sealed interface representing Telegram authorization states.
+ * Backend-agnostic: works with Telethon HTTP proxy.
  *
  * **v2 Architecture:**
  * - Transport emits these states via Flow
  * - Data layer maps to domain TelegramAuthState (core/feature-api)
- * - No TDLib types leak outside transport
+ * - No transport implementation types leak outside this layer
  *
  * **IMPORTANT:** This is NOT the same as core/feature-api TelegramAuthState.
- * This is transport-level TDLib state; domain state is in core/feature-api.
+ * This is transport-level state; domain state is in core/feature-api.
  */
-sealed interface TdlibAuthState {
+sealed interface TransportAuthState {
     /**
      * Client is ready and authorized.
      * Normal operations can proceed.
      */
-    data object Ready : TdlibAuthState
+    data object Ready : TransportAuthState
 
     /**
      * Client is connecting/initializing.
      */
-    data object Connecting : TdlibAuthState
+    data object Connecting : TransportAuthState
 
     /**
      * Idle state before any action taken.
      */
-    data object Idle : TdlibAuthState
+    data object Idle : TransportAuthState
 
     /**
-     * TDLib is closing down.
+     * Proxy is shutting down.
      */
-    data object LoggingOut : TdlibAuthState
+    data object LoggingOut : TransportAuthState
 
     /**
      * Client has been closed.
      */
-    data object Closed : TdlibAuthState
+    data object Closed : TransportAuthState
 
     /**
      * Logged out successfully.
      */
-    data object LoggedOut : TdlibAuthState
+    data object LoggedOut : TransportAuthState
 
     /**
      * Waiting for phone number input.
@@ -53,7 +53,7 @@ sealed interface TdlibAuthState {
      */
     data class WaitPhoneNumber(
         val hint: String? = null,
-    ) : TdlibAuthState
+    ) : TransportAuthState
 
     /**
      * Waiting for verification code.
@@ -64,7 +64,7 @@ sealed interface TdlibAuthState {
     data class WaitCode(
         val phoneNumber: String? = null,
         val codeLength: Int? = null,
-    ) : TdlibAuthState
+    ) : TransportAuthState
 
     /**
      * Waiting for two-factor authentication password.
@@ -75,19 +75,7 @@ sealed interface TdlibAuthState {
     data class WaitPassword(
         val passwordHint: String? = null,
         val hasRecoveryEmail: Boolean = false,
-    ) : TdlibAuthState
-
-    /**
-     * Waiting for TDLib parameters to be set.
-     * Internal state, usually handled automatically.
-     */
-    data object WaitTdlibParameters : TdlibAuthState
-
-    /**
-     * Waiting for database encryption key.
-     * Internal state for encrypted databases.
-     */
-    data object WaitEncryptionKey : TdlibAuthState
+    ) : TransportAuthState
 
     /**
      * Error state with message.
@@ -96,16 +84,16 @@ sealed interface TdlibAuthState {
      */
     data class Error(
         val message: String,
-    ) : TdlibAuthState
+    ) : TransportAuthState
 
     /**
-     * Unknown or unmapped TDLib state.
+     * Unknown or unmapped state.
      *
      * @property raw String representation for debugging
      */
     data class Unknown(
         val raw: String,
-    ) : TdlibAuthState
+    ) : TransportAuthState
 }
 
 /**

@@ -31,8 +31,8 @@ enum class TgChatType {
 /**
  * Transport-layer chat descriptor for Telegram chats.
  *
- * Pure DTO with no TDLib dependencies. Created by mapping
- * TDLib `Chat` objects in the transport layer.
+ * Pure DTO with no Telegram API dependencies. Created by mapping
+ * Telegram API `Chat` objects in the transport layer.
  *
  * **v2 Architecture:**
  * - Transport produces this DTO

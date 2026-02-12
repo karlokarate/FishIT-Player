@@ -82,7 +82,7 @@ class TelegramActivationObserver
                     // Explicitly logged out/disconnected = INACTIVE
                     is TelegramAuthState.Disconnected -> TelegramActivation.Inactive
 
-                    // Idle = TDLib initializing, do NOT change activation state
+                    // Idle = Telegram API initializing, do NOT change activation state
                     // This prevents false INACTIVE at app startup
                     is TelegramAuthState.Idle -> TelegramActivation.Unchanged
 
@@ -126,7 +126,7 @@ class TelegramActivationObserver
                 }
                 is TelegramActivation.Unchanged -> {
                     // Do nothing - keep previous activation state
-                    // This prevents false INACTIVE at startup when TDLib is just initializing
+                    // This prevents false INACTIVE at startup when Telegram API is just initializing
                 }
             }
         }

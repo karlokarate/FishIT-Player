@@ -18,7 +18,7 @@ package com.fishit.player.core.model
  *
  * **Imaging Contract:**
  * - ImageRef fields (poster, backdrop, thumbnail) are populated by normalizer
- * - Pipelines MUST NOT use raw URLs or TDLib DTOs
+ * - Pipelines MUST NOT use raw URLs or Telegram API DTOs
  * - UI consumes ImageRef via GlobalImageLoader (:core:ui-imaging)
  * - See [ImageRef] for variant types and usage
  *

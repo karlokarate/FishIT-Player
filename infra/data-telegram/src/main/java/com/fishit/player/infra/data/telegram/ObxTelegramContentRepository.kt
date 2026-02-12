@@ -253,7 +253,7 @@ class ObxTelegramContentRepository
                     ExternalIds(imdbId = it)
                 } ?: ExternalIds()
 
-            // Playback hints (v2 SSOT): keep TDLib session-local IDs OUT of storage.
+            // Playback hints (v2 SSOT): keep Telegram API session-local IDs OUT of storage.
             // We persist remoteId and resolve fileId at runtime.
             val hints =
                 buildMap {

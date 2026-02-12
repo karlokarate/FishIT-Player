@@ -114,7 +114,7 @@ class ImageRefFetcher(
     /**
      * Fetch inline bytes directly from memory.
      *
-     * Used for TDLib minithumbnails (~40px inline JPEGs) that are embedded in the message payload.
+     * Used for Telegram API minithumbnails (~40px inline JPEGs) that are embedded in the message payload.
      * These are decoded instantly without network - perfect for blur placeholders.
      */
     private suspend fun fetchInlineBytes(ref: ImageRef.InlineBytes): FetchResult {

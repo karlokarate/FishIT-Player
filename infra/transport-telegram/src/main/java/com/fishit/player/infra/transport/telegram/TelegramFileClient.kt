@@ -10,13 +10,13 @@ import kotlinx.coroutines.flow.Flow
  * this interface for progressive file downloads during streaming.
  *
  * **v2 Architecture:**
- * - Transport handles TDLib file download primitives
+ * - Transport handles Telegram API file download primitives
  * - No MP4 parsing or playback-specific logic (belongs in playback layer)
  * - Returns [TgFile] wrapper types with download state
  *
  * **RemoteId-First Design:**
  * Files are identified by stable `remoteId` rather than `fileId`.
- * If a fileId becomes stale (TDLib cache eviction), resolve via remoteId.
+ * If a fileId becomes stale (Telegram API cache eviction), resolve via remoteId.
  *
  * **Implementation:** [DefaultTelegramClient] implements this interface internally.
  *
@@ -48,7 +48,7 @@ interface TelegramFileClient {
      * - 16 = Medium (prefetch, next items)
      * - 1-8 = Low (background backfill)
      *
-     * @param fileId TDLib file ID
+     * @param fileId Telegram API file ID
      * @param priority Download priority (1-32, higher = more urgent)
      * @param offset Starting offset for partial download (default 0)
      * @param limit Bytes to download (0 = entire file)
@@ -63,7 +63,7 @@ interface TelegramFileClient {
     /**
      * Cancel an active download.
      *
-     * @param fileId TDLib file ID
+     * @param fileId Telegram API file ID
      * @param deleteLocalCopy Whether to delete partially downloaded file
      */
     suspend fun cancelDownload(
@@ -74,7 +74,7 @@ interface TelegramFileClient {
     /**
      * Get current file state.
      *
-     * @param fileId TDLib file ID
+     * @param fileId Telegram API file ID
      * @return Current file state or null if not found
      */
     suspend fun getFile(fileId: Int): TgFile?
@@ -82,7 +82,7 @@ interface TelegramFileClient {
     /**
      * Resolve remoteId to current fileId.
      *
-     * Use this when a fileId becomes stale. TDLib may reassign fileIds
+     * Use this when a fileId becomes stale. Telegram API may reassign fileIds
      * after cache eviction, but remoteId remains stable.
      *
      * **Fallback pattern:**
@@ -101,7 +101,7 @@ interface TelegramFileClient {
      * Used by playback layer to determine if enough data is available
      * for streaming to begin.
      *
-     * @param fileId TDLib file ID
+     * @param fileId Telegram API file ID
      * @return Number of bytes downloaded from the beginning of the file
      */
     suspend fun getDownloadedPrefixSize(fileId: Int): Long
@@ -109,7 +109,7 @@ interface TelegramFileClient {
     /**
      * Get storage statistics.
      *
-     * Returns fast approximation of TDLib cache usage.
+     * Returns fast approximation of Telegram API cache usage.
      *
      * @return Storage stats (total size, file counts by type)
      */
@@ -118,7 +118,7 @@ interface TelegramFileClient {
     /**
      * Optimize storage by removing old files.
      *
-     * TDLib will remove files based on size/age thresholds.
+     * Telegram API will remove files based on size/age thresholds.
      *
      * @param maxSizeBytes Maximum cache size to maintain
      * @param maxAgeDays Maximum file age in days
@@ -140,7 +140,7 @@ sealed class TgFileUpdate {
     /**
      * Download progress update.
      *
-     * @param fileId TDLib file ID
+     * @param fileId Telegram API file ID
      * @param downloadedSize Bytes downloaded so far
      * @param totalSize Total file size (0 if unknown)
      * @param downloadedPrefixSize Bytes downloaded from beginning
@@ -155,7 +155,7 @@ sealed class TgFileUpdate {
     /**
      * Download completed.
      *
-     * @param fileId TDLib file ID
+     * @param fileId Telegram API file ID
      * @param localPath Full path to downloaded file
      */
     data class Completed(
@@ -166,9 +166,9 @@ sealed class TgFileUpdate {
     /**
      * Download failed.
      *
-     * @param fileId TDLib file ID
+     * @param fileId Telegram API file ID
      * @param error Error description
-     * @param errorCode TDLib error code (if available)
+     * @param errorCode Telegram API error code (if available)
      */
     data class Failed(
         override val fileId: Int,
@@ -178,7 +178,7 @@ sealed class TgFileUpdate {
 }
 
 /**
- * Storage statistics from TDLib.
+ * Storage statistics from Telegram API.
  */
 data class TgStorageStats(
     val totalSize: Long,

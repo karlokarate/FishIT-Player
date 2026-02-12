@@ -11,14 +11,14 @@ import kotlinx.coroutines.isActive
 /**
  * Cursor-based chat history traversal with incremental sync support.
  *
- * Uses TDLib's fromMessageId semantics:
+ * Uses Telegram API's fromMessageId semantics:
  * - fromMessageId=0 → start from latest
  * - subsequent pages use last message ID as cursor
  *
  * **Incremental Sync (High-Water Mark):**
  * When [stopAtMessageId] is provided, scanning stops when we reach a message
  * with ID <= stopAtMessageId. This enables "only fetch new content" behavior:
- * - TDLib returns messages newest-first
+ * - Telegram API returns messages newest-first
  * - We scan until we hit a message we've already seen
  * - The caller tracks the highest seen messageId for next sync
  *
@@ -62,8 +62,8 @@ internal class TelegramMessageCursor(
     /**
      * Fetch the next batch of media items from the chat.
      *
-     * **TDLib Async Loading Handling:**
-     * TDLib may return empty results while loading data from the server in the background.
+     * **Telegram API Async Loading Handling:**
+     * Telegram API may return empty results while loading data from the server in the background.
      * We retry up to [EMPTY_PAGE_MAX_RETRIES] times with exponential backoff before
      * concluding that the chat history is truly exhausted.
      *
@@ -94,8 +94,8 @@ internal class TelegramMessageCursor(
                 .coerceAtMost(pageSize.toLong())
                 .toInt()
 
-        // Fetch page with retry for TDLib async loading
-        // TDLib may return empty while loading from server - retry with backoff
+        // Fetch page with retry for Telegram API async loading
+        // Telegram API may return empty while loading from server - retry with backoff
         var page: List<TelegramMediaItem> = emptyList()
         var emptyRetries = 0
 
@@ -111,7 +111,7 @@ internal class TelegramMessageCursor(
                 break // Got data, continue processing
             }
 
-            // Empty page - might be TDLib async loading, retry with backoff
+            // Empty page - might be Telegram API async loading, retry with backoff
             if (emptyRetries < EMPTY_PAGE_MAX_RETRIES) {
                 val backoffMs = EMPTY_PAGE_BASE_DELAY_MS * (1 shl emptyRetries) // Exponential: 300, 600, 1200ms
                 UnifiedLog.d(
@@ -138,7 +138,7 @@ internal class TelegramMessageCursor(
         }
 
         // Incremental sync: Check for high-water mark
-        // TDLib returns messages newest-first, so if we see messageId <= stopAtMessageId,
+        // Telegram API returns messages newest-first, so if we see messageId <= stopAtMessageId,
         // we've reached content we've already seen
         val truncatedPage =
             if (stopAtMessageId != null) {
@@ -220,8 +220,8 @@ internal class TelegramMessageCursor(
         private const val DEFAULT_PAGE_SIZE = 100
 
         /**
-         * Maximum retries when TDLib returns empty page.
-         * TDLib may be loading data from server asynchronously.
+         * Maximum retries when Telegram API returns empty page.
+         * Telegram API may be loading data from server asynchronously.
          */
         private const val EMPTY_PAGE_MAX_RETRIES = 3
 

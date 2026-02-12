@@ -1,7 +1,7 @@
 package com.fishit.player.pipeline.telegram.catalog
 
 import com.fishit.player.infra.logging.UnifiedLog
-import com.fishit.player.infra.transport.telegram.api.TdlibAuthState
+import com.fishit.player.infra.transport.telegram.api.TransportAuthState
 import com.fishit.player.infra.transport.telegram.api.TelegramConnectionState
 import com.fishit.player.pipeline.telegram.adapter.TelegramChatInfo
 import com.fishit.player.pipeline.telegram.adapter.TelegramMediaUpdate
@@ -62,10 +62,10 @@ class TelegramCatalogPipelineImpl
                     // Pre-flight: Check auth state
                     UnifiedLog.i(TAG) { "scanCatalog called - checking auth state..." }
                     val auth = adapter.authState.first()
-                    UnifiedLog.i(TAG) { "Auth state: $auth (isReady=${auth is TdlibAuthState.Ready})" }
+                    UnifiedLog.i(TAG) { "Auth state: $auth (isReady=${auth is TransportAuthState.Ready})" }
 
-                    if (auth !is TdlibAuthState.Ready) {
-                        UnifiedLog.w(TAG) { "BLOCKER: Cannot scan - auth state is $auth (expected TdlibAuthState.Ready)" }
+                    if (auth !is TransportAuthState.Ready) {
+                        UnifiedLog.w(TAG) { "BLOCKER: Cannot scan - auth state is $auth (expected TransportAuthState.Ready)" }
                         send(
                             TelegramCatalogEvent.ScanError(
                                 reason = "unauthenticated",
@@ -125,7 +125,7 @@ class TelegramCatalogPipelineImpl
                     send(
                         TelegramCatalogEvent.ScanStarted(
                             chatCount = totalChats,
-                            estimatedTotalMessages = null, // TDLib doesn't provide this efficiently
+                            estimatedTotalMessages = null, // Telegram API doesn't provide this efficiently
                         ),
                     )
 
@@ -370,7 +370,7 @@ class TelegramCatalogPipelineImpl
                 UnifiedLog.i(TAG_LIVE, "Starting live media updates stream")
 
                 val auth = adapter.authState.first()
-                if (auth !is TdlibAuthState.Ready) {
+                if (auth !is TransportAuthState.Ready) {
                     UnifiedLog.w(TAG_LIVE, "Pre-flight failed: auth_state=$auth")
                     send(
                         TelegramCatalogEvent.ScanError(

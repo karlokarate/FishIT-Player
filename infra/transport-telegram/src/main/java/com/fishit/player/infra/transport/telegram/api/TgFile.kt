@@ -3,15 +3,15 @@ package com.fishit.player.infra.transport.telegram.api
 /**
  * Transport-layer file descriptor for Telegram files.
  *
- * This is a pure DTO with no TDLib dependencies. Created by mapping
- * TDLib `File` objects in the transport layer.
+ * This is a pure DTO with no Telegram API dependencies. Created by mapping
+ * Telegram API `File` objects in the transport layer.
  *
  * **v2 Architecture:**
  * - Transport produces this DTO
  * - Pipeline/Playback consume it
- * - No TDLib types leak outside transport
+ * - No Telegram API types leak outside transport
  *
- * @property id TDLib internal file ID (may become stale after cache eviction)
+ * @property id Telegram API internal file ID (may become stale after cache eviction)
  * @property remoteId Stable remote file identifier (use for cache key/recovery)
  * @property uniqueId Unique file identifier (persistent across sessions)
  * @property size File size in bytes (if known)

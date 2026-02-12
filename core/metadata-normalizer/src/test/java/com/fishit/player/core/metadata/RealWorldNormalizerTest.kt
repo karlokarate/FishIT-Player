@@ -11,7 +11,7 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 /**
- * Real-world normalizer tests with 50 TDLib/Telegram and 50 Xtream inputs.
+ * Real-world normalizer tests with 50 Telegram API/Telegram and 50 Xtream inputs.
  *
  * These tests use ACTUAL filenames observed from:
  * - Telegram media exports (German movie/series channels)
@@ -32,7 +32,7 @@ class RealWorldNormalizerTest {
     )
 
     // ==========================================================================
-    // PART 1: 50 REALISTIC TDLIB/TELEGRAM INPUTS
+    // PART 1: 50 REALISTIC TELEGRAM/TELEGRAM INPUTS
     // ==========================================================================
     // Based on real exports from German Telegram movie/series channels
 

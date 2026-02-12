@@ -26,7 +26,7 @@ import com.fishit.player.infra.transport.telegram.TelegramThumbFetcher as Transp
  * **Architecture (IMAGING_SYSTEM.md):**
  * - core:ui-imaging defines GlobalImageLoader and TelegramThumbFetcher interface
  * - app-v2 wires the implementation via DI
- * - Transport layer resolves TDLib files, UI layer displays images
+ * - Transport layer resolves Telegram API files, UI layer displays images
  *
  * **Coil Integration Best Practice:**
  * - ImageLoader is created via DI with dynamic cache sizing

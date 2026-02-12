@@ -59,18 +59,20 @@ object NxKeyGenerator {
         workType: NxWorkRepository.WorkType,
         title: String,
         year: Int? = null,
-        tmdbId: Int? = null,
+        @Suppress("unused") tmdbId: Int? = null,
         season: Int? = null,
         episode: Int? = null,
     ): String {
-        val authority = if (tmdbId != null) "tmdb" else "heuristic"
+        // ALWAYS heuristic format. tmdbId is intentionally IGNORED here.
+        //
+        // WHY: workKey must be IMMUTABLE once created. If workKey changed format
+        // based on tmdbId availability (heuristic → tmdb), a re-sync after TMDB
+        // enrichment would generate a NEW workKey → creating duplicate entities.
+        //
+        // The tmdbId is stored as a separate indexed field on NX_Work and used
+        // for cross-reference via authorityKey. See Dual-Lookup in
+        // NxCanonicalMediaRepositoryImpl.upsertCanonicalMedia().
         val type = workType.name.lowercase()
-
-        if (tmdbId != null) {
-            return "$type:$authority:$tmdbId"
-        }
-
-        // Heuristic key: slug + year (+ season/episode for episodes)
         val slug = toSlug(title)
         val yearPart = when {
             workType == NxWorkRepository.WorkType.LIVE_CHANNEL -> null // no year for live
@@ -91,7 +93,7 @@ object NxKeyGenerator {
             }
         }
 
-        return "$type:$authority:$id"
+        return "$type:heuristic:$id"
     }
 
     /**
@@ -301,7 +303,7 @@ object NxKeyGenerator {
      * Format: `telegram:user:{userId}`
      * Example: `telegram:user:123456789`
      *
-     * @param userId Telegram user ID (from TDLib)
+     * @param userId Telegram user ID (from Telegram API)
      * @return Account key in format `telegram:user:{userId}`
      */
     fun telegramAccountKeyFromUserId(userId: Long): String {

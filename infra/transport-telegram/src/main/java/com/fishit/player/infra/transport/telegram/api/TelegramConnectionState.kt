@@ -3,7 +3,7 @@ package com.fishit.player.infra.transport.telegram.api
 /**
  * Telegram connection state (transport layer).
  *
- * This represents the TDLib connection status.
+ * This represents the Telegram API connection status.
  * For domain-level connection state, see core/feature-api.
  */
 sealed interface TelegramConnectionState {

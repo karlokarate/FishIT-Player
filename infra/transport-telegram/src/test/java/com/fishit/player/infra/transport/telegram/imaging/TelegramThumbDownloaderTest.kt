@@ -15,7 +15,7 @@ import org.junit.Test
 /**
  * Unit tests for TelegramThumbDownloader.
  *
- * Verifies thumbnail download strategy using TDLib cache only.
+ * Verifies thumbnail download strategy using Telegram API cache only.
  */
 class TelegramThumbDownloaderTest {
     @Test

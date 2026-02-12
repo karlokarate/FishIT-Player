@@ -7,7 +7,7 @@ package com.fishit.player.core.playermodel
  * which determines which PlaybackSourceFactory handles it.
  */
 enum class SourceType {
-    /** Telegram media files (via TDLib) */
+    /** Telegram media files (via Telegram API) */
     TELEGRAM,
 
     /** Xtream Codes API content (Live TV, VOD, Series) */

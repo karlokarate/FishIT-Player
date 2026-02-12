@@ -54,7 +54,7 @@ interface TelegramCatalogPipeline {
  * @property maxMessagesPerChat Maximum messages to scan per chat (null = no limit)
  * @property minMessageTimestampMs Minimum message timestamp in ms since epoch (null = no filter)
  * @property chatIds Specific chat IDs to scan (null = all chats)
- * @property pageSize Messages per page for TDLib pagination
+ * @property pageSize Messages per page for Telegram API pagination
  * @property highWaterMarks Map of chatId to highest seen messageId for incremental sync.
  *           When provided, scanning stops for a chat when reaching messageId <= highWaterMark.
  *           This enables "only fetch new content" behavior on subsequent syncs.

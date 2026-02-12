@@ -14,7 +14,7 @@ package com.fishit.player.core.model
  * **Imaging Contract (IMAGING_SYSTEM.md):**
  * - Pipelines populate ImageRef fields from source data
  * - ImageRef is the ONLY way to pass images through the system
- * - NO raw URLs or TDLib DTOs allowed past this layer
+ * - NO raw URLs or Telegram API DTOs allowed past this layer
  *
  * @property originalTitle Human-readable title as provided by source (NO cleaning)
  * @property mediaType Type of media content (MOVIE, SERIES_EPISODE, LIVE, CLIP, etc.)
@@ -305,7 +305,7 @@ enum class SourceType {
     /** Xtream Codes API provider (IPTV, VOD, Series) */
     XTREAM,
 
-    /** Telegram media integration via TDLib */
+    /** Telegram media integration via Telegram API */
     TELEGRAM,
 
     /** Local file system, SAF, SMB, ContentResolver */

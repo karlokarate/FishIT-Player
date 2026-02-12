@@ -19,13 +19,23 @@ class NxKeyGeneratorTest {
     @Test
     fun `workKey - heuristic movie generates correct format`() {
         val key = NxKeyGenerator.workKey(WorkType.MOVIE, "The Matrix", 1999)
-        assertEquals("movie:heuristic:the-matrix-1999", key)
+        // Article "The" stripped by SlugGenerator, authority is ALWAYS heuristic
+        assertEquals("movie:heuristic:matrix-1999", key)
     }
 
     @Test
-    fun `workKey - tmdb movie uses tmdb authority`() {
+    fun `workKey - tmdbId is ignored for key stability`() {
+        // tmdbId is intentionally ignored in workKey generation to prevent
+        // key instability when TMDB enrichment adds tmdbId after initial sync.
         val key = NxKeyGenerator.workKey(WorkType.MOVIE, "The Matrix", 1999, tmdbId = 603)
-        assertEquals("movie:tmdb:603", key)
+        assertEquals("movie:heuristic:matrix-1999", key)
+    }
+
+    @Test
+    fun `workKey - same key with and without tmdbId`() {
+        val withTmdb = NxKeyGenerator.workKey(WorkType.MOVIE, "The Matrix", 1999, tmdbId = 603)
+        val withoutTmdb = NxKeyGenerator.workKey(WorkType.MOVIE, "The Matrix", 1999)
+        assertEquals(withTmdb, withoutTmdb)
     }
 
     @Test
@@ -48,7 +58,7 @@ class NxKeyGeneratorTest {
     }
 
     @Test
-    fun `workKey - tmdb episode uses tmdb id only`() {
+    fun `workKey - tmdb episode still uses heuristic format`() {
         val key = NxKeyGenerator.workKey(
             workType = WorkType.EPISODE,
             title = "Breaking Bad",
@@ -57,7 +67,8 @@ class NxKeyGeneratorTest {
             season = 1,
             episode = 5,
         )
-        assertEquals("episode:tmdb:67890", key)
+        // tmdbId ignored — always heuristic for key stability
+        assertEquals("episode:heuristic:breaking-bad-2008-s01e05", key)
     }
 
     @Test
@@ -79,9 +90,10 @@ class NxKeyGeneratorTest {
     }
 
     @Test
-    fun `seriesKey - tmdb convenience method works`() {
+    fun `seriesKey - tmdbId ignored for stability`() {
         val key = NxKeyGenerator.seriesKey("Game of Thrones", 2011, tmdbId = 1399)
-        assertEquals("series:tmdb:1399", key)
+        // tmdbId ignored — always heuristic
+        assertEquals("series:heuristic:game-of-thrones-2011", key)
     }
 
     @Test
@@ -225,8 +237,9 @@ class NxKeyGeneratorTest {
     // =========================================================================
 
     @Test
-    fun `toSlug - basic title`() {
-        assertEquals("the-matrix", NxKeyGenerator.toSlug("The Matrix"))
+    fun `toSlug - basic title with article stripped`() {
+        // Leading article "The" removed by SlugGenerator
+        assertEquals("matrix", NxKeyGenerator.toSlug("The Matrix"))
     }
 
     @Test
@@ -245,8 +258,8 @@ class NxKeyGeneratorTest {
     }
 
     @Test
-    fun `toSlug - multiple spaces collapsed`() {
-        assertEquals("the-matrix", NxKeyGenerator.toSlug("The   Matrix"))
+    fun `toSlug - multiple spaces collapsed and article stripped`() {
+        assertEquals("matrix", NxKeyGenerator.toSlug("The   Matrix"))
     }
 
     @Test

@@ -80,7 +80,7 @@ interface SourceActivationStore {
      * Set Telegram source as active.
      *
      * Call this when:
-     * - TDLib becomes authorized (TdlibAuthState.Ready)
+     * - Telegram API becomes authorized (TransportAuthState.Ready)
      * - User completes Telegram login flow
      */
     suspend fun setTelegramActive()
@@ -89,7 +89,7 @@ interface SourceActivationStore {
      * Set Telegram source as inactive.
      *
      * Call this when:
-     * - TDLib becomes unauthorized (LoggedOut, Closed)
+     * - Telegram API becomes unauthorized (LoggedOut, Closed)
      * - User manually disables Telegram source
      *
      * @param reason Optional error reason if deactivation is due to an error

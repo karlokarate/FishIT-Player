@@ -16,9 +16,9 @@ package com.fishit.player.infra.transport.telegram
  * - RemoteId-based file resolution
  *
  * **Architecture:**
- * - Single implementation ([DefaultTelegramClient]) composes existing modules
+ * - Single implementation ([DefaultTelegramClient]) delegates to Telethon HTTP proxy
  * - Hilt provides typed interfaces via delegation to this single instance
- * - Avoids multiple TdlClient wrappers competing for resources
+ * - All Telegram API calls routed through localhost HTTP proxy
  *
  * **Usage:** Consumers should depend on the specific typed interface they need, not this unified
  * interface (Dependency Inversion Principle).

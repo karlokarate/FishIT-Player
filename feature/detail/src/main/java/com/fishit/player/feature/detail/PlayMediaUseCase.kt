@@ -283,7 +283,7 @@ class PlayMediaUseCase
             when (imageRef) {
                 is com.fishit.player.core.model.ImageRef.Http -> imageRef.url
                 is com.fishit.player.core.model.ImageRef.TelegramThumb ->
-                    null // Requires TDLib resolution
+                    null // Requires Telegram API resolution
                 is com.fishit.player.core.model.ImageRef.LocalFile -> null // Local path, not URL
                 is com.fishit.player.core.model.ImageRef.InlineBytes -> null // Bytes, not URL
             }

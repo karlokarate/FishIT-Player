@@ -35,15 +35,15 @@ class DefaultCacheManager
         companion object {
             private const val TAG = "CacheManager"
 
-            // TDLib session directory names (current v2 default: app-v2 TelegramAuthModule)
-            private const val TDLIB_SESSION_ROOT_DIR = "tdlib"
-            private const val TDLIB_DB_SUBDIR = "db"
-            private const val TDLIB_FILES_SUBDIR = "files"
+            // Telegram API session directory names (current v2 default: app-v2 TelegramAuthModule)
+            private const val TELEGRAM_SESSION_ROOT_DIR = "telegram"
+            private const val TELEGRAM_DB_SUBDIR = "db"
+            private const val TELEGRAM_FILES_SUBDIR = "files"
 
-            // TDLib legacy directory names (v1 / older layouts)
-            private const val TDLIB_DB_DIR_LEGACY = "tdlib-db"
-            private const val TDLIB_FILES_DIR_LEGACY = "tdlib-files"
-            private const val TDLIB_DIR_LEGACY = "tdlib"
+            // Telegram API legacy directory names (v1 / older layouts)
+            private const val TELEGRAM_DB_DIR_LEGACY = "telegram-db"
+            private const val TELEGRAM_FILES_DIR_LEGACY = "telegram-files"
+            private const val TELEGRAM_DIR_LEGACY = "telegram"
 
             // ObjectBox directory name (relative to filesDir)
             private const val OBJECTBOX_DIR = "objectbox"
@@ -56,12 +56,12 @@ class DefaultCacheManager
         override suspend fun getTelegramCacheSizeBytes(): Long =
             withContext(Dispatchers.IO) {
                 try {
-                    val v2SessionRoot = File(context.filesDir, TDLIB_SESSION_ROOT_DIR)
-                    val v2FilesDir = File(v2SessionRoot, TDLIB_FILES_SUBDIR)
+                    val v2SessionRoot = File(context.filesDir, TELEGRAM_SESSION_ROOT_DIR)
+                    val v2FilesDir = File(v2SessionRoot, TELEGRAM_FILES_SUBDIR)
 
-                    val legacyFilesDir = File(context.noBackupFilesDir, TDLIB_FILES_DIR_LEGACY)
-                    val legacySessionRoot = File(context.noBackupFilesDir, TDLIB_DIR_LEGACY)
-                    val legacyFilesDirAlt = File(legacySessionRoot, TDLIB_FILES_SUBDIR)
+                    val legacyFilesDir = File(context.noBackupFilesDir, TELEGRAM_FILES_DIR_LEGACY)
+                    val legacySessionRoot = File(context.noBackupFilesDir, TELEGRAM_DIR_LEGACY)
+                    val legacyFilesDirAlt = File(legacySessionRoot, TELEGRAM_FILES_SUBDIR)
 
                     val candidates =
                         listOf(
@@ -79,10 +79,10 @@ class DefaultCacheManager
                         totalSize += calculateDirectorySize(dir)
                     }
 
-                    UnifiedLog.d(TAG) { "TDLib files cache size: $totalSize bytes" }
+                    UnifiedLog.d(TAG) { "Telegram API files cache size: $totalSize bytes" }
                     totalSize
                 } catch (e: Exception) {
-                    UnifiedLog.e(TAG, e) { "Failed to calculate TDLib cache size" }
+                    UnifiedLog.e(TAG, e) { "Failed to calculate Telegram API cache size" }
                     0L
                 }
             }
@@ -128,12 +128,12 @@ class DefaultCacheManager
             withContext(Dispatchers.IO) {
                 try {
                     // Only clear files directory (downloaded media), preserve database.
-                    // Current v2 layout: filesDir/tdlib/files (see app-v2 TelegramAuthModule).
-                    val v2FilesDir = File(File(context.filesDir, TDLIB_SESSION_ROOT_DIR), TDLIB_FILES_SUBDIR)
+                    // Current v2 layout: filesDir/telegram/files (see app-v2 TelegramAuthModule).
+                    val v2FilesDir = File(File(context.filesDir, TELEGRAM_SESSION_ROOT_DIR), TELEGRAM_FILES_SUBDIR)
 
                     // Legacy layouts that might still exist on upgraded installs.
-                    val legacyFilesDir = File(context.noBackupFilesDir, TDLIB_FILES_DIR_LEGACY)
-                    val legacyFilesDirAlt = File(File(context.noBackupFilesDir, TDLIB_DIR_LEGACY), TDLIB_FILES_SUBDIR)
+                    val legacyFilesDir = File(context.noBackupFilesDir, TELEGRAM_FILES_DIR_LEGACY)
+                    val legacyFilesDirAlt = File(File(context.noBackupFilesDir, TELEGRAM_DIR_LEGACY), TELEGRAM_FILES_SUBDIR)
 
                     val candidates = listOf(v2FilesDir, legacyFilesDir, legacyFilesDirAlt)
                     val visited = HashSet<String>(candidates.size)
@@ -147,13 +147,13 @@ class DefaultCacheManager
                     }
 
                     if (clearedAny) {
-                        UnifiedLog.i(TAG) { "Cleared TDLib files cache" }
+                        UnifiedLog.i(TAG) { "Cleared Telegram API files cache" }
                     } else {
-                        UnifiedLog.d(TAG) { "TDLib files directory does not exist, nothing to clear" }
+                        UnifiedLog.d(TAG) { "Telegram API files directory does not exist, nothing to clear" }
                     }
                     true
                 } catch (e: Exception) {
-                    UnifiedLog.e(TAG, e) { "Failed to clear TDLib cache" }
+                    UnifiedLog.e(TAG, e) { "Failed to clear Telegram API cache" }
                     false
                 }
             }

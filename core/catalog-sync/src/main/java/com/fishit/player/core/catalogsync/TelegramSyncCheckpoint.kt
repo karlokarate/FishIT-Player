@@ -28,8 +28,8 @@ package com.fishit.player.core.catalogsync
  *    → For each chat, fetch from newest until reaching the high-water mark
  *    → Update high-water marks with any newer messages found
  *
- * **TDLib Integration:**
- * - TDLib getChatHistory returns messages from newest to oldest
+ * **Telegram API Integration:**
+ * - Telegram API getChatHistory returns messages from newest to oldest
  * - We stop scanning a chat when we reach messageId <= highWaterMark
  * - This naturally gives us "only new content" behavior
  *

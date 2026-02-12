@@ -3,6 +3,7 @@ plugins {
     id("org.jetbrains.kotlin.android")
     id("com.google.devtools.ksp")
     id("com.google.dagger.hilt.android")
+    kotlin("plugin.serialization")
 }
 
 android {
@@ -34,14 +35,14 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2")
 
-    // TDLib integration (g00sha tdlib-coroutines)
-    api("dev.g000sha256:tdl-coroutines-android:8.0.0")
-    
-    // Coil 3 - For CoilTelegramThumbFetcherImpl bridge
+    // OkHttp — HTTP client for Telethon proxy communication
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+
+    // kotlinx.serialization — JSON parsing of proxy responses
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
+
+    // Coil 3 — For CoilTelegramThumbFetcherImpl bridge
     implementation("io.coil-kt.coil3:coil-core:3.3.0")
-    
-    // OkIO - For file sources
-    implementation("com.squareup.okio:okio:3.9.0")
 
     // Hilt DI
     implementation("com.google.dagger:hilt-android:2.56.2")

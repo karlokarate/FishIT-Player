@@ -8,9 +8,9 @@ import com.fishit.player.core.model.ImageRef
  * Fetcher interface for resolving [ImageRef.TelegramThumb] references.
  *
  * **Purpose:**
- * - Abstracts TDLib file resolution from the imaging module
- * - Implemented in :infra:telegram-core with real TDLib integration
- * - Allows :core:ui-imaging to remain free of TDLib dependencies
+ * - Abstracts Telethon proxy file resolution from the imaging module
+ * - Implemented in :infra:telegram-core with real Telethon proxy integration
+ * - Allows :core:ui-imaging to remain free of Telethon proxy dependencies
  *
  * **Architecture:**
  * - :core:ui-imaging defines this interface
@@ -18,7 +18,7 @@ import com.fishit.player.core.model.ImageRef
  * - DI wires the implementation to GlobalImageLoader
  *
  * **Implementation Contract:**
- * 1. Resolve fileId via TDLib downloadFile API
+ * 1. Resolve fileId via proxy file endpoint
  * 2. Wait for download completion (or use cached path)
  * 3. Return SourceFetchResult with the local file
  *

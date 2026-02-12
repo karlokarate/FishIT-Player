@@ -24,7 +24,7 @@ package com.fishit.player.pipeline.telegram.model
  * @property messageId Telegram message ID
  * @property mediaAlbumId Media album ID for grouped messages (optional)
  * @property mediaType Type of media content (VIDEO, DOCUMENT, AUDIO, PHOTO, OTHER)
- * @property remoteId Stable TDLib remote ID (session-independent) - use getRemoteFile() to get fileId
+ * @property remoteId Stable Telegram API remote ID (session-independent) - use getRemoteFile() to get fileId
  * @property title Display title (from caption or parsed metadata)
  * @property fileName Original file name (RAW, no cleaning)
  * @property caption Message caption text (RAW)
@@ -34,7 +34,7 @@ package com.fishit.player.pipeline.telegram.model
  * @property width Video/photo width in pixels
  * @property height Video/photo height in pixels
  * @property supportsStreaming Whether the file supports streaming playback
- * @property thumbRemoteId Stable TDLib remote ID for thumbnail - use getRemoteFile() to get fileId
+ * @property thumbRemoteId Stable Telegram API remote ID for thumbnail - use getRemoteFile() to get fileId
  * @property thumbnailWidth Thumbnail width in pixels
  * @property thumbnailHeight Thumbnail height in pixels
  * @property photoSizes List of photo sizes (for photo messages)
@@ -218,7 +218,7 @@ data class TelegramMediaItem(
         // Production: This is a blocker - throw error
         error(
             "Production BLOCKER: remoteId is null for message $messageId in chat $chatId. " +
-                "This indicates incomplete message parsing from TDLib. " +
+                "This indicates incomplete message parsing from Telegram API. " +
                 "Stub URLs are not allowed in production builds. " +
                 "Set ALLOW_STUB_URLS=true only for testing.",
         )
@@ -233,7 +233,7 @@ data class TelegramMediaItem(
          * Set to true ONLY for:
          * - Unit tests
          * - Debug builds during development
-         * - Integration testing with incomplete TDLib setup
+         * - Integration testing with incomplete Telegram API setup
          *
          * **NEVER** enable in production releases.
          */

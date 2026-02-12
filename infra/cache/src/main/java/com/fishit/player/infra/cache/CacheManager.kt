@@ -20,11 +20,11 @@ package com.fishit.player.infra.cache
  */
 interface CacheManager {
     /**
-     * Get the size of Telegram/TDLib cache in bytes.
+     * Get the size of Telegram/Telegram API cache in bytes.
      *
      * Includes:
-     * - TDLib database directory (tdlib/)
-     * - TDLib files directory (tdlib-files/)
+     * - Telegram API database directory (telegram/)
+     * - Telegram API files directory (telegram-files/)
      *
      * @return Size in bytes, or 0 if unable to calculate
      */
@@ -48,7 +48,7 @@ interface CacheManager {
     suspend fun getDatabaseSizeBytes(): Long
 
     /**
-     * Clear the Telegram/TDLib file cache.
+     * Clear the Telegram/Telegram API file cache.
      *
      * **Note:** This clears ONLY the files cache (downloaded media),
      * NOT the database. This preserves chat history while reclaiming space.

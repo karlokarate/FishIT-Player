@@ -10,7 +10,7 @@ import javax.inject.Inject
  * Pipeline capability provider for Telegram lazy thumbnail loading.
  *
  * This capability enables:
- * - On-demand thumbnail loading from TDLib file references
+ * - On-demand thumbnail loading from Telegram API file references
  * - Efficient memory usage by loading thumbnails only when visible
  * - Automatic thumbnail caching
  *

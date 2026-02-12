@@ -20,13 +20,13 @@ import org.junit.Test
  * - Factory discovery logic breaks
  *
  * **Approach:**
- * - Uses a fake Telegram factory (no TDLib dependencies)
+ * - Uses a fake Telegram factory (no Telethon proxy dependencies)
  * - Tests resolver selection logic without actual playback
  * - Fast, deterministic, no network/runtime requirements
  *
  * **NOT Tested Here:**
  * - Actual playback (covered by integration tests)
- * - TDLib file resolution (covered by TelegramPlaybackSourceFactoryImpl tests)
+ * - Telethon proxy file resolution (covered by TelegramPlaybackSourceFactoryImpl tests)
  * - Full Hilt graph (would require instrumentation tests)
  */
 class PlaybackSourceResolverTelegramWiringTest {
@@ -50,8 +50,8 @@ class PlaybackSourceResolverTelegramWiringTest {
             val source = resolver.resolve(context)
 
             // Then: Should use Telegram factory
-            assertEquals(DataSourceType.TELEGRAM_FILE, source.dataSourceType)
-            assertTrue("Expected Telegram URI", source.uri.startsWith("tg://"))
+            assertEquals(DataSourceType.DEFAULT, source.dataSourceType)
+            assertTrue("Expected HTTP proxy URI", source.uri.startsWith("http://127.0.0.1"))
         }
 
     @Test
@@ -102,8 +102,8 @@ class PlaybackSourceResolverTelegramWiringTest {
             val source = resolver.resolve(context)
 
             // Then: Should select Telegram factory, not the other one
-            assertEquals(DataSourceType.TELEGRAM_FILE, source.dataSourceType)
-            assertTrue("Expected Telegram URI", source.uri.startsWith("tg://"))
+            assertEquals(DataSourceType.DEFAULT, source.dataSourceType)
+            assertTrue("Expected HTTP proxy URI", source.uri.startsWith("http://127.0.0.1"))
         }
 
     @Test
@@ -130,16 +130,16 @@ class PlaybackSourceResolverTelegramWiringTest {
     /**
      * Fake Telegram factory for testing.
      *
-     * Mimics TelegramPlaybackSourceFactoryImpl behavior without TDLib dependencies.
+     * Mimics TelegramPlaybackSourceFactoryImpl behavior — returns HTTP proxy URL.
      */
     private class FakeTelegramPlaybackSourceFactory : PlaybackSourceFactory {
         override fun supports(sourceType: SourceType): Boolean = sourceType == SourceType.TELEGRAM
 
         override suspend fun createSource(context: PlaybackContext): PlaybackSource {
-            // Return a fake Telegram PlaybackSource
+            // Return a fake Telegram PlaybackSource using HTTP proxy URL
             return PlaybackSource(
-                uri = "tg://file/fake123?chatId=123&messageId=456",
-                dataSourceType = DataSourceType.TELEGRAM_FILE,
+                uri = "http://127.0.0.1:8089/file?chat=123&id=456",
+                dataSourceType = DataSourceType.DEFAULT,
                 mimeType = "video/mp4",
             )
         }

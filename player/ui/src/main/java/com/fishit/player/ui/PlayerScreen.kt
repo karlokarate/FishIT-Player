@@ -51,7 +51,7 @@ import com.fishit.player.ui.sheets.SpeedSelectionSheet
  * - Receives only a [PlaybackContext] (source-agnostic)
  * - Uses [PlayerEntryPoint] internally to start playback
  * - Displays actual video via Media3 [PlayerView]
- * - Supports both Xtream (HTTP) and Telegram (TDLib streaming) playback
+ * - Supports both Xtream (HTTP) and Telegram (Telethon proxy streaming) playback
  *
  * **Architecture:**
  * - UI Layer (player:ui) - This composable

@@ -11,12 +11,12 @@ package com.fishit.player.core.model
  * **Architecture:**
  * - Pipelines (:pipeline:telegram, :pipeline:xtream) produce ImageRef
  * - Normalizer may transform/merge ImageRef from raw sources
- * - UI uses ImageRef with GlobalImageLoader (no direct URLs/TDLib DTOs)
+ * - UI uses ImageRef with GlobalImageLoader (no direct URLs/Telegram API DTOs)
  * - Coil Fetchers in :core:ui-imaging resolve each variant
  *
  * **Contract:**
  * - Pipelines MUST NOT depend on Coil
- * - UI MUST NOT use raw URLs or TDLib DTOs directly
+ * - UI MUST NOT use raw URLs or Telegram API DTOs directly
  * - All image resolution goes through ImageRef + Fetchers
  *
  * @property preferredWidth Hint for fetcher (optimal width in pixels, null = original)
@@ -66,10 +66,10 @@ sealed interface ImageRef {
      *
      * Fetcher: TelegramThumbFetcher in :core:ui-imaging
      * - Resolves remoteId → fileId via transport layer
-     * - Downloads via TDLib to its cache
+     * - Downloads via Telegram API to its cache
      * - Returns local path for Coil to decode
      *
-     * @property remoteId Stable TDLib remote file ID (cross-session stable)
+     * @property remoteId Stable Telegram API remote file ID (cross-session stable)
      * @property chatId Chat containing the media (for context/debugging)
      * @property messageId Message containing the media (for context/debugging)
      *
@@ -102,10 +102,10 @@ sealed interface ImageRef {
     ) : ImageRef
 
     /**
-     * Inline bytes reference (e.g., TDLib minithumbnails).
+     * Inline bytes reference (e.g., Telegram API minithumbnails).
      *
      * Used for:
-     * - TDLib minithumbnails (~40x40 pixel inline JPEGs)
+     * - Telegram API minithumbnails (~40x40 pixel inline JPEGs)
      * - Blur placeholders before full thumbnail loads
      * - Instant preview without network request
      *
@@ -115,7 +115,7 @@ sealed interface ImageRef {
      * blur-placeholder until full thumbnail downloads.
      *
      * @property bytes Raw JPEG/PNG bytes
-     * @property mimeType MIME type (default: image/jpeg for TDLib minithumbnails)
+     * @property mimeType MIME type (default: image/jpeg for Telegram API minithumbnails)
      */
     data class InlineBytes(
         val bytes: ByteArray,

@@ -19,7 +19,7 @@ package com.fishit.player.pipeline.telegram.model
  *
  * @property width Width in pixels
  * @property height Height in pixels
- * @property remoteId Stable TDLib remote file ID (cross-session stable)
+ * @property remoteId Stable Telegram API remote file ID (cross-session stable)
  * @property sizeBytes File size in bytes (optional)
  */
 data class TelegramPhotoSize(

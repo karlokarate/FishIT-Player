@@ -1,7 +1,7 @@
 package com.fishit.player.infra.data.telegram.auth
 
 import com.fishit.player.infra.transport.telegram.TelegramAuthClient
-import com.fishit.player.infra.transport.telegram.api.TdlibAuthState
+import com.fishit.player.infra.transport.telegram.api.TransportAuthState
 import com.fishit.player.infra.transport.telegram.api.TelegramAuthException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -26,17 +26,15 @@ class TelegramAuthRepositoryImplTest {
 
             val cases =
                 listOf(
-                    TdlibAuthState.Idle to DomainAuthState.Idle,
-                    TdlibAuthState.Connecting to DomainAuthState.Idle,
-                    TdlibAuthState.WaitTdlibParameters to DomainAuthState.Idle,
-                    TdlibAuthState.WaitEncryptionKey to DomainAuthState.Idle,
-                    TdlibAuthState.WaitPhoneNumber() to DomainAuthState.WaitingForPhone,
-                    TdlibAuthState.WaitCode(phoneNumber = "+123", codeLength = 6) to DomainAuthState.WaitingForCode,
-                    TdlibAuthState.WaitPassword(passwordHint = "hint", hasRecoveryEmail = true) to DomainAuthState.WaitingForPassword,
-                    TdlibAuthState.LoggingOut to DomainAuthState.Disconnected,
-                    TdlibAuthState.Closed to DomainAuthState.Disconnected,
-                    TdlibAuthState.LoggedOut to DomainAuthState.Disconnected,
-                    TdlibAuthState.Ready to DomainAuthState.Connected,
+                    TransportAuthState.Idle to DomainAuthState.Idle,
+                    TransportAuthState.Connecting to DomainAuthState.Idle,
+                    TransportAuthState.WaitPhoneNumber() to DomainAuthState.WaitingForPhone,
+                    TransportAuthState.WaitCode(phoneNumber = "+123", codeLength = 6) to DomainAuthState.WaitingForCode,
+                    TransportAuthState.WaitPassword(passwordHint = "hint", hasRecoveryEmail = true) to DomainAuthState.WaitingForPassword,
+                    TransportAuthState.LoggingOut to DomainAuthState.Disconnected,
+                    TransportAuthState.Closed to DomainAuthState.Disconnected,
+                    TransportAuthState.LoggedOut to DomainAuthState.Disconnected,
+                    TransportAuthState.Ready to DomainAuthState.Connected,
                 )
 
             cases.forEach { (transportState, expectedDomain) ->
@@ -44,11 +42,11 @@ class TelegramAuthRepositoryImplTest {
                 assertEquals(expectedDomain, repository.awaitStateMatching { it == expectedDomain })
             }
 
-            transport.emit(TdlibAuthState.Error("boom"))
+            transport.emit(TransportAuthState.Error("boom"))
             val errorFromTransport = repository.awaitStateMatching { it is DomainAuthState.Error }
             assertEquals("boom", (errorFromTransport as DomainAuthState.Error).message)
 
-            transport.emit(TdlibAuthState.Unknown("weird"))
+            transport.emit(TransportAuthState.Unknown("weird"))
             val unknownState = repository.awaitStateMatching { it is DomainAuthState.Error && it.message.contains("Unknown auth state") }
             assertTrue((unknownState as DomainAuthState.Error).message.contains("Unknown auth state"))
         }
@@ -81,8 +79,8 @@ class TelegramAuthRepositoryImplTest {
 
     private class FakeTelegramAuthClient : TelegramAuthClient {
         val authStateFlow =
-            MutableSharedFlow<TdlibAuthState>(replay = 1, extraBufferCapacity = 1).also {
-                it.tryEmit(TdlibAuthState.Idle)
+            MutableSharedFlow<TransportAuthState>(replay = 1, extraBufferCapacity = 1).also {
+                it.tryEmit(TransportAuthState.Idle)
             }
         var ensureAuthorizedCalls = 0
         var ensureAuthorizedError: Throwable? = null
@@ -91,9 +89,9 @@ class TelegramAuthRepositoryImplTest {
         val passwords = mutableListOf<String>()
         var logoutCalls = 0
 
-        override val authState: Flow<TdlibAuthState> = authStateFlow
+        override val authState: Flow<TransportAuthState> = authStateFlow
 
-        suspend fun emit(state: TdlibAuthState) {
+        suspend fun emit(state: TransportAuthState) {
             authStateFlow.emit(state)
         }
 

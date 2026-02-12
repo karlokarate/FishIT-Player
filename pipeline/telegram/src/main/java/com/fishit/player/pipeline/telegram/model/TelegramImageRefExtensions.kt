@@ -13,7 +13,7 @@ import com.fishit.player.core.model.ImageRef
  * - `uniqueId` is NOT used (no API to resolve it back)
  *
  * **Contract (IMAGING_SYSTEM.md):**
- * - Pipelines produce ImageRef (not raw TDLib DTOs)
+ * - Pipelines produce ImageRef (not raw Telegram API DTOs)
  * - UI consumes ImageRef via GlobalImageLoader
  * - NO Coil dependency in pipeline modules
  *
@@ -28,7 +28,7 @@ import com.fishit.player.core.model.ImageRef
  *
  * **Cache Key Stability:**
  * - Uses `remoteId` for cross-session caching
- * - `remoteId` is stable across TDLib sessions
+ * - `remoteId` is stable across Telegram API sessions
  *
  * @see contracts/TELEGRAM_ID_ARCHITECTURE_CONTRACT.md
  */

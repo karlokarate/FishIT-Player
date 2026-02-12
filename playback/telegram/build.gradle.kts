@@ -36,11 +36,6 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2")
 
-    // Media3/ExoPlayer for DataSource
-    val media3Version = "1.8.0"
-    implementation("androidx.media3:media3-exoplayer:$media3Version")
-    implementation("androidx.media3:media3-datasource:$media3Version")
-
     // Hilt DI
     implementation("com.google.dagger:hilt-android:2.56.2")
     ksp("com.google.dagger:hilt-compiler:2.56.2")

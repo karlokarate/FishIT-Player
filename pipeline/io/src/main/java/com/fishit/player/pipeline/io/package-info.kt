@@ -21,7 +21,7 @@
  * - Phase 6: Advanced features (thumbnails, metadata extraction)
  *
  * Dependencies:
- * Allowed: :core:model, :core:persistence, :infra:logging, Kotlin stdlib, coroutines
+ * Allowed: :core:model, :core:persistence, :infra:logging, Kotlin stelegram, coroutines
  * Forbidden: :player:internal, :feature:*, other :pipeline:*
  */
 package com.fishit.player.pipeline.io

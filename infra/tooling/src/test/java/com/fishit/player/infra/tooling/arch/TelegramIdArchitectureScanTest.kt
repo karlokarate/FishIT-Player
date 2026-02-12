@@ -7,7 +7,7 @@ import org.junit.Test
 import java.io.File
 
 /**
- * Comprehensive architecture scan for TDLib ID usage across all v2 modules.
+ * Comprehensive architecture scan for Telegram API ID usage across all v2 modules.
  *
  * This test performs a full codebase scan to ensure:
  * 1. No forbidden patterns leak into v2 modules
@@ -76,7 +76,7 @@ class TelegramIdArchitectureScanTest {
          * but forbidden in PERSISTENCE, PIPELINE, and DATA layers.
          */
         enum class LayerType {
-            /** Transport layer - may use fileId (runtime TDLib access) */
+            /** Transport layer - may use fileId (runtime Telegram API access) */
             TRANSPORT,
 
             /** Pipeline layer - must use remoteId (catalog output) */
@@ -135,7 +135,7 @@ class TelegramIdArchitectureScanTest {
          * Returns true if fileId fields are ALLOWED in this layer.
          *
          * Architecture rule:
-         * - TRANSPORT: ✅ fileId allowed (runtime TDLib wrappers)
+         * - TRANSPORT: ✅ fileId allowed (runtime Telegram API wrappers)
          * - PLAYBACK: ✅ fileId allowed (runtime streaming)
          * - PIPELINE: ❌ Must use remoteId
          * - PERSISTENCE: ❌ Must use remoteId
@@ -144,7 +144,7 @@ class TelegramIdArchitectureScanTest {
          */
         fun isFileIdAllowedInLayer(layer: LayerType): Boolean =
             when (layer) {
-                LayerType.TRANSPORT -> true // Runtime TDLib access
+                LayerType.TRANSPORT -> true // Runtime Telegram API access
                 LayerType.PLAYBACK -> true // Runtime streaming
                 LayerType.PIPELINE -> false // Must output remoteId
                 LayerType.PERSISTENCE -> false // Must persist remoteId
@@ -228,7 +228,7 @@ class TelegramIdArchitectureScanTest {
                 Triple(
                     "Persistent localPath field",
                     Regex("""(val|var)\s+localPath\s*:\s*String\??\s*[,=)]"""),
-                    "Do not persist local paths - TDLib cache paths are volatile",
+                    "Do not persist local paths - Telegram API cache paths are volatile",
                 ),
                 Triple(
                     "Persistent thumbLocalPath field",
@@ -253,7 +253,7 @@ class TelegramIdArchitectureScanTest {
     // ========================================================================
 
     @Test
-    fun `full v2 codebase scan for forbidden TDLib ID patterns`() {
+    fun `full v2 codebase scan for forbidden Telegram API ID patterns`() {
         val allViolations = mutableListOf<ScanViolation>()
 
         V2_SOURCE_DIRS.forEach { dir ->
@@ -296,10 +296,10 @@ class TelegramIdArchitectureScanTest {
         println("Transport remoteId usage: $transportRemoteIdCount")
         println("==================================")
 
-        // Transport layer SHOULD have fileId (it wraps TDLib types)
+        // Transport layer SHOULD have fileId (it wraps Telegram API types)
         // This is a positive validation that our layer classification is working
         assertTrue(
-            "Transport layer should use fileId for TDLib runtime wrappers. Found: $transportFileIdCount",
+            "Transport layer should use fileId for Telegram API runtime wrappers. Found: $transportFileIdCount",
             transportFileIdCount >= 0, // Will be > 0 once transport is implemented
         )
 
@@ -483,7 +483,7 @@ class TelegramIdArchitectureScanTest {
             }
         }
 
-        println("=== TDLib ID Usage Metrics (Layer-Aware) ===")
+        println("=== Telegram API ID Usage Metrics (Layer-Aware) ===")
         println("remoteId usage: $remoteIdCount")
         println("fileId in ALLOWED layers (Transport/Playback): $fileIdCountAllowedLayers")
         println("fileId in FORBIDDEN layers (incl. comments/docs): $fileIdCountForbiddenLayers")
@@ -593,7 +593,7 @@ class TelegramIdArchitectureScanTest {
     private fun buildScanReport(violations: List<ScanViolation>): String =
         buildString {
             appendLine("╔══════════════════════════════════════════════════════════════════════╗")
-            appendLine("║           TDLib ID Architecture Violation Report                     ║")
+            appendLine("║           Telegram API ID Architecture Violation Report                     ║")
             appendLine("╚══════════════════════════════════════════════════════════════════════╝")
             appendLine()
             appendLine("Found ${violations.size} violation(s) across the v2 codebase:")
@@ -619,7 +619,7 @@ class TelegramIdArchitectureScanTest {
 
             appendLine("═══════════════════════════════════════════════════════════════════════")
             appendLine("Layer Rules:")
-            appendLine("  TRANSPORT: ✅ fileId allowed (runtime TDLib wrappers)")
+            appendLine("  TRANSPORT: ✅ fileId allowed (runtime Telegram API wrappers)")
             appendLine("  PLAYBACK:  ✅ fileId allowed (runtime streaming)")
             appendLine("  PIPELINE:  ❌ Must use remoteId")
             appendLine("  PERSISTENCE: ❌ Must use remoteId")

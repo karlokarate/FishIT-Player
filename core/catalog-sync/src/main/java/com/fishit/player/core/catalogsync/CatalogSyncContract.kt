@@ -182,7 +182,7 @@ data class SyncActiveState(
  *
  * **NOT Allowed:**
  * - Direct network calls (use Pipeline)
- * - Direct TDLib/Xtream API calls
+ * - Direct Telegram API/Xtream API calls
  * - ObjectBox/DB access directly (use Data repositories)
  */
 interface CatalogSyncService {

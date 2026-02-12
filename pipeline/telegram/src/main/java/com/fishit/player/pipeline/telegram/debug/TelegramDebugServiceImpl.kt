@@ -13,7 +13,7 @@ import com.fishit.player.pipeline.telegram.model.toRawMediaMetadata
  *
  * @param adapter Pipeline adapter for Telegram transport
  * @param classifier Chat media classifier instance
- * @param sessionDir Path to TDLib session directory (for status reporting)
+ * @param sessionDir Path to Telegram API session directory (for status reporting)
  */
 class TelegramDebugServiceImpl(
     private val adapter: TelegramPipelineAdapter,

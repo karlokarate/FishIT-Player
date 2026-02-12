@@ -29,12 +29,12 @@ object CanonicalMediaFeatures {
 // Telegram Features
 // =============================================================================
 
-/** Features related to Telegram/TDLib pipeline. */
+/** Features related to Telegram/Telegram API pipeline. */
 object TelegramFeatures {
     /** Complete chat history scanning and streaming */
     val FULL_HISTORY_STREAMING = FeatureId("telegram.full_history_streaming")
 
-    /** On-demand thumbnail loading from TDLib */
+    /** On-demand thumbnail loading from Telegram API */
     val LAZY_THUMBNAILS = FeatureId("telegram.lazy_thumbnails")
 }
 

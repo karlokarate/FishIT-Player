@@ -13,7 +13,7 @@ import javax.inject.Singleton
  * Per TELEGRAM_STRUCTURED_BUNDLES_CONTRACT.md:
  * - Messages with identical `date` (Unix timestamp) are grouped as BundleCandidate
  * - Cohesion Gate (Contract R1b) decides acceptance:
- * - Primary: albumId from TDLib (if available)
+ * - Primary: albumId from Telegram API (if available)
  * - Fallback: messageId span ≤ 3×2²⁰ OR step-pattern 2²⁰
  * - Rejected candidates are split into SINGLE units
  * - Order in bundles: PHOTO (lowest msgId) → TEXT → VIDEO (highest msgId)
@@ -132,7 +132,7 @@ class TelegramMessageBundler
          * Applies Cohesion Gate (Contract R1b).
          *
          * A candidate passes if:
-         * 1. Primary: All messages share the same albumId (from TDLib)
+         * 1. Primary: All messages share the same albumId (from Telegram API)
          * 2. Fallback: MessageId span ≤ MAX_MESSAGE_ID_SPAN OR step-pattern matches
          * EXPECTED_MESSAGE_ID_STEP
          *

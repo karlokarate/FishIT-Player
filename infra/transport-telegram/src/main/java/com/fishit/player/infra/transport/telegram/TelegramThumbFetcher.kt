@@ -32,7 +32,7 @@ interface TelegramThumbFetcher {
      *
      * **Resolution Flow:**
      * 1. Resolve `remoteId` → `fileId` via `getRemoteFile(remoteId)`
-     * 2. Check if already downloaded (TDLib cache)
+     * 2. Check if already downloaded (proxy cache)
      * 3. If not, call `downloadFile(fileId, priority)`
      * 4. Return local path
      *
@@ -47,7 +47,7 @@ interface TelegramThumbFetcher {
     /**
      * Check if thumbnail is already cached locally.
      *
-     * Resolves remoteId → fileId first, then checks TDLib cache.
+     * Resolves remoteId → fileId first, then checks local cache.
      *
      * @param thumbRef Reference to the thumbnail
      * @return true if available locally without download

@@ -6,7 +6,7 @@ import org.junit.Test
 import java.io.File
 
 /**
- * Architecture tests for the remoteId-First TDLib ID architecture.
+ * Architecture tests for the remoteId-First Telegram API ID architecture.
  *
  * These tests validate that:
  * 1. Forbidden patterns (fileId, fileUniqueId fields) are NOT used in v2 modules
@@ -428,7 +428,7 @@ class TelegramIdArchitectureTest {
         val violations = findForbiddenPatterns(moduleDir, FORBIDDEN_FIELD_PATTERNS)
 
         if (violations.isNotEmpty()) {
-            fail(buildViolationMessage("Forbidden TDLib ID patterns in $modulePath", violations))
+            fail(buildViolationMessage("Forbidden Telegram API ID patterns in $modulePath", violations))
         }
     }
 

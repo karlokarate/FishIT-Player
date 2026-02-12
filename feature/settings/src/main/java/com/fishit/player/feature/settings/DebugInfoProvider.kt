@@ -10,7 +10,7 @@ import kotlinx.coroutines.flow.Flow
  *
  * **Components Provided:**
  * - Connection status (Telegram, Xtream)
- * - Cache sizes (TDLib, Image, Database)
+ * - Cache sizes (Telegram API, Image, Database)
  * - Content counts (media items per source)
  *
  * **Architecture:**
@@ -42,9 +42,9 @@ interface DebugInfoProvider {
     // =========================================================================
 
     /**
-     * Calculate TDLib cache size.
+     * Calculate Telegram API cache size.
      *
-     * Scans the TDLib files directory for total storage usage.
+     * Scans the Telegram API files directory for total storage usage.
      *
      * @return Size in bytes, or null if unavailable
      */
@@ -107,7 +107,7 @@ interface DebugInfoProvider {
     // =========================================================================
 
     /**
-     * Clear Telegram/TDLib cache.
+     * Clear Telegram/Telegram API cache.
      *
      * Deletes downloaded files but preserves database.
      *
@@ -138,7 +138,7 @@ data class ConnectionInfo(
  *
  * **Note:** This is separate from authorization state!
  * - Credentials = TG_API_ID/TG_API_HASH from BuildConfig
- * - Authorization = User logged in via TDLib
+ * - Authorization = User logged in via Telegram API
  */
 data class TelegramCredentialStatus(
     /** Whether TG_API_ID and TG_API_HASH are configured (non-empty) */

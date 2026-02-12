@@ -1,41 +1,23 @@
 package com.fishit.player.infra.transport.telegram
 
 /**
- * Configuration for a TDLib session.
- *
- * Used by [TelegramClientFactory] to create a [TelegramClient].
- * Can be used for:
- * - Pre-authenticated sessions (Codespaces/CI)
- * - Interactive auth flows (production app)
+ * Configuration for the Telethon sidecar proxy session.
  *
  * @property apiId Telegram API ID from my.telegram.org
  * @property apiHash Telegram API Hash from my.telegram.org
- * @property databaseDir Path to TDLib database directory (td.db)
- * @property filesDir Path to TDLib files directory (downloads, photos)
- * @property useMessageDatabase Whether to enable message database (default: true)
- * @property useFileDatabase Whether to enable file database (default: true)
+ * @property sessionDir Path where Telethon stores its SQLite session file (~6 KB)
+ * @property proxyPort Port for the localhost HTTP proxy (default: 8089)
  * @property phoneNumber Optional phone number for auto-auth (international format)
- * @property deviceModel Device model for TDLib (default: "FishIT-Player")
- * @property systemVersion OS version for TDLib (default: "1.0")
- * @property appVersion App version for TDLib (default: "1.0")
  */
 data class TelegramSessionConfig(
     val apiId: Int,
     val apiHash: String,
-    val databaseDir: String,
-    val filesDir: String,
-    val useMessageDatabase: Boolean = true,
-    val useFileDatabase: Boolean = true,
+    val sessionDir: String,
+    val proxyPort: Int = 8089,
     val phoneNumber: String? = null,
-    val deviceModel: String = "FishIT-Player",
-    val systemVersion: String = "1.0",
-    val appVersion: String = "1.0",
 ) {
-    /** Alias for [databaseDir] for compatibility with TdlibAuthSession. */
-    val databasePath: String get() = databaseDir
-
-    /** Alias for [filesDir] for compatibility with TdlibAuthSession. */
-    val filesPath: String get() = filesDir
+    /** Base URL for the Telethon HTTP proxy. */
+    val proxyBaseUrl: String get() = "http://127.0.0.1:$proxyPort"
 
     companion object {
         /**
@@ -45,9 +27,9 @@ data class TelegramSessionConfig(
          * - TG_API_ID
          * - TG_API_HASH
          *
-         * Optional (defaults to Codespace paths):
-         * - TDLIB_DATABASE_DIR
-         * - TDLIB_FILES_DIR
+         * Optional:
+         * - TG_SESSION_DIR (defaults to /data/data/com.fishit.player/files/telethon)
+         * - TG_PROXY_PORT (defaults to 8089)
          * - TG_PHONE_NUMBER (for auto-auth)
          *
          * @return TelegramSessionConfig or null if required vars missing
@@ -56,20 +38,16 @@ data class TelegramSessionConfig(
             val apiId = System.getenv("TG_API_ID")?.toIntOrNull() ?: return null
             val apiHash = System.getenv("TG_API_HASH") ?: return null
 
-            val defaultSessionRoot = "/workspace/.cache/tdlib-user/tdlib"
-            val databaseDir =
-                System.getenv("TDLIB_DATABASE_DIR")
-                    ?: "$defaultSessionRoot/db"
-            val filesDir =
-                System.getenv("TDLIB_FILES_DIR")
-                    ?: "$defaultSessionRoot/files"
+            val sessionDir = System.getenv("TG_SESSION_DIR")
+                ?: "/data/data/com.fishit.player/files/telethon"
+            val proxyPort = System.getenv("TG_PROXY_PORT")?.toIntOrNull() ?: 8089
             val phoneNumber = System.getenv("TG_PHONE_NUMBER")
 
             return TelegramSessionConfig(
                 apiId = apiId,
                 apiHash = apiHash,
-                databaseDir = databaseDir,
-                filesDir = filesDir,
+                sessionDir = sessionDir,
+                proxyPort = proxyPort,
                 phoneNumber = phoneNumber,
             )
         }

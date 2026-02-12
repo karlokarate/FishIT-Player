@@ -26,8 +26,8 @@ import io.objectbox.annotation.Index
  * - `posterRemoteId` – for poster image (resolved via `getRemoteFile()` at runtime)
  *
  * ### NOT Persisted (volatile/redundant):
- * - `fileId` – session-local integer, becomes stale after TDLib cache changes
- * - `uniqueId` – no TDLib API to resolve back to file
+ * - `fileId` – session-local integer, becomes stale after Telegram API cache changes
+ * - `uniqueId` – no Telegram API API to resolve back to file
  *
  * ### Runtime Resolution:
  * ```kotlin
@@ -56,7 +56,7 @@ data class ObxTelegramMessage(
     @Index var captionLower: String? = null,
     var date: Long? = null,
     var fileName: String? = null,
-    // === Enriched Metadata (from TDLib) ===
+    // === Enriched Metadata (from Telegram API) ===
     var durationSecs: Int? = null,
     var mimeType: String? = null,
     @Index var sizeBytes: Long? = null,

@@ -5,7 +5,7 @@ import com.fishit.player.core.model.MimeMediaKind
 import com.fishit.player.infra.logging.UnifiedLog
 import com.fishit.player.infra.transport.telegram.TelegramAuthClient
 import com.fishit.player.infra.transport.telegram.TelegramHistoryClient
-import com.fishit.player.infra.transport.telegram.api.TdlibAuthState
+import com.fishit.player.infra.transport.telegram.api.TransportAuthState
 import com.fishit.player.infra.transport.telegram.api.TelegramConnectionState
 import com.fishit.player.infra.transport.telegram.api.TgChat
 import com.fishit.player.infra.transport.telegram.api.TgContent
@@ -54,15 +54,15 @@ class TelegramPipelineAdapter
         private val bundleMapper: TelegramBundleToMediaItemMapper,
     ) {
         /** Current authorization state from transport layer. */
-        val authState: Flow<TdlibAuthState> = authClient.authState
+        val authState: Flow<TransportAuthState> = authClient.authState
 
         /** Current connection state - derived from auth state. */
         val connectionState: Flow<TelegramConnectionState>
             get() =
                 authClient.authState.mapNotNull { authState ->
                     when (authState) {
-                        is TdlibAuthState.Ready -> TelegramConnectionState.Connected
-                        is TdlibAuthState.Error ->
+                        is TransportAuthState.Ready -> TelegramConnectionState.Connected
+                        is TransportAuthState.Error ->
                             TelegramConnectionState.Error(authState.message)
                         else -> TelegramConnectionState.Connecting
                     }

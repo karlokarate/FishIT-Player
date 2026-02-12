@@ -20,7 +20,7 @@ data class AppStartupConfig(
 /**
  * Telegram-specific pipeline configuration.
  *
- * @property sessionConfig TDLib session configuration
+ * @property sessionConfig Telegram API session configuration
  * @property useHotWarmColdClassification Enable chat media classification
  */
 data class TelegramPipelineConfig(

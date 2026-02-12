@@ -20,7 +20,7 @@ data class RetryConfig(
     val jitterFactor: Double = 0.2,
 ) {
     companion object {
-        /** Default retry config for TDLib operations. */
+        /** Default retry config for Telegram API operations. */
         val DEFAULT = RetryConfig()
 
         /** Aggressive retry config for critical auth operations. */
@@ -70,7 +70,7 @@ sealed class RetryResult<out T> {
 }
 
 /**
- * Shared retry utility for TDLib operations with exponential backoff + jitter.
+ * Shared retry utility for Telegram API operations with exponential backoff + jitter.
  *
  * **Exponential Backoff Formula:**
  * ```

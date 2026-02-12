@@ -1,16 +1,16 @@
 package com.fishit.player.infra.transport.telegram
 
 /**
- * Resolves Telegram remote identifiers (chatId + messageId) to current TDLib file references.
+ * Resolves Telegram remote identifiers (chatId + messageId) to current Telegram API file references.
  *
  * This service implements the **RemoteId-First Architecture** defined in
  * `contracts/TELEGRAM_ID_ARCHITECTURE_CONTRACT.md`.
  *
  * ## Core Principle
  *
- * RemoteId (chatId + messageId) is the **SSOT** for Telegram media. TDLib file.id is treated as
+ * RemoteId (chatId + messageId) is the **SSOT** for Telegram media. Telegram API file.id is treated as
  * ephemeral session detail that may change across:
- * - TDLib cache eviction
+ * - Telegram API cache eviction
  * - User logout/login
  * - Message content updates
  * - App reinstalls
@@ -18,7 +18,7 @@ package com.fishit.player.infra.transport.telegram
  * ## Resolution Pattern
  *
  * ```kotlin
- * // Step 1: Retrieve message from TDLib
+ * // Step 1: Retrieve message from Telegram API
  * val resolved = resolver.resolveMedia(TelegramRemoteId(chatId, messageId))
  *
  * // Step 2: Use current fileIds for operations
@@ -30,7 +30,7 @@ package com.fishit.player.infra.transport.telegram
  *
  * ## Architecture Boundaries
  *
- * - **Transport Layer:** Implements this interface, provides TDLib message fetching
+ * - **Transport Layer:** Implements this interface, provides Telegram API message fetching
  * - **Playback Layer:** Consumes resolved fileIds for streaming
  * - **Imaging Layer:** Consumes resolved thumbFileIds for thumbnails
  * - **Pipeline Layer:** Does NOT use this (only transport and above)
@@ -40,7 +40,7 @@ package com.fishit.player.infra.transport.telegram
  */
 interface TelegramRemoteResolver {
     /**
-     * Resolves a remote identifier to current TDLib file references.
+     * Resolves a remote identifier to current Telegram API file references.
      *
      * This method:
      * 1. Fetches the message via `client.getMessage(chatId, messageId)`
@@ -54,7 +54,7 @@ interface TelegramRemoteResolver {
      * - Logs errors via UnifiedLog
      *
      * **Performance:**
-     * - Fast: Single TDLib API call
+     * - Fast: Single Telegram API API call
      * - Cacheable: Results can be cached with TTL
      * - Idempotent: Safe to call repeatedly
      *
@@ -68,7 +68,7 @@ interface TelegramRemoteResolver {
  * Remote identifier for Telegram media (SSOT).
  *
  * This is the stable identifier that persists in the database and flows through the system.
- * TDLib fileIds are resolved on-demand from this identifier.
+ * Telegram API fileIds are resolved on-demand from this identifier.
  *
  * @property chatId Telegram chat ID containing the message
  * @property messageId Message ID within the chat
@@ -107,7 +107,7 @@ data class TelegramRemoteId(
 }
 
 /**
- * Resolved Telegram media with current TDLib file references.
+ * Resolved Telegram media with current Telegram API file references.
  *
  * Contains all information needed for playback and imaging:
  * - Current media fileId (video/document)
@@ -119,18 +119,18 @@ data class TelegramRemoteId(
  *
  * These fileIds are valid NOW but may become stale. Always resolve from remoteId when:
  * - Starting a new playback session
- * - After TDLib errors (file not found)
+ * - After Telegram API errors (file not found)
  * - After app restart
  * - After cache eviction
  *
- * @property mediaFileId Current TDLib file ID for the video/document
- * @property thumbFileId Current TDLib file ID for best available thumbnail (null if no thumb)
+ * @property mediaFileId Current Telegram API file ID for the video/document
+ * @property thumbFileId Current Telegram API file ID for best available thumbnail (null if no thumb)
  * @property mimeType MIME type (e.g., "video/mp4", "video/x-matroska")
  * @property durationSecs Duration in seconds (null if unknown)
  * @property sizeBytes File size in bytes (0 if unknown)
  * @property width Video width in pixels (0 if unknown)
  * @property height Video height in pixels (0 if unknown)
- * @property supportsStreaming Whether TDLib indicates streaming support
+ * @property supportsStreaming Whether Telegram API indicates streaming support
  * @property mediaLocalPath Local path if media file already downloaded (null otherwise)
  * @property thumbLocalPath Local path if thumbnail already downloaded (null otherwise)
  * @property minithumbnailBytes Inline JPEG bytes for instant placeholder (~40px, null if unavailable)

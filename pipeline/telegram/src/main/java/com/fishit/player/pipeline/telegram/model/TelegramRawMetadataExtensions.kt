@@ -21,7 +21,7 @@ import com.fishit.player.core.model.TmdbRef
  * Per IMAGING_SYSTEM.md:
  * - ImageRef fields populated from source thumbnails/photos
  * - Uses TelegramImageRefExtensions for conversion
- * - NO raw TDLib DTOs passed through - only ImageRef
+ * - NO raw Telegram API DTOs passed through - only ImageRef
  *
  * Per TELEGRAM_STRUCTURED_BUNDLES_CONTRACT.md (v2.2):
  * - Structured Bundle fields passed through to RawMediaMetadata
@@ -130,7 +130,7 @@ fun TelegramMediaItem.toRawMediaMetadata(): RawMediaMetadata {
         // === Playback Hints (v2) ===
         playbackHints = playbackHints,
         // === Timestamp (v2) - message date as addedTimestamp ===
-        addedTimestamp = date?.let { it * 1000L }, // TDLib uses Unix seconds → convert to ms
+        addedTimestamp = date?.let { it * 1000L }, // Telegram API uses Unix seconds → convert to ms
     )
 }
 

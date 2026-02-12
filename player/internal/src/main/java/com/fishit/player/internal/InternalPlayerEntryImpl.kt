@@ -36,7 +36,7 @@ import javax.inject.Singleton
  *
  * **DataSource Wiring:**
  * - Injects Map<DataSourceType, DataSource.Factory> from PlayerDataSourceModule
- * - Telegram uses TelegramFileDataSourceFactory (zero-copy TDLib streaming)
+ * - Telegram uses TelegramFileDataSourceFactory (zero-copy Telegram API streaming)
  * - Xtream uses XtreamDataSourceFactoryProvider (optional, for OkHttp redirect handling)
  *
  * **Live TV Support:**

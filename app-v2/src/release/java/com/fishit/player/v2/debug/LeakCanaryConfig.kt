@@ -19,7 +19,7 @@ object LeakCanaryConfig {
         // No-op in release
     }
 
-    fun watchTdLibObject(
+    fun watchTelegramObject(
         watchedObject: Any,
         description: String,
     ) {

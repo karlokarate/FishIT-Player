@@ -160,7 +160,7 @@ object PlaybackHintKeys {
         /**
          * Stable remote ID for the media file (v2 SSOT).
          *
-         * TDLib resolves this to a session-local fileId via `getRemoteFile(remoteId)`.
+         * Telegram API resolves this to a session-local fileId via `getRemoteFile(remoteId)`.
          */
         const val REMOTE_ID = "telegram.remoteId"
 

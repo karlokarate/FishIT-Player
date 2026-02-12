@@ -14,8 +14,8 @@ import kotlin.test.assertNotNull
  * Pipeline-layer test to verify transport-layer wrapper DTOs are instantiable.
  *
  * Contract:
- * - Pipeline must NOT import TDLib / g000sha256 DTOs directly.
- * - Transport is the only layer that sees TDLib.
+ * - Pipeline must NOT import Telegram API / g000sha256 DTOs directly.
+ * - Transport is the only layer that sees Telegram API.
  */
 class DtoConstructorTest {
     @Test

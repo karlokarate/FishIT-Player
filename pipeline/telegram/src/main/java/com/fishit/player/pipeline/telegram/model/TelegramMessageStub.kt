@@ -3,8 +3,8 @@ package com.fishit.player.pipeline.telegram.model
 /**
  * Stub representation of a Telegram message for Phase 2 Task 3 (P2-T3).
  *
- * This is a minimal stub that mimics the structure of a TDLib message
- * without requiring actual TDLib integration. Used for testing and
+ * This is a minimal stub that mimics the structure of a Telegram API message
+ * without requiring actual Telegram API integration. Used for testing and
  * interface definition during Phase 2.
  *
  * ## v2 remoteId-First Architecture

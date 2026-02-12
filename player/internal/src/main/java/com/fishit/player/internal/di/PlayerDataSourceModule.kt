@@ -4,7 +4,6 @@ import android.content.Context
 import androidx.media3.datasource.DataSource
 import androidx.media3.datasource.DefaultDataSource
 import com.fishit.player.playback.domain.DataSourceType
-import com.fishit.player.playback.telegram.TelegramFileDataSourceFactory
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -18,36 +17,24 @@ import javax.inject.Singleton
  * The player uses this map to select the appropriate DataSource.Factory based on the
  * [DataSourceType] returned by the [PlaybackSourceResolver].
  *
- * ## Binding Strategy
- * - [DataSourceType.TELEGRAM_FILE] → [TelegramFileDataSourceFactory] (zero-copy TDLib streaming)
- * - [DataSourceType.DEFAULT] → [DefaultDataSource.Factory] (standard HTTP/file sources)
+ * ## Telethon Proxy Architecture
+ * Telegram files are now streamed via HTTP from the Telethon localhost proxy.
+ * This means Telegram uses [DataSourceType.DEFAULT] (standard HTTP) instead of
+ * a custom DataSource. No TELEGRAM_FILE mapping is needed.
  *
- * ## Layer Boundaries This module bridges playback-layer factories into the player-internal layer.
- * It follows AGENTS.md Section 4.5 by keeping transport dependencies in their proper modules.
+ * ## Binding Strategy
+ * - [DataSourceType.DEFAULT] → [DefaultDataSource.Factory] (HTTP/file sources, including Telegram)
  */
 @Module
 @InstallIn(SingletonComponent::class)
 object PlayerDataSourceModule {
-    /**
-     * Provides the complete map of DataSource factories keyed by [DataSourceType].
-     *
-     * The player's [InternalPlayerSession] uses this map to configure ExoPlayer with the
-     * appropriate MediaSourceFactory for each source type.
-     *
-     * Note: [TelegramFileDataSourceFactory] is provided by [TelegramPlaybackModule] in
-     * :playback:telegram. This module only wires it into the DataSource map.
-     */
+
     @Provides
     @Singleton
     fun provideDataSourceFactories(
         @ApplicationContext context: Context,
-        telegramFactory: TelegramFileDataSourceFactory,
     ): Map<DataSourceType, DataSource.Factory> =
         mapOf(
-            DataSourceType.TELEGRAM_FILE to telegramFactory,
             DataSourceType.DEFAULT to DefaultDataSource.Factory(context),
         )
-
-    // Note: TelegramFileDataSourceFactory is provided by TelegramPlaybackModule.
-    // DO NOT add a duplicate @Provides here - it causes Hilt duplicate binding errors.
 }

@@ -10,7 +10,7 @@ import javax.inject.Singleton
 /**
  * Result of thumbnail download request containing resolved IDs and paths.
  *
- * @param thumbFileId The TDLib file ID for the thumbnail (null if not available)
+ * @param thumbFileId The Telegram file ID for the thumbnail (null if not available)
  * @param localPath The local file path if thumbnail is already downloaded (null if pending/unavailable)
  */
 data class ThumbRequestResult(
@@ -19,7 +19,7 @@ data class ThumbRequestResult(
 )
 
 /**
- * Helper for ensuring Telegram thumbnails are downloaded using TDLib cache only.
+ * Helper for ensuring Telegram thumbnails are downloaded using proxy cache only.
  *
  * This helper implements the RemoteId-First thumbnail strategy:
  * 1. Resolve remoteId → thumbFileId via TelegramRemoteResolver
@@ -29,7 +29,7 @@ data class ThumbRequestResult(
  *
  * ## Architecture Notes
  *
- * - **No secondary cache**: Only TDLib cache is used
+ * - **No secondary cache**: Only proxy cache is used
  * - **App-scope downloads**: Downloads run in fileClient's app-level scope, not UI scope
  * - **Idempotent**: Safe to call multiple times for same remoteId
  * - **Non-blocking**: Returns null if download not complete, triggers async download
@@ -54,7 +54,7 @@ data class ThumbRequestResult(
  *         .filter { it.fileId == thumbFileId }
  *         .filter { it.file.local.isDownloadingCompleted }
  *         .collect {
- *             // Trigger state update to reload image from TDLib cache
+ *             // Trigger state update to reload image from proxy cache
  *             thumbnailState.value = it.file.local.path
  *         }
  * }
@@ -77,7 +77,7 @@ class TelegramThumbDownloader
         }
 
         /**
-         * Ensures a thumbnail is downloaded via TDLib cache.
+         * Ensures a thumbnail is downloaded via proxy cache.
          *
          * This method:
          * 1. Resolves remoteId to get current thumbFileId and thumbLocalPath
@@ -88,7 +88,7 @@ class TelegramThumbDownloader
          * **Non-blocking**: Triggers download but returns immediately. Caller should observe
          * `fileUpdates` Flow to detect when download completes.
          *
-         * **Idempotent**: Safe to call multiple times. TDLib handles duplicate download requests.
+         * **Idempotent**: Safe to call multiple times. The proxy handles duplicate download requests.
          *
          * @param remoteId The remote identifier (chatId + messageId)
          * @return Local file path if thumbnail already cached, null if download in progress or unavailable
@@ -136,7 +136,7 @@ class TelegramThumbDownloader
         }
 
         /**
-         * Checks if a thumbnail is already downloaded (cached in TDLib).
+         * Checks if a thumbnail is already downloaded (cached via proxy).
          *
          * This is a quick check that doesn't trigger any downloads.
          *
@@ -161,7 +161,7 @@ class TelegramThumbDownloader
          * **Non-blocking**: Triggers download but returns immediately. Use thumbFileId to observe
          * `fileUpdates` Flow to detect when download completes.
          *
-         * **Idempotent**: Safe to call multiple times. TDLib handles duplicate download requests.
+         * **Idempotent**: Safe to call multiple times. The proxy handles duplicate download requests.
          *
          * **Privacy**: Does NOT log local paths, only logs boolean presence.
          *

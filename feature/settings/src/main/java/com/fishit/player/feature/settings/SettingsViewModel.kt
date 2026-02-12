@@ -214,7 +214,7 @@ class SettingsViewModel
         // =========================================================================
 
         /**
-         * Clear Telegram/TDLib cache.
+         * Clear Telegram/Telegram API cache.
          */
         fun clearTelegramCache() {
             viewModelScope.launch {

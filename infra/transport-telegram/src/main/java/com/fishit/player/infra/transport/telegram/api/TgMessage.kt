@@ -3,17 +3,17 @@ package com.fishit.player.infra.transport.telegram.api
 /**
  * Transport-layer message descriptor for Telegram messages.
  *
- * Pure DTO with no TDLib dependencies. Created by mapping
- * TDLib `Message` objects in the transport layer.
+ * Pure DTO with no Telegram API dependencies. Created by mapping
+ * Telegram API `Message` objects in the transport layer.
  *
  * **v2 Architecture:**
- * - Transport maps TDLib Message to this DTO
+ * - Transport maps Telegram API Message to this DTO
  * - Pipeline consumes this for catalog ingestion
  * - No normalization here (pipeline's job)
  *
  * @property messageId Unique message ID within the chat (use [id] alias)
  * @property chatId Chat this message belongs to
- * @property senderId Sender ID (TDLib MessageSender, opaque type)
+ * @property senderId Sender ID (Telegram API MessageSender, opaque type)
  * @property date Unix timestamp when message was sent (epoch seconds)
  * @property content Message content (media type or null for non-media)
  * @property replyToMessageId ID of message this replies to, if any

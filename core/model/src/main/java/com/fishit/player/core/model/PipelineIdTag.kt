@@ -14,7 +14,7 @@ package com.fishit.player.core.model
 enum class PipelineIdTag(
     val code: String,
 ) {
-    /** Telegram media via TDLib */
+    /** Telegram media via Telegram API */
     TELEGRAM("tg"),
 
     /** Xtream Codes API (IPTV, VOD, Series) */

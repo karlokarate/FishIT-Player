@@ -18,7 +18,7 @@ import dagger.hilt.components.SingletonComponent
  * Contract Rules:
  * - Transport layers MUST NOT own Coil/ImageLoader configuration
  * - May accept source-specific fetchers via narrow interfaces
- * - Remains source-agnostic (no TDLib/Xtream direct dependencies)
+ * - Remains source-agnostic (no Telegram API/Xtream direct dependencies)
  *
  * See: docs/v2/FROZEN_MODULE_MANIFEST.md
  */

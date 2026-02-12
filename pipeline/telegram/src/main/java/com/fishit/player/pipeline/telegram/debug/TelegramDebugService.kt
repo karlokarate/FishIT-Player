@@ -70,7 +70,7 @@ enum class ChatFilter {
  * Overall Telegram pipeline status.
  *
  * @property isAuthenticated Whether the session is authenticated
- * @property sessionDir Path to TDLib session directory
+ * @property sessionDir Path to Telegram API session directory
  * @property chatCount Total number of available chats
  * @property hotChats Number of media-hot chats
  * @property warmChats Number of media-warm chats

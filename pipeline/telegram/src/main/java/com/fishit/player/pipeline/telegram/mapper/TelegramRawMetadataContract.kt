@@ -78,7 +78,7 @@ package com.fishit.player.pipeline.telegram.mapper
  * ```kotlin
  * private fun TelegramMediaItem.buildTelegramSourceLabel(): String {
  *     // Example: "Telegram Chat: Movies HD"
- *     // Will be enriched with actual chat names when real TDLib integration exists
+ *     // Will be enriched with actual chat names when real Telegram API integration exists
  *     return "Telegram Chat: $chatId"
  * }
  * ```

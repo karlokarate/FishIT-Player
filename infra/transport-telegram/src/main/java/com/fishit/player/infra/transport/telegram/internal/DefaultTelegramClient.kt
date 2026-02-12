@@ -3,177 +3,335 @@ package com.fishit.player.infra.transport.telegram.internal
 import com.fishit.player.infra.transport.telegram.ResolvedTelegramMedia
 import com.fishit.player.infra.transport.telegram.TelegramClient
 import com.fishit.player.infra.transport.telegram.TelegramRemoteId
-import com.fishit.player.infra.transport.telegram.TelegramSessionConfig
 import com.fishit.player.infra.transport.telegram.TgFileUpdate
 import com.fishit.player.infra.transport.telegram.TgStorageStats
 import com.fishit.player.infra.transport.telegram.TgThumbnailRef
-import com.fishit.player.infra.transport.telegram.api.TdlibAuthState
-import com.fishit.player.infra.transport.telegram.api.TelegramConnectionState
+import com.fishit.player.infra.transport.telegram.api.TransportAuthState
 import com.fishit.player.infra.transport.telegram.api.TgChat
+import com.fishit.player.infra.transport.telegram.api.TgContent
 import com.fishit.player.infra.transport.telegram.api.TgFile
 import com.fishit.player.infra.transport.telegram.api.TgMessage
-import com.fishit.player.infra.transport.telegram.auth.TdlibAuthSession
-import com.fishit.player.infra.transport.telegram.chat.TelegramChatBrowser
-import com.fishit.player.infra.transport.telegram.file.TelegramFileDownloadManager
-import com.fishit.player.infra.transport.telegram.imaging.TelegramThumbFetcherImpl
-import dev.g000sha256.tdl.TdlClient
-import kotlinx.coroutines.CoroutineScope
+import com.fishit.player.infra.transport.telegram.api.TgThumbnail
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.int
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.long
+import kotlinx.serialization.json.longOrNull
+import java.io.File
 
 /**
- * Internal unified Telegram client that owns TDLib state and backs all typed interfaces.
+ * Proxy-based implementation of [TelegramClient] using the Telethon HTTP sidecar.
  *
- * This is the single source of truth for Telegram transport. It composes existing concrete
- * implementations and exposes them through typed interfaces and the compatibility
- * [TelegramTransportClient] facade.
+ * Replaces the former Telegram API-based DefaultTelegramClient. All Telegram operations
+ * are delegated to the Telethon Python proxy via HTTP calls through [TelethonProxyClient].
  *
  * **Architecture:**
- * - Single TdlClient instance shared across all operations
- * - Composes: TdlibAuthSession, TelegramChatBrowser, TelegramFileDownloadManager,
- * TelegramThumbFetcherImpl
- * - Implements all typed interfaces via delegation
+ * ```
+ * Kotlin → OkHttp → localhost:8089 → Python asyncio → Telethon → Telegram MTProto
+ * ```
  *
- * **Why unified?**
- * - Avoids multiple TdlClient wrappers competing for resources
- * - Single point of connection state management
- * - Consistent error handling across all operations
- *
- * **Visibility:** This class is `internal` - consumers MUST use the typed interfaces (
- * [TelegramAuthClient], [TelegramHistoryClient], [TelegramFileClient], [TelegramThumbFetcher]) or
- * the unified [TelegramClient] interface.
+ * **SSOT:** This is the SINGLE implementation of [TelegramClient]. All typed
+ * interfaces in Hilt resolve to this same instance.
  */
-internal class DefaultTelegramClient(
-    tdlClient: TdlClient,
-    sessionConfig: TelegramSessionConfig,
-    authScope: CoroutineScope,
-    fileScope: CoroutineScope,
+class DefaultTelegramClient(
+    private val proxyClient: TelethonProxyClient,
+    private val proxyLifecycle: TelethonProxyLifecycle,
 ) : TelegramClient {
-    // Composed implementations
-    private val authSession = TdlibAuthSession(tdlClient, sessionConfig, authScope)
-    private val chatBrowser = TelegramChatBrowser(tdlClient)
-    private val fileDownloadManager = TelegramFileDownloadManager(tdlClient, fileScope)
-    private val thumbFetcher = TelegramThumbFetcherImpl(fileDownloadManager)
-    private val remoteResolver = DefaultTelegramRemoteResolver(tdlClient)
 
-    // Connection state (internal, exposed via TelegramTransportClient if needed)
-    private val _connectionState =
-        MutableStateFlow<TelegramConnectionState>(TelegramConnectionState.Disconnected)
-    val connectionState: Flow<TelegramConnectionState> = _connectionState.asStateFlow()
+    // ── Auth ────────────────────────────────────────────────────────────────
 
-    // ========== TelegramAuthClient ==========
+    private val _authState = MutableStateFlow<TransportAuthState>(TransportAuthState.Connecting)
 
-    override val authState: Flow<TdlibAuthState> = authSession.authState
+    override val authState: Flow<TransportAuthState> = _authState.asStateFlow()
 
-    override suspend fun ensureAuthorized() {
-        _connectionState.value = TelegramConnectionState.Connecting
-        try {
-            authSession.ensureAuthorized()
-            _connectionState.value = TelegramConnectionState.Connected
-        } catch (e: Exception) {
-            _connectionState.value =
-                TelegramConnectionState.Error(e.message ?: "Authorization failed")
-            throw e
+    override suspend fun ensureAuthorized(): Unit = withContext(Dispatchers.IO) {
+        proxyLifecycle.start()
+        proxyLifecycle.awaitReady()
+
+        val authorized = proxyClient.getAuthStatus()
+        _authState.value = if (authorized) {
+            TransportAuthState.Ready
+        } else {
+            TransportAuthState.WaitPhoneNumber()
         }
     }
 
-    override suspend fun isAuthorized(): Boolean = authSession.isAuthorized()
-
-    override suspend fun sendPhoneNumber(phoneNumber: String) {
-        authSession.sendPhoneNumber(phoneNumber)
+    override suspend fun isAuthorized(): Boolean = withContext(Dispatchers.IO) {
+        try { proxyClient.getAuthStatus() } catch (_: Exception) { false }
     }
 
-    override suspend fun sendCode(code: String) {
-        authSession.sendCode(code)
+    override suspend fun sendPhoneNumber(phoneNumber: String): Unit = withContext(Dispatchers.IO) {
+        proxyClient.sendPhone(phoneNumber)
+        _authState.value = TransportAuthState.WaitCode()
     }
 
-    override suspend fun sendPassword(password: String) {
-        authSession.sendPassword(password)
+    override suspend fun sendCode(code: String): Unit = withContext(Dispatchers.IO) {
+        try {
+            proxyClient.sendCode("", code, "")
+            _authState.value = TransportAuthState.Ready
+        } catch (e: TelethonProxyException) {
+            if (e.httpCode == 401 || e.message?.contains("password", ignoreCase = true) == true) {
+                _authState.value = TransportAuthState.WaitPassword()
+            } else {
+                throw e
+            }
+        }
     }
 
-    override suspend fun logout() {
-        authSession.logout()
+    override suspend fun sendPassword(password: String): Unit = withContext(Dispatchers.IO) {
+        proxyClient.sendPassword(password)
+        _authState.value = TransportAuthState.Ready
     }
 
-    override suspend fun getCurrentUserId(): Long? = authSession.getCurrentUserId()
+    override suspend fun logout(): Unit = withContext(Dispatchers.IO) {
+        proxyClient.logout()
+        _authState.value = TransportAuthState.LoggedOut
+    }
 
-    // ========== TelegramHistoryClient ==========
+    override suspend fun getCurrentUserId(): Long? = withContext(Dispatchers.IO) {
+        val id = proxyClient.getCurrentUserId()
+        if (id > 0) id else null
+    }
 
-    override val messageUpdates: Flow<TgMessage> = chatBrowser.messageUpdates
+    // ── History ─────────────────────────────────────────────────────────────
 
-    override suspend fun getChats(limit: Int): List<TgChat> = chatBrowser.getChats(limit)
+    private val _messageUpdates = MutableStateFlow<TgMessage?>(null)
 
-    override suspend fun getChat(chatId: Long): TgChat? = chatBrowser.getChat(chatId)
+    @Suppress("UNCHECKED_CAST")
+    override val messageUpdates: Flow<TgMessage>
+        get() = _messageUpdates.asStateFlow() as Flow<TgMessage>
+
+    override suspend fun getChats(limit: Int): List<TgChat> = withContext(Dispatchers.IO) {
+        proxyClient.getChats(limit).map { element ->
+            val obj = element.jsonObject
+            TgChat(
+                chatId = obj["id"]!!.jsonPrimitive.long,
+                title = obj["title"]?.jsonPrimitive?.content,
+                type = "unknown",
+                memberCount = obj["memberCount"]?.jsonPrimitive?.int ?: 0,
+            )
+        }
+    }
+
+    override suspend fun getChat(chatId: Long): TgChat? = withContext(Dispatchers.IO) {
+        try {
+            val obj = proxyClient.getChat(chatId)
+            TgChat(
+                chatId = obj["id"]!!.jsonPrimitive.long,
+                title = obj["title"]?.jsonPrimitive?.content,
+                type = "unknown",
+                memberCount = obj["memberCount"]?.jsonPrimitive?.int ?: 0,
+            )
+        } catch (_: Exception) { null }
+    }
 
     override suspend fun fetchMessages(
         chatId: Long,
         limit: Int,
         fromMessageId: Long,
         offset: Int,
-    ): List<TgMessage> = chatBrowser.fetchMessages(chatId, limit, fromMessageId, offset)
+    ): List<TgMessage> = withContext(Dispatchers.IO) {
+        proxyClient.getMessages(chatId, limit, fromMessageId.toInt())
+            .map { MessageParser.parse(it.jsonObject) }
+    }
 
     override suspend fun loadAllMessages(
         chatId: Long,
         pageSize: Int,
         maxMessages: Int,
         onProgress: ((loaded: Int) -> Unit)?,
-    ): List<TgMessage> = chatBrowser.loadAllMessages(chatId, pageSize, maxMessages, onProgress)
+    ): List<TgMessage> = withContext(Dispatchers.IO) {
+        val all = mutableListOf<TgMessage>()
+        var offsetId = 0
+
+        while (all.size < maxMessages) {
+            val page = proxyClient.getMessages(chatId, pageSize, offsetId)
+            if (page.isEmpty()) break
+
+            val messages = page.map { MessageParser.parse(it.jsonObject) }
+            all.addAll(messages)
+            onProgress?.invoke(all.size)
+
+            offsetId = messages.last().messageId.toInt()
+            if (messages.size < pageSize) break
+        }
+        all
+    }
 
     override suspend fun searchMessages(
         chatId: Long,
         query: String,
         limit: Int,
-    ): List<TgMessage> = chatBrowser.searchMessages(chatId, query, limit)
-
-    // ========== TelegramFileClient ==========
-
-    override val fileUpdates: Flow<TgFileUpdate> = fileDownloadManager.fileUpdates
-
-    override suspend fun startDownload(
-        fileId: Int,
-        priority: Int,
-        offset: Long,
-        limit: Long,
-    ) {
-        fileDownloadManager.startDownload(fileId, priority, offset, limit)
+    ): List<TgMessage> = withContext(Dispatchers.IO) {
+        proxyClient.searchMessages(chatId, query, limit)
+            .map { MessageParser.parse(it.jsonObject) }
     }
 
-    override suspend fun cancelDownload(
-        fileId: Int,
-        deleteLocalCopy: Boolean,
-    ) {
-        fileDownloadManager.cancelDownload(fileId, deleteLocalCopy)
+    // ── File ────────────────────────────────────────────────────────────────
+
+    private val _fileUpdates = MutableStateFlow<TgFileUpdate?>(null)
+
+    @Suppress("UNCHECKED_CAST")
+    override val fileUpdates: Flow<TgFileUpdate>
+        get() = _fileUpdates.asStateFlow() as Flow<TgFileUpdate>
+
+    override suspend fun startDownload(fileId: Int, priority: Int, offset: Long, limit: Long) {
+        // No-op: In proxy architecture, downloads are HTTP-streamed on demand via /file endpoint
     }
 
-    override suspend fun getFile(fileId: Int): TgFile? = fileDownloadManager.getFile(fileId)
+    override suspend fun cancelDownload(fileId: Int, deleteLocalCopy: Boolean) {
+        // No-op: No Telegram API download queue in proxy architecture
+    }
 
-    override suspend fun resolveRemoteId(remoteId: String): TgFile? = fileDownloadManager.resolveRemoteId(remoteId)
+    override suspend fun getFile(fileId: Int): TgFile? = null
 
-    override suspend fun getDownloadedPrefixSize(fileId: Int): Long = fileDownloadManager.getDownloadedPrefixSize(fileId)
+    override suspend fun resolveRemoteId(remoteId: String): TgFile? = null
 
-    override suspend fun getStorageStats(): TgStorageStats = fileDownloadManager.getStorageStats()
+    override suspend fun getDownloadedPrefixSize(fileId: Int): Long = 0L
 
-    override suspend fun optimizeStorage(
-        maxSizeBytes: Long,
-        maxAgeDays: Int,
-    ): Long = fileDownloadManager.optimizeStorage(maxSizeBytes, maxAgeDays)
+    override suspend fun getStorageStats(): TgStorageStats =
+        TgStorageStats(totalSize = 0L, photoCount = 0, videoCount = 0, documentCount = 0, audioCount = 0, otherCount = 0)
 
-    // ========== TelegramThumbFetcher ==========
+    override suspend fun optimizeStorage(maxSizeBytes: Long, maxAgeDays: Int): Long = 0L
 
-    override suspend fun fetchThumbnail(thumbRef: TgThumbnailRef): String? = thumbFetcher.fetchThumbnail(thumbRef)
+    // ── Thumbnails ──────────────────────────────────────────────────────────
 
-    override suspend fun isCached(thumbRef: TgThumbnailRef): Boolean = thumbFetcher.isCached(thumbRef)
+    override suspend fun fetchThumbnail(thumbRef: TgThumbnailRef): String? = withContext(Dispatchers.IO) {
+        val (chatId, messageId) = parseRemoteIdParts(thumbRef.remoteId) ?: return@withContext null
+        val bytes = proxyClient.getThumbnail(chatId, messageId) ?: return@withContext null
+
+        val cacheDir = File("/data/data/com.fishit.player/cache/thumbs")
+        cacheDir.mkdirs()
+        val cacheFile = File(cacheDir, "${chatId}_${messageId}.jpg")
+        cacheFile.writeBytes(bytes)
+        cacheFile.absolutePath
+    }
+
+    override suspend fun isCached(thumbRef: TgThumbnailRef): Boolean {
+        val (chatId, messageId) = parseRemoteIdParts(thumbRef.remoteId) ?: return false
+        return File("/data/data/com.fishit.player/cache/thumbs/${chatId}_${messageId}.jpg").exists()
+    }
 
     override suspend fun prefetch(thumbRefs: List<TgThumbnailRef>) {
-        thumbFetcher.prefetch(thumbRefs)
+        thumbRefs.forEach { ref -> runCatching { fetchThumbnail(ref) } }
     }
 
     override suspend fun clearFailedCache() {
-        thumbFetcher.clearFailedCache()
+        File("/data/data/com.fishit.player/cache/thumbs").deleteRecursively()
     }
 
-    // ========== TelegramRemoteResolver ==========
+    // ── Remote Resolver ─────────────────────────────────────────────────────
 
-    override suspend fun resolveMedia(remoteId: TelegramRemoteId): ResolvedTelegramMedia? = remoteResolver.resolveMedia(remoteId)
+    override suspend fun resolveMedia(remoteId: TelegramRemoteId): ResolvedTelegramMedia? =
+        withContext(Dispatchers.IO) {
+            try {
+                val info = proxyClient.getFileInfo(remoteId.chatId, remoteId.messageId)
+                ResolvedTelegramMedia(
+                    mediaFileId = 0,
+                    mimeType = info["mimeType"]?.jsonPrimitive?.content,
+                    durationSecs = info["duration"]?.jsonPrimitive?.int,
+                    sizeBytes = info["fileSize"]?.jsonPrimitive?.longOrNull ?: 0L,
+                    width = info["width"]?.jsonPrimitive?.int ?: 0,
+                    height = info["height"]?.jsonPrimitive?.int ?: 0,
+                    supportsStreaming = info["supportsStreaming"]?.jsonPrimitive?.content?.toBoolean() ?: false,
+                )
+            } catch (_: Exception) { null }
+        }
+
+    // ── Internal ────────────────────────────────────────────────────────────
+
+    private fun parseRemoteIdParts(remoteId: String): Pair<Long, Long>? {
+        val parts = if (remoteId.startsWith("msg:")) {
+            remoteId.removePrefix("msg:").split(":")
+        } else {
+            remoteId.split(":")
+        }
+        if (parts.size < 2) return null
+        val chatId = parts[0].toLongOrNull() ?: return null
+        val messageId = parts[1].toLongOrNull() ?: return null
+        return chatId to messageId
+    }
+}
+
+/**
+ * Parses JSON objects from the Telethon proxy into [TgMessage] DTOs.
+ */
+internal object MessageParser {
+
+    fun parse(obj: kotlinx.serialization.json.JsonObject): TgMessage {
+        val content = obj["content"]?.jsonObject?.let { c ->
+            val type = c["type"]?.jsonPrimitive?.content
+            when (type) {
+                "video" -> TgContent.Video(
+                    fileId = 0,
+                    remoteId = c["remoteId"]?.jsonPrimitive?.content ?: "",
+                    mimeType = c["mimeType"]?.jsonPrimitive?.content ?: "video/mp4",
+                    duration = c["duration"]?.jsonPrimitive?.int ?: 0,
+                    width = c["width"]?.jsonPrimitive?.int ?: 0,
+                    height = c["height"]?.jsonPrimitive?.int ?: 0,
+                    fileSize = c["fileSize"]?.jsonPrimitive?.longOrNull ?: 0L,
+                    fileName = c["fileName"]?.jsonPrimitive?.content,
+                    supportsStreaming = c["supportsStreaming"]?.jsonPrimitive?.content?.toBoolean() ?: false,
+                    thumbnail = c["thumbnail"]?.jsonObject?.let { t ->
+                        TgThumbnail(
+                            fileId = 0, remoteId = "",
+                            width = t["width"]?.jsonPrimitive?.int ?: 0,
+                            height = t["height"]?.jsonPrimitive?.int ?: 0,
+                            fileSize = 0L,
+                        )
+                    },
+                    caption = c["caption"]?.jsonPrimitive?.content ?: "",
+                )
+                "audio" -> TgContent.Audio(
+                    fileId = 0,
+                    remoteId = c["remoteId"]?.jsonPrimitive?.content ?: "",
+                    mimeType = c["mimeType"]?.jsonPrimitive?.content ?: "audio/mpeg",
+                    duration = c["duration"]?.jsonPrimitive?.int ?: 0,
+                    fileSize = c["fileSize"]?.jsonPrimitive?.longOrNull ?: 0L,
+                    fileName = c["fileName"]?.jsonPrimitive?.content,
+                    title = null, performer = null, thumbnail = null,
+                    caption = c["caption"]?.jsonPrimitive?.content ?: "",
+                )
+                "document" -> TgContent.Document(
+                    fileId = 0,
+                    remoteId = c["remoteId"]?.jsonPrimitive?.content ?: "",
+                    mimeType = c["mimeType"]?.jsonPrimitive?.content ?: "application/octet-stream",
+                    fileSize = c["fileSize"]?.jsonPrimitive?.longOrNull ?: 0L,
+                    fileName = c["fileName"]?.jsonPrimitive?.content,
+                    thumbnail = null,
+                    caption = c["caption"]?.jsonPrimitive?.content ?: "",
+                )
+                "animation" -> TgContent.Animation(
+                    fileId = 0,
+                    remoteId = c["remoteId"]?.jsonPrimitive?.content ?: "",
+                    mimeType = c["mimeType"]?.jsonPrimitive?.content ?: "video/mp4",
+                    duration = c["duration"]?.jsonPrimitive?.int ?: 0,
+                    width = c["width"]?.jsonPrimitive?.int ?: 0,
+                    height = c["height"]?.jsonPrimitive?.int ?: 0,
+                    fileSize = c["fileSize"]?.jsonPrimitive?.longOrNull ?: 0L,
+                    fileName = c["fileName"]?.jsonPrimitive?.content,
+                    thumbnail = null,
+                    caption = c["caption"]?.jsonPrimitive?.content ?: "",
+                )
+                "photo" -> TgContent.Photo(
+                    sizes = emptyList(),
+                    caption = c["caption"]?.jsonPrimitive?.content ?: "",
+                )
+                else -> null
+            }
+        }
+
+        return TgMessage(
+            messageId = obj["id"]!!.jsonPrimitive.long,
+            chatId = obj["chatId"]?.jsonPrimitive?.longOrNull ?: 0L,
+            date = 0L,
+            content = content,
+        )
+    }
 }
