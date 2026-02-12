@@ -14,6 +14,7 @@ import com.fishit.player.core.persistence.ObjectBoxFlow.asFlow
 import com.fishit.player.core.persistence.ObjectBoxFlow.asFlowWithLimit
 import com.fishit.player.core.persistence.obx.NX_Work
 import com.fishit.player.core.persistence.obx.NX_Work_
+import com.fishit.player.core.persistence.obx.NxKeyGenerator
 import com.fishit.player.infra.data.nx.mapper.WorkTypeMapper
 import com.fishit.player.infra.data.nx.mapper.base.MappingUtils
 import com.fishit.player.infra.data.nx.mapper.toDomain
@@ -331,10 +332,31 @@ class NxWorkRepositoryImpl @Inject constructor(
     // ──────────────────────────────────────────────────────────────────────
 
     override suspend fun upsert(work: Work): Work = withContext(Dispatchers.IO) {
-        val existing = box.query(NX_Work_.workKey.equal(work.workKey, StringOrder.CASE_SENSITIVE))
+        // Primary lookup by workKey
+        var existing = box.query(NX_Work_.workKey.equal(work.workKey, StringOrder.CASE_SENSITIVE))
             .build()
             .findFirst()
-        val entity = work.toEntity(existing)
+
+        // tmdbId fallback: handles key format migration (tmdb→heuristic)
+        // and title variations producing different slugs.
+        // If workKey lookup fails but an entity exists with the same tmdbId,
+        // reuse it to prevent duplicate creation.
+        if (existing == null && work.tmdbId != null) {
+            existing = box.query(NX_Work_.tmdbId.equal(work.tmdbId!!))
+                .build()
+                .findFirst()
+        }
+
+        // INV-12: workKey is IMMUTABLE. When existing entity was found via tmdbId
+        // (different workKey), preserve the original workKey to avoid orphaning
+        // NX_WorkSourceRef / NX_WorkUserState references that use the old key.
+        val effectiveWork = if (existing != null && existing.workKey != work.workKey) {
+            work.copy(workKey = existing.workKey)
+        } else {
+            work
+        }
+
+        val entity = effectiveWork.toEntity(existing)
         box.put(entity)
         entity.toDomain()
     }
@@ -388,10 +410,10 @@ class NxWorkRepositoryImpl @Inject constructor(
             existing.imdbId = MappingUtils.alwaysUpdate(existing.imdbId, enrichment.imdbId)
             existing.tvdbId = MappingUtils.alwaysUpdate(existing.tvdbId, enrichment.tvdbId)
 
-            // Update authorityKey if tmdbId changed
+            // Update authorityKey if tmdbId changed — delegate to NxKeyGenerator SSOT
             enrichment.tmdbId?.let { newTmdbId ->
-                val workType = WorkTypeMapper.toWorkType(existing.workType)
-                existing.authorityKey = "tmdb:${workType.name.lowercase()}:$newTmdbId"
+                val workType = existing.workType.lowercase()
+                existing.authorityKey = NxKeyGenerator.authorityKey("TMDB", workType, newTmdbId)
             }
 
             // MONOTONIC_UP: RecognitionState — only upgrade, never downgrade
