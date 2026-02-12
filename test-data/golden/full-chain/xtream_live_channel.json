@@ -1,6 +1,6 @@
 {
   "work": {
-    "workKey": "live_channel:heuristic:bbc-one-unknown",
+    "workKey": "live_channel:heuristic:bbc-one",
     "type": "LIVE_CHANNEL",
     "displayTitle": "BBC One",
     "sortTitle": "BBC One",
@@ -9,9 +9,9 @@
     "season": null,
     "episode": null,
     "runtimeMs": null,
-    "posterRef": "http:https://cdn.example.com/logos/bbc_one_hd.png",
-    "backdropRef": null,
-    "thumbnailRef": null,
+    "poster": "https://cdn.example.com/logos/bbc_one_hd.png",
+    "backdrop": null,
+    "thumbnail": null,
     "rating": null,
     "genres": "Entertainment, News",
     "plot": null,
@@ -27,8 +27,8 @@
     "isDeleted": false
   },
   "sourceRef": {
-    "sourceKey": "src:xtream:xtream:premium-iptv:xtream:live:999",
-    "workKey": "live_channel:heuristic:bbc-one-unknown",
+    "sourceKey": "src:xtream:premium-iptv:xtream:live:999",
+    "workKey": "live_channel:heuristic:bbc-one",
     "sourceType": "XTREAM",
     "accountKey": "xtream:premium-iptv",
     "sourceItemKind": "LIVE",

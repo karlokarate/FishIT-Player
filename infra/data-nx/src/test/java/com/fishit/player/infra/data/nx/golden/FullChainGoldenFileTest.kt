@@ -246,7 +246,9 @@ class FullChainGoldenFileTest {
     }
 
     private fun buildSourceKey(raw: RawMediaMetadata, accountKey: String): String {
-        return SourceKeyParser.buildSourceKey(raw.sourceType, accountKey, raw.sourceId)
+        // Mirror NxCatalogWriter: strip sourceType prefix from accountKey
+        val identifier = accountKey.removePrefix("${raw.sourceType.name.lowercase()}:")
+        return SourceKeyParser.buildSourceKey(raw.sourceType, identifier, raw.sourceId)
     }
 
     private fun buildVariantKey(sourceKey: String): String = "$sourceKey#original"

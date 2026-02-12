@@ -27,7 +27,7 @@ class XtreamRawMetadataExtensionsTest {
                 containerExtension = "mkv",
             )
 
-        val raw = vod.toRawMetadata(accountName = "Xtream VOD")
+        val raw = vod.toRawMetadata(accountLabel = "Xtream VOD")
 
         assertEquals(dtoTitle, raw.originalTitle)
         assertEquals("", raw.globalId)
@@ -52,7 +52,7 @@ class XtreamRawMetadataExtensionsTest {
                 categoryId = "2",
             )
 
-        val raw = series.toRawMetadata(accountName = "Xtream Series")
+        val raw = series.toRawMetadata(accountLabel = "Xtream Series")
 
         assertEquals(dtoTitle, raw.originalTitle)
         assertEquals("", raw.globalId)
@@ -83,9 +83,26 @@ class XtreamRawMetadataExtensionsTest {
         assertEquals(SourceType.XTREAM, raw.sourceType)
         // Updated format per XtreamIdCodec: xtream:episode:series:{seriesId}:s{season}:e{episode}
         assertEquals("xtream:episode:series:456:s1:e5", raw.sourceId)
-        assertEquals("Xtream: Breaking Bad", raw.sourceLabel)
+        assertEquals("xtream", raw.sourceLabel)
         assertEquals(1, raw.season)
         assertEquals(5, raw.episode)
+    }
+
+    @Test
+    fun `XtreamEpisode toRawMediaMetadata propagates custom accountLabel`() {
+        val episode =
+            XtreamEpisode(
+                id = 789,
+                seriesId = 456,
+                seasonNumber = 1,
+                episodeNumber = 5,
+                title = "Pilot",
+                containerExtension = "mp4",
+            )
+
+        val raw = episode.toRawMediaMetadata(accountLabel = "user@iptv.server")
+
+        assertEquals("user@iptv.server", raw.sourceLabel)
     }
 
     @Test
@@ -119,7 +136,7 @@ class XtreamRawMetadataExtensionsTest {
                 categoryId = "5",
             )
 
-        val raw = channel.toRawMediaMetadata(accountName = "Xtream Live")
+        val raw = channel.toRawMediaMetadata(accountLabel = "Xtream Live")
 
         assertEquals(dtoTitle, raw.originalTitle)
         assertEquals("", raw.globalId)

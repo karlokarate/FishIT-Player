@@ -156,7 +156,11 @@ sealed interface XtreamCategoryResult {
  * @property episodeParallelism Max concurrent series for parallel episode loading (PLATINUM)
  * @property batchSize Batch size for streaming (memory-efficient loading)
  * @property imageAuthHeaders Optional headers for authenticated image access
- * @property accountName Xtream account identifier (e.g., "konigtv") used for sourceLabel in RawMediaMetadata
+ * @property accountLabel Human-readable account label for UI display (e.g., "user@iptv.server").
+ *   Used ONLY for `sourceLabel` in `RawMediaMetadata` (UI display). NOT used for key generation.
+ *   Key generation uses the full `accountKey` from `NxSourceAccountRepository` (format:
+ *   `{sourceType}:{identifier}`). `NxCatalogWriter` strips the sourceType prefix so the
+ *   sourceKey contains only the identifier segment (e.g., `src:xtream:user@iptv.server:vod:123`).
  * @property vodCategoryIds VOD category IDs to include (empty = all)
  * @property seriesCategoryIds Series category IDs to include (empty = all)
  * @property liveCategoryIds Live category IDs to include (empty = all)
@@ -170,7 +174,7 @@ data class XtreamCatalogConfig(
     val episodeParallelism: Int = DEFAULT_EPISODE_PARALLELISM,
     val batchSize: Int = DEFAULT_BATCH_SIZE,
     val imageAuthHeaders: Map<String, String> = emptyMap(),
-    val accountName: String = "xtream",
+    val accountLabel: String = "xtream",
     // Issue #669: Category filters for selective sync
     val vodCategoryIds: Set<String> = emptySet(),
     val seriesCategoryIds: Set<String> = emptySet(),

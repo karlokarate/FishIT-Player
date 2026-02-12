@@ -9,9 +9,9 @@
     "season": null,
     "episode": null,
     "runtimeMs": 10860000,
-    "posterRef": null,
-    "backdropRef": null,
-    "thumbnailRef": "tg:AgACAgIAAxkBAAIBZ2XYabcdef",
+    "poster": null,
+    "backdrop": null,
+    "thumbnail": "tg:AgACAgIAAxkBAAIBZ2XYabcdef",
     "rating": null,
     "genres": null,
     "plot": null,
@@ -27,7 +27,7 @@
     "isDeleted": false
   },
   "sourceRef": {
-    "sourceKey": "src:telegram:telegram:movie-channel:msg:-1001234567890:42001",
+    "sourceKey": "src:telegram:movie-channel:msg:-1001234567890:42001",
     "workKey": "movie:heuristic:oppenheimer-2023",
     "sourceType": "TELEGRAM",
     "accountKey": "telegram:movie-channel",

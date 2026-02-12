@@ -172,7 +172,7 @@
     "releaseDate": "2022-11-17",
     "isAdult": false,
     "categoryId": null,
-    "sourceLabel": "Xtream: 1899",
+    "sourceLabel": "real-test-provider",
     "epgChannelId": null,
     "tvArchive": 0,
     "tvArchiveDuration": 0,
@@ -259,7 +259,7 @@
       "isDeleted": false
     },
     "sourceRef": {
-      "sourceKey": "src:xtream:xtream:real-test-provider:xtream:episode:series:1899:s1:e1",
+      "sourceKey": "src:xtream:real-test-provider:xtream:episode:series:1899:s1:e1",
       "workKey": "episode:heuristic:1899-unknown-s01e01",
       "sourceType": "XTREAM",
       "accountKey": "xtream:real-test-provider",
@@ -274,9 +274,9 @@
       "tvArchiveDuration": 0
     },
     "variant": {
-      "variantKey": "src:xtream:xtream:real-test-provider:xtream:episode:series:1899:s1:e1#original",
+      "variantKey": "src:xtream:real-test-provider:xtream:episode:series:1899:s1:e1#original",
       "workKey": "episode:heuristic:1899-unknown-s01e01",
-      "sourceKey": "src:xtream:xtream:real-test-provider:xtream:episode:series:1899:s1:e1",
+      "sourceKey": "src:xtream:real-test-provider:xtream:episode:series:1899:s1:e1",
       "label": "Original",
       "isDefault": true,
       "container": "mp4",

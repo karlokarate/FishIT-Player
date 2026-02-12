@@ -67,7 +67,7 @@ internal class VodItemPhase @Inject constructor(
                                 source.streamVodItems(batchSize = config.batchSize, categoryId = catId) { batch ->
                                     for (vodItem in batch) {
                                         if (!currentCoroutineContext().isActive) return@streamVodItems
-                                        val catalogItem = mapper.fromVod(vodItem, headers, config.accountName)
+                                        val catalogItem = mapper.fromVod(vodItem, headers, config.accountLabel)
                                         channel.send(XtreamCatalogEvent.ItemDiscovered(catalogItem))
                                         val count = counters.vodCounter.incrementAndGet()
                                         if (count % PROGRESS_LOG_INTERVAL == 0) {
@@ -94,7 +94,7 @@ internal class VodItemPhase @Inject constructor(
                 source.streamVodItems(batchSize = config.batchSize) { batch ->
                     for (vodItem in batch) {
                         if (!currentCoroutineContext().isActive) return@streamVodItems
-                        val catalogItem = mapper.fromVod(vodItem, headers, config.accountName)
+                        val catalogItem = mapper.fromVod(vodItem, headers, config.accountLabel)
                         channel.send(XtreamCatalogEvent.ItemDiscovered(catalogItem))
                         val count = counters.vodCounter.incrementAndGet()
                         if (count % PROGRESS_LOG_INTERVAL == 0) {

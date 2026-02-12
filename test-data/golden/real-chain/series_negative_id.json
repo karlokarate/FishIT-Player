@@ -66,7 +66,7 @@
     "releaseDate": "2014-09-21",
     "isAdult": false,
     "categoryId": "66",
-    "sourceLabel": "xtream:real-test-provider",
+    "sourceLabel": "real-test-provider",
     "epgChannelId": null,
     "tvArchive": 0,
     "tvArchiveDuration": 0,
@@ -139,7 +139,7 @@
       "isDeleted": false
     },
     "sourceRef": {
-      "sourceKey": "src:xtream:xtream:real-test-provider:xtream:series:-441",
+      "sourceKey": "src:xtream:real-test-provider:xtream:series:-441",
       "workKey": "series:heuristic:madam-secretary-2014",
       "sourceType": "XTREAM",
       "accountKey": "xtream:real-test-provider",

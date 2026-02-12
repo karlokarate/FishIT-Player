@@ -57,7 +57,7 @@ import kotlin.test.assertTrue
 class XtreamVodIntegrationTest {
 
     private val testDataDir = File("test-data/xtream-responses")
-    private val accountName = "test-account"
+    private val accountLabel = "test-account"
 
     private val json = Json {
         ignoreUnknownKeys = true
@@ -165,14 +165,14 @@ class XtreamVodIntegrationTest {
                 rating5Based = api.rating5BasedDouble,
             )
 
-            val raw = dto.toRawMetadata(accountName = accountName)
+            val raw = dto.toRawMetadata(accountLabel = accountLabel)
 
             // === IDENTITY FIELDS ===
             assertEquals("xtream:vod:${api.stream_id}", raw.sourceId, "sourceId")
             assertEquals(XtreamIdCodec.vod(api.stream_id), raw.sourceId, "XtreamIdCodec format")
             assertEquals(MediaType.MOVIE, raw.mediaType, "mediaType")
             assertEquals(SourceType.XTREAM, raw.sourceType, "sourceType")
-            assertEquals(accountName, raw.sourceLabel, "sourceLabel")
+            assertEquals(accountLabel, raw.sourceLabel, "sourceLabel")
             assertEquals("", raw.globalId, "globalId must be empty (normalizer assigns)")
 
             // === DISPLAY FIELDS ===
@@ -289,7 +289,7 @@ class XtreamVodIntegrationTest {
             duration = api.duration,
         )
 
-        val raw = dto.toRawMetadata(accountName = accountName)
+        val raw = dto.toRawMetadata(accountLabel = accountLabel)
 
         // === IDENTITY ===
         assertEquals(XtreamIdCodec.vod(movieData.stream_id), raw.sourceId)

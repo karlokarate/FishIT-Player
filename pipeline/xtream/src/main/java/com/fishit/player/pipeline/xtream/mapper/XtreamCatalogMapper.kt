@@ -24,13 +24,13 @@ interface XtreamCatalogMapper {
      *
      * @param item The VOD item from source
      * @param imageAuthHeaders Headers for image authentication
-     * @param accountName Xtream account identifier for sourceLabel
+     * @param accountLabel Human-readable account label for UI display
      * @return XtreamCatalogItem wrapping RawMediaMetadata
      */
     fun fromVod(
         item: XtreamVodItem,
         imageAuthHeaders: Map<String, String>,
-        accountName: String = "xtream",
+        accountLabel: String = "xtream",
     ): XtreamCatalogItem
 
     /**
@@ -38,13 +38,13 @@ interface XtreamCatalogMapper {
      *
      * @param item The series item from source
      * @param imageAuthHeaders Headers for image authentication
-     * @param accountName Xtream account identifier for sourceLabel
+     * @param accountLabel Human-readable account label for UI display
      * @return XtreamCatalogItem wrapping RawMediaMetadata
      */
     fun fromSeries(
         item: XtreamSeriesItem,
         imageAuthHeaders: Map<String, String>,
-        accountName: String = "xtream",
+        accountLabel: String = "xtream",
     ): XtreamCatalogItem
 
     /**
@@ -53,14 +53,14 @@ interface XtreamCatalogMapper {
      * @param episode The episode from source
      * @param seriesName Parent series name for context
      * @param imageAuthHeaders Headers for image authentication
-     * @param accountName Xtream account identifier for sourceLabel
+     * @param accountLabel Human-readable account label for UI display
      * @return XtreamCatalogItem wrapping RawMediaMetadata
      */
     fun fromEpisode(
         episode: XtreamEpisode,
         seriesName: String? = null,
         imageAuthHeaders: Map<String, String>,
-        accountName: String = "xtream",
+        accountLabel: String = "xtream",
     ): XtreamCatalogItem
 
     /**
@@ -68,13 +68,13 @@ interface XtreamCatalogMapper {
      *
      * @param channel The live channel from source
      * @param imageAuthHeaders Headers for image authentication
-     * @param accountName Xtream account identifier for sourceLabel
+     * @param accountLabel Human-readable account label for UI display
      * @return XtreamCatalogItem wrapping RawMediaMetadata
      */
     fun fromChannel(
         channel: XtreamChannel,
         imageAuthHeaders: Map<String, String>,
-        accountName: String = "xtream",
+        accountLabel: String = "xtream",
     ): XtreamCatalogItem
 }
 
@@ -89,10 +89,10 @@ class XtreamCatalogMapperImpl
         override fun fromVod(
             item: XtreamVodItem,
             imageAuthHeaders: Map<String, String>,
-            accountName: String,
+            accountLabel: String,
         ): XtreamCatalogItem =
             XtreamCatalogItem(
-                raw = item.toRawMetadata(imageAuthHeaders, accountName),
+                raw = item.toRawMetadata(imageAuthHeaders, accountLabel),
                 kind = XtreamItemKind.VOD,
                 vodId = item.id,
             )
@@ -100,10 +100,10 @@ class XtreamCatalogMapperImpl
         override fun fromSeries(
             item: XtreamSeriesItem,
             imageAuthHeaders: Map<String, String>,
-            accountName: String,
+            accountLabel: String,
         ): XtreamCatalogItem =
             XtreamCatalogItem(
-                raw = item.toRawMetadata(imageAuthHeaders, accountName),
+                raw = item.toRawMetadata(imageAuthHeaders, accountLabel),
                 kind = XtreamItemKind.SERIES,
                 seriesId = item.id,
             )
@@ -112,13 +112,14 @@ class XtreamCatalogMapperImpl
             episode: XtreamEpisode,
             seriesName: String?,
             imageAuthHeaders: Map<String, String>,
-            accountName: String,
+            accountLabel: String,
         ): XtreamCatalogItem =
             XtreamCatalogItem(
                 raw = episode.toRawMediaMetadata(
                     seriesNameOverride = seriesName,
                     seriesKind = "series", // Xtream API does not return stream_type for series, default to "series"
-                    authHeaders = imageAuthHeaders
+                    authHeaders = imageAuthHeaders,
+                    accountLabel = accountLabel,
                 ),
                 kind = XtreamItemKind.EPISODE,
                 seriesId = episode.seriesId,
@@ -128,10 +129,10 @@ class XtreamCatalogMapperImpl
         override fun fromChannel(
             channel: XtreamChannel,
             imageAuthHeaders: Map<String, String>,
-            accountName: String,
+            accountLabel: String,
         ): XtreamCatalogItem =
             XtreamCatalogItem(
-                raw = channel.toRawMediaMetadata(imageAuthHeaders, accountName),
+                raw = channel.toRawMediaMetadata(imageAuthHeaders, accountLabel),
                 kind = XtreamItemKind.LIVE,
                 channelId = channel.id,
             )

@@ -9,9 +9,9 @@
     "season": 2,
     "episode": 7,
     "runtimeMs": 2820000,
-    "posterRef": "http:https://image.tmdb.org/t/p/w500/ggFHVNu6YYI5L9pCfOacjizRGt.jpg",
-    "backdropRef": null,
-    "thumbnailRef": null,
+    "poster": "https://image.tmdb.org/t/p/w500/ggFHVNu6YYI5L9pCfOacjizRGt.jpg",
+    "backdrop": null,
+    "thumbnail": null,
     "rating": 9.5,
     "genres": "Crime, Drama, Thriller",
     "plot": "Walt and Jesse try a new method of distribution.",
@@ -27,7 +27,7 @@
     "isDeleted": false
   },
   "sourceRef": {
-    "sourceKey": "src:xtream:xtream:premium-iptv:xtream:episode:5001:2:7",
+    "sourceKey": "src:xtream:premium-iptv:xtream:episode:5001:2:7",
     "workKey": "episode:tmdb:1396",
     "sourceType": "XTREAM",
     "accountKey": "xtream:premium-iptv",
@@ -42,9 +42,9 @@
     "tvArchiveDuration": 0
   },
   "variant": {
-    "variantKey": "src:xtream:xtream:premium-iptv:xtream:episode:5001:2:7#original",
+    "variantKey": "src:xtream:premium-iptv:xtream:episode:5001:2:7#original",
     "workKey": "episode:tmdb:1396",
-    "sourceKey": "src:xtream:xtream:premium-iptv:xtream:episode:5001:2:7",
+    "sourceKey": "src:xtream:premium-iptv:xtream:episode:5001:2:7",
     "label": "Original",
     "isDefault": true,
     "container": "hls",

@@ -63,7 +63,7 @@ internal class LiveChannelPhase @Inject constructor(
                                 source.streamLiveChannels(batchSize = config.batchSize, categoryId = catId) { batch ->
                                     for (liveChannel in batch) {
                                         if (!currentCoroutineContext().isActive) return@streamLiveChannels
-                                        val catalogItem = mapper.fromChannel(liveChannel, headers, config.accountName)
+                                        val catalogItem = mapper.fromChannel(liveChannel, headers, config.accountLabel)
                                         channel.send(XtreamCatalogEvent.ItemDiscovered(catalogItem))
                                         val count = counters.liveCounter.incrementAndGet()
                                         if (count % PROGRESS_LOG_INTERVAL == 0) {
@@ -90,7 +90,7 @@ internal class LiveChannelPhase @Inject constructor(
                 source.streamLiveChannels(batchSize = config.batchSize) { batch ->
                     for (liveChannel in batch) {
                         if (!currentCoroutineContext().isActive) return@streamLiveChannels
-                        val catalogItem = mapper.fromChannel(liveChannel, headers, config.accountName)
+                        val catalogItem = mapper.fromChannel(liveChannel, headers, config.accountLabel)
                         channel.send(XtreamCatalogEvent.ItemDiscovered(catalogItem))
                         val count = counters.liveCounter.incrementAndGet()
                         if (count % PROGRESS_LOG_INTERVAL == 0) {

@@ -223,13 +223,19 @@ class NxCatalogWriter @Inject constructor(
     /**
      * Build source key from raw metadata.
      *
-     * Format: {sourceType}:{accountKey}:{sourceId}
+     * [accountKey] uses the NxKeyGenerator format `{sourceType}:{identifier}` (e.g.,
+     * `xtream:user@server.com`). [SourceKeyParser.buildSourceKey] already prepends sourceType,
+     * so we extract only the identifier portion to avoid a duplicate prefix like
+     * `src:xtream:xtream:user@server.com:…`.
+     *
+     * Format: src:{sourceType}:{identifier}:{sourceId}
      * Examples:
-     * - xtream:myserver:vod:12345
-     * - telegram:123456:msg:789:101
+     * - src:xtream:user@server.com:vod:12345
+     * - src:telegram:+491234567890:msg:789:101
      */
     private fun buildSourceKey(raw: RawMediaMetadata, accountKey: String): String {
-        return SourceKeyParser.buildSourceKey(raw.sourceType, accountKey, raw.sourceId)
+        val identifier = accountKey.removePrefix("${raw.sourceType.name.lowercase()}:")
+        return SourceKeyParser.buildSourceKey(raw.sourceType, identifier, raw.sourceId)
     }
 
     /**
