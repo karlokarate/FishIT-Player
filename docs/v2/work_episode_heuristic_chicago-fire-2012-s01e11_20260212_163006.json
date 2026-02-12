@@ -1,0 +1,122 @@
+{
+    "exportedAt": "2026-02-12T15:30:11.163Z",
+    "workKey": "episode:heuristic:chicago-fire-2012-s01e11",
+    "work": {
+        "entityType": "NX_Work",
+        "id": 4801,
+        "fields": {
+            "__boxStore": "io.objectbox.BoxStore@a633a83",
+            "authorityKey": null,
+            "backdrop": null,
+            "canonicalTitle": "Chicago Fire - S01E11 - Gott hat gesprochen",
+            "canonicalTitleLower": "chicago fire - s01e11 - gott hat gesprochen",
+            "cast": null,
+            "childRelations": "io.objectbox.relation.ToMany@a308db3",
+            "createdAt": "1685690857",
+            "director": null,
+            "durationMs": "2554000",
+            "episode": "11",
+            "genres": null,
+            "id": "4801",
+            "imdbId": null,
+            "isAdult": "false",
+            "needsReview": "false",
+            "plot": "",
+            "poster": "Http(url=https://image.tmdb.org/t/p/w600_and_h900_bestv2/vVi3c4pz2W58S7XUeNnprJj7Rlc.jpg, headers={}, preferredWidth=null, preferredHeight=null)",
+            "rating": "7.6",
+            "recognitionState": "HEURISTIC",
+            "releaseDate": "2013-01-02",
+            "season": "1",
+            "sourceRefs": "io.objectbox.relation.ToMany@d4b0f70",
+            "thumbnail": null,
+            "tmdbId": "891031",
+            "trailer": null,
+            "tvdbId": null,
+            "updatedAt": "1770909727589",
+            "variants": "io.objectbox.relation.ToMany@849e2e9",
+            "workKey": "episode:heuristic:chicago-fire-2012-s01e11",
+            "workType": "EPISODE",
+            "year": null
+        }
+    },
+    "sourceRefs": [
+        {
+            "entityType": "NX_WorkSourceRef",
+            "id": 4849,
+            "fields": {
+                "__boxStore": "io.objectbox.BoxStore@a633a83",
+                "accountKey": "unknown",
+                "discoveredAt": "1770909727590",
+                "epgChannelId": null,
+                "fileName": null,
+                "fileSizeBytes": null,
+                "id": "4849",
+                "lastSeenAt": "1770909727590",
+                "mimeType": null,
+                "rawTitle": "Chicago Fire - S01E11 - Gott hat gesprochen",
+                "sourceId": "1351_1_11",
+                "sourceKey": "xtream:episode:series:1351:s1:e11",
+                "sourceLastModifiedMs": null,
+                "sourceType": "xtream",
+                "telegramChatId": null,
+                "telegramMessageId": null,
+                "tvArchive": "0",
+                "tvArchiveDuration": "0",
+                "work": "io.objectbox.relation.ToOne@12c1",
+                "xtreamCategoryId": null,
+                "xtreamStreamId": null
+            }
+        }
+    ],
+    "variants": [
+        {
+            "entityType": "NX_WorkVariant",
+            "id": 3489,
+            "fields": {
+                "__boxStore": "io.objectbox.BoxStore@a633a83",
+                "audioCodec": "aac",
+                "bitrateBps": "1723000",
+                "containerFormat": "mp4",
+                "createdAt": "1770909727600",
+                "height": "720",
+                "id": "3489",
+                "languageTag": "original",
+                "playbackHintsJson": "{\"xtream.directSource\":\"\",\"xtream.containerExtension\":\"mp4\",\"custom_sid\":\"\",\"video.width\":\"1280\",\"aspect_ratio\":\"16:9\",\"audio.channels\":\"2\",\"duration_display\":\"00:42:34\"}",
+                "playbackMethod": "DIRECT",
+                "playbackUrl": "",
+                "qualityTag": "720p",
+                "sourceKey": "xtream:episode:series:1351:s1:e11",
+                "variantKey": "v:xtream:episode:series:1351:s1:e11:default",
+                "videoCodec": "h264",
+                "width": null,
+                "work": "io.objectbox.relation.ToOne@12c1"
+            }
+        }
+    ],
+    "relations": [
+        {
+            "direction": "CHILD",
+            "relatedWorkKey": "series:heuristic:chicago-fire-2012",
+            "relation": {
+                "entityType": "NX_WorkRelation",
+                "id": 37,
+                "fields": {
+                    "__boxStore": "io.objectbox.BoxStore@a633a83",
+                    "childWork": "io.objectbox.relation.ToOne@12c1",
+                    "createdAt": "1770909727593",
+                    "episode": "11",
+                    "id": "37",
+                    "parentWork": "io.objectbox.relation.ToOne@65",
+                    "relationType": "SERIES_EPISODE",
+                    "season": "1",
+                    "sortOrder": "1011"
+                }
+            }
+        }
+    ],
+    "userStates": [],
+    "categories": [],
+    "ingestLedger": [],
+    "embedding": null,
+    "runtimeStates": []
+}
