@@ -4,6 +4,9 @@ import android.content.Context
 import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
+import com.fishit.player.core.catalogsync.SyncStatus as TelegramSyncStatus
+import com.fishit.player.core.catalogsync.sources.telegram.TelegramSyncConfig
+import com.fishit.player.core.catalogsync.sources.telegram.TelegramSyncService
 import com.fishit.player.core.catalogsync.sources.xtream.XtreamSyncConfig
 import com.fishit.player.core.catalogsync.sources.xtream.XtreamSyncService
 import com.fishit.player.core.model.repository.NxCategorySelectionRepository
@@ -66,7 +69,7 @@ import kotlinx.coroutines.isActive
  * - W-17: FireTV Safety via DeviceProfile
  *
  * @see XtreamSyncService
- * @see TelegramSyncService (TODO)
+ * @see TelegramSyncService
  * @see IoSyncService (TODO)
  */
 @HiltWorker
@@ -77,7 +80,7 @@ class CatalogSyncOrchestratorWorker
         @Assisted workerParams: WorkerParameters,
         private val sourceActivationStore: SourceActivationStore,
         private val xtreamSyncService: XtreamSyncService,
-        // TODO: Add TelegramSyncService when available
+        private val telegramSyncService: TelegramSyncService,
         // TODO: Add IoSyncService when available
         private val homeCacheInvalidator: HomeCacheInvalidator,
         private val categorySelectionRepository: NxCategorySelectionRepository,
@@ -250,21 +253,65 @@ class CatalogSyncOrchestratorWorker
         }
 
         /**
-         * Sync Telegram source.
+         * Sync Telegram source via TelegramSyncService.
          *
-         * TODO: Implement when TelegramSyncService is available.
-         * For now, logs placeholder.
+         * Mirrors [syncXtream] pattern: build config → collect Flow → track progress.
          */
         private suspend fun syncTelegram(
             input: WorkerInputData,
             startTimeMs: Long,
         ): SyncResult {
-            UnifiedLog.i(TAG) { "Telegram sync: TODO - awaiting TelegramSyncService" }
+            var itemsPersisted = 0L
 
-            // Placeholder - return empty result
+            UnifiedLog.i(TAG) { "Telegram sync starting..." }
+
+            try {
+                val config = buildTelegramSyncConfig(input)
+
+                telegramSyncService.sync(config).collect { status ->
+                    // Check cancellation
+                    if (!currentCoroutineContext().isActive) {
+                        throw CancellationException("Worker cancelled")
+                    }
+
+                    // Check runtime budget
+                    val elapsedMs = System.currentTimeMillis() - startTimeMs
+                    if (elapsedMs > input.maxRuntimeMs) {
+                        UnifiedLog.w(TAG) { "Telegram: Max runtime exceeded" }
+                        telegramSyncService.cancel()
+                        return@collect
+                    }
+
+                    // Track progress
+                    when (status) {
+                        is TelegramSyncStatus.InProgress -> {
+                            itemsPersisted = status.itemsPersisted
+                        }
+                        is TelegramSyncStatus.Completed -> {
+                            itemsPersisted = status.totalItems
+                            UnifiedLog.i(TAG) {
+                                "Telegram SUCCESS: ${status.totalItems} items in ${status.durationMs}ms"
+                            }
+
+                            homeCacheInvalidator.invalidateAllAfterSync(
+                                source = "TELEGRAM",
+                                syncRunId = input.syncRunId,
+                            )
+                        }
+                        is TelegramSyncStatus.Error -> {
+                            throw status.throwable ?: RuntimeException(status.message)
+                        }
+                        else -> {}
+                    }
+                }
+            } catch (e: Exception) {
+                UnifiedLog.e(TAG, e) { "Telegram sync failed: ${e.message}" }
+                throw e
+            }
+
             return SyncResult(
                 source = "TELEGRAM",
-                itemsPersisted = 0,
+                itemsPersisted = itemsPersisted,
             )
         }
 
@@ -285,6 +332,21 @@ class CatalogSyncOrchestratorWorker
                 source = "IO",
                 itemsPersisted = 0,
             )
+        }
+
+        /**
+         * Build TelegramSyncConfig from worker input.
+         */
+        private fun buildTelegramSyncConfig(input: WorkerInputData): TelegramSyncConfig {
+            return when (input.syncMode) {
+                WorkerConstants.SYNC_MODE_FORCE_RESCAN ->
+                    TelegramSyncConfig.fullSync(accountKey = "telegram:pending")
+                else ->
+                    TelegramSyncConfig.incremental(accountKey = "telegram:pending")
+            }
+            // Note: accountKey is resolved inside DefaultTelegramSyncService from
+            // the current Telegram userId. "telegram:pending" is a placeholder that
+            // gets overridden by the service's NxKeyGenerator logic.
         }
 
         /**

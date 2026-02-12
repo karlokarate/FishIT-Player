@@ -15,6 +15,7 @@ import com.fishit.player.infra.transport.telegram.TelegramHistoryClient
 import com.fishit.player.infra.transport.telegram.TelegramRemoteResolver
 import com.fishit.player.infra.transport.telegram.TelegramSessionConfig
 import com.fishit.player.infra.transport.telegram.TelegramThumbFetcher
+import com.fishit.player.infra.transport.telegram.TelegramTransportConfig
 import com.fishit.player.infra.transport.telegram.imaging.TelegramThumbDownloader
 import com.fishit.player.infra.transport.telegram.internal.DefaultTelegramClient
 import com.fishit.player.infra.transport.telegram.internal.TelethonProxyClient
@@ -78,34 +79,34 @@ object TelegramTransportModule {
     /**
      * Provides OkHttpClient for Telethon proxy API calls.
      *
-     * Timeouts are tuned for localhost proxy communication:
-     * - connectTimeout: 30s (allows Chaquopy startup time)
-     * - readTimeout: 120s (file downloads via /file endpoint can be slow)
-     * - writeTimeout: 10s (small JSON payloads only)
+     * Timeouts sourced from [TelegramTransportConfig] (SSOT):
+     * - connectTimeout: Allows Chaquopy startup time
+     * - readTimeout: Extended for file streaming via /file endpoint
+     * - writeTimeout: Small JSON payloads only
      */
     @Provides
     @Singleton
     @TelegramProxyHttpClient
     fun provideProxyOkHttpClient(): OkHttpClient =
         OkHttpClient.Builder()
-            .connectTimeout(30, TimeUnit.SECONDS)
-            .readTimeout(120, TimeUnit.SECONDS)
-            .writeTimeout(10, TimeUnit.SECONDS)
+            .connectTimeout(TelegramTransportConfig.CONNECT_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+            .readTimeout(TelegramTransportConfig.STREAMING_READ_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+            .writeTimeout(TelegramTransportConfig.WRITE_TIMEOUT_SECONDS, TimeUnit.SECONDS)
             .build()
 
     /**
      * Provides lightweight OkHttpClient for health-check polling.
      *
-     * Deliberately short timeouts — health checks must respond fast
-     * or be treated as "not ready yet".
+     * Deliberately short timeouts from [TelegramTransportConfig] (SSOT) —
+     * health checks must respond fast or be treated as "not ready yet".
      */
     @Provides
     @Singleton
     @TelegramHealthHttpClient
     fun provideHealthOkHttpClient(): OkHttpClient =
         OkHttpClient.Builder()
-            .connectTimeout(2, TimeUnit.SECONDS)
-            .readTimeout(2, TimeUnit.SECONDS)
+            .connectTimeout(TelegramTransportConfig.HEALTH_CONNECT_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+            .readTimeout(TelegramTransportConfig.HEALTH_READ_TIMEOUT_SECONDS, TimeUnit.SECONDS)
             .build()
 
     // ── Proxy infrastructure ────────────────────────────────────────────────
