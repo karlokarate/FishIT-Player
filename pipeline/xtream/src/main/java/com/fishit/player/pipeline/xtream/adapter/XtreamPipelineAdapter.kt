@@ -1,5 +1,7 @@
 package com.fishit.player.pipeline.xtream.adapter
 
+import com.fishit.player.core.model.util.EpochConverter
+import com.fishit.player.core.model.util.RatingNormalizer
 import com.fishit.player.infra.transport.xtream.XtreamApiClient
 import com.fishit.player.infra.transport.xtream.XtreamAuthState
 import com.fishit.player.infra.transport.xtream.XtreamConnectionState
@@ -237,8 +239,7 @@ internal fun XtreamVodStream.toPipelineItem(): XtreamVodItem =
         categoryId = categoryId,
         containerExtension = containerExtension,
         streamType = streamType,
-        // API returns Unix epoch SECONDS, convert to milliseconds for addedTimestamp
-        added = added?.toLongOrNull()?.let { it * 1000L },
+        added = EpochConverter.secondsToMs(added),
         rating = rating?.toDoubleOrNull(),
         rating5Based = rating5Based,
         // Quick info fields (some panels include these in list)
@@ -246,7 +247,6 @@ internal fun XtreamVodStream.toPipelineItem(): XtreamVodItem =
         genre = genre,
         plot = plot,
         duration = duration,
-        // Adult content flag ("1" = adult, else = not adult)
         isAdult = isAdult == "1",
     )
 
@@ -259,8 +259,7 @@ internal fun XtreamSeriesStream.toPipelineItem(): XtreamSeriesItem =
         categoryId = categoryId,
         streamType = streamType,
         year = resolvedYear, // Uses year or extracts from releaseDate
-        // Rating: prefer rating (0-10 scale), fall back to rating5Based scaled to 0-10
-        rating = rating?.toDoubleOrNull() ?: rating5Based?.let { it * 2.0 },
+        rating = RatingNormalizer.resolve(rating, rating5Based),
         plot = plot,
         cast = cast,
         director = director,
@@ -268,9 +267,7 @@ internal fun XtreamSeriesStream.toPipelineItem(): XtreamSeriesItem =
         releaseDate = releaseDate,
         youtubeTrailer = youtubeTrailer?.takeIf { it.isNotBlank() },
         episodeRunTime = episodeRunTime,
-        // API returns Unix epoch SECONDS, convert to milliseconds for addedTimestamp
-        lastModified = lastModified?.toLongOrNull()?.let { it * 1000L },
-        // Adult content flag ("1" = adult, else = not adult)
+        lastModified = EpochConverter.secondsToMs(lastModified),
         isAdult = isAdult == "1",
     )
 
@@ -284,9 +281,7 @@ internal fun XtreamLiveStream.toPipelineItem(): XtreamChannel =
         tvArchiveDuration = tvArchiveDuration ?: 0,
         categoryId = categoryId,
         streamType = streamType,
-        // API returns Unix epoch SECONDS, convert to milliseconds for addedTimestamp
-        added = added?.toLongOrNull()?.let { it * 1000L },
-        // Adult content flag ("1" = adult, else = not adult)
+        added = EpochConverter.secondsToMs(added),
         isAdult = isAdult == "1",
         // BUG FIX (Jan 2026): Direct HLS source URL for potential playback optimization
         directSource = directSource?.takeIf { it.isNotBlank() },
@@ -320,8 +315,7 @@ internal fun XtreamSeriesInfo.toEpisodes(
                     thumbnail =
                         ep.info?.movieImage
                             ?: ep.info?.posterPath ?: ep.info?.thumbnail,
-                    // API returns Unix epoch SECONDS, convert to milliseconds for addedTimestamp
-                    added = ep.added?.toLongOrNull()?.let { it * 1000L },
+                    added = EpochConverter.secondsToMs(ep.added),
                     // BUG FIX (Jan 2026): bitrate from API for quality info in player
                     bitrate = ep.info?.bitrate,
                     // Episode-specific TMDB ID from info block

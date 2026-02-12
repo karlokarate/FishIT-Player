@@ -8,6 +8,10 @@ import com.fishit.player.core.model.RawMediaMetadata
 import com.fishit.player.core.model.SourceType
 import com.fishit.player.core.model.TmdbMediaType
 import com.fishit.player.core.model.TmdbRef
+import com.fishit.player.core.model.util.DurationParser
+import com.fishit.player.core.model.util.EpochConverter
+import com.fishit.player.core.model.util.RatingNormalizer
+import com.fishit.player.core.model.util.YearParser
 import com.fishit.player.infra.transport.xtream.XtreamVodInfo
 import com.fishit.player.pipeline.xtream.debug.XtcLogger
 import com.fishit.player.pipeline.xtream.ids.XtreamIdCodec
@@ -57,56 +61,6 @@ private val WHITESPACE_COLLAPSE = Regex("\\s+")
 private fun cleanLiveChannelName(name: String): String = name.replace(UNICODE_DECORATORS, " ").replace(WHITESPACE_COLLAPSE, " ").trim()
 
 /**
- * Parse duration string to milliseconds.
- *
- * **SSOT (Single Source of Truth)** für Duration-Parsing im Xtream-Flow.
- * [XtreamVodInfoBlock.resolvedDurationMins] ist @Deprecated und verweist hierher.
- *
- * Handles various formats from Xtream panels:
- * - "01:30:00" → 5400000 (HH:MM:SS)
- * - "90:00" → 5400000 (MM:SS)
- * - "90" → 5400000 (minutes as number)
- * - "90 min" → 5400000 (with unit suffix)
- * - null/empty → null
- */
-private fun parseDurationToMs(duration: String?): Long? {
-    if (duration.isNullOrBlank()) return null
-    val cleaned = duration.trim().lowercase()
-
-    // Try HH:MM:SS or MM:SS format
-    val parts = cleaned.split(":")
-    if (parts.size >= 2) {
-        return try {
-            when (parts.size) {
-                3 -> { // HH:MM:SS
-                    val hours = parts[0].toInt()
-                    val minutes = parts[1].toInt()
-                    val seconds = parts[2].toInt()
-                    ((hours * 3600L + minutes * 60L + seconds) * 1000L)
-                }
-                2 -> { // MM:SS
-                    val minutes = parts[0].toInt()
-                    val seconds = parts[1].toInt()
-                    ((minutes * 60L + seconds) * 1000L)
-                }
-                else -> null
-            }
-        } catch (e: NumberFormatException) {
-            null
-        }
-    }
-
-    // Try plain number (minutes) or "90 min" format
-    val numberMatch = Regex("^(\\d+)").find(cleaned)
-    if (numberMatch != null) {
-        val minutes = numberMatch.groupValues[1].toLongOrNull() ?: return null
-        return minutes * 60L * 1000L
-    }
-
-    return null
-}
-
-/**
  * Converts an XtreamVodItem to RawMediaMetadata.
  *
  * Per Gold Decision (Dec 2025):
@@ -122,19 +76,12 @@ fun XtreamVodItem.toRawMetadata(
 ): RawMediaMetadata {
     val rawTitle = name
 
-    // BUG FIX: Extract year from multiple sources with validation
-    // Priority 1: year field (but only if valid: not empty, not "0", not "N/A")
-    // Priority 2: Extract from title (e.g., "Movie | 2025 | 6.5")
-    val yearFromField = year
-        ?.takeIf { it.isNotBlank() && it != "0" && it != "N/A" }
-        ?.toIntOrNull()
-        ?.takeIf { it in 1900..2100 }
+    // Year from API field only — title-based extraction is normalizer territory
+    // (per pipeline.instructions.md: extractYearFromTitle is FORBIDDEN in pipeline)
+    val rawYear = YearParser.validate(year)
 
-    val yearFromTitle = extractYearFromVodTitle(rawTitle)
-
-    val rawYear: Int? = yearFromField ?: yearFromTitle
-    // Parse duration - format varies: "01:30:00", "90", "90 min", etc.
-    val durationMs: Long? = parseDurationToMs(duration)
+    // Parse duration via SSOT — format varies: "01:30:00", "90", "90 min", etc.
+    val durationMs = DurationParser.parseToMs(duration)
     // Stable source ID format (contract): xtream:vod:{id}
     // Container extension is *format*, not identity.
     // Playback can infer a default extension or use detail fetch.
@@ -182,8 +129,8 @@ fun XtreamVodItem.toRawMetadata(
         // the provider added the item. Use this as lastModifiedTimestamp so it gets
         // persisted to NX_WorkSourceRef.sourceLastModifiedMs for incremental sync.
         lastModifiedTimestamp = added,
-        // === Rating (v2) - TMDB rating from provider ===
-        rating = rating,
+        // === Rating (v2) - prefer 0-10 raw rating, fallback to normalized 5-based ===
+        rating = rating ?: RatingNormalizer.normalize5to10(rating5Based),
         // === ImageRef from XtreamImageRefExtensions ===
         poster = toPosterImageRef(authHeaders),
         backdrop = null, // VOD list doesn't provide backdrop
@@ -223,34 +170,19 @@ fun XtreamSeriesItem.toRawMetadata(
 ): RawMediaMetadata {
     val rawTitle = name
 
-    // BUG FIX: Extract year from multiple sources with priority
-    // Priority 1: year field (but only if valid: not empty, not "0", not "N/A")
-    // Priority 2: releaseDate field (extract first 4 digits)
-    // Priority 3: Extract from title (e.g., "Show Name (2023)")
-    val yearFromField = year
-        ?.takeIf { it.isNotBlank() && it != "0" && it != "N/A" }
-        ?.toIntOrNull()
-        ?.takeIf { it in 1900..2100 }
-
-    val yearFromReleaseDate = releaseDate
-        ?.take(4)
-        ?.toIntOrNull()
-        ?.takeIf { it in 1900..2100 }
-
-    val yearFromTitle = extractYearFromSeriesTitle(rawTitle)
-
-    val rawYear = yearFromField ?: yearFromReleaseDate ?: yearFromTitle
+    // Year from structured API fields only — title-based extraction is normalizer territory
+    // (per pipeline.instructions.md: extractYearFromTitle is FORBIDDEN in pipeline)
+    val rawYear = YearParser.validate(year) ?: YearParser.fromDate(releaseDate)
 
     // Build typed TMDB reference for TV shows
     val externalIds =
         tmdbId?.let { ExternalIds(tmdb = TmdbRef(TmdbMediaType.TV, it)) } ?: ExternalIds()
 
-    // Series "episode_run_time" is average episode runtime in MINUTES → convert to ms
-    // BUG FIX (Jan 2026): episodeRunTime was present in DTO but not mapped to durationMs
+    // Series "episode_run_time" is average episode runtime in MINUTES → convert to ms via SSOT
     val durationMs = episodeRunTime
         ?.toIntOrNull()
         ?.takeIf { it > 0 }
-        ?.let { it * 60 * 1000L }  // minutes → milliseconds
+        ?.let { DurationParser.minutesToMs(it) }
 
     val raw = RawMediaMetadata(
         originalTitle = rawTitle,
@@ -378,9 +310,8 @@ fun XtreamEpisode.toRawMediaMetadata(
             }
         }
 
-    // BUG FIX (Jan 2026): Prefer durationSecs (from API, more accurate) over parsing duration string
-    val resolvedDurationMs = durationSecs?.takeIf { it > 0 }?.let { it * 1000L }
-        ?: parseDurationToMs(duration)
+    // Duration: prefer durationSecs (numeric, more accurate) via SSOT
+    val resolvedDurationMs = DurationParser.resolve(durationSecs?.toLong(), duration)
 
     val raw = RawMediaMetadata(
         originalTitle = rawTitle,
@@ -529,13 +460,12 @@ fun XtreamVodInfo.toRawMediaMetadata(
     // Extract year from info block
     val rawYear = infoBlock?.year?.toIntOrNull()
 
-    // Duration: prefer durationSecs (in seconds), convert to ms
-    val durationMs = infoBlock?.durationSecs?.let { it * 1000L }
+    // Duration: prefer durationSecs (in seconds), convert via SSOT
+    val durationMs = infoBlock?.durationSecs?.let { DurationParser.secondsToMs(it.toLong()) }
 
-    // Rating: prefer rating string parsed, fall back to rating5Based * 2
-    val rating =
-        infoBlock?.rating?.toDoubleOrNull()
-            ?: infoBlock?.rating5Based?.let { it * 2.0 } ?: vodItem.rating
+    // Rating: resolve via SSOT (prefer 0-10 string, fallback to normalized 5-based)
+    val rating = RatingNormalizer.resolve(infoBlock?.rating, infoBlock?.rating5Based)
+        ?: vodItem.rating
 
     // Stable source ID format (contract): xtream:vod:{streamId}
     // Container extension is *format*, not identity.
@@ -581,10 +511,10 @@ fun XtreamVodInfo.toRawMediaMetadata(
         pipelineIdTag = PipelineIdTag.XTREAM,
         // === Timing (v2) ===
         // movieData.added is Unix SECONDS string; vodItem.added is already converted to ms
-        addedTimestamp = movieData?.added?.toLongOrNull()?.let { it * 1000L } ?: vodItem.added,
-        // BUG FIX (Jan 2026): Detail API must also set lastModifiedTimestamp for
-        // NX_WorkSourceRef.sourceLastModifiedMs persistence (same fix as list APIs).
-        lastModifiedTimestamp = movieData?.added?.toLongOrNull()?.let { it * 1000L } ?: vodItem.added,
+        addedTimestamp = EpochConverter.secondsToMs(movieData?.added) ?: vodItem.added,
+        // Detail API must also set lastModifiedTimestamp for
+        // NX_WorkSourceRef.sourceLastModifiedMs persistence.
+        lastModifiedTimestamp = EpochConverter.secondsToMs(movieData?.added) ?: vodItem.added,
         // === Rating (v2) ===
         rating = rating,
         // === ImageRef ===
@@ -657,73 +587,4 @@ private fun createImageRef(
     )
 }
 
-/**
- * Extracts year from VOD title.
- *
- * Many Xtream providers format VOD titles as: "Title | Year | Rating"
- * Examples:
- * - "Ella McCay | 2025 | 5.2"
- * - "The Killer | 2024 | 6.4 |"
- * - "Cat Person | 2023 | 6.2 |"
- *
- * Returns null if no valid year (1900-2100) is found.
- *
- * @param title The VOD title to parse
- * @return Extracted year or null
- */
-private fun extractYearFromVodTitle(title: String): Int? {
-    // Split by pipe and look for year in second position
-    val parts = title.split("|").map { it.trim() }
-
-    // Check if second part is a year
-    if (parts.size >= 2) {
-        val potentialYear = parts[1].toIntOrNull()
-        if (potentialYear != null && potentialYear in 1900..2100) {
-            return potentialYear
-        }
-    }
-
-    // Fallback: Use series year extraction (handles parentheses, brackets, etc.)
-    return extractYearFromSeriesTitle(title)
-}
-
-/**
- * Extracts year from series title.
- *
- * Many Xtream providers include year in series name when the API doesn't provide it separately.
- * Common patterns:
- * - "Show Name (2023)"
- * - "Show Name [2023]"
- * - "Show Name 2023"
- * - "Show Name S01 (2023)"
- *
- * Returns null if no valid year (1900-2100) is found.
- *
- * @param title The series title to parse
- * @return Extracted year or null
- */
-private fun extractYearFromSeriesTitle(title: String): Int? {
-    // Pattern 1: Year in parentheses at end: "Show Name (2023)"
-    val parenPattern = """\((\d{4})\)""".toRegex()
-    parenPattern.findAll(title).lastOrNull()?.let { match ->
-        val year = match.groupValues[1].toInt()
-        if (year in 1900..2100) return year
-    }
-
-    // Pattern 2: Year in brackets at end: "Show Name [2023]"
-    val bracketPattern = """\[(\d{4})\]""".toRegex()
-    bracketPattern.findAll(title).lastOrNull()?.let { match ->
-        val year = match.groupValues[1].toInt()
-        if (year in 1900..2100) return year
-    }
-
-    // Pattern 3: Standalone year at end: "Show Name 2023"
-    val standalone = """\b(\d{4})$""".toRegex()
-    standalone.find(title)?.let { match ->
-        val year = match.groupValues[1].toInt()
-        if (year in 1900..2100) return year
-    }
-
-    return null
-}
 

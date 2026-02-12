@@ -42,7 +42,7 @@
     "mediaType": "MOVIE",
     "pipelineIdTag": "XTREAM",
     "originalTitle": "Die Dschungelhelden auf Weltreise | 2023 | 7.4 |",
-    "year": 2023,
+    "year": null,
     "season": null,
     "episode": null,
     "durationMs": null,
@@ -114,7 +114,7 @@
   },
   "step5_nx": {
     "work": {
-      "workKey": "movie:heuristic:die-dschungelhelden-auf-weltreise-2023",
+      "workKey": "movie:heuristic:dschungelhelden-auf-weltreise-2023",
       "type": "MOVIE",
       "displayTitle": "Die Dschungelhelden auf Weltreise",
       "sortTitle": "Die Dschungelhelden auf Weltreise",
@@ -142,7 +142,7 @@
     },
     "sourceRef": {
       "sourceKey": "src:xtream:real-test-provider:xtream:vod:747474",
-      "workKey": "movie:heuristic:die-dschungelhelden-auf-weltreise-2023",
+      "workKey": "movie:heuristic:dschungelhelden-auf-weltreise-2023",
       "sourceType": "XTREAM",
       "accountKey": "xtream:real-test-provider",
       "sourceItemKind": "VOD",
@@ -157,7 +157,7 @@
     },
     "variant": {
       "variantKey": "src:xtream:real-test-provider:xtream:vod:747474#original",
-      "workKey": "movie:heuristic:die-dschungelhelden-auf-weltreise-2023",
+      "workKey": "movie:heuristic:dschungelhelden-auf-weltreise-2023",
       "sourceKey": "src:xtream:real-test-provider:xtream:vod:747474",
       "label": "Original",
       "isDefault": true,

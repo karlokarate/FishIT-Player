@@ -264,7 +264,7 @@
       "sourceType": "XTREAM",
       "accountKey": "xtream:real-test-provider",
       "sourceItemKind": "EPISODE",
-      "sourceItemKey": "series",
+      "sourceItemKey": "series:1899:s1:e1",
       "sourceTitle": "1899 - S01E01 - Das Schiff",
       "availability": "ACTIVE",
       "note": null,
