@@ -4,12 +4,12 @@ import com.fishit.player.core.model.PlaybackHintKeys
 import com.fishit.player.core.playermodel.PlaybackContext
 import com.fishit.player.core.playermodel.SourceType
 import com.fishit.player.infra.logging.UnifiedLog
-import com.fishit.player.infra.transport.telegram.TelegramSessionConfig
 import com.fishit.player.playback.domain.DataSourceType
 import com.fishit.player.playback.domain.PlaybackSource
 import com.fishit.player.playback.domain.PlaybackSourceException
 import com.fishit.player.playback.domain.PlaybackSourceFactory
 import javax.inject.Inject
+import javax.inject.Named
 import javax.inject.Singleton
 
 /**
@@ -33,7 +33,7 @@ import javax.inject.Singleton
 class TelegramPlaybackSourceFactoryImpl
     @Inject
     constructor(
-        private val sessionConfig: TelegramSessionConfig,
+        @Named("telethonProxyBaseUrl") private val proxyBaseUrl: String,
     ) : PlaybackSourceFactory {
 
     companion object {
@@ -53,7 +53,7 @@ class TelegramPlaybackSourceFactoryImpl
             )
 
         // Build HTTP URL pointing to the Telethon proxy
-        val proxyUrl = "${sessionConfig.proxyBaseUrl}/file?chat=$chatId&id=$messageId"
+        val proxyUrl = "$proxyBaseUrl/file?chat=$chatId&id=$messageId"
 
         UnifiedLog.d(TAG) { "Created proxy URL: chatId=$chatId, messageId=$messageId" }
 

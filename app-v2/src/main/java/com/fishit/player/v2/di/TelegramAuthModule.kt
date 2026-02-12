@@ -10,6 +10,7 @@ import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import java.io.File
+import javax.inject.Named
 import javax.inject.Singleton
 
 /**
@@ -54,4 +55,14 @@ object TelegramAuthModule {
             sessionDir = sessionDir.absolutePath,
         )
     }
+
+    /**
+     * Provides the Telethon proxy base URL for the playback layer.
+     *
+     * This avoids a direct dependency from playback:telegram → infra:transport-telegram.
+     * Playback only needs the URL string, not the full transport config.
+     */
+    @Provides
+    @Named("telethonProxyBaseUrl")
+    fun provideTelethonProxyBaseUrl(config: TelegramSessionConfig): String = config.proxyBaseUrl
 }

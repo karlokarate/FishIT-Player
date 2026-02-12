@@ -3,7 +3,6 @@ package com.fishit.player.playback.telegram
 import com.fishit.player.core.model.PlaybackHintKeys
 import com.fishit.player.core.playermodel.PlaybackContext
 import com.fishit.player.core.playermodel.SourceType
-import com.fishit.player.infra.transport.telegram.TelegramSessionConfig
 import com.fishit.player.playback.domain.DataSourceType
 import com.fishit.player.playback.domain.PlaybackSourceException
 import kotlinx.coroutines.test.runTest
@@ -22,13 +21,8 @@ import org.junit.Test
  * - DataSourceType is DEFAULT (standard HTTP, NOT TELEGRAM_FILE)
  */
 class TelegramPlaybackSourceFactoryImplTest {
-    private val config = TelegramSessionConfig(
-        apiId = 12345,
-        apiHash = "test_hash",
-        sessionDir = "/tmp/test_session",
-        proxyPort = 8089,
-    )
-    private val factory = TelegramPlaybackSourceFactoryImpl(config)
+    private val proxyBaseUrl = "http://127.0.0.1:8089"
+    private val factory = TelegramPlaybackSourceFactoryImpl(proxyBaseUrl)
 
     // ==================== supports() Tests ====================
 

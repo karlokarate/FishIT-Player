@@ -57,8 +57,8 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2")
 
-    // OkHttp — HTTP client for Telethon proxy communication
-    implementation(libs.okhttp)
+    // Shared HTTP client infrastructure (OkHttp available transitively via api)
+    implementation(project(":infra:http-client"))
 
     // kotlinx.serialization — JSON parsing of proxy responses
     implementation(libs.kotlinx.serialization.json)
