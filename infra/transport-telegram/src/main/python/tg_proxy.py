@@ -56,6 +56,7 @@ SESSION_PATH = os.environ.get(
     "TG_SESSION_PATH", "/data/data/com.fishit.player/files/telethon")
 PROXY_PORT = int(os.environ.get("TG_PROXY_PORT", "8089"))
 PROXY_HOST = "127.0.0.1"
+MAX_POST_BODY = 65536  # 64KB limit for JSON endpoints
 
 # Global Telethon client (initialized in main())
 _client: TelegramClient | None = None
@@ -86,11 +87,14 @@ def _parse_range(range_header, file_size):
     """Parse Range: bytes=X-Y header. Returns (start, end) inclusive."""
     if not range_header or not range_header.startswith("bytes="):
         return 0, file_size - 1
-    range_spec = range_header[6:]  # strip "bytes="
-    parts = range_spec.split("-")
-    start = int(parts[0]) if parts[0] else 0
-    end = int(parts[1]) if len(parts) > 1 and parts[1] else file_size - 1
-    return max(0, start), min(end, file_size - 1)
+    try:
+        range_spec = range_header[6:]  # strip "bytes="
+        parts = range_spec.split("-")
+        start = int(parts[0]) if parts[0] else 0
+        end = int(parts[1]) if len(parts) > 1 and parts[1] else file_size - 1
+        return max(0, start), min(end, file_size - 1)
+    except (ValueError, IndexError):
+        return 0, file_size - 1
 
 
 # ── Content type extraction helpers ─────────────────────────────────────────
@@ -229,6 +233,9 @@ async def _handle_request(reader, writer):
         body = b""
         if method == "POST":
             content_length = int(headers.get("content-length", "0"))
+            if content_length > MAX_POST_BODY:
+                _error_response(writer, 413, "Request body too large")
+                return
             if content_length > 0:
                 body = await asyncio.wait_for(reader.readexactly(content_length), timeout=10)
 
@@ -353,16 +360,17 @@ async def _handle_request(reader, writer):
             _error_response(writer, 404, f"Unknown endpoint: {path}")
 
     except FloodWaitError as e:
-        logger.warning(f"FloodWait: {e.seconds}s — waiting...")
-        await asyncio.sleep(e.seconds)
-        _error_response(writer, 429, f"FloodWait: retry after {e.seconds}s")
+        logger.warning(f"FloodWait: {e.seconds}s — returning 429")
+        _json_response(writer, {"error": f"FloodWait: retry after {e.seconds}s",
+                                "retryAfter": e.seconds},
+                       status=429, status_text="Too Many Requests")
     except SessionRevokedError:
         _error_response(writer, 401, "session_revoked")
     except ChatAdminRequiredError:
         _error_response(writer, 403, "admin_required")
     except Exception as e:
         logger.exception(f"Error handling request: {e}")
-        _error_response(writer, 500, str(e))
+        _error_response(writer, 500, "Internal proxy error")
     finally:
         await writer.drain()
         writer.close()
@@ -443,6 +451,10 @@ async def _handle_file_stream(writer, client, params, headers):
 async def _main():
     """Initialize Telethon client and start HTTP server."""
     global _client
+
+    if API_ID == 0 or not API_HASH:
+        raise RuntimeError(
+            "TG_API_ID and TG_API_HASH must be set in environment variables")
 
     logger.info(f"Starting Telethon proxy on {PROXY_HOST}:{PROXY_PORT}")
     logger.info(f"Session path: {SESSION_PATH}")

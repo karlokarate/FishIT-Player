@@ -7,6 +7,7 @@ import com.fishit.player.playback.domain.DataSourceType
 import com.fishit.player.playback.domain.PlaybackSourceException
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -33,12 +34,12 @@ class TelegramPlaybackSourceFactoryImplTest {
 
     @Test
     fun `supports returns false for XTREAM source type`() {
-        assert(!factory.supports(SourceType.XTREAM))
+        assertFalse(factory.supports(SourceType.XTREAM))
     }
 
     @Test
     fun `supports returns false for OTHER source type`() {
-        assert(!factory.supports(SourceType.OTHER))
+        assertFalse(factory.supports(SourceType.OTHER))
     }
 
     // ==================== createSource() Happy Path Tests ====================

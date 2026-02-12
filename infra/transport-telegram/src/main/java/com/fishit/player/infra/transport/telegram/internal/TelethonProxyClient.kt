@@ -12,11 +12,14 @@ import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.long
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.InputStream
+import java.net.URLEncoder
 
 /**
  * OkHttp client for communicating with the Telethon HTTP proxy.
@@ -38,9 +41,8 @@ class TelethonProxyClient(
 
     companion object {
         private const val TAG = "TelethonProxyClient"
+        private val JSON_MEDIA_TYPE = "application/json".toMediaType()
     }
-
-    private val JSON_MEDIA_TYPE = "application/json".toMediaType()
 
     // ── Auth endpoints ──────────────────────────────────────────────────────
 
@@ -52,18 +54,25 @@ class TelethonProxyClient(
 
     /** POST /auth/phone → {"phoneCodeHash": "..."} */
     fun sendPhone(phone: String): String {
-        val response = post("/auth/phone", """{"phone":"$phone"}""")
+        val body = buildJsonObject { put("phone", phone) }
+        val response = post("/auth/phone", json.encodeToString(body))
         return response.jsonObject["phoneCodeHash"]?.jsonPrimitive?.content ?: ""
     }
 
     /** POST /auth/code → {"authorized": true} */
     fun sendCode(phone: String, code: String, phoneCodeHash: String) {
-        post("/auth/code", """{"phone":"$phone","code":"$code","phoneCodeHash":"$phoneCodeHash"}""")
+        val body = buildJsonObject {
+            put("phone", phone)
+            put("code", code)
+            put("phoneCodeHash", phoneCodeHash)
+        }
+        post("/auth/code", json.encodeToString(body))
     }
 
     /** POST /auth/password → {"authorized": true} */
     fun sendPassword(password: String) {
-        post("/auth/password", """{"password":"$password"}""")
+        val body = buildJsonObject { put("password", password) }
+        post("/auth/password", json.encodeToString(body))
     }
 
     /** POST /auth/logout */
@@ -98,7 +107,8 @@ class TelethonProxyClient(
 
     /** GET /messages/search?chat=X&q=Y&limit=Z → [...] */
     fun searchMessages(chatId: Long, query: String, limit: Int = 100): JsonArray {
-        return get("/messages/search?chat=$chatId&q=$query&limit=$limit").jsonArray
+        val encodedQuery = URLEncoder.encode(query, "UTF-8")
+        return get("/messages/search?chat=$chatId&q=$encodedQuery&limit=$limit").jsonArray
     }
 
     // ── File endpoints ──────────────────────────────────────────────────────
@@ -184,34 +194,38 @@ class TelethonProxyClient(
     private fun get(path: String): JsonElement {
         val url = "$baseUrl$path"
         val request = Request.Builder().url(url).get().build()
-        val response = client.newCall(request).execute()
-        val body = response.body?.string() ?: throw TelethonProxyException("Empty response from $path")
+        return client.newCall(request).execute().use { response ->
+            val body = response.body?.string()
+                ?: throw TelethonProxyException("Empty response from $path")
 
-        if (!response.isSuccessful) {
-            UnifiedLog.w(TAG) { "GET $path → HTTP ${response.code}" }
-            throw TelethonProxyException("Proxy error ${response.code}: $body", response.code)
+            if (!response.isSuccessful) {
+                UnifiedLog.w(TAG) { "GET $path → HTTP ${response.code}" }
+                throw TelethonProxyException("Proxy error ${response.code}: $body", response.code)
+            }
+
+            json.parseToJsonElement(body)
         }
-
-        return json.parseToJsonElement(body)
     }
 
     private fun post(path: String, jsonBody: String): JsonElement {
         val url = "$baseUrl$path"
         val body = jsonBody.toRequestBody(JSON_MEDIA_TYPE)
         val request = Request.Builder().url(url).post(body).build()
-        val response = client.newCall(request).execute()
-        val responseBody = response.body?.string() ?: throw TelethonProxyException("Empty response from $path")
+        return client.newCall(request).execute().use { response ->
+            val responseBody = response.body?.string()
+                ?: throw TelethonProxyException("Empty response from $path")
 
-        if (!response.isSuccessful) {
-            val errorJson = try {
-                json.parseToJsonElement(responseBody).jsonObject["error"]?.jsonPrimitive?.content
-            } catch (_: Exception) { null }
-            val errorMsg = errorJson ?: "Proxy error ${response.code}: $responseBody"
-            UnifiedLog.w(TAG) { "POST $path → HTTP ${response.code}: $errorMsg" }
-            throw TelethonProxyException(errorMsg, response.code)
+            if (!response.isSuccessful) {
+                val errorJson = try {
+                    json.parseToJsonElement(responseBody).jsonObject["error"]?.jsonPrimitive?.content
+                } catch (_: Exception) { null }
+                val errorMsg = errorJson ?: "Proxy error ${response.code}: $responseBody"
+                UnifiedLog.w(TAG) { "POST $path → HTTP ${response.code}: $errorMsg" }
+                throw TelethonProxyException(errorMsg, response.code)
+            }
+
+            json.parseToJsonElement(responseBody)
         }
-
-        return json.parseToJsonElement(responseBody)
     }
 }
 

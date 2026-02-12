@@ -4,6 +4,7 @@ import com.fishit.player.core.playermodel.PlaybackContext
 import com.fishit.player.core.playermodel.SourceType
 import com.fishit.player.playback.domain.DataSourceType
 import com.fishit.player.playback.domain.PlaybackSource
+import com.fishit.player.playback.domain.PlaybackSourceException
 import com.fishit.player.playback.domain.PlaybackSourceFactory
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -54,7 +55,7 @@ class PlaybackSourceResolverTelegramWiringTest {
             assertTrue("Expected HTTP proxy URI", source.uri.startsWith("http://127.0.0.1"))
         }
 
-    @Test
+    @Test(expected = PlaybackSourceException::class)
     fun `resolver handles empty factory set gracefully`() =
         runTest {
             // Given: A resolver with no factories
@@ -69,16 +70,8 @@ class PlaybackSourceResolverTelegramWiringTest {
                     extras = emptyMap(),
                 )
 
-            // When/Then: Should use fallback (Big Buck Bunny test stream)
-            val source = resolver.resolve(context)
-
-            // Fallback behavior: returns test stream or throws
-            // Current implementation returns test stream
-            assertTrue(
-                "Should use fallback stream",
-                source.uri == PlaybackSourceResolver.TEST_STREAM_URL ||
-                    source.uri.startsWith("http"),
-            )
+            // When/Then: No factory and no URI → throws PlaybackSourceException
+            resolver.resolve(context)
         }
 
     @Test

@@ -39,12 +39,7 @@ class PlaybackSourceResolver
         companion object {
             private const val TAG = "PlaybackSourceResolver"
 
-            /**
-             * Big Buck Bunny - reliable public domain test video.
-             * Used as fallback when no real source is available.
-             */
-            const val TEST_STREAM_URL =
-                "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
+
         }
 
         /**

@@ -17,6 +17,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.int
 import kotlinx.serialization.json.jsonArray
@@ -54,11 +55,21 @@ class DefaultTelegramClient(
 
     private val _authState = MutableStateFlow<TransportAuthState>(TransportAuthState.Connecting)
 
+    /** Phone number from the last [sendPhoneNumber] call, needed for [sendCode]. */
+    private var lastPhone: String? = null
+    /** Phone code hash from the last [sendPhoneNumber] call, needed for [sendCode]. */
+    private var lastPhoneCodeHash: String? = null
+
     override val authState: Flow<TransportAuthState> = _authState.asStateFlow()
 
     override suspend fun ensureAuthorized(): Unit = withContext(Dispatchers.IO) {
         proxyLifecycle.start()
-        proxyLifecycle.awaitReady()
+        val ready = proxyLifecycle.awaitReady()
+        if (!ready) {
+            UnifiedLog.e(TAG) { "Proxy failed to become ready" }
+            _authState.value = TransportAuthState.Connecting
+            return@withContext
+        }
 
         val authorized = proxyClient.getAuthStatus()
         val newState = if (authorized) {
@@ -79,13 +90,17 @@ class DefaultTelegramClient(
 
     override suspend fun sendPhoneNumber(phoneNumber: String): Unit = withContext(Dispatchers.IO) {
         UnifiedLog.d(TAG) { "sendPhoneNumber: ***${phoneNumber.takeLast(4)}" }
-        proxyClient.sendPhone(phoneNumber)
+        val phoneCodeHash = proxyClient.sendPhone(phoneNumber)
+        lastPhone = phoneNumber
+        lastPhoneCodeHash = phoneCodeHash
         _authState.value = TransportAuthState.WaitCode()
     }
 
     override suspend fun sendCode(code: String): Unit = withContext(Dispatchers.IO) {
+        val phone = lastPhone ?: error("sendPhoneNumber must be called before sendCode")
+        val hash = lastPhoneCodeHash ?: error("sendPhoneNumber must be called before sendCode")
         try {
-            proxyClient.sendCode("", code, "")
+            proxyClient.sendCode(phone, code, hash)
             UnifiedLog.i(TAG) { "sendCode → Ready" }
             _authState.value = TransportAuthState.Ready
         } catch (e: TelethonProxyException) {
@@ -120,9 +135,8 @@ class DefaultTelegramClient(
 
     private val _messageUpdates = MutableStateFlow<TgMessage?>(null)
 
-    @Suppress("UNCHECKED_CAST")
     override val messageUpdates: Flow<TgMessage>
-        get() = _messageUpdates.asStateFlow() as Flow<TgMessage>
+        get() = _messageUpdates.filterNotNull()
 
     override suspend fun getChats(limit: Int): List<TgChat> = withContext(Dispatchers.IO) {
         proxyClient.getChats(limit).map { element ->
@@ -197,9 +211,8 @@ class DefaultTelegramClient(
 
     private val _fileUpdates = MutableStateFlow<TgFileUpdate?>(null)
 
-    @Suppress("UNCHECKED_CAST")
     override val fileUpdates: Flow<TgFileUpdate>
-        get() = _fileUpdates.asStateFlow() as Flow<TgFileUpdate>
+        get() = _fileUpdates.filterNotNull()
 
     override suspend fun startDownload(fileId: Int, priority: Int, offset: Long, limit: Long) {
         // No-op: In proxy architecture, downloads are HTTP-streamed on demand via /file endpoint
@@ -359,8 +372,22 @@ internal object MessageParser {
         return TgMessage(
             messageId = obj["id"]!!.jsonPrimitive.long,
             chatId = obj["chatId"]?.jsonPrimitive?.longOrNull ?: 0L,
-            date = 0L,
+            date = parseIsoDate(obj["date"]?.jsonPrimitive?.content),
             content = content,
         )
+    }
+
+    /** Parse ISO-8601 date string to epoch seconds, or 0 on failure. */
+    private fun parseIsoDate(iso: String?): Long {
+        if (iso == null) return 0L
+        return try {
+            java.time.Instant.parse(iso).epochSecond
+        } catch (_: Exception) {
+            try {
+                java.time.OffsetDateTime.parse(iso).toEpochSecond()
+            } catch (_: Exception) {
+                0L
+            }
+        }
     }
 }

@@ -51,26 +51,32 @@ class TelethonProxyLifecycle(
 
         UnifiedLog.i(TAG) { "Starting Telethon proxy (port=${config.proxyPort})..." }
 
-        // Initialize Chaquopy
-        if (!Python.isStarted()) {
-            Python.start(AndroidPlatform(context))
+        try {
+            // Initialize Chaquopy
+            if (!Python.isStarted()) {
+                Python.start(AndroidPlatform(context))
+            }
+
+            val py = Python.getInstance()
+
+            // Set environment variables BEFORE importing the Python module
+            val os = py.getModule("os")
+            val environ = os["environ"]!!
+            environ.callAttr("__setitem__", "TG_API_ID", config.apiId.toString())
+            environ.callAttr("__setitem__", "TG_API_HASH", config.apiHash)
+            environ.callAttr("__setitem__", "TG_SESSION_PATH", config.sessionDir)
+            environ.callAttr("__setitem__", "TG_PROXY_PORT", config.proxyPort.toString())
+
+            // Import and start server
+            val tgProxy = py.getModule("tg_proxy")
+            tgProxy.callAttr("start_server")
+
+            UnifiedLog.i(TAG) { "Telethon proxy start_server() called" }
+        } catch (e: Exception) {
+            started.set(false) // Allow retry on failure
+            UnifiedLog.e(TAG, e) { "Failed to start Telethon proxy" }
+            throw e
         }
-
-        val py = Python.getInstance()
-
-        // Set environment variables BEFORE importing the Python module
-        val os = py.getModule("os")
-        val environ = os["environ"]!!
-        environ.callAttr("__setitem__", "TG_API_ID", config.apiId.toString())
-        environ.callAttr("__setitem__", "TG_API_HASH", config.apiHash)
-        environ.callAttr("__setitem__", "TG_SESSION_PATH", config.sessionDir)
-        environ.callAttr("__setitem__", "TG_PROXY_PORT", config.proxyPort.toString())
-
-        // Import and start server
-        val tgProxy = py.getModule("tg_proxy")
-        tgProxy.callAttr("start_server")
-
-        UnifiedLog.i(TAG) { "Telethon proxy start_server() called" }
     }
 
     /**
