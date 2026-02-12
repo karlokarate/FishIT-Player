@@ -199,34 +199,19 @@ class MappingCompletenessTest {
             .map { it.name }
             .toSet()
 
+        // All Enrichment fields must map 1:1 to Work fields
+        val enrichmentFields = NxWorkRepository.Enrichment::class.memberProperties
+            .map { it.name }
+            .toSet()
+
         // Fields handled by enrichIfAbsent (with their guard category)
-        val enrichedFields = setOf(
+        val enrichedFields = enrichmentFields + setOf(
             // IMMUTABLE — skipped, never overwritten:
             "workKey",
             "type",
             "displayTitle",
             "titleNormalized",
-            // ENRICH_ONLY — set only if existing is null/blank:
             "year",
-            "season",
-            "episode",
-            "runtimeMs",
-            "rating",
-            "genres",
-            "plot",
-            "director",
-            "cast",
-            "trailer",
-            "releaseDate",
-            "poster",     // ImageRef ENRICH_ONLY
-            "backdrop",   // ImageRef ENRICH_ONLY
-            "thumbnail",  // ImageRef ENRICH_ONLY
-            // ALWAYS_UPDATE — always take new value:
-            "tmdbId",
-            "imdbId",
-            "tvdbId",
-            // MONOTONIC_UP — only upgrade, never downgrade:
-            "recognitionState",
             // AUTO — managed by system:
             "updatedAtMs",
             "createdAtMs",

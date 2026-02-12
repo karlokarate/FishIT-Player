@@ -83,6 +83,10 @@ class UnifiedDetailViewModel
         private val _events = MutableSharedFlow<UnifiedDetailEvent>()
         val events = _events.asSharedFlow()
 
+        // ── Series bundle cache: enables instant season switching (0 IO) ──
+        private var cachedEpisodesBySeason: Map<Int, List<EpisodeIndexItem>> = emptyMap()
+        private var cachedSeriesId: Int? = null
+
         /**
          * Load canonical media by smart ID detection.
          *
@@ -270,10 +274,14 @@ class UnifiedDetailViewModel
                 currentState.copy(episodes = episodeItems)
             }
 
+            // Cache ALL episodes for instant season switching — no IO on selectSeason()
+            cachedEpisodesBySeason = bundle.episodesBySeason
+            cachedSeriesId = bundle.seriesId
+
             UnifiedLog.d(TAG) {
                 "applySeriesBundle: ${seasonNumbers.size} seasons, " +
                     "${bundle.totalEpisodeCount} total episodes, " +
-                    "${episodeItems.size} episodes for season $selectedSeason"
+                    "${episodeItems.size} episodes for season $selectedSeason (cached for instant switching)"
             }
         }
 
@@ -692,14 +700,32 @@ class UnifiedDetailViewModel
         fun selectSeason(season: Int) {
             val media = _state.value.media ?: return
 
+            // FAST PATH: Episodes already cached from applySeriesBundle() — pure in-memory lookup
+            val seriesId = cachedSeriesId
+            if (seriesId != null && cachedEpisodesBySeason.isNotEmpty()) {
+                val episodes = cachedEpisodesBySeason[season] ?: emptyList()
+                val episodeItems = mapToDetailEpisodeItems(episodes, seriesId, season)
+                _state.update { it.copy(
+                    selectedSeason = season,
+                    episodes = episodeItems,
+                    episodesLoading = false,
+                ) }
+                UnifiedLog.d(TAG) { "selectSeason: ${episodeItems.size} episodes for season $season (instant, cached)" }
+                return
+            }
+
+            // SLOW PATH: ViewModel was cold (should rarely happen) — load from DB/API
             _state.update { it.copy(selectedSeason = season, episodesLoading = true) }
 
             viewModelScope.launch {
-                // PLATIN: Get episodes from UnifiedDetailLoader (already cached from initial load)
                 val bundle = unifiedDetailLoader.loadDetailImmediate(media)
                 
                 when (bundle) {
                     is DetailBundle.Series -> {
+                        // Cache for future instant switching
+                        cachedEpisodesBySeason = bundle.episodesBySeason
+                        cachedSeriesId = bundle.seriesId
+
                         val episodes = bundle.episodesBySeason[season] ?: emptyList()
                         val episodeItems = mapToDetailEpisodeItems(episodes, bundle.seriesId, season)
                         
@@ -710,7 +736,7 @@ class UnifiedDetailViewModel
                             )
                         }
                         
-                        UnifiedLog.d(TAG) { "selectSeason: Loaded ${episodeItems.size} episodes for season $season (PLATIN)" }
+                        UnifiedLog.d(TAG) { "selectSeason: Loaded ${episodeItems.size} episodes for season $season (from loader, now cached)" }
                     }
                     else -> {
                         UnifiedLog.w(TAG) { "selectSeason: Expected Series bundle but got ${bundle?.javaClass?.simpleName}" }

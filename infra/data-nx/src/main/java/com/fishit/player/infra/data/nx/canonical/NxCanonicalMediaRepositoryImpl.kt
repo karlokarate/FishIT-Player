@@ -19,6 +19,7 @@ import com.fishit.player.core.model.repository.CanonicalMediaWithResume
 import com.fishit.player.core.model.repository.CanonicalMediaWithSources
 import com.fishit.player.core.model.repository.CanonicalResumeInfo
 import com.fishit.player.core.model.repository.NxWorkRepository
+import com.fishit.player.core.model.repository.toEnrichment
 import com.fishit.player.core.model.util.ResolutionLabel
 import com.fishit.player.core.model.util.SourcePriority
 import com.fishit.player.core.persistence.obx.NX_Work
@@ -38,6 +39,7 @@ import com.fishit.player.infra.data.nx.writer.builder.WorkEntityBuilder
 import io.objectbox.Box
 import io.objectbox.BoxStore
 import io.objectbox.query.QueryCondition
+import io.objectbox.query.QueryBuilder.StringOrder
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
@@ -90,10 +92,11 @@ class NxCanonicalMediaRepositoryImpl @Inject constructor(
         val workKey = buildWorkKey(normalized)
         val now = System.currentTimeMillis()
         val enrichment = workEntityBuilder.build(normalized, workKey, now)
+        val enrichmentData = enrichment.toEnrichment()
 
         // --- Dual-Lookup Strategy ---
         // Step 1: Try enrichment by heuristic workKey (primary path)
-        val enrichedByKey = workRepository.enrichIfAbsent(workKey, enrichment)
+        val enrichedByKey = workRepository.enrichIfAbsent(workKey, enrichmentData)
         if (enrichedByKey != null) {
             return@withContext CanonicalMediaId(
                 kind = mediaTypeToKind(normalized.mediaType),
@@ -114,7 +117,7 @@ class NxCanonicalMediaRepositoryImpl @Inject constructor(
             if (existingByTmdb != null) {
                 // Entity exists with different workKey → enrich via its actual key
                 val enrichedByTmdb = workRepository.enrichIfAbsent(
-                    existingByTmdb.workKey, enrichment,
+                    existingByTmdb.workKey, enrichmentData,
                 )
                 val actualKey = enrichedByTmdb?.workKey ?: existingByTmdb.workKey
                 return@withContext CanonicalMediaId(
@@ -161,6 +164,7 @@ class NxCanonicalMediaRepositoryImpl @Inject constructor(
             }
         }
         sourceRef.work.target = work
+        sourceRef.workKey = work.workKey
 
         sourceRefBox.put(sourceRef)
 
@@ -250,7 +254,7 @@ class NxCanonicalMediaRepositoryImpl @Inject constructor(
             .build()
             .findFirst() ?: return@withContext emptyList()
 
-        getSourceRefsForWork(work.id).map { mapToMediaSourceRef(it) }
+        getSourceRefsForWork(work.workKey).map { mapToMediaSourceRef(it) }
             .sortedByDescending { it.priority }
     }
 
@@ -495,7 +499,7 @@ class NxCanonicalMediaRepositoryImpl @Inject constructor(
     override suspend fun pruneOrphans(): Int = withContext(Dispatchers.IO) {
         var removed = 0
         workBox.all.forEach { work ->
-            val sourceRefs = getSourceRefsForWork(work.id)
+            val sourceRefs = getSourceRefsForWork(work.workKey)
             if (sourceRefs.isEmpty()) {
                 workBox.remove(work)
                 removed++
@@ -511,7 +515,7 @@ class NxCanonicalMediaRepositoryImpl @Inject constructor(
             .build()
             .findFirst() ?: return@withContext 0
 
-        getSourceRefsForWork(work.id).size
+        getSourceRefsForWork(work.workKey).size
     }
 
     override suspend fun getStats(): CanonicalMediaStats = withContext(Dispatchers.IO) {
@@ -522,10 +526,12 @@ class NxCanonicalMediaRepositoryImpl @Inject constructor(
         val episodeCount = allWorks.count { it.workType == "EPISODE" }.toLong()
         val withTmdbId = allWorks.count { it.tmdbId != null }.toLong()
 
-        val sourceCountByWork = allSourceRefs.groupBy { it.work.targetId }
-        val withMultipleSources = sourceCountByWork.count { it.value.size > 1 }.toLong()
+        // Use denormalized workKey for grouping (avoids ToOne lazy loads)
+        val sourceCountByWorkKey = allSourceRefs.groupBy { it.workKey }
+        val workKeysWithSources = sourceCountByWorkKey.keys
+        val withMultipleSources = sourceCountByWorkKey.count { it.value.size > 1 }.toLong()
         val orphanedCount = allWorks.count { work ->
-            sourceCountByWork[work.id]?.isEmpty() ?: true
+            work.workKey !in workKeysWithSources
         }.toLong()
 
         val sourcesByType = allSourceRefs.groupBy { it.sourceType }
@@ -566,8 +572,11 @@ class NxCanonicalMediaRepositoryImpl @Inject constructor(
         )
     }
 
-    private fun getSourceRefsForWork(workId: Long): List<NX_WorkSourceRef> {
-        return sourceRefBox.all.filter { it.work.targetId == workId }
+    /** INV-PERF: Indexed query via @Index workKey (replaces box.all full scan). */
+    private fun getSourceRefsForWork(workKey: String): List<NX_WorkSourceRef> {
+        return sourceRefBox.query(
+            NX_WorkSourceRef_.workKey.equal(workKey, StringOrder.CASE_SENSITIVE),
+        ).build().find()
     }
 
     private fun getVariantsForSource(sourceKey: String): List<NX_WorkVariant> {
@@ -577,7 +586,7 @@ class NxCanonicalMediaRepositoryImpl @Inject constructor(
     }
 
     private fun mapToCanonicalMediaWithSources(work: NX_Work): CanonicalMediaWithSources {
-        val sourceRefs = getSourceRefsForWork(work.id)
+        val sourceRefs = getSourceRefsForWork(work.workKey)
         val sources = sourceRefs.map { mapToMediaSourceRef(it) }
             .sortedByDescending { it.priority }
 
@@ -711,8 +720,11 @@ class NxCanonicalMediaRepositoryImpl @Inject constructor(
             this.width = null
             this.height = source.quality?.resolution
             this.sourceKey = sourceRef.sourceKey
+            // SSOT: Serialize ALL playbackHints to JSON — no downstream fallbacks needed
+            this.playbackHintsJson = PlaybackHintsDecoder.encodeToJson(source.playbackHints)
         }
         variant.work.target = work
+        variant.workKey = work.workKey
 
         variantBox.put(variant)
     }

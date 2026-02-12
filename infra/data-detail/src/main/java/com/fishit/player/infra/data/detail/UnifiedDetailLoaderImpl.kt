@@ -17,6 +17,7 @@ import com.fishit.player.core.model.TmdbRef
 import com.fishit.player.core.model.ids.XtreamIdCodec
 import com.fishit.player.core.model.repository.CanonicalMediaRepository
 import com.fishit.player.core.model.repository.CanonicalMediaWithSources
+import com.fishit.player.core.model.repository.NxWorkRepository
 import com.fishit.player.infra.data.nx.mapper.SourceKeyParser
 import com.fishit.player.infra.logging.UnifiedLog
 import com.fishit.player.infra.priority.ApiPriorityDispatcher
@@ -124,6 +125,7 @@ class UnifiedDetailLoaderImpl
         private val canonicalMediaRepository: CanonicalMediaRepository,
         private val seriesIndexRepository: XtreamSeriesIndexRepository,
         private val priorityDispatcher: ApiPriorityDispatcher,
+        private val workRepository: NxWorkRepository,
     ) : UnifiedDetailLoader {
     companion object {
         private const val TAG = "UnifiedDetailLoader"
@@ -404,22 +406,26 @@ class UnifiedDetailLoaderImpl
             UnifiedLog.d(TAG) { "loadSeriesDetailInternal: persisted ${seasons.size} seasons" }
         }
 
-        // 3. PERSIST ALL EPISODES → XtreamSeriesIndexRepository
+        // 3. EXTRACT ALL EPISODES across ALL seasons, then batch-persist ONCE
         val episodesBySeason = mutableMapOf<Int, List<EpisodeIndexItem>>()
-        var totalEpisodeCount = 0
+        val allEpisodes = mutableListOf<EpisodeIndexItem>()
 
         seriesInfo.episodes?.forEach { (seasonKey, episodeList) ->
             val seasonNum = seasonKey.toIntOrNull() ?: return@forEach
             val episodes = extractEpisodes(episodeList, seriesId, seasonNum, now)
             if (episodes.isNotEmpty()) {
-                seriesIndexRepository.upsertEpisodes(episodes)
                 episodesBySeason[seasonNum] = episodes
-                totalEpisodeCount += episodes.size
+                allEpisodes += episodes
             }
         }
 
+        // Single batch persist for ALL episodes (4 batch writes instead of N×4 individual)
+        if (allEpisodes.isNotEmpty()) {
+            seriesIndexRepository.upsertEpisodes(allEpisodes)
+        }
+
         UnifiedLog.i(TAG) {
-            "loadSeriesDetailInternal: persisted $totalEpisodeCount episodes across ${episodesBySeason.size} seasons"
+            "loadSeriesDetailInternal: batch-persisted ${allEpisodes.size} episodes across ${episodesBySeason.size} seasons"
         }
 
         // 4. BUILD AND RETURN BUNDLE
@@ -437,7 +443,7 @@ class UnifiedDetailLoaderImpl
             imdbId = info?.imdbId?.takeIf { it.isNotBlank() },
             seasons = seasons,
             episodesBySeason = episodesBySeason,
-            totalEpisodeCount = totalEpisodeCount,
+            totalEpisodeCount = allEpisodes.size,
             fetchedAtMs = now,
         )
     }
@@ -479,6 +485,27 @@ class UnifiedDetailLoaderImpl
         )
 
         canonicalMediaRepository.upsertCanonicalMedia(normalized)
+
+        // Fix 3: Propagate tmdbId/imdbId from detail API to Series NX_Work.
+        // The catalog listing API (get_series) does NOT provide these fields,
+        // so they are null on the NX_Work after catalog sync. The detail API
+        // (get_series_info) returns them — use enrichIfAbsent which applies
+        // ALWAYS_UPDATE semantics for tmdbId/imdbId (one atomic read-modify-write).
+        val apiTmdbId = tmdbIdFromApi?.toString()
+        val apiImdbId = info.imdbId?.takeIf { it.isNotBlank() }
+        if (apiTmdbId != null || apiImdbId != null) {
+            val workKey = media.canonicalId.key.value
+            workRepository.enrichIfAbsent(
+                workKey = workKey,
+                enrichment = NxWorkRepository.Enrichment(
+                    tmdbId = apiTmdbId,
+                    imdbId = apiImdbId,
+                ),
+            )
+            UnifiedLog.d(TAG) {
+                "persistSeriesMetadata: enrichIfAbsent NX_Work($workKey) tmdbId=$apiTmdbId, imdbId=$apiImdbId"
+            }
+        }
     }
 
     private fun extractSeasons(
@@ -664,9 +691,11 @@ class UnifiedDetailLoaderImpl
             ?: return
 
         val updatedHints = xtreamSource.playbackHints.toMutableMap()
-        movieData.containerExtension?.let { updatedHints["containerExtension"] = it }
-        movieData.streamId?.let { updatedHints["streamId"] = it.toString() }
-        movieData.directSource?.let { updatedHints["directUrl"] = it }
+        // SSOT: Use PlaybackHintKeys constants — matching pipeline XtreamVodInfo.toRawMediaMetadata()
+        updatedHints[PlaybackHintKeys.Xtream.CONTENT_TYPE] = PlaybackHintKeys.Xtream.CONTENT_VOD
+        movieData.containerExtension?.let { updatedHints[PlaybackHintKeys.Xtream.CONTAINER_EXT] = it }
+        movieData.streamId?.let { updatedHints[PlaybackHintKeys.Xtream.VOD_ID] = it.toString() }
+        movieData.directSource?.let { updatedHints[PlaybackHintKeys.Xtream.DIRECT_SOURCE] = it }
 
         // Create updated source with new hints
         val updatedSource = xtreamSource.copy(playbackHints = updatedHints)
@@ -685,7 +714,13 @@ class UnifiedDetailLoaderImpl
 
         return DetailBundle.Live(
             channelId = channelId,
-            streamUrl = xtreamSource?.playbackHints?.get("streamUrl"),
+            // SSOT: Use PlaybackHintKeys constant — pipeline writes DIRECT_SOURCE for live channels
+            streamUrl = xtreamSource?.playbackHints?.get(PlaybackHintKeys.Xtream.DIRECT_SOURCE),
+            // TODO(SSOT-CONSOLIDATION): epgChannelId is stored on NX_WorkSourceRef entity field,
+            // NOT in playbackHints. MediaSourceRef doesn't expose it. Needs either:
+            // 1) Add PlaybackHintKeys.Xtream.EPG_CHANNEL_ID + write in pipeline, or
+            // 2) Surface NX_WorkSourceRef.epgChannelId through MediaSourceRef
+            // Tracked in: ROADMAP.md → SSOT Consolidation Debt
             epgChannelId = xtreamSource?.playbackHints?.get("epgChannelId"),
             fetchedAtMs = System.currentTimeMillis(),
         )
@@ -708,9 +743,9 @@ class UnifiedDetailLoaderImpl
         // Check if metadata is present
         if (media.plot.isNullOrBlank()) return false
 
-        // Check if playback hints are present
+        // Check if playback hints are present (use SSOT key constant)
         val xtreamSource = media.sources.firstOrNull { it.sourceType == SourceType.XTREAM }
-        return xtreamSource?.playbackHints?.get("containerExtension") != null
+        return xtreamSource?.playbackHints?.get(PlaybackHintKeys.Xtream.CONTAINER_EXT) != null
     }
 
     // =========================================================================
@@ -776,7 +811,7 @@ class UnifiedDetailLoaderImpl
             poster = media.poster,
             backdrop = media.backdrop,
             trailer = media.trailer,
-            containerExtension = xtreamSource?.playbackHints?.get("containerExtension"),
+            containerExtension = xtreamSource?.playbackHints?.get(PlaybackHintKeys.Xtream.CONTAINER_EXT),
             tmdbId = media.tmdbId?.value,
             imdbId = media.imdbId,
             fetchedAtMs = System.currentTimeMillis(), // No stored timestamp for VOD cache

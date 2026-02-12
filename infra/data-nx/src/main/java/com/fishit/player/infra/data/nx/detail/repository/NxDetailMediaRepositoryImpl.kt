@@ -10,7 +10,9 @@ import com.fishit.player.core.persistence.obx.NX_Work
 import com.fishit.player.core.persistence.obx.NX_WorkSourceRef
 import com.fishit.player.core.persistence.obx.NX_WorkUserState
 import com.fishit.player.core.persistence.obx.NX_WorkUserState_
+import com.fishit.player.core.persistence.obx.NX_WorkSourceRef_
 import com.fishit.player.core.persistence.obx.NX_WorkVariant
+import com.fishit.player.core.persistence.obx.NX_WorkVariant_
 import com.fishit.player.core.persistence.obx.NX_Work_
 import com.fishit.player.infra.data.nx.mapper.SourceLabelBuilder
 import com.fishit.player.infra.data.nx.mapper.base.PlaybackHintsDecoder
@@ -57,12 +59,17 @@ class NxDetailMediaRepositoryImpl @Inject constructor(
             val work = workBox.query(NX_Work_.workKey.equal(workKey, StringOrder.CASE_SENSITIVE))
                 .build().findFirst() ?: return@withContext null
 
-            val workId = work.id
-            // Filter sourceRefs by work.targetId (ToOne relation)
-            val sourceRefs = sourceRefBox.all.filter { it.work.targetId == workId }
-            // Filter variants by sourceKey of the found sourceRefs
-            val sourceKeys = sourceRefs.map { it.sourceKey }.toSet()
-            val variants = variantBox.all.filter { it.sourceKey in sourceKeys }
+            // INV-PERF: Indexed query via denormalized @Index workKey (replaces box.all full scan)
+            val sourceRefs = sourceRefBox.query(
+                NX_WorkSourceRef_.workKey.equal(workKey, StringOrder.CASE_SENSITIVE),
+            ).build().find()
+            // INV-PERF: Indexed query via @Index sourceKey (replaces box.all full scan)
+            val sourceKeys = sourceRefs.map { it.sourceKey }.toTypedArray()
+            val variants = if (sourceKeys.isNotEmpty()) {
+                variantBox.query(
+                    NX_WorkVariant_.sourceKey.oneOf(sourceKeys, StringOrder.CASE_SENSITIVE),
+                ).build().find()
+            } else emptyList()
 
             mapToDomainDetailMedia(work, sourceRefs, variants)
         }
@@ -73,10 +80,16 @@ class NxDetailMediaRepositoryImpl @Inject constructor(
         return query.subscribe().toFlow().map { works ->
             val work = works.firstOrNull() ?: return@map null
 
-            val workId = work.id
-            val sourceRefs = sourceRefBox.all.filter { it.work.targetId == workId }
-            val sourceKeys = sourceRefs.map { it.sourceKey }.toSet()
-            val variants = variantBox.all.filter { it.sourceKey in sourceKeys }
+            // INV-PERF: Indexed queries (replaces box.all full scans)
+            val sourceRefs = sourceRefBox.query(
+                NX_WorkSourceRef_.workKey.equal(workKey, StringOrder.CASE_SENSITIVE),
+            ).build().find()
+            val sourceKeys = sourceRefs.map { it.sourceKey }.toTypedArray()
+            val variants = if (sourceKeys.isNotEmpty()) {
+                variantBox.query(
+                    NX_WorkVariant_.sourceKey.oneOf(sourceKeys, StringOrder.CASE_SENSITIVE),
+                ).build().find()
+            } else emptyList()
 
             mapToDomainDetailMedia(work, sourceRefs, variants)
         }
