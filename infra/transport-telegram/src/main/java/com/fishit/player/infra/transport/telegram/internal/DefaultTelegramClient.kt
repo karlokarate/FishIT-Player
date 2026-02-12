@@ -42,6 +42,7 @@ import java.io.File
 class DefaultTelegramClient(
     private val proxyClient: TelethonProxyClient,
     private val proxyLifecycle: TelethonProxyLifecycle,
+    private val cacheDir: File,
 ) : TelegramClient {
 
     // ── Auth ────────────────────────────────────────────────────────────────
@@ -206,16 +207,16 @@ class DefaultTelegramClient(
         val (chatId, messageId) = parseRemoteIdParts(thumbRef.remoteId) ?: return@withContext null
         val bytes = proxyClient.getThumbnail(chatId, messageId) ?: return@withContext null
 
-        val cacheDir = File("/data/data/com.fishit.player/cache/thumbs")
-        cacheDir.mkdirs()
-        val cacheFile = File(cacheDir, "${chatId}_${messageId}.jpg")
+        val thumbDir = File(cacheDir, "thumbs")
+        thumbDir.mkdirs()
+        val cacheFile = File(thumbDir, "${chatId}_${messageId}.jpg")
         cacheFile.writeBytes(bytes)
         cacheFile.absolutePath
     }
 
     override suspend fun isCached(thumbRef: TgThumbnailRef): Boolean {
         val (chatId, messageId) = parseRemoteIdParts(thumbRef.remoteId) ?: return false
-        return File("/data/data/com.fishit.player/cache/thumbs/${chatId}_${messageId}.jpg").exists()
+        return File(cacheDir, "thumbs/${chatId}_${messageId}.jpg").exists()
     }
 
     override suspend fun prefetch(thumbRefs: List<TgThumbnailRef>) {
@@ -223,7 +224,7 @@ class DefaultTelegramClient(
     }
 
     override suspend fun clearFailedCache() {
-        File("/data/data/com.fishit.player/cache/thumbs").deleteRecursively()
+        File(cacheDir, "thumbs").deleteRecursively()
     }
 
     // ── Remote Resolver ─────────────────────────────────────────────────────

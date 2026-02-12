@@ -329,6 +329,8 @@ async def _handle_request(reader, writer):
             if not message or not message.media:
                 _error_response(writer, 404, "No media for thumbnail")
             else:
+                # thumb=-1 = largest available thumbnail (best quality for TV display)
+                # thumb=0 would be smallest. Using -1 for HQ poster/backdrop on large screens.
                 thumb_bytes = await client.download_media(message, thumb=-1, file=bytes)
                 if thumb_bytes:
                     writer.write(

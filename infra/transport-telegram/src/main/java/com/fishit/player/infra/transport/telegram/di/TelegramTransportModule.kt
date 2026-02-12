@@ -72,9 +72,10 @@ object TelegramTransportModule {
     @Provides
     @Singleton
     fun provideTelegramClient(
+        @ApplicationContext context: Context,
         proxyClient: TelethonProxyClient,
         proxyLifecycle: TelethonProxyLifecycle,
-    ): TelegramClient = DefaultTelegramClient(proxyClient, proxyLifecycle)
+    ): TelegramClient = DefaultTelegramClient(proxyClient, proxyLifecycle, context.cacheDir)
 
     @Provides
     @Singleton
