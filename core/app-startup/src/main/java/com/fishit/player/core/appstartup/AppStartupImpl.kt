@@ -1,9 +1,12 @@
 package com.fishit.player.core.appstartup
 
+import android.content.Context
 import com.fishit.player.infra.http.DefaultHttpClient
 import com.fishit.player.infra.logging.UnifiedLog
 import com.fishit.player.infra.transport.telegram.TelegramClient
-import com.fishit.player.infra.transport.telegram.TelegramClientFactory
+import com.fishit.player.infra.transport.telegram.internal.DefaultTelegramClient
+import com.fishit.player.infra.transport.telegram.internal.TelethonProxyClient
+import com.fishit.player.infra.transport.telegram.internal.TelethonProxyLifecycle
 import com.fishit.player.infra.transport.xtream.DefaultXtreamApiClient
 import com.fishit.player.infra.transport.xtream.XtreamApiClient
 import com.fishit.player.infra.transport.xtream.XtreamDiscovery
@@ -23,6 +26,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.serialization.json.Json
 import okhttp3.OkHttpClient
+import java.io.File
 import java.util.concurrent.TimeUnit
 
 /**
@@ -31,15 +35,17 @@ import java.util.concurrent.TimeUnit
  * Creates and wires pipeline components for both Android app and CLI usage.
  *
  * **Pipeline Creation Flow:**
- * 1. Telegram: TelegramClientFactory → TelegramClient → TelegramPipelineAdapter
+ * 1. Telegram: DefaultTelegramClient → TelegramPipelineAdapter
  * 2. Xtream: DefaultXtreamApiClient → XtreamPipelineAdapter
  *
  * **Thread Safety:** This class is NOT thread-safe. Call [startPipelines] once per application
  * lifecycle.
  *
+ * @param context Android application context (needed for Chaquopy/TelethonProxyLifecycle)
  * @param scope CoroutineScope for pipeline operations (default: IO dispatcher)
  */
 class AppStartupImpl(
+    private val context: Context,
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
 ) : AppStartup {
     companion object {
@@ -75,12 +81,21 @@ class AppStartupImpl(
         try {
             UnifiedLog.d(TAG, "Initializing Telegram pipeline...")
 
-            // Create unified client from existing session (v2 pattern)
-            val client =
-                TelegramClientFactory.createUnifiedClient(
-                    config = config.sessionConfig,
-                    scope = scope,
-                )
+            // Create Telethon proxy components
+            val proxyHttpClient = OkHttpClient.Builder()
+                .connectTimeout(10, TimeUnit.SECONDS)
+                .readTimeout(60, TimeUnit.SECONDS)
+                .build()
+            val healthHttpClient = OkHttpClient.Builder()
+                .connectTimeout(2, TimeUnit.SECONDS)
+                .readTimeout(5, TimeUnit.SECONDS)
+                .build()
+            val proxyClient = TelethonProxyClient(config.sessionConfig, proxyHttpClient)
+            val proxyLifecycle = TelethonProxyLifecycle(context, config.sessionConfig, healthHttpClient)
+            val cacheDir = File(context.cacheDir, "telegram")
+            cacheDir.mkdirs()
+
+            val client = DefaultTelegramClient(proxyClient, proxyLifecycle, cacheDir)
             telegramClient = client
 
             // Create pipeline adapter with bundler and mapper
