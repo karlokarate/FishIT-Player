@@ -1,5 +1,6 @@
 package com.fishit.player.infra.transport.telegram.internal
 
+import com.fishit.player.infra.logging.UnifiedLog
 import com.fishit.player.infra.transport.telegram.TelegramSessionConfig
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
@@ -16,7 +17,6 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.InputStream
-import java.util.concurrent.TimeUnit
 
 /**
  * OkHttp client for communicating with the Telethon HTTP proxy.
@@ -25,19 +25,20 @@ import java.util.concurrent.TimeUnit
  * run them on `Dispatchers.IO` via Kotlin coroutines.
  *
  * @property baseUrl Base URL of the proxy (e.g., "http://127.0.0.1:8089")
+ * @param client DI-provided OkHttpClient with Telegram-specific timeouts.
+ *               Constructed in [TelegramTransportModule] as a qualified singleton.
  */
 class TelethonProxyClient(
     private val config: TelegramSessionConfig,
+    private val client: OkHttpClient,
 ) {
     private val baseUrl: String get() = config.proxyBaseUrl
 
     private val json = Json { ignoreUnknownKeys = true }
 
-    private val client = OkHttpClient.Builder()
-        .connectTimeout(30, TimeUnit.SECONDS)
-        .readTimeout(120, TimeUnit.SECONDS) // file downloads can be slow
-        .writeTimeout(10, TimeUnit.SECONDS)
-        .build()
+    companion object {
+        private const val TAG = "TelethonProxyClient"
+    }
 
     private val JSON_MEDIA_TYPE = "application/json".toMediaType()
 
@@ -146,8 +147,20 @@ class TelethonProxyClient(
     fun getThumbnail(chatId: Long, messageId: Long): ByteArray? {
         val url = "$baseUrl/thumb?chat=$chatId&id=$messageId"
         val request = Request.Builder().url(url).get().build()
-        return client.newCall(request).execute().use { response ->
-            if (response.isSuccessful) response.body?.bytes() else null
+        return try {
+            client.newCall(request).execute().use { response ->
+                if (response.isSuccessful) {
+                    val bytes = response.body?.bytes()
+                    UnifiedLog.d(TAG) { "getThumbnail: chat=$chatId msg=$messageId → ${bytes?.size ?: 0} bytes" }
+                    bytes
+                } else {
+                    UnifiedLog.w(TAG) { "getThumbnail: chat=$chatId msg=$messageId → HTTP ${response.code}" }
+                    null
+                }
+            }
+        } catch (e: Exception) {
+            UnifiedLog.e(TAG, e) { "getThumbnail: chat=$chatId msg=$messageId failed" }
+            null
         }
     }
 
@@ -157,8 +170,11 @@ class TelethonProxyClient(
     fun health(): Boolean {
         return try {
             val response = get("/health")
-            response.jsonObject["status"]?.jsonPrimitive?.content == "ok"
-        } catch (_: Exception) {
+            val ok = response.jsonObject["status"]?.jsonPrimitive?.content == "ok"
+            UnifiedLog.d(TAG) { "health check → $ok" }
+            ok
+        } catch (e: Exception) {
+            UnifiedLog.w(TAG) { "health check failed: ${e.message}" }
             false
         }
     }
@@ -172,6 +188,7 @@ class TelethonProxyClient(
         val body = response.body?.string() ?: throw TelethonProxyException("Empty response from $path")
 
         if (!response.isSuccessful) {
+            UnifiedLog.w(TAG) { "GET $path → HTTP ${response.code}" }
             throw TelethonProxyException("Proxy error ${response.code}: $body", response.code)
         }
 
@@ -189,10 +206,9 @@ class TelethonProxyClient(
             val errorJson = try {
                 json.parseToJsonElement(responseBody).jsonObject["error"]?.jsonPrimitive?.content
             } catch (_: Exception) { null }
-            throw TelethonProxyException(
-                errorJson ?: "Proxy error ${response.code}: $responseBody",
-                response.code,
-            )
+            val errorMsg = errorJson ?: "Proxy error ${response.code}: $responseBody"
+            UnifiedLog.w(TAG) { "POST $path → HTTP ${response.code}: $errorMsg" }
+            throw TelethonProxyException(errorMsg, response.code)
         }
 
         return json.parseToJsonElement(responseBody)

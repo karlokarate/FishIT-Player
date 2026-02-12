@@ -1,5 +1,6 @@
 package com.fishit.player.infra.transport.telegram.internal
 
+import com.fishit.player.infra.logging.UnifiedLog
 import com.fishit.player.infra.transport.telegram.ResolvedTelegramMedia
 import com.fishit.player.infra.transport.telegram.TelegramClient
 import com.fishit.player.infra.transport.telegram.TelegramRemoteId
@@ -45,6 +46,10 @@ class DefaultTelegramClient(
     private val cacheDir: File,
 ) : TelegramClient {
 
+    companion object {
+        private const val TAG = "DefaultTelegramClient"
+    }
+
     // ── Auth ────────────────────────────────────────────────────────────────
 
     private val _authState = MutableStateFlow<TransportAuthState>(TransportAuthState.Connecting)
@@ -56,18 +61,24 @@ class DefaultTelegramClient(
         proxyLifecycle.awaitReady()
 
         val authorized = proxyClient.getAuthStatus()
-        _authState.value = if (authorized) {
+        val newState = if (authorized) {
             TransportAuthState.Ready
         } else {
             TransportAuthState.WaitPhoneNumber()
         }
+        UnifiedLog.i(TAG) { "ensureAuthorized → ${newState::class.simpleName}" }
+        _authState.value = newState
     }
 
     override suspend fun isAuthorized(): Boolean = withContext(Dispatchers.IO) {
-        try { proxyClient.getAuthStatus() } catch (_: Exception) { false }
+        try { proxyClient.getAuthStatus() } catch (e: Exception) {
+            UnifiedLog.w(TAG) { "isAuthorized check failed: ${e.message}" }
+            false
+        }
     }
 
     override suspend fun sendPhoneNumber(phoneNumber: String): Unit = withContext(Dispatchers.IO) {
+        UnifiedLog.d(TAG) { "sendPhoneNumber: ***${phoneNumber.takeLast(4)}" }
         proxyClient.sendPhone(phoneNumber)
         _authState.value = TransportAuthState.WaitCode()
     }
@@ -75,11 +86,14 @@ class DefaultTelegramClient(
     override suspend fun sendCode(code: String): Unit = withContext(Dispatchers.IO) {
         try {
             proxyClient.sendCode("", code, "")
+            UnifiedLog.i(TAG) { "sendCode → Ready" }
             _authState.value = TransportAuthState.Ready
         } catch (e: TelethonProxyException) {
             if (e.httpCode == 401 || e.message?.contains("password", ignoreCase = true) == true) {
+                UnifiedLog.i(TAG) { "sendCode → WaitPassword (2FA required)" }
                 _authState.value = TransportAuthState.WaitPassword()
             } else {
+                UnifiedLog.e(TAG, e) { "sendCode failed" }
                 throw e
             }
         }
@@ -87,11 +101,13 @@ class DefaultTelegramClient(
 
     override suspend fun sendPassword(password: String): Unit = withContext(Dispatchers.IO) {
         proxyClient.sendPassword(password)
+        UnifiedLog.i(TAG) { "sendPassword → Ready" }
         _authState.value = TransportAuthState.Ready
     }
 
     override suspend fun logout(): Unit = withContext(Dispatchers.IO) {
         proxyClient.logout()
+        UnifiedLog.i(TAG) { "logout → LoggedOut" }
         _authState.value = TransportAuthState.LoggedOut
     }
 
@@ -129,7 +145,10 @@ class DefaultTelegramClient(
                 type = "unknown",
                 memberCount = obj["memberCount"]?.jsonPrimitive?.int ?: 0,
             )
-        } catch (_: Exception) { null }
+        } catch (e: Exception) {
+            UnifiedLog.w(TAG) { "getChat($chatId) failed: ${e.message}" }
+            null
+        }
     }
 
     override suspend fun fetchMessages(
@@ -207,11 +226,17 @@ class DefaultTelegramClient(
         val (chatId, messageId) = parseRemoteIdParts(thumbRef.remoteId) ?: return@withContext null
         val bytes = proxyClient.getThumbnail(chatId, messageId) ?: return@withContext null
 
-        val thumbDir = File(cacheDir, "thumbs")
-        thumbDir.mkdirs()
-        val cacheFile = File(thumbDir, "${chatId}_${messageId}.jpg")
-        cacheFile.writeBytes(bytes)
-        cacheFile.absolutePath
+        try {
+            val thumbDir = File(cacheDir, "thumbs")
+            thumbDir.mkdirs()
+            val cacheFile = File(thumbDir, "${chatId}_${messageId}.jpg")
+            cacheFile.writeBytes(bytes)
+            UnifiedLog.d(TAG) { "fetchThumbnail: cached ${bytes.size} bytes → ${cacheFile.name}" }
+            cacheFile.absolutePath
+        } catch (e: Exception) {
+            UnifiedLog.e(TAG, e) { "fetchThumbnail: disk write failed for chat=$chatId msg=$messageId" }
+            null
+        }
     }
 
     override suspend fun isCached(thumbRef: TgThumbnailRef): Boolean {
@@ -242,7 +267,10 @@ class DefaultTelegramClient(
                     height = info["height"]?.jsonPrimitive?.int ?: 0,
                     supportsStreaming = info["supportsStreaming"]?.jsonPrimitive?.content?.toBoolean() ?: false,
                 )
-            } catch (_: Exception) { null }
+            } catch (e: Exception) {
+                UnifiedLog.w(TAG) { "resolveMedia(chat=${remoteId.chatId}, msg=${remoteId.messageId}) failed: ${e.message}" }
+                null
+            }
         }
 
     // ── Internal ────────────────────────────────────────────────────────────

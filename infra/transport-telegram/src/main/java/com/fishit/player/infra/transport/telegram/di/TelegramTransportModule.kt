@@ -24,7 +24,24 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import okhttp3.OkHttpClient
+import java.util.concurrent.TimeUnit
+import javax.inject.Qualifier
 import javax.inject.Singleton
+
+/**
+ * Qualifier for the Telegram proxy OkHttpClient (30s connect, 120s read for file streaming).
+ */
+@Qualifier
+@Retention(AnnotationRetention.BINARY)
+annotation class TelegramProxyHttpClient
+
+/**
+ * Qualifier for the Telegram health-check OkHttpClient (2s connect/read for fast polling).
+ */
+@Qualifier
+@Retention(AnnotationRetention.BINARY)
+annotation class TelegramHealthHttpClient
 
 /**
  * Hilt module for Telegram transport layer — Telethon Proxy Architecture.
@@ -39,6 +56,11 @@ import javax.inject.Singleton
  * Kotlin (OkHttp) → localhost:8089 → Python (Telethon) → Telegram MTProto
  * ```
  *
+ * **OkHttpClient Management (follows Xtream pattern):**
+ * - [TelegramProxyHttpClient]: Qualified client for proxy API calls (long read timeout for file streaming)
+ * - [TelegramHealthHttpClient]: Qualified client for health polling (short timeouts)
+ * - Both are DI-managed singletons, enabling Chucker interception and testability
+ *
  * **Provided Interfaces (all backed by single DefaultTelegramClient):**
  * - [TelegramClient] — Unified facade
  * - [TelegramAuthClient] — Authentication operations
@@ -51,18 +73,59 @@ import javax.inject.Singleton
 @InstallIn(SingletonComponent::class)
 object TelegramTransportModule {
 
+    // ── OkHttpClient providers ──────────────────────────────────────────────
+
+    /**
+     * Provides OkHttpClient for Telethon proxy API calls.
+     *
+     * Timeouts are tuned for localhost proxy communication:
+     * - connectTimeout: 30s (allows Chaquopy startup time)
+     * - readTimeout: 120s (file downloads via /file endpoint can be slow)
+     * - writeTimeout: 10s (small JSON payloads only)
+     */
+    @Provides
+    @Singleton
+    @TelegramProxyHttpClient
+    fun provideProxyOkHttpClient(): OkHttpClient =
+        OkHttpClient.Builder()
+            .connectTimeout(30, TimeUnit.SECONDS)
+            .readTimeout(120, TimeUnit.SECONDS)
+            .writeTimeout(10, TimeUnit.SECONDS)
+            .build()
+
+    /**
+     * Provides lightweight OkHttpClient for health-check polling.
+     *
+     * Deliberately short timeouts — health checks must respond fast
+     * or be treated as "not ready yet".
+     */
+    @Provides
+    @Singleton
+    @TelegramHealthHttpClient
+    fun provideHealthOkHttpClient(): OkHttpClient =
+        OkHttpClient.Builder()
+            .connectTimeout(2, TimeUnit.SECONDS)
+            .readTimeout(2, TimeUnit.SECONDS)
+            .build()
+
+    // ── Proxy infrastructure ────────────────────────────────────────────────
+
     @Provides
     @Singleton
     fun provideTelethonProxyLifecycle(
         @ApplicationContext context: Context,
         config: TelegramSessionConfig,
-    ): TelethonProxyLifecycle = TelethonProxyLifecycle(context, config)
+        @TelegramHealthHttpClient healthClient: OkHttpClient,
+    ): TelethonProxyLifecycle = TelethonProxyLifecycle(context, config, healthClient)
 
     @Provides
     @Singleton
     fun provideTelethonProxyClient(
         config: TelegramSessionConfig,
-    ): TelethonProxyClient = TelethonProxyClient(config)
+        @TelegramProxyHttpClient client: OkHttpClient,
+    ): TelethonProxyClient = TelethonProxyClient(config, client)
+
+    // ── TelegramClient SSOT ─────────────────────────────────────────────────
 
     /**
      * Provides the SINGLE unified TelegramClient instance (SSOT).

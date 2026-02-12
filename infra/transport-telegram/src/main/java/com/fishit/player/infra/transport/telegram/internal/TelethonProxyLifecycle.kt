@@ -3,13 +3,13 @@ package com.fishit.player.infra.transport.telegram.internal
 import android.content.Context
 import com.chaquo.python.Python
 import com.chaquo.python.android.AndroidPlatform
+import com.fishit.player.infra.logging.UnifiedLog
 import com.fishit.player.infra.transport.telegram.TelegramSessionConfig
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
-import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 
 /**
@@ -22,16 +22,20 @@ import java.util.concurrent.atomic.AtomicBoolean
  * - Provides health-check polling until proxy is ready
  *
  * Thread-safety: [start] is idempotent — safe to call multiple times.
+ *
+ * @param healthClient DI-provided OkHttpClient with short timeouts for health polling.
+ *                     Constructed in [TelegramTransportModule].
  */
 class TelethonProxyLifecycle(
     private val context: Context,
     private val config: TelegramSessionConfig,
+    private val healthClient: OkHttpClient,
 ) {
     private val started = AtomicBoolean(false)
-    private val healthClient = OkHttpClient.Builder()
-        .connectTimeout(2, TimeUnit.SECONDS)
-        .readTimeout(2, TimeUnit.SECONDS)
-        .build()
+
+    companion object {
+        private const val TAG = "TelethonProxyLifecycle"
+    }
 
     /**
      * Start the Telethon proxy.
@@ -44,6 +48,8 @@ class TelethonProxyLifecycle(
      */
     fun start() {
         if (!started.compareAndSet(false, true)) return
+
+        UnifiedLog.i(TAG) { "Starting Telethon proxy (port=${config.proxyPort})..." }
 
         // Initialize Chaquopy
         if (!Python.isStarted()) {
@@ -63,6 +69,8 @@ class TelethonProxyLifecycle(
         // Import and start server
         val tgProxy = py.getModule("tg_proxy")
         tgProxy.callAttr("start_server")
+
+        UnifiedLog.i(TAG) { "Telethon proxy start_server() called" }
     }
 
     /**
@@ -77,17 +85,22 @@ class TelethonProxyLifecycle(
         delayMs: Long = 500L,
     ): Boolean = withContext(Dispatchers.IO) {
         val healthUrl = "${config.proxyBaseUrl}/health"
-        repeat(maxAttempts) {
+        UnifiedLog.d(TAG) { "awaitReady: polling $healthUrl (max $maxAttempts attempts)" }
+        repeat(maxAttempts) { attempt ->
             try {
                 val request = Request.Builder().url(healthUrl).get().build()
                 healthClient.newCall(request).execute().use { response ->
-                    if (response.isSuccessful) return@withContext true
+                    if (response.isSuccessful) {
+                        UnifiedLog.i(TAG) { "Proxy ready after ${attempt + 1} attempt(s)" }
+                        return@withContext true
+                    }
                 }
             } catch (_: Exception) {
                 // Proxy not ready yet
             }
             delay(delayMs)
         }
+        UnifiedLog.e(TAG) { "Proxy NOT ready after $maxAttempts attempts" }
         false
     }
 
