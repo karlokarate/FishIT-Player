@@ -470,3 +470,6 @@
 {"action":"check","filePath":"docs/v2/TELEGRAM_CHAIN_PARITY_PLAN.md","status":"UNTRACKED","agentMode":"interactive","timestamp":"2026-02-12T13:11:01.370Z"}
 {"action":"check","filePath":"ROADMAP.md","status":"UNTRACKED","agentMode":"interactive","timestamp":"2026-02-12T13:11:01.371Z"}
 {"action":"check","filePath":"infra/transport-telegram/src/main/java/com/fishit/player/infra/transport/telegram/internal/DefaultTelegramClient.kt","status":"RELATED_UNREAD","agentMode":"interactive","scopeId":"telegram-transport","timestamp":"2026-02-12T13:19:10.398Z"}
+{"action":"check","filePath":"pipeline/xtream/src/test/java/com/fishit/player/pipeline/xtream/ids/XtreamIdCodecTest.kt","status":"UNTRACKED","agentMode":"interactive","timestamp":"2026-02-12T13:38:59.950Z"}
+{"action":"check","filePath":"infra/data-nx/src/main/java/com/fishit/player/infra/data/nx/mapper/SourceKeyParser.kt","status":"UNTRACKED","agentMode":"interactive","timestamp":"2026-02-12T13:53:10.784Z"}
+{"action":"check","filePath":"core/app-startup/src/main/java/com/fishit/player/core/appstartup/AppStartupImpl.kt","status":"UNTRACKED","agentMode":"interactive","timestamp":"2026-02-12T14:18:46.786Z"}
