@@ -32,7 +32,7 @@ object AppWorkModule {
      *
      * Contract: CATALOG_SYNC_WORKERS_CONTRACT_V2
      * - uniqueWorkName = "catalog_sync_global"
-     * - No UI/ViewModel may call CatalogSyncService directly
+     * - No UI/ViewModel may call sync services directly
      */
     @Provides
     @Singleton

@@ -545,3 +545,6 @@
 {"action":"check","filePath":"pipeline/xtream/src/main/java/com/fishit/player/pipeline/xtream/model/XtreamEpgEntry.kt","status":"ALLOWED","agentMode":"interactive","scopeId":"xtream-pipeline-mapping","timestamp":"2026-02-13T12:33:40.282Z"}
 {"action":"check","filePath":"core/catalog-sync/src/main/java/com/fishit/player/core/catalogsync/ChannelSyncBuffer.kt","status":"ALLOWED","agentMode":"interactive","scopeId":"catalog-sync","timestamp":"2026-02-13T12:33:40.282Z"}
 {"action":"check","filePath":"core/catalog-sync/src/main/java/com/fishit/player/core/catalogsync/SyncPerfMetrics.kt","status":"ALLOWED","agentMode":"interactive","scopeId":"catalog-sync","timestamp":"2026-02-13T12:33:40.283Z"}
+{"action":"session_start","status":"STARTED","agentMode":"interactive","details":"session-1770991923630","timestamp":"2026-02-13T14:12:03.630Z"}
+{"action":"check","filePath":"core/catalog-sync/src/main/java/com/fishit/player/core/catalogsync/CatalogSyncContract.kt","status":"ALLOWED","agentMode":"interactive","scopeId":"catalog-sync","timestamp":"2026-02-13T14:12:10.186Z"}
+{"action":"check","filePath":"core/catalog-sync/src/main/java/com/fishit/player/core/catalogsync/DefaultCatalogSyncService.kt","status":"ALLOWED","agentMode":"interactive","scopeId":"catalog-sync","timestamp":"2026-02-13T14:12:10.186Z"}

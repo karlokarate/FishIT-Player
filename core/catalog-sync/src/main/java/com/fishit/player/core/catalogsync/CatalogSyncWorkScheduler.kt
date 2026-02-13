@@ -22,7 +22,7 @@ package com.fishit.player.core.catalogsync
  * SSOT Contract (CATALOG_SYNC_WORKERS_CONTRACT_V2):
  * - uniqueWorkName = "catalog_sync_global"
  * - All sync triggers MUST go through this scheduler
- * - No UI/ViewModel may call CatalogSyncService directly
+ * - No UI/ViewModel may call sync services directly
  */
 interface CatalogSyncWorkScheduler {
     /**

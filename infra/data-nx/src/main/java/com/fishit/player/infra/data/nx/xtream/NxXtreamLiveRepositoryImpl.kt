@@ -2,7 +2,7 @@
  * NX-backed implementation of XtreamLiveRepository.
  *
  * Reads live channel data exclusively from NX_Work + NX_WorkSourceRef entities.
- * Writes are handled by NxCatalogWriter via CatalogSyncService.
+ * Writes are handled by NxCatalogWriter via XtreamSyncService.
  *
  * **Architecture:**
  * - UI SSOT: NX_Work graph (per NX_SSOT_CONTRACT.md INV-6)

@@ -369,7 +369,7 @@ abstract class NxDataModule {
      * - NX_Work (workType=MOVIE/SERIES/EPISODE) for media entries
      * - NX_WorkSourceRef (sourceType=XTREAM) for source mapping
      *
-     * Write operations delegate to NxCatalogWriter via CatalogSyncService.
+     * Write operations delegate to NxCatalogWriter via XtreamSyncService.
      */
     @Binds
     @Singleton
@@ -388,7 +388,7 @@ abstract class NxDataModule {
      * - NX_Work (workType=LIVE_CHANNEL) for live channels
      * - NX_WorkSourceRef (sourceType=XTREAM) for source mapping
      *
-     * Write operations delegate to NxCatalogWriter via CatalogSyncService.
+     * Write operations delegate to NxCatalogWriter via XtreamSyncService.
      */
     @Binds
     @Singleton

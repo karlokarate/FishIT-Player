@@ -64,7 +64,7 @@ class NxWorkRepositoryImpl @Inject constructor(
 
     /**
      * Enable/disable aggressive throttling during sync.
-     * Should be called by CatalogSyncService before/after sync.
+     * Should be called by sync orchestration before/after sync.
      */
     fun setSyncInProgress(inProgress: Boolean) {
         val oldValue = syncInProgress

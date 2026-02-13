@@ -2,7 +2,7 @@
  * NX-backed implementation of XtreamCatalogRepository.
  *
  * Reads catalog data exclusively from NX_Work + NX_WorkSourceRef entities.
- * Writes are handled by NxCatalogWriter via CatalogSyncService.
+ * Writes are handled by NxCatalogWriter via XtreamSyncService.
  *
  * **Architecture:**
  * - UI SSOT: NX_Work graph (per NX_SSOT_CONTRACT.md INV-6)
@@ -294,7 +294,7 @@ class NxXtreamCatalogRepositoryImpl
         // =========================================================================
 
         override suspend fun upsertAll(items: List<RawMediaMetadata>) {
-            // Writes are handled by NxCatalogWriter via CatalogSyncService.
+            // Writes are handled by NxCatalogWriter via XtreamSyncService.
             // This method is a no-op for NX-backed implementation.
             UnifiedLog.w(TAG) { "upsertAll() called - writes should go through NxCatalogWriter" }
         }
