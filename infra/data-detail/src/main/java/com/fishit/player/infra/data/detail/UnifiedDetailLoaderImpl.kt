@@ -17,8 +17,8 @@ import com.fishit.player.core.model.TmdbRef
 import com.fishit.player.core.model.ids.XtreamIdCodec
 import com.fishit.player.core.model.repository.CanonicalMediaRepository
 import com.fishit.player.core.model.repository.CanonicalMediaWithSources
-import com.fishit.player.core.model.repository.NxWorkRepository
 import com.fishit.player.infra.data.nx.mapper.SourceKeyParser
+import com.fishit.player.infra.data.nx.writer.NxEnrichmentWriter
 import com.fishit.player.infra.logging.UnifiedLog
 import com.fishit.player.infra.priority.ApiPriorityDispatcher
 import com.fishit.player.infra.transport.xtream.XtreamApiClient
@@ -125,7 +125,7 @@ class UnifiedDetailLoaderImpl
         private val canonicalMediaRepository: CanonicalMediaRepository,
         private val seriesIndexRepository: XtreamSeriesIndexRepository,
         private val priorityDispatcher: ApiPriorityDispatcher,
-        private val workRepository: NxWorkRepository,
+        private val enrichmentWriter: NxEnrichmentWriter,
     ) : UnifiedDetailLoader {
     companion object {
         private const val TAG = "UnifiedDetailLoader"
@@ -448,6 +448,13 @@ class UnifiedDetailLoaderImpl
         )
     }
 
+    /**
+     * Enrich existing series NX_Work with metadata from `get_series_info`.
+     *
+     * Delegates ALL writes to [NxEnrichmentWriter] — the SSOT for detail-time enrichment.
+     * Builds [NormalizedMediaMetadata] from the API response, then calls
+     * [NxEnrichmentWriter.enrichWork] which applies enrichIfAbsent semantics.
+     */
     private suspend fun persistSeriesMetadata(
         media: CanonicalMediaWithSources,
         info: XtreamSeriesInfoBlock,
@@ -484,28 +491,10 @@ class UnifiedDetailLoaderImpl
             trailer = info.resolvedTrailer ?: media.trailer,
         )
 
-        canonicalMediaRepository.upsertCanonicalMedia(normalized)
-
-        // Fix 3: Propagate tmdbId/imdbId from detail API to Series NX_Work.
-        // The catalog listing API (get_series) does NOT provide these fields,
-        // so they are null on the NX_Work after catalog sync. The detail API
-        // (get_series_info) returns them — use enrichIfAbsent which applies
-        // ALWAYS_UPDATE semantics for tmdbId/imdbId (one atomic read-modify-write).
-        val apiTmdbId = tmdbIdFromApi?.toString()
-        val apiImdbId = info.imdbId?.takeIf { it.isNotBlank() }
-        if (apiTmdbId != null || apiImdbId != null) {
-            val workKey = media.canonicalId.key.value
-            workRepository.enrichIfAbsent(
-                workKey = workKey,
-                enrichment = NxWorkRepository.Enrichment(
-                    tmdbId = apiTmdbId,
-                    imdbId = apiImdbId,
-                ),
-            )
-            UnifiedLog.d(TAG) {
-                "persistSeriesMetadata: enrichIfAbsent NX_Work($workKey) tmdbId=$apiTmdbId, imdbId=$apiImdbId"
-            }
-        }
+        // Single enrichment call — NxEnrichmentWriter handles enrichIfAbsent
+        // for all fields including tmdbId/imdbId (ALWAYS_UPDATE semantics).
+        val workKey = media.canonicalId.key.value
+        enrichmentWriter.enrichWork(workKey, normalized)
     }
 
     private fun extractSeasons(
@@ -637,6 +626,14 @@ class UnifiedDetailLoaderImpl
         )
     }
 
+    /**
+     * Enrich existing VOD NX_Work with metadata from `get_vod_info`.
+     *
+     * Delegates ALL writes to [NxEnrichmentWriter]:
+     * 1. [NxEnrichmentWriter.enrichWork] — enriches NX_Work fields (plot, poster, etc.)
+     * 2. [NxEnrichmentWriter.updateVariantPlaybackHints] — updates variant with
+     *    containerExtension, directSource from movieData
+     */
     private suspend fun persistVodMetadata(
         media: CanonicalMediaWithSources,
         info: XtreamVodInfoBlock,
@@ -674,34 +671,43 @@ class UnifiedDetailLoaderImpl
             trailer = info.resolvedTrailer ?: media.trailer,
         )
 
-        canonicalMediaRepository.upsertCanonicalMedia(normalized)
+        // Single enrichment call — replaces canonicalMediaRepository.upsertCanonicalMedia()
+        val workKey = media.canonicalId.key.value
+        enrichmentWriter.enrichWork(workKey, normalized)
 
-        // Also update source with playback hints (containerExtension)
+        // Update variant playback hints (containerExtension, directSource)
         if (movieData?.containerExtension != null) {
-            updateVodSourcePlaybackHints(media, movieData)
+            updateVodSourcePlaybackHints(media, workKey, movieData)
         }
     }
 
+    /**
+     * Update VOD variant playback hints via [NxEnrichmentWriter].
+     *
+     * Replaces the previous path through canonicalMediaRepository.addOrUpdateSourceRef()
+     * which rebuilt the entire sourceRef. Now directly updates only the variant hints.
+     */
     private suspend fun updateVodSourcePlaybackHints(
         media: CanonicalMediaWithSources,
+        workKey: String,
         movieData: com.fishit.player.infra.transport.xtream.XtreamMovieData,
     ) {
-        // Find the Xtream source and update its playback hints via addOrUpdateSourceRef
         val xtreamSource = media.sources.firstOrNull { it.sourceType == SourceType.XTREAM }
             ?: return
 
-        val updatedHints = xtreamSource.playbackHints.toMutableMap()
-        // SSOT: Use PlaybackHintKeys constants — matching pipeline XtreamVodInfo.toRawMediaMetadata()
-        updatedHints[PlaybackHintKeys.Xtream.CONTENT_TYPE] = PlaybackHintKeys.Xtream.CONTENT_VOD
-        movieData.containerExtension?.let { updatedHints[PlaybackHintKeys.Xtream.CONTAINER_EXT] = it }
-        movieData.streamId?.let { updatedHints[PlaybackHintKeys.Xtream.VOD_ID] = it.toString() }
-        movieData.directSource?.let { updatedHints[PlaybackHintKeys.Xtream.DIRECT_SOURCE] = it }
+        // Build hints update map using SSOT PlaybackHintKeys constants
+        val hintsUpdate = buildMap {
+            put(PlaybackHintKeys.Xtream.CONTENT_TYPE, PlaybackHintKeys.Xtream.CONTENT_VOD)
+            movieData.containerExtension?.let { put(PlaybackHintKeys.Xtream.CONTAINER_EXT, it) }
+            movieData.streamId?.let { put(PlaybackHintKeys.Xtream.VOD_ID, it.toString()) }
+            movieData.directSource?.let { put(PlaybackHintKeys.Xtream.DIRECT_SOURCE, it) }
+        }
 
-        // Create updated source with new hints
-        val updatedSource = xtreamSource.copy(playbackHints = updatedHints)
-
-        // Re-add the source (upsert behavior) to update hints
-        canonicalMediaRepository.addOrUpdateSourceRef(media.canonicalId, updatedSource)
+        enrichmentWriter.updateVariantPlaybackHints(
+            sourceKey = xtreamSource.sourceId.value,
+            workKey = workKey,
+            hintsUpdate = hintsUpdate,
+        )
     }
 
     // =========================================================================

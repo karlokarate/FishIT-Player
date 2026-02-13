@@ -282,7 +282,10 @@ object XtreamIdCodec {
         // IMPORTANT: accountKey may contain colons (e.g., user:pass@host:8080),
         // so we can't split by ":" naively. Instead, search for known content-type markers.
         if (sourceId.startsWith("src:$PREFIX:") || sourceId.startsWith("src:xc:")) {
-            val contentMarkers = listOf(":vod:", ":live:", ":series:", ":episode:")
+            // IMPORTANT: :episode: MUST come BEFORE :series: because composite episode
+            // sourceKeys contain both markers (e.g., src:xtream:acc:episode:series:100:s2:e5).
+            // The more specific marker must match first to avoid mis-parsing as Series.
+            val contentMarkers = listOf(":vod:", ":live:", ":episode:", ":series:")
             for (marker in contentMarkers) {
                 val markerIdx = sourceId.indexOf(marker)
                 if (markerIdx >= 0) {
