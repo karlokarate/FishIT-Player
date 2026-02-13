@@ -142,11 +142,17 @@ class NxXtreamLiveRepositoryImpl
 
         override suspend fun getBySourceId(sourceId: String): RawMediaMetadata? =
             withContext(Dispatchers.IO) {
-                val streamId = sourceId.removePrefix("xtream:live:").toIntOrNull()
-                    ?: return@withContext null
+                // Parse the sourceId via XtreamIdCodec SSOT — handles both legacy and NX formats:
+                // Legacy: "xtream:live:456"
+                // NX: "src:xtream:account:live:456"
+                val parsed = XtreamIdCodec.parse(sourceId)
+                val channelId = when (parsed) {
+                    is com.fishit.player.core.model.ids.XtreamParsedSourceId.Live -> parsed.channelId
+                    else -> null
+                } ?: return@withContext null
 
                 // Find sourceRef by pattern matching
-                val searchPattern = ":live:$streamId"
+                val searchPattern = ":live:$channelId"
                 val sourceRef = sourceRefBox.query(
                     NX_WorkSourceRef_.sourceType.equal(SOURCE_TYPE)
                         .and(NX_WorkSourceRef_.sourceKey.contains(searchPattern)),

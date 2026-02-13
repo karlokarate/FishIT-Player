@@ -279,10 +279,16 @@ object XtreamIdCodec {
     fun parse(sourceId: String): XtreamParsedSourceId? {
         // NX format: src:xtream:{account}:{kind}:{...}
         // Strip prefix and re-parse as xtream:{kind}:{...}
+        // IMPORTANT: accountKey may contain colons (e.g., user:pass@host:8080),
+        // so we can't split by ":" naively. Instead, search for known content-type markers.
         if (sourceId.startsWith("src:$PREFIX:") || sourceId.startsWith("src:xc:")) {
-            val nxParts = sourceId.split(":", limit = 4)
-            if (nxParts.size >= 4) {
-                return parse("$PREFIX:${nxParts[3]}")
+            val contentMarkers = listOf(":vod:", ":live:", ":series:", ":episode:")
+            for (marker in contentMarkers) {
+                val markerIdx = sourceId.indexOf(marker)
+                if (markerIdx >= 0) {
+                    // Re-parse as xtream:{kind}:{...} from the marker position
+                    return parse("$PREFIX${sourceId.substring(markerIdx)}")
+                }
             }
             return null
         }
@@ -461,4 +467,69 @@ object XtreamIdCodec {
      */
     fun extractChannelId(sourceId: String): Long? =
         (parse(sourceId) as? XtreamParsedSourceId.Live)?.channelId
+
+    // =========================================================================
+    // Content Type Detection (SSOT — used by SourceSelection, PlayerNavViewModel)
+    // =========================================================================
+
+    /**
+     * Xtream content types for lightweight sourceKey pattern matching.
+     *
+     * This is the SSOT enum for content type detection from sourceKey strings.
+     * Use [detectContentType] to resolve from a sourceKey.
+     */
+    enum class ContentType {
+        VOD, LIVE, SERIES, EPISODE, UNKNOWN
+    }
+
+    /**
+     * Lightweight content type detection from any sourceKey format.
+     *
+     * Unlike [parse], this does NOT validate IDs or parse composite formats.
+     * It simply detects the content type segment in the sourceKey string.
+     *
+     * Supports both formats:
+     * - Legacy: `xtream:vod:123`, `xtream:live:456`
+     * - NX: `src:xtream:account:vod:123`, `src:xtream:account:live:456`
+     *
+     * @param sourceKey The full source ID or sourceKey string
+     * @return Detected content type, or [ContentType.UNKNOWN] if not recognized
+     */
+    fun detectContentType(sourceKey: String): ContentType = when {
+        sourceKey.contains(":vod:") -> ContentType.VOD
+        sourceKey.contains(":live:") -> ContentType.LIVE
+        sourceKey.contains(":episode:") -> ContentType.EPISODE
+        sourceKey.contains(":series:") -> ContentType.SERIES
+        else -> ContentType.UNKNOWN
+    }
+
+    /**
+     * Extract the simple numeric ID segment after the content type marker.
+     *
+     * Returns the FIRST segment after the marker, stopping at the next colon.
+     * For composite episode formats, returns only the first ID part.
+     *
+     * Works for both formats:
+     * - Legacy `xtream:vod:123` → `"123"`
+     * - NX `src:xtream:account:vod:123` → `"123"`
+     * - Composite `xtream:episode:series:456:s1:e3` → `"series"` (use [parse] for composites)
+     *
+     * For full parsing with type safety, prefer [parse] and the specific extract* methods.
+     *
+     * @param sourceKey The full source ID or sourceKey string
+     * @param contentType The content type to extract ID for
+     * @return The extracted first ID segment, or null if marker not found
+     */
+    fun extractSimpleId(sourceKey: String, contentType: ContentType): String? {
+        val marker = when (contentType) {
+            ContentType.VOD -> ":vod:"
+            ContentType.LIVE -> ":live:"
+            ContentType.SERIES -> ":series:"
+            ContentType.EPISODE -> ":episode:"
+            ContentType.UNKNOWN -> return null
+        }
+        val idx = sourceKey.indexOf(marker)
+        if (idx < 0) return null
+        return sourceKey.substring(idx + marker.length).takeWhile { it != ':' }.ifEmpty { null }
+    }
 }

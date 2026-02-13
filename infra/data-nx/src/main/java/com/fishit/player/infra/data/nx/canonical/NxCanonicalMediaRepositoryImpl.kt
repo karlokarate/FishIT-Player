@@ -147,7 +147,7 @@ class NxCanonicalMediaRepositoryImpl @Inject constructor(
 
         // Check if sourceRef already exists
         val existing = sourceRefBox.query(
-            NX_WorkSourceRef_.sourceKey.equal(source.sourceId.value)
+            NX_WorkSourceRef_.sourceKey.equal(source.sourceId.value, StringOrder.CASE_SENSITIVE)
         ).build().findFirst()
 
         val sourceRef = existing ?: NX_WorkSourceRef()
@@ -176,11 +176,11 @@ class NxCanonicalMediaRepositoryImpl @Inject constructor(
 
     override suspend fun removeSourceRef(sourceId: PipelineItemId) = withContext(Dispatchers.IO) {
         val sourceRef = sourceRefBox.query(
-            NX_WorkSourceRef_.sourceKey.equal(sourceId.value)
+            NX_WorkSourceRef_.sourceKey.equal(sourceId.value, StringOrder.CASE_SENSITIVE)
         ).build().findFirst() ?: return@withContext
 
         // Remove associated variants
-        variantBox.query(NX_WorkVariant_.sourceKey.equal(sourceId.value))
+        variantBox.query(NX_WorkVariant_.sourceKey.equal(sourceId.value, StringOrder.CASE_SENSITIVE))
             .build()
             .remove()
 
@@ -580,7 +580,7 @@ class NxCanonicalMediaRepositoryImpl @Inject constructor(
     }
 
     private fun getVariantsForSource(sourceKey: String): List<NX_WorkVariant> {
-        return variantBox.query(NX_WorkVariant_.sourceKey.equal(sourceKey))
+        return variantBox.query(NX_WorkVariant_.sourceKey.equal(sourceKey, StringOrder.CASE_SENSITIVE))
             .build()
             .find()
     }
@@ -703,7 +703,7 @@ class NxCanonicalMediaRepositoryImpl @Inject constructor(
         val qualityTag = source.quality?.resolutionLabel ?: "source"
         val variantKey = "${sourceRef.sourceKey}#$qualityTag:original"
 
-        val existing = variantBox.query(NX_WorkVariant_.variantKey.equal(variantKey))
+        val existing = variantBox.query(NX_WorkVariant_.variantKey.equal(variantKey, StringOrder.CASE_SENSITIVE))
             .build()
             .findFirst()
 

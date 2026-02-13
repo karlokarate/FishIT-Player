@@ -473,3 +473,8 @@
 {"action":"check","filePath":"pipeline/xtream/src/test/java/com/fishit/player/pipeline/xtream/ids/XtreamIdCodecTest.kt","status":"UNTRACKED","agentMode":"interactive","timestamp":"2026-02-12T13:38:59.950Z"}
 {"action":"check","filePath":"infra/data-nx/src/main/java/com/fishit/player/infra/data/nx/mapper/SourceKeyParser.kt","status":"UNTRACKED","agentMode":"interactive","timestamp":"2026-02-12T13:53:10.784Z"}
 {"action":"check","filePath":"core/app-startup/src/main/java/com/fishit/player/core/appstartup/AppStartupImpl.kt","status":"UNTRACKED","agentMode":"interactive","timestamp":"2026-02-12T14:18:46.786Z"}
+{"action":"session_start","status":"STARTED","agentMode":"interactive","details":"session-1770938355520","timestamp":"2026-02-12T23:19:15.520Z"}
+{"action":"session_start","status":"STARTED","agentMode":"interactive","details":"session-1770963640316","timestamp":"2026-02-13T06:20:40.316Z"}
+{"action":"check","filePath":"infra/data-nx/src/main/java/com/fishit/player/infra/data/nx/canonical/NxCanonicalMediaRepositoryImpl.kt","status":"UNTRACKED","agentMode":"interactive","timestamp":"2026-02-13T06:20:46.874Z"}
+{"action":"check","filePath":"app-v2/src/main/java/com/fishit/player/v2/navigation/PlayerNavViewModel.kt","status":"UNTRACKED","agentMode":"interactive","timestamp":"2026-02-13T06:20:55.427Z"}
+{"action":"check","filePath":"core/model/src/main/java/com/fishit/player/core/model/ids/XtreamIdCodec.kt","status":"UNTRACKED","agentMode":"interactive","timestamp":"2026-02-13T06:21:01.124Z"}
