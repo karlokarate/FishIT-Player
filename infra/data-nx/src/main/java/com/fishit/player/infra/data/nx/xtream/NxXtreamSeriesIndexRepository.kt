@@ -34,6 +34,7 @@ import com.fishit.player.core.model.repository.NxWorkVariantRepository
 import com.fishit.player.core.model.PlaybackHintKeys
 import com.fishit.player.infra.data.nx.mapper.SourceKeyParser
 import com.fishit.player.infra.data.nx.mapper.base.PlaybackHintsDecoder
+import com.fishit.player.infra.data.nx.writer.NxEnrichmentWriter
 import com.fishit.player.infra.logging.UnifiedLog
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow

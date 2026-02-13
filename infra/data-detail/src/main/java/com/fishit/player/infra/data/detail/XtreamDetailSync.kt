@@ -30,7 +30,7 @@ import com.fishit.player.infra.transport.xtream.XtreamSeriesInfo
 import com.fishit.player.infra.transport.xtream.XtreamSeriesInfoBlock
 import com.fishit.player.infra.transport.xtream.XtreamVodInfo
 import com.fishit.player.infra.transport.xtream.XtreamVodInfoBlock
-import com.fishit.player.pipeline.xtream.adapter.toEpisodes
+import com.fishit.player.pipeline.xtream.adapter.XtreamPipelineAdapter
 import com.fishit.player.pipeline.xtream.mapper.toRawMediaMetadata
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
@@ -60,12 +60,11 @@ import kotlin.coroutines.coroutineContext
  *
  * ## Episode Pipeline Chain (SSOT)
  * When a series detail is opened:
- * 1. `xtreamApiClient.getSeriesInfo()` → `XtreamSeriesInfo`
- * 2. `seriesInfo.toEpisodes()` → `List<XtreamEpisode>` (pipeline adapter SSOT)
- * 3. `episode.toRawMediaMetadata()` → `RawMediaMetadata` (pipeline mapper SSOT)
- * 4. `normalizer.normalize(raw)` → `NormalizedMediaMetadata`
- * 5. `nxCatalogWriter.ingest(raw, normalized, accountKey)` → NX entities
- * 6. `relationRepository.upsertBatch(relations)` → series↔episode links
+ * 1. `pipelineAdapter.loadEpisodes()` → `List<XtreamEpisode>` (pipeline adapter SSOT)
+ * 2. `episode.toRawMediaMetadata()` → `RawMediaMetadata` (pipeline mapper SSOT)
+ * 3. `normalizer.normalize(raw)` → `NormalizedMediaMetadata`
+ * 4. `nxCatalogWriter.ingest(raw, normalized, accountKey)` → NX entities
+ * 5. `relationRepository.upsertBatch(relations)` → series↔episode links
  *
  * This is the SAME chain that [XtreamCatalogSync] uses during catalog sync,
  * guaranteeing identical field population.
@@ -78,6 +77,7 @@ class XtreamDetailSync
     @Inject
     constructor(
         private val xtreamApiClient: XtreamApiClient,
+        private val pipelineAdapter: XtreamPipelineAdapter,
         private val canonicalMediaRepository: CanonicalMediaRepository,
         private val seriesIndexRepository: XtreamSeriesIndexRepository,
         private val priorityDispatcher: ApiPriorityDispatcher,
@@ -311,8 +311,8 @@ class XtreamDetailSync
             ?: "xtream:unknown"
         val accountLabel = accountKey.removePrefix("xtream:")
 
-        // Pipeline chain: toEpisodes → toRawMediaMetadata → normalizer → NxCatalogWriter
-        val xtreamEpisodes = seriesInfo.toEpisodes(seriesId, seriesName)
+        // Pipeline chain: pipelineAdapter.loadEpisodes → toRawMediaMetadata → normalizer → NxCatalogWriter
+        val xtreamEpisodes = pipelineAdapter.loadEpisodes(seriesId, seriesName)
         val episodeWorkKeys = mutableListOf<Pair<String, Int>>() // workKey to episodeIndex
 
         if (xtreamEpisodes.isNotEmpty()) {

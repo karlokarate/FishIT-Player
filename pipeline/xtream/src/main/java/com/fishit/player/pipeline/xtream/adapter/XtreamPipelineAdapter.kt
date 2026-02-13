@@ -301,7 +301,7 @@ internal fun XtreamLiveStream.toPipelineItem(): XtreamChannel =
  * @param seriesName The series title (embedded in each [XtreamEpisode] for context)
  * @return Flattened list of all episodes across all seasons
  */
-fun XtreamSeriesInfo.toEpisodes(
+internal fun XtreamSeriesInfo.toEpisodes(
     seriesId: Int,
     seriesName: String?,
 ): List<XtreamEpisode> {
