@@ -26,42 +26,6 @@ import com.fishit.player.core.model.ids.TmdbId
  * - Unified detail screen data
  */
 interface CanonicalMediaRepository {
-    // ========== Core CRUD Operations ==========
-
-    /**
-     * Upsert a canonical media work from normalized metadata.
-     *
-     * If a matching canonical key exists, updates the entry. Otherwise, creates a new canonical
-     * media entry.
-     *
-     * @param normalized The normalized metadata from the normalizer
-     * @return The canonical ID for this media work
-     */
-    suspend fun upsertCanonicalMedia(normalized: NormalizedMediaMetadata): CanonicalMediaId
-
-    /**
-     * Add or update a source reference linked to a canonical media work.
-     *
-     * Multiple sources can link to the same canonical media. If the source already exists (by
-     * sourceId), it will be updated.
-     *
-     * @param canonicalId The canonical media to link to
-     * @param source The source reference to add/update
-     */
-    suspend fun addOrUpdateSourceRef(
-        canonicalId: CanonicalMediaId,
-        source: MediaSourceRef,
-    )
-
-    /**
-     * Remove a source reference.
-     *
-     * Does not remove the canonical media even if it becomes orphaned.
-     *
-     * @param sourceId The unique source identifier to remove
-     */
-    suspend fun removeSourceRef(sourceId: PipelineItemId)
-
     // ========== Query Operations ==========
 
     /**

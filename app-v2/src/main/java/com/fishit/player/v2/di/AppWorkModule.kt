@@ -3,11 +3,9 @@ package com.fishit.player.v2.di
 import android.content.Context
 import androidx.hilt.work.HiltWorkerFactory
 import androidx.work.Configuration
-import com.fishit.player.core.catalogsync.CanonicalLinkingScheduler
 import com.fishit.player.core.catalogsync.CatalogSyncWorkScheduler
 import com.fishit.player.core.catalogsync.SyncStateObserver
 import com.fishit.player.core.catalogsync.TmdbEnrichmentScheduler
-import com.fishit.player.v2.work.CanonicalLinkingSchedulerImpl
 import com.fishit.player.v2.work.CatalogSyncWorkSchedulerImpl
 import com.fishit.player.v2.work.TmdbEnrichmentSchedulerImpl
 import com.fishit.player.v2.work.WorkManagerSyncStateObserver
@@ -65,16 +63,4 @@ object AppWorkModule {
         tmdbConfigProvider: com.fishit.player.core.metadata.tmdb.TmdbConfigProvider,
     ): TmdbEnrichmentScheduler = TmdbEnrichmentSchedulerImpl(context, tmdbConfigProvider)
 
-    /**
-     * SSOT: All canonical linking backlog scheduling goes through this single implementation.
-     *
-     * Task 2: Hot Path Entlastung
-     * - Schedules background workers to process items persisted without canonical linking
-     * - Enables hot path relief during fast initial sync
-     */
-    @Provides
-    @Singleton
-    fun provideCanonicalLinkingScheduler(
-        scheduler: CanonicalLinkingSchedulerImpl,
-    ): CanonicalLinkingScheduler = scheduler
 }

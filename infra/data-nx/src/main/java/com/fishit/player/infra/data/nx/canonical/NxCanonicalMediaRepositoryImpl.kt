@@ -7,7 +7,6 @@ import com.fishit.player.core.model.MediaQuality
 import com.fishit.player.core.model.MediaSourceRef
 import com.fishit.player.core.model.MediaType
 import com.fishit.player.core.model.NormalizedMediaMetadata
-import com.fishit.player.core.model.PlaybackHintKeys
 import com.fishit.player.core.model.SourceType
 import com.fishit.player.core.model.TmdbResolvedBy
 import com.fishit.player.core.model.ids.CanonicalId
@@ -19,7 +18,6 @@ import com.fishit.player.core.model.repository.CanonicalMediaWithResume
 import com.fishit.player.core.model.repository.CanonicalMediaWithSources
 import com.fishit.player.core.model.repository.CanonicalResumeInfo
 import com.fishit.player.core.model.repository.NxWorkRepository
-import com.fishit.player.core.model.repository.toEnrichment
 import com.fishit.player.core.model.util.ResolutionLabel
 import com.fishit.player.core.model.util.SourcePriority
 import com.fishit.player.core.persistence.obx.NX_Work
@@ -32,10 +30,8 @@ import com.fishit.player.core.persistence.obx.NX_WorkVariant_
 import com.fishit.player.core.persistence.obx.NX_Work_
 import com.fishit.player.core.persistence.obx.NxKeyGenerator
 import com.fishit.player.infra.data.nx.mapper.MediaTypeMapper
-import com.fishit.player.infra.data.nx.mapper.SourceKeyParser
 import com.fishit.player.infra.data.nx.mapper.SourceLabelBuilder
 import com.fishit.player.infra.data.nx.mapper.base.PlaybackHintsDecoder
-import com.fishit.player.infra.data.nx.writer.builder.WorkEntityBuilder
 import io.objectbox.Box
 import io.objectbox.BoxStore
 import io.objectbox.query.QueryCondition
@@ -63,129 +59,12 @@ import javax.inject.Singleton
 class NxCanonicalMediaRepositoryImpl @Inject constructor(
     boxStore: BoxStore,
     private val workRepository: NxWorkRepository,
-    private val workEntityBuilder: WorkEntityBuilder,
 ) : CanonicalMediaRepository {
 
     private val workBox: Box<NX_Work> = boxStore.boxFor(NX_Work::class.java)
     private val sourceRefBox: Box<NX_WorkSourceRef> = boxStore.boxFor(NX_WorkSourceRef::class.java)
     private val variantBox: Box<NX_WorkVariant> = boxStore.boxFor(NX_WorkVariant::class.java)
     private val userStateBox: Box<NX_WorkUserState> = boxStore.boxFor(NX_WorkUserState::class.java)
-
-    // ========== Core CRUD Operations ==========
-
-    /**
-     * Upsert canonical media using the SSOT write path.
-     *
-     * **NX_CONSOLIDATION_PLAN Phase 2 — Single Write Path**
-     *
-     * Uses [WorkEntityBuilder] for correct field mapping (workType, recognitionState, etc.)
-     * and [NxWorkRepository.enrichIfAbsent] for write-protected enrichment.
-     *
-     * Eliminates the previous dual-write path that bypassed the builder and caused:
-     * - workType stored as "SERIES_EPISODE" instead of "EPISODE"
-     * - trailer, releaseDate, isAdult fields not being set
-     * - recognitionState not being set correctly
-     */
-    override suspend fun upsertCanonicalMedia(
-        normalized: NormalizedMediaMetadata,
-    ): CanonicalMediaId = withContext(Dispatchers.IO) {
-        val workKey = buildWorkKey(normalized)
-        val now = System.currentTimeMillis()
-        val enrichment = workEntityBuilder.build(normalized, workKey, now)
-        val enrichmentData = enrichment.toEnrichment()
-
-        // --- Dual-Lookup Strategy ---
-        // Step 1: Try enrichment by heuristic workKey (primary path)
-        val enrichedByKey = workRepository.enrichIfAbsent(workKey, enrichmentData)
-        if (enrichedByKey != null) {
-            return@withContext CanonicalMediaId(
-                kind = mediaTypeToKind(normalized.mediaType),
-                key = CanonicalId(enrichedByKey.workKey),
-            )
-        }
-
-        // Step 2: tmdbId fallback — find existing entity that was created with
-        //         a different slug (title variation) or old tmdb-format workKey.
-        //         Prevents duplicates across key format migration and title aliases.
-        //         Uses same tmdbId source as WorkEntityBuilder to avoid lookup misses.
-        val tmdbId = (normalized.tmdb ?: normalized.externalIds.tmdb)?.id?.toString()
-        if (tmdbId != null) {
-            val existingByTmdb = workBox.query(
-                NX_Work_.tmdbId.equal(tmdbId),
-            ).build().findFirst()
-
-            if (existingByTmdb != null) {
-                // Entity exists with different workKey → enrich via its actual key
-                val enrichedByTmdb = workRepository.enrichIfAbsent(
-                    existingByTmdb.workKey, enrichmentData,
-                )
-                val actualKey = enrichedByTmdb?.workKey ?: existingByTmdb.workKey
-                return@withContext CanonicalMediaId(
-                    kind = mediaTypeToKind(normalized.mediaType),
-                    key = CanonicalId(actualKey),
-                )
-            }
-        }
-
-        // Step 3: No existing entity found → create new
-        val created = workRepository.upsert(enrichment)
-
-        CanonicalMediaId(
-            kind = mediaTypeToKind(normalized.mediaType),
-            key = CanonicalId(created.workKey),
-        )
-    }
-
-    override suspend fun addOrUpdateSourceRef(
-        canonicalId: CanonicalMediaId,
-        source: MediaSourceRef,
-    ) = withContext(Dispatchers.IO) {
-        val workKey = canonicalId.key.value
-        val work = workBox.query(NX_Work_.workKey.equal(workKey))
-            .build()
-            .findFirst() ?: return@withContext
-
-        // Check if sourceRef already exists
-        val existing = sourceRefBox.query(
-            NX_WorkSourceRef_.sourceKey.equal(source.sourceId.value, StringOrder.CASE_SENSITIVE)
-        ).build().findFirst()
-
-        val sourceRef = existing ?: NX_WorkSourceRef()
-        sourceRef.apply {
-            this.sourceKey = source.sourceId.value
-            this.sourceType = source.sourceType.name.lowercase()  // ← FIX: lowercase!
-            this.accountKey = "" // Not available in new MediaSourceRef
-            this.sourceId = extractSourceSpecificId(source.sourceId.value)
-            // File metadata from playbackHints if available
-            this.fileSizeBytes = source.sizeBytes
-            this.lastSeenAt = System.currentTimeMillis()
-            if (existing == null) {
-                this.discoveredAt = System.currentTimeMillis()
-            }
-        }
-        sourceRef.work.target = work
-        sourceRef.workKey = work.workKey
-
-        sourceRefBox.put(sourceRef)
-
-        // Also create/update variant if playbackHints present
-        if (source.playbackHints.isNotEmpty()) {
-            upsertVariant(work, sourceRef, source)
-        }
-    }
-
-    override suspend fun removeSourceRef(sourceId: PipelineItemId) = withContext(Dispatchers.IO) {
-        val sourceRef = sourceRefBox.query(
-            NX_WorkSourceRef_.sourceKey.equal(sourceId.value, StringOrder.CASE_SENSITIVE)
-        ).build().findFirst() ?: return@withContext
-
-        // Remove associated variants
-        variantBox.query(NX_WorkVariant_.sourceKey.equal(sourceId.value, StringOrder.CASE_SENSITIVE))
-            .build()
-            .remove()
-
-        sourceRefBox.remove(sourceRef)
-    }
 
     // ========== Query Operations ==========
 
@@ -551,27 +430,6 @@ class NxCanonicalMediaRepositoryImpl @Inject constructor(
 
     // ========== Private Helper Methods ==========
 
-    /**
-     * Build work key from normalized metadata.
-     *
-     * Delegates to NxKeyGenerator.workKey() — the single source of truth for
-     * work key format: `{workType}:{authority}:{id}`
-     *
-     * Uses canonical MediaTypeMapper.toWorkType() for correct type mapping.
-     */
-    private fun buildWorkKey(normalized: NormalizedMediaMetadata): String {
-        val workType = MediaTypeMapper.toWorkType(normalized.mediaType)
-        return NxKeyGenerator.workKey(
-            workType = workType,
-            title = normalized.canonicalTitle,
-            year = normalized.year,
-            // tmdbId intentionally NOT passed — workKey is always heuristic.
-            // tmdbId is stored separately on NX_Work and used via Dual-Lookup.
-            season = normalized.season,
-            episode = normalized.episode,
-        )
-    }
-
     /** INV-PERF: Indexed query via @Index workKey (replaces box.all full scan). */
     private fun getSourceRefsForWork(workKey: String): List<NX_WorkSourceRef> {
         return sourceRefBox.query(
@@ -694,47 +552,6 @@ class NxCanonicalMediaRepositoryImpl @Inject constructor(
             updatedAt = userState.lastWatchedAt ?: userState.updatedAt,
         )
     }
-
-    private fun upsertVariant(
-        work: NX_Work,
-        sourceRef: NX_WorkSourceRef,
-        source: MediaSourceRef,
-    ) {
-        val qualityTag = source.quality?.resolutionLabel ?: "source"
-        val variantKey = "${sourceRef.sourceKey}#$qualityTag:original"
-
-        val existing = variantBox.query(NX_WorkVariant_.variantKey.equal(variantKey, StringOrder.CASE_SENSITIVE))
-            .build()
-            .findFirst()
-
-        val variant = existing ?: NX_WorkVariant()
-        variant.apply {
-            this.variantKey = variantKey
-            this.qualityTag = qualityTag
-            this.languageTag = "original"
-            this.playbackUrl = source.playbackHints[PlaybackHintKeys.Xtream.DIRECT_SOURCE]
-            this.playbackMethod = "DIRECT"
-            this.containerFormat = source.format?.container
-            this.videoCodec = source.format?.videoCodec ?: source.quality?.codec
-            this.width = null
-            this.height = source.quality?.resolution
-            this.sourceKey = sourceRef.sourceKey
-            // SSOT: Serialize ALL playbackHints to JSON — no downstream fallbacks needed
-            this.playbackHintsJson = PlaybackHintsDecoder.encodeToJson(source.playbackHints)
-        }
-        variant.work.target = work
-        variant.workKey = work.workKey
-
-        variantBox.put(variant)
-    }
-
-    private fun extractSourceSpecificId(sourceKey: String): String {
-        return SourceKeyParser.extractItemKey(sourceKey) ?: sourceKey
-    }
-
-    /** Delegates to [MediaTypeMapper.toMediaKind] — SSOT. NX_CONSOLIDATION_PLAN Phase 2. */
-    private fun mediaTypeToKind(mediaType: MediaType): MediaKind =
-        MediaTypeMapper.toMediaKind(mediaType)
 
     /** Delegates to [MediaTypeMapper.workTypeStringToMediaKind] — SSOT. */
     private fun workTypeToKind(workType: String): MediaKind =

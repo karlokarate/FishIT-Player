@@ -374,21 +374,6 @@ class NxXtreamCatalogRepositoryImpl
         override suspend fun countSeriesNeedingInfoBackfill(): Long = 0L
 
         // =========================================================================
-        // Canonical Linking Support (legacy - NX handles this automatically)
-        // =========================================================================
-
-        override suspend fun getUnlinkedForCanonicalLinking(
-            mediaType: MediaType?,
-            limit: Int,
-        ): List<RawMediaMetadata> = withContext(Dispatchers.IO) {
-            // In NX architecture, all items are automatically linked via NX_WorkSourceRef.
-            // Return empty list to indicate no unlinked items.
-            emptyList()
-        }
-
-        override suspend fun countUnlinkedForCanonicalLinking(mediaType: MediaType?): Long = 0L
-
-        // =========================================================================
         // Private Helpers
         // =========================================================================
 
