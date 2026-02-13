@@ -35,7 +35,6 @@ dependencies {
     // Core modules
     implementation(project(":core:model"))
     implementation(project(":infra:logging"))
-    implementation(project(":infra:http-client"))
     implementation(project(":infra:transport-telegram"))
     implementation(project(":infra:transport-xtream"))
     implementation(project(":pipeline:telegram"))

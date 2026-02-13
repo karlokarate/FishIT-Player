@@ -1,8 +1,5 @@
 package com.fishit.player.infra.transport.xtream.client
 
-import com.fishit.player.infra.http.HttpClient
-import com.fishit.player.infra.http.RequestConfig
-import com.fishit.player.infra.http.CacheConfig
 import com.fishit.player.infra.logging.UnifiedLog
 import com.fishit.player.infra.transport.xtream.XtreamCategory
 import com.fishit.player.infra.transport.xtream.XtreamUrlBuilder
@@ -14,6 +11,9 @@ import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.intOrNull
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import java.io.IOException
 import javax.inject.Inject
 
 /**
@@ -27,7 +27,7 @@ import javax.inject.Inject
  * CC Target: ≤ 6 per function
  */
 class XtreamCategoryFetcher @Inject constructor(
-    private val httpClient: HttpClient,
+    private val okHttpClient: OkHttpClient,
     private val json: Json,
     private val urlBuilder: XtreamUrlBuilder,
     private val io: CoroutineDispatcher = Dispatchers.IO,
@@ -102,13 +102,19 @@ class XtreamCategoryFetcher @Inject constructor(
     }
 
     /**
-     * Internal helper to fetch HTTP response using the generic HttpClient.
+     * Internal helper to fetch HTTP response using OkHttp directly.
      *
      * @param url The URL to fetch
      * @return Response body as string, or null if request failed
      */
     private suspend fun fetchRaw(url: String): String? {
-        val result = httpClient.fetch(url, RequestConfig(cache = CacheConfig.DEFAULT))
-        return result.getOrNull()
+        return try {
+            val request = Request.Builder().url(url).build()
+            okHttpClient.newCall(request).execute().use { response ->
+                if (!response.isSuccessful) null else response.body?.string()
+            }
+        } catch (_: IOException) {
+            null
+        }
     }
 }

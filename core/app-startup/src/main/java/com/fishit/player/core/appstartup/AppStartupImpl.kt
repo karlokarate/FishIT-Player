@@ -1,6 +1,5 @@
 package com.fishit.player.core.appstartup
 
-import com.fishit.player.infra.http.DefaultHttpClient
 import com.fishit.player.infra.logging.UnifiedLog
 import com.fishit.player.infra.transport.telegram.TelegramClient
 import com.fishit.player.infra.transport.telegram.TelegramClientFactory
@@ -118,28 +117,27 @@ class AppStartupImpl(
 
             // Create shared dependencies for handler-based architecture (Sprint 5 refactor)
             val json = Json { ignoreUnknownKeys = true }
-            val httpClient = DefaultHttpClient(okHttpClient)
             val urlBuilder = XtreamUrlBuilder()
             val parallelism = XtreamParallelism(DEFAULT_PARALLELISM)
             val discovery = XtreamDiscovery(okHttpClient, json, parallelism, Dispatchers.IO)
             val categoryFallback = CategoryFallbackStrategy()
 
-            // Create handlers (Sprint 5 handler refactoring)
+            // Create handlers — all use the same OkHttpClient (SSOT)
             val connectionManager = XtreamConnectionManager(
-                httpClient = httpClient,
+                okHttpClient = okHttpClient,
                 json = json,
                 urlBuilder = urlBuilder,
                 discovery = discovery,
                 io = Dispatchers.IO,
             )
             val categoryFetcher = XtreamCategoryFetcher(
-                httpClient = httpClient,
+                okHttpClient = okHttpClient,
                 json = json,
                 urlBuilder = urlBuilder,
                 io = Dispatchers.IO,
             )
             val streamFetcher = XtreamStreamFetcher(
-                httpClient = httpClient,
+                okHttpClient = okHttpClient,
                 json = json,
                 urlBuilder = urlBuilder,
                 categoryFallbackStrategy = categoryFallback,

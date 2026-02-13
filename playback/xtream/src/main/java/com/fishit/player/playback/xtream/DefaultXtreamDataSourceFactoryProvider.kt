@@ -1,29 +1,42 @@
 package com.fishit.player.playback.xtream
 
-import android.content.Context
 import androidx.media3.datasource.DataSource
-import dagger.hilt.android.qualifiers.ApplicationContext
+import androidx.media3.datasource.okhttp.OkHttpDataSource
+import com.fishit.player.infra.transport.xtream.di.XtreamHttpClient
+import okhttp3.OkHttpClient
 import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
  * Default implementation of [XtreamDataSourceFactoryProvider].
  *
- * Creates [XtreamHttpDataSourceFactory] instances with per-request configuration.
- * This indirection maintains player layer source-agnosticism by hiding the concrete
- * Xtream implementation behind an interface.
+ * Creates [OkHttpDataSource.Factory] instances configured for Xtream playback.
+ * Uses the shared [XtreamHttpClient] OkHttpClient (SSOT for all Xtream HTTP),
+ * with `followSslRedirects=true` override for CDN redirects (HTTP→HTTPS).
  *
- * **Compile-time Gating (Issue #564):**
- * Debug/release behavior is handled by [XtreamOkHttpClientProviderImpl] in debug/ and release/
- * source sets. No runtime flag needed.
+ * **SSOT:** All Xtream HTTP goes through the same OkHttpClient configured in
+ * XtreamTransportModule (headers, Chucker, parallelism, timeouts).
  */
 @Singleton
 class DefaultXtreamDataSourceFactoryProvider
     @Inject
     constructor(
-        @ApplicationContext private val context: Context,
+        @XtreamHttpClient private val xtreamOkHttpClient: OkHttpClient,
     ) : XtreamDataSourceFactoryProvider {
+
+        /**
+         * Playback client derived from the shared Xtream client.
+         * Overrides `followSslRedirects=true` because CDNs commonly redirect HTTP→HTTPS.
+         * Shares the connection pool with the transport client.
+         */
+        private val playbackClient: OkHttpClient by lazy {
+            xtreamOkHttpClient.newBuilder()
+                .followSslRedirects(true)
+                .build()
+        }
+
         override fun create(
             headers: Map<String, String>,
-        ): DataSource.Factory = XtreamHttpDataSourceFactory(context, headers)
+        ): DataSource.Factory = OkHttpDataSource.Factory(playbackClient)
+            .setDefaultRequestProperties(headers)
     }

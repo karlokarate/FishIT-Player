@@ -1,9 +1,6 @@
 package com.fishit.player.infra.transport.xtream.client
 
 import android.os.SystemClock
-import com.fishit.player.infra.http.HttpClient
-import com.fishit.player.infra.http.RequestConfig
-import com.fishit.player.infra.http.CacheConfig
 import com.fishit.player.infra.logging.UnifiedLog
 import com.fishit.player.infra.transport.xtream.XtreamApiConfig
 import com.fishit.player.infra.transport.xtream.XtreamAuthState
@@ -23,6 +20,9 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import java.io.IOException
 import javax.inject.Inject
 
 /**
@@ -38,7 +38,7 @@ import javax.inject.Inject
  * CC Target: ≤ 10 per function
  */
 class XtreamConnectionManager @Inject constructor(
-    private val httpClient: HttpClient,
+    private val okHttpClient: OkHttpClient,
     private val json: Json,
     private val urlBuilder: XtreamUrlBuilder,
     private val discovery: XtreamDiscovery,
@@ -368,16 +368,22 @@ class XtreamConnectionManager @Inject constructor(
     }
 
     /**
-     * Internal helper to fetch HTTP response using the generic HttpClient.
+     * Internal helper to fetch HTTP response using OkHttp directly.
      *
      * @param url The URL to fetch
-     * @param isEpg Whether this is an EPG request (shorter cache TTL)
+     * @param isEpg Whether this is an EPG request (currently unused, reserved for future caching)
      * @return Response body as string, or null if request failed
      */
+    @Suppress("UNUSED_PARAMETER")
     private suspend fun fetchRaw(url: String, isEpg: Boolean): String? {
-        val cache = if (isEpg) CacheConfig.EPG else CacheConfig.DEFAULT
-        val result = httpClient.fetch(url, RequestConfig(cache = cache))
-        return result.getOrNull()
+        return try {
+            val request = Request.Builder().url(url).build()
+            okHttpClient.newCall(request).execute().use { response ->
+                if (!response.isSuccessful) null else response.body?.string()
+            }
+        } catch (_: IOException) {
+            null
+        }
     }
 
     // =========================================================================

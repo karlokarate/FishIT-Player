@@ -21,7 +21,7 @@ import javax.inject.Singleton
  * - [XtreamStreamFetcher]: Stream fetching, EPG, series/VOD info
  *
  * **Migration Notes**:
- * - All HTTP operations now in handlers (using infra/http-client)
+ * - All HTTP operations now in handlers (using @XtreamHttpClient OkHttpClient)
  * - All JSON parsing now in handlers
  * - All URL building now in XtreamUrlBuilder (DI-injected in ConnectionManager)
  * - State management delegated to ConnectionManager

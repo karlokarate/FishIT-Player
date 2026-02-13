@@ -1,9 +1,6 @@
 package com.fishit.player.infra.transport.xtream.client
 
 import android.os.SystemClock
-import com.fishit.player.infra.http.HttpClient
-import com.fishit.player.infra.http.RequestConfig
-import com.fishit.player.infra.http.CacheConfig
 import com.fishit.player.infra.logging.UnifiedLog
 import com.fishit.player.infra.transport.xtream.XtreamContentType
 import com.fishit.player.infra.transport.xtream.XtreamEpgProgramme
@@ -12,6 +9,7 @@ import com.fishit.player.infra.transport.xtream.XtreamLiveStream
 import com.fishit.player.infra.transport.xtream.XtreamSearchResults
 import com.fishit.player.infra.transport.xtream.XtreamSeriesInfo
 import com.fishit.player.infra.transport.xtream.XtreamSeriesStream
+import com.fishit.player.infra.transport.xtream.XtreamTransportConfig
 import com.fishit.player.infra.transport.xtream.XtreamUrlBuilder
 import com.fishit.player.infra.transport.xtream.XtreamVodInfo
 import com.fishit.player.infra.transport.xtream.XtreamVodStream
@@ -28,6 +26,10 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import java.io.IOException
+import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 
 /**
@@ -43,7 +45,7 @@ import javax.inject.Inject
  * CC Target: ≤ 10 per function
  */
 class XtreamStreamFetcher @Inject constructor(
-    private val httpClient: HttpClient,
+    private val okHttpClient: OkHttpClient,
     private val json: Json,
     private val urlBuilder: XtreamUrlBuilder,
     private val categoryFallbackStrategy: CategoryFallbackStrategy,
@@ -53,6 +55,19 @@ class XtreamStreamFetcher @Inject constructor(
         private const val TAG = "XtreamStreamFetcher"
         private val VOD_ALIAS_CANDIDATES = listOf("movie", "vod", "movies") // "movie" first - most common
         private const val DEFAULT_VOD_KIND = "movie" // Most Xtream servers use /movie/ path
+    }
+
+    /**
+     * OkHttpClient with extended timeouts for streaming large JSON arrays.
+     * Shares the connection pool with the base client.
+     * Uses STREAMING_READ_TIMEOUT (120s) and STREAMING_CALL_TIMEOUT (180s) from
+     * XtreamTransportConfig because full-catalog responses can take >30s.
+     */
+    private val streamingClient: OkHttpClient by lazy {
+        okHttpClient.newBuilder()
+            .readTimeout(XtreamTransportConfig.STREAMING_READ_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+            .callTimeout(XtreamTransportConfig.STREAMING_CALL_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+            .build()
     }
 
     /**
@@ -510,32 +525,52 @@ class XtreamStreamFetcher @Inject constructor(
     }
 
     /**
-     * Internal helper to fetch HTTP response using the generic HttpClient.
+     * Internal helper to fetch HTTP response using OkHttp directly.
      *
      * @param url The URL to fetch
      * @return Response body as string, or null if request failed
      */
     private suspend fun fetchRaw(url: String): String? {
-        val result = httpClient.fetch(url, RequestConfig(cache = CacheConfig.DEFAULT))
-        return result.getOrNull()
+        return try {
+            val request = Request.Builder().url(url).build()
+            okHttpClient.newCall(request).execute().use { response ->
+                if (!response.isSuccessful) null else response.body?.string()
+            }
+        } catch (_: IOException) {
+            null
+        }
     }
 
     /**
      * Internal helper to fetch HTTP response as stream.
      *
+     * Uses [streamingClient] with extended timeouts (120s read, 180s call) because
+     * full-catalog JSON responses can take >30s for large providers.
+     *
+     * Note: Caller is responsible for closing the returned InputStream.
+     *
      * @param url The URL to fetch
      * @return StreamResponse with input stream
      */
     private suspend fun fetchRawAsStream(url: String): StreamResponse {
-        val result = httpClient.fetchStream(url, RequestConfig(cache = CacheConfig.DISABLED))
-        return result.fold(
-            onSuccess = { inputStream ->
-                StreamResponse(isSuccessful = true, inputStream = inputStream)
-            },
-            onFailure = {
+        return try {
+            val request = Request.Builder().url(url).build()
+            val response = streamingClient.newCall(request).execute()
+            if (!response.isSuccessful) {
+                response.close()
                 StreamResponse(isSuccessful = false, inputStream = null)
+            } else {
+                val body = response.body
+                if (body == null) {
+                    response.close()
+                    StreamResponse(isSuccessful = false, inputStream = null)
+                } else {
+                    StreamResponse(isSuccessful = true, inputStream = body.byteStream())
+                }
             }
-        )
+        } catch (_: IOException) {
+            StreamResponse(isSuccessful = false, inputStream = null)
+        }
     }
 
     // =========================================================================

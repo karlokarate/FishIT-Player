@@ -5,9 +5,6 @@ plugins {
     id("com.google.dagger.hilt.android")
 }
 
-// ⭐ COMPILE-TIME GATING (Issue #564): Read Gradle properties for conditional dependencies
-val includeChucker = project.findProperty("includeChucker")?.toString()?.toBoolean() ?: true
-
 android {
     namespace = "com.fishit.player.playback.xtream"
     compileSdk = 35
@@ -45,17 +42,8 @@ dependencies {
     implementation("androidx.media3:media3-datasource:$media3Version")
     implementation("androidx.media3:media3-datasource-okhttp:$media3Version")
 
-    // OkHttp for reliable redirect handling
+    // OkHttp for DataSource (Chucker is handled by shared @XtreamHttpClient in transport-xtream)
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
-
-    // ========== COMPILE-TIME GATING: Chucker (Issue #564) ==========
-    // Chucker is ONLY included when -PincludeChucker=true (default).
-    // When false, the library is NOT in the APK at all - no auto-init, no overhead.
-    // See: src/debug/ and src/release/ source sets for implementations.
-    if (includeChucker) {
-        debugImplementation(libs.chucker)
-    }
-    // NOTE: Release build uses source-set stubs instead of library (Issue #564)
 
     // Hilt DI
     implementation("com.google.dagger:hilt-android:2.56.2")

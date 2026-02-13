@@ -2,39 +2,35 @@ package com.fishit.player.infra.transport.xtream
 
 import android.content.Context
 import com.fishit.player.core.device.DeviceClassProvider
+import com.fishit.player.infra.networking.PlatformHttpConfig
 
 /**
- * XtreamTransportConfig – Zentrale Transport-Konfiguration gemäß Premium Contract.
+ * XtreamTransportConfig – Xtream-specific transport configuration (Premium Contract).
  *
- * Diese Klasse ist die SSOT (Single Source of Truth) für:
- * - HTTP Timeouts (Section 3)
- * - User-Agent und Headers (Section 4)
- * - Device-Class-basierte Parallelität (Section 5)
+ * Contains ONLY values that are **Xtream-specific** and differ from platform defaults.
+ * Base timeouts, User-Agent, and connection pool are provided by [@PlatformHttpClient].
  *
- * **Device Detection:**
- * Uses DeviceClassProvider from core:device-api (proper PLATIN architecture).
- * Device detection implementation is in infra:device-android.
+ * This class is the SSOT for:
+ * - callTimeout (Section 3 — Xtream-specific hard stop)
+ * - Streaming Timeouts (extended for large catalog downloads)
+ * - Accept header (JSON for Xtream API)
+ * - Device-class parallelism (Section 5)
  *
+ * **Parent–Child HTTP Architecture:**
+ * Base connect/read/write timeouts and User-Agent come from [PlatformHttpConfig].
+ * This config adds Xtream overrides applied via `OkHttpClient.newBuilder()`.
+ *
+ * @see PlatformHttpConfig for inherited platform defaults
  * @see <a href="contracts/XTREAM_SCAN_PREMIUM_CONTRACT_V1.md">Premium Contract</a>
  * @see DeviceClassProvider for device detection interface
  */
 object XtreamTransportConfig {
     // =========================================================================
-    // HTTP Timeouts (Premium Contract Section 3)
-    // "These values MUST be configured: connect/read/write/call jeweils 30s"
-    // Rationale: Script uses --max-time 30
+    // Xtream-Specific Timeouts (Premium Contract Section 3)
+    // Base connect/read/write (30s each) inherited from PlatformHttpConfig
     // =========================================================================
 
-    /** Connect timeout in seconds. */
-    const val CONNECT_TIMEOUT_SECONDS: Long = 30L
-
-    /** Read timeout in seconds. */
-    const val READ_TIMEOUT_SECONDS: Long = 30L
-
-    /** Write timeout in seconds. */
-    const val WRITE_TIMEOUT_SECONDS: Long = 30L
-
-    /** Call timeout in seconds (mandatory, hard stop semantics). */
+    /** Call timeout in seconds (mandatory, hard stop semantics). Xtream-specific. */
     const val CALL_TIMEOUT_SECONDS: Long = 30L
 
     // =========================================================================
@@ -44,7 +40,7 @@ object XtreamTransportConfig {
 
     /**
      * Extended read timeout for streaming large JSON arrays (VOD, Live, Series catalogs).
-     * Regular API calls use [READ_TIMEOUT_SECONDS] (30s).
+     * Regular API calls use platform default (30s).
      * Streaming calls use this value (120s) to handle 20k+ item responses.
      *
      * Note: The call timeout is set per-request using OkHttpClient.newBuilder().
@@ -59,13 +55,16 @@ object XtreamTransportConfig {
 
     // =========================================================================
     // Headers (Premium Contract Section 4)
-    // "User-Agent: FishIT-Player/2.x (Android) (mandatory)"
+    // User-Agent now lives in PlatformHttpConfig (app-wide SSOT)
     // =========================================================================
 
-    /** Premium User-Agent string. */
-    const val USER_AGENT: String = "FishIT-Player/2.x (Android)"
+    /**
+     * Premium User-Agent string.
+     * Delegates to [PlatformHttpConfig.USER_AGENT] — the app-wide SSOT.
+     */
+    const val USER_AGENT: String = PlatformHttpConfig.USER_AGENT
 
-    /** Accept header for JSON responses. */
+    /** Accept header for JSON responses. Xtream-specific. */
     const val ACCEPT_JSON: String = "application/json"
 
     /** Accept-Encoding header for compressed responses. */
