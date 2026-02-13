@@ -525,3 +525,16 @@
 {"action":"read","scopeId":"xtream-transport-streaming","status":"ACKNOWLEDGED","timestamp":"2026-02-13T10:24:56.526Z"}
 {"action":"read","scopeId":"xtream-pipeline-mapping","status":"ACKNOWLEDGED","timestamp":"2026-02-13T10:24:56.526Z"}
 {"action":"check","filePath":"infra/transport-xtream/src/main/java/com/fishit/player/infra/transport/xtream/di/XtreamTransportModule.kt","status":"ALLOWED","agentMode":"interactive","scopeId":"xtream-transport-core","timestamp":"2026-02-13T10:25:01.090Z"}
+{"action":"session_start","status":"STARTED","agentMode":"interactive","details":"session-1770982375573","timestamp":"2026-02-13T11:32:55.573Z"}
+{"action":"check","filePath":"player/internal/src/main/java/com/fishit/player/internal/session/InternalPlayerSession.kt","status":"UNTRACKED","agentMode":"interactive","timestamp":"2026-02-13T11:33:07.769Z"}
+{"action":"check","filePath":"playback/xtream/src/main/java/com/fishit/player/playback/xtream/XtreamPlaybackSourceFactoryImpl.kt","status":"ALLOWED","agentMode":"interactive","scopeId":"xtream-playback","timestamp":"2026-02-13T11:33:13.449Z"}
+{"action":"check","filePath":"pipeline/xtream/src/main/java/com/fishit/player/pipeline/xtream/mapper/XtreamRawMetadataExtensions.kt","status":"RELATED_UNREAD","agentMode":"interactive","scopeId":"xtream-pipeline-mapping","timestamp":"2026-02-13T11:33:19.122Z"}
+{"action":"read","scopeId":"xtream-pipeline-mapping","status":"ACKNOWLEDGED","timestamp":"2026-02-13T11:33:24.665Z"}
+{"action":"read","scopeId":"xtream-pipeline-catalog","status":"ACKNOWLEDGED","timestamp":"2026-02-13T11:33:29.773Z"}
+{"action":"check","filePath":"pipeline/xtream/src/main/java/com/fishit/player/pipeline/xtream/mapper/XtreamRawMetadataExtensions.kt","status":"ALLOWED","agentMode":"interactive","scopeId":"xtream-pipeline-mapping","timestamp":"2026-02-13T11:33:34.851Z"}
+{"action":"check","filePath":"pipeline/telegram/src/main/java/com/fishit/player/pipeline/telegram/model/TelegramRawMetadataExtensions.kt","status":"BLOCKED","agentMode":"interactive","scopeId":"telegram-pipeline","timestamp":"2026-02-13T11:33:40.352Z"}
+{"action":"read","scopeId":"telegram-pipeline","status":"ACKNOWLEDGED","timestamp":"2026-02-13T11:33:45.822Z"}
+{"action":"read","scopeId":"telegram-transport","status":"ACKNOWLEDGED","timestamp":"2026-02-13T11:33:51.030Z"}
+{"action":"read","scopeId":"telegram-playback","status":"ACKNOWLEDGED","timestamp":"2026-02-13T11:33:55.650Z"}
+{"action":"check","filePath":"pipeline/telegram/src/main/java/com/fishit/player/pipeline/telegram/model/TelegramRawMetadataExtensions.kt","status":"ALLOWED","agentMode":"interactive","scopeId":"telegram-pipeline","timestamp":"2026-02-13T11:34:00.622Z"}
+{"action":"check","filePath":"core/model/src/main/java/com/fishit/player/core/model/PlaybackHintKeys.kt","status":"UNTRACKED","agentMode":"interactive","timestamp":"2026-02-13T11:34:05.476Z"}

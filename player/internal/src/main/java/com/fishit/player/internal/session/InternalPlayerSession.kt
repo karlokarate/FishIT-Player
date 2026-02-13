@@ -76,6 +76,30 @@ class InternalPlayerSession(
 ) {
     companion object {
         private const val TAG = "InternalPlayerSession"
+
+        /**
+         * Adaptive streaming MIME types that MUST be forwarded to ExoPlayer's MediaItem
+         * to route to the correct MediaSource (HlsMediaSource, DashMediaSource, etc.).
+         *
+         * Progressive MIME types (video/mp4, video/x-matroska, etc.) are NOT included
+         * because they map to CONTENT_TYPE_OTHER → ProgressiveMediaSource, which uses
+         * content-sniffing via DefaultExtractorsFactory regardless of the MIME type.
+         * Setting them has zero effect and can cause confusion.
+         */
+        private val ADAPTIVE_MIME_TYPES = setOf(
+            "application/x-mpegurl",       // HLS
+            "application/vnd.apple.mpegurl", // HLS alt
+            "application/dash+xml",         // DASH
+            "application/vnd.ms-sstr+xml",  // Smooth Streaming
+        )
+
+        /**
+         * Check if a MIME type requires explicit routing to a dedicated MediaSource.
+         *
+         * @return true for HLS, DASH, Smooth Streaming; false for all progressive formats
+         */
+        private fun isAdaptiveStreamingMimeType(mimeType: String): Boolean =
+            mimeType.lowercase() in ADAPTIVE_MIME_TYPES
     }
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
@@ -231,11 +255,19 @@ class InternalPlayerSession(
                 }
 
                 // Build MediaItem
+                // Sniffing-First Policy: Only set MIME type for adaptive streaming (HLS/DASH)
+                // to route to the correct MediaSource. For progressive formats, ExoPlayer's
+                // DefaultExtractorsFactory sniffs the container natively via magic bytes —
+                // this is more reliable than extension-based or MIME-based guessing.
                 val mediaItemBuilder = MediaItem.Builder().setUri(source.uri)
 
-                source.mimeType?.let {
-                    mediaItemBuilder.setMimeType(it)
-                    UnifiedLog.d(TAG) { "Set MediaItem MIME type: $it" }
+                source.mimeType?.let { mime ->
+                    if (isAdaptiveStreamingMimeType(mime)) {
+                        mediaItemBuilder.setMimeType(mime)
+                        UnifiedLog.d(TAG) { "Set adaptive MIME type: $mime (routes to dedicated MediaSource)" }
+                    } else {
+                        UnifiedLog.d(TAG) { "Ignoring progressive MIME type: $mime (ExoPlayer will sniff natively)" }
+                    }
                 }
 
                 val mediaItem = mediaItemBuilder.build()

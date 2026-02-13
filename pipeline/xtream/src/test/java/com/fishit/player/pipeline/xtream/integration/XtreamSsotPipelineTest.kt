@@ -208,7 +208,6 @@ class XtreamSsotPipelineTest {
         assertEquals(PlaybackHintKeys.Xtream.CONTENT_VOD, hints[PlaybackHintKeys.Xtream.CONTENT_TYPE])
         assertEquals("400", hints[PlaybackHintKeys.Xtream.VOD_ID])
         assertEquals("mkv", hints[PlaybackHintKeys.Xtream.CONTAINER_EXT])
-        assertEquals("5", hints[PlaybackHintKeys.Xtream.CATEGORY_ID])
         assertEquals("movie", hints[PlaybackHintKeys.Xtream.VOD_KIND])
     }
 
@@ -1036,7 +1035,6 @@ class XtreamSsotPipelineTest {
         assertEquals("xtream:vod:9999", raw.sourceId)
         // playbackHints
         assertEquals("mkv", raw.playbackHints[PlaybackHintKeys.Xtream.CONTAINER_EXT])
-        assertEquals("3", raw.playbackHints[PlaybackHintKeys.Xtream.CATEGORY_ID])
         assertEquals("movie", raw.playbackHints[PlaybackHintKeys.Xtream.VOD_KIND])
     }
 }

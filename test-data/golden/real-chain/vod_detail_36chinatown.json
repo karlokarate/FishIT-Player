@@ -215,7 +215,6 @@
       "video.height": "816",
       "video.width": "1920",
       "xtream.bitrate": "2470",
-      "xtream.categoryId": "223",
       "xtream.containerExtension": "mkv",
       "xtream.contentType": "vod",
       "xtream.vodId": "399548"
@@ -307,10 +306,10 @@
       "isDefault": true,
       "container": "mkv",
       "durationMs": 7831000,
-      "qualityHeight": null,
-      "bitrateKbps": null,
-      "videoCodec": null,
-      "audioCodec": null,
+      "qualityHeight": 816,
+      "bitrateKbps": 2470,
+      "videoCodec": "hevc",
+      "audioCodec": "ac3",
       "audioLang": null,
       "playbackHints": {
         "audio.channels": "2",
@@ -319,7 +318,6 @@
         "video.height": "816",
         "video.width": "1920",
         "xtream.bitrate": "2470",
-        "xtream.categoryId": "223",
         "xtream.containerExtension": "mkv",
         "xtream.contentType": "vod",
         "xtream.vodId": "399548"

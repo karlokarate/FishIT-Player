@@ -94,16 +94,6 @@ object PlaybackHintKeys {
         const val CONTAINER_EXT = "xtream.containerExtension"
 
         /**
-         * Allowed output formats from server (comma-separated, e.g., "m3u8,ts").
-         *
-         * Source: XtreamServerInfo.userInfo.allowedOutputFormats from Xtream API. Used by
-         * XtreamPlaybackSourceFactory to select the correct stream format.
-         *
-         * Policy priority: m3u8 > ts > mp4 (unless server restricts)
-         */
-        const val ALLOWED_OUTPUT_FORMATS = "xtream.allowedOutputFormats"
-
-        /**
          * Video bitrate in kbps from API ffprobe data.
          *
          * Useful for quality selection in player and UI display.
@@ -143,13 +133,6 @@ object PlaybackHintKeys {
         const val LIVE_KIND = "xtream.liveKind"
 
         /**
-         * Category ID from Xtream API (e.g., VOD category, live category).
-         *
-         * Used for category-based filtering and grouping.
-         */
-        const val CATEGORY_ID = "xtream.categoryId"
-
-        /**
          * Episode-specific TMDB ID (supplementary to series-level TmdbRef).
          *
          * Used for optional direct episode metadata lookup.
@@ -183,12 +166,6 @@ object PlaybackHintKeys {
         /** MIME type hint (e.g., "video/mp4") */
         const val MIME_TYPE = "telegram.mimeType"
 
-        /** File size in bytes (for download progress estimation) */
-        const val FILE_SIZE = "telegram.fileSize"
-
-        /** Original file name from Telegram media */
-        const val FILE_NAME = "telegram.fileName"
-
         /**
          * Legacy session-local file ID.
          *
@@ -196,24 +173,5 @@ object PlaybackHintKeys {
          */
         const val FILE_ID = "telegram.fileId"
 
-        /**
-         * Playback attempt mode (SSOT for Telegram playback strategy).
-         *
-         * Values:
-         * - [ATTEMPT_MODE_DIRECT_FIRST]: Try playback directly without blocking on MP4 moov checks
-         * - [ATTEMPT_MODE_BUFFERED_5MB]: Wait for 5MB download before starting playback
-         *
-         * Strategy:
-         * 1. First attempt uses DIRECT_FIRST for fastest possible start
-         * 2. On player error during DIRECT_FIRST, retry with BUFFERED_5MB
-         * 3. BUFFERED_5MB provides deterministic fallback with reasonable latency
-         */
-        const val PLAYBACK_ATTEMPT_MODE = "telegram.playbackAttemptMode"
-
-        /** Direct playback attempt (no buffering wait, fastest start) */
-        const val ATTEMPT_MODE_DIRECT_FIRST = "DIRECT_FIRST"
-
-        /** Buffered playback attempt (wait for 5MB before start) */
-        const val ATTEMPT_MODE_BUFFERED_5MB = "BUFFERED_5MB"
     }
 }

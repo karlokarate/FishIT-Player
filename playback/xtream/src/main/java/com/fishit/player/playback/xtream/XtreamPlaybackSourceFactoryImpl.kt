@@ -89,84 +89,9 @@ class XtreamPlaybackSourceFactoryImpl
             const val CONTENT_TYPE_VOD = "vod"
             const val CONTENT_TYPE_SERIES = "series"
 
-            // Output format priority (policy-driven from allowed_output_formats)
-            // Priority: m3u8 > ts > mp4 (if explicitly allowed by server)
-            private val FORMAT_PRIORITY = listOf("m3u8", "ts", "mp4")
-
             // TRUE streaming formats (safe to accept from containerExtension)
             // Note: mp4 is NOT in this set - it's a container format, not streaming output
             private val STREAMING_FORMATS = setOf("m3u8", "ts")
-
-            /**
-             * Select the best output format based on server-allowed formats (SSOT) and HLS capability.
-             *
-             * Policy priority: m3u8 > ts > mp4
-             * - m3u8 (HLS): Best for adaptive streaming, seeks, and compatibility
-             * - ts (MPEG-TS): Good fallback, works on most players
-             * - mp4: Used if explicitly in allowed_output_formats (provider-specific)
-             *
-             * **HLS Capability Fallback:**
-             * - If HLS module is NOT present at runtime, automatically select ts over m3u8
-             * - If only m3u8 is allowed and HLS is unavailable, fail fast with actionable error
-             * - This ensures playback works across all device configurations
-             *
-             * This is POLICY-DRIVEN: allowed_output_formats is the Single Source of Truth. We select
-             * the best format from what the server explicitly allows.
-             *
-             * @param allowedFormats Set of formats the server supports (e.g., {"m3u8", "ts", "mp4"})
-             * @param hlsAvailable Whether HLS module is present in the build (default: detect at
-             * runtime)
-             * @return The best format to use
-             * @throws PlaybackSourceException if no supported format is available
-             */
-            internal fun selectXtreamOutputExt(
-                allowedFormats: Set<String>,
-                hlsAvailable: Boolean = HlsCapabilityDetector.isHlsAvailable(),
-            ): String {
-                if (allowedFormats.isEmpty()) {
-                    throw PlaybackSourceException(
-                        message =
-                            "No output formats specified by server (allowed_output_formats is empty)",
-                        sourceType = SourceType.XTREAM,
-                    )
-                }
-                val normalized = allowedFormats.map { it.lowercase().trim() }.toSet()
-
-                // HLS capability-aware selection
-                if (!hlsAvailable && "m3u8" in normalized) {
-                    // HLS module not present - try to fallback to ts
-                    if ("ts" in normalized) {
-                        UnifiedLog.i(TAG) {
-                            "HLS module unavailable, falling back from m3u8 to ts (allowed: ${allowedFormats.joinToString()})"
-                        }
-                        return "ts"
-                    }
-                    // Only m3u8 is allowed but HLS unavailable - fail fast with actionable error
-                    throw PlaybackSourceException(
-                        message =
-                            "HLS (m3u8) required but media3-exoplayer-hls module is not available in this build. " +
-                                "Server only allows: ${allowedFormats.joinToString()}. " +
-                                "Please ensure the HLS dependency is included or contact the provider for TS format support.",
-                        sourceType = SourceType.XTREAM,
-                    )
-                }
-
-                // Policy-driven selection: try each format in priority order
-                val selected = FORMAT_PRIORITY.firstOrNull { it in normalized }
-
-                if (selected != null) {
-                    return selected
-                }
-
-                // No supported format found in allowed list
-                throw PlaybackSourceException(
-                    message =
-                        "No supported output format in server's allowed_output_formats. " +
-                            "Server allows: ${allowedFormats.joinToString()}, " +
-                            "we support (priority): ${FORMAT_PRIORITY.joinToString()}",
-                    sourceType = SourceType.XTREAM,
-                )
-            }
         }
 
         override fun supports(sourceType: SourceType): Boolean = sourceType == SourceType.XTREAM
@@ -412,19 +337,13 @@ class XtreamPlaybackSourceFactoryImpl
          * **Content-type aware extension resolution:**
          *
          * **For LIVE streams:**
-         * - Use streaming formats (ts > m3u8) based on allowed_output_formats
-         * - allowed_output_formats is SSOT for Live
+         * - Use containerExtension if it's a streaming format (m3u8/ts)
+         * - Default to ts (most reliable for IPTV)
          *
          * **For VOD/SERIES (file-based content):**
          * - Use container_extension as SSOT (mkv, mp4, avi, etc.)
          * - This is the actual file format on the server!
-         * - allowed_output_formats is NOT used for VOD/Series
-         * - Fallback to mp4 if no container_extension provided
-         *
-         * **Why this matters:**
-         * - VOD/Series files are often mkv/mp4 containers on disk
-         * - Forcing m3u8/ts on these fails with many providers
-         * - Live streams need adaptive formats (m3u8/ts)
+         * - Fallback to mp4 (VOD) or mkv (Series) if not provided
          *
          * @param context The playback context
          * @return The resolved extension (mkv, mp4, ts, m3u8, etc.)
@@ -442,68 +361,24 @@ class XtreamPlaybackSourceFactoryImpl
                 )?.lowercase()
                     ?.trim()
 
-            // Enhanced logging to trace containerExtension value
             UnifiedLog.d(TAG) {
-                "resolveOutputExtension: contentType=$contentType, containerExt=$containerExt, " +
-                    "hasNewKey=${context.extras.containsKey(PlaybackHintKeys.Xtream.CONTAINER_EXT)}, " +
-                    "hasLegacyKey=${context.extras.containsKey(EXTRA_CONTAINER_EXT)}"
+                "resolveOutputExtension: contentType=$contentType, containerExt=$containerExt"
             }
 
-            // Get allowed formats from server (if available)
-            val allowedFormatsRaw = context.extras[PlaybackHintKeys.Xtream.ALLOWED_OUTPUT_FORMATS]
-            val allowedFormats =
-                if (!allowedFormatsRaw.isNullOrBlank()) {
-                    allowedFormatsRaw.split(",").map { it.trim().lowercase() }.toSet()
-                } else {
-                    emptySet()
-                }
-
             return when (contentType) {
-                CONTENT_TYPE_LIVE -> {
-                    // LIVE: Always use streaming format (ts preferred for IPTV)
-                    resolveLiveExtension(allowedFormats, containerExt)
-                }
-                CONTENT_TYPE_VOD, CONTENT_TYPE_SERIES -> {
-                    // VOD/SERIES: PREFER containerExtension (the actual file!)
-                    resolveFileExtension(containerExt, allowedFormats, contentType)
-                }
-                else -> {
-                    // Unknown: fallback to VOD behavior
-                    resolveFileExtension(containerExt, allowedFormats, contentType)
-                }
+                CONTENT_TYPE_LIVE -> resolveLiveExtension(containerExt)
+                CONTENT_TYPE_VOD, CONTENT_TYPE_SERIES ->
+                    resolveFileExtension(containerExt, contentType)
+                else -> resolveFileExtension(containerExt, contentType)
             }
         }
 
         /**
          * Resolve extension for LIVE streams.
          *
-         * Priority: ts > m3u8 (ts is more reliable for IPTV) Respects allowedOutputFormats if provided.
+         * Priority: containerExt (if streaming format) → ts (default, most reliable for IPTV).
          */
-        private fun resolveLiveExtension(
-            allowedFormats: Set<String>,
-            containerExt: String?,
-        ): String {
-            // If server specifies allowed formats, use policy selection
-            if (allowedFormats.isNotEmpty()) {
-                return try {
-                    val selected = selectXtreamOutputExt(allowedFormats)
-                    UnifiedLog.d(TAG) {
-                        "LIVE: Policy-selected extension: $selected from allowed: $allowedFormats"
-                    }
-                    selected
-                } catch (e: PlaybackSourceException) {
-                    if (e.message?.contains("HLS") == true &&
-                        e.message?.contains("not available") == true
-                    ) {
-                        throw e
-                    }
-                    UnifiedLog.w(TAG) {
-                        "LIVE: Format selection failed: ${e.message}, defaulting to ts"
-                    }
-                    "ts"
-                }
-            }
-
+        private fun resolveLiveExtension(containerExt: String?): String {
             // If containerExt is a streaming format, use it
             if (containerExt != null && containerExt in STREAMING_FORMATS) {
                 UnifiedLog.d(TAG) { "LIVE: Using containerExtension: $containerExt" }
@@ -511,7 +386,7 @@ class XtreamPlaybackSourceFactoryImpl
             }
 
             // Default for LIVE: ts (more reliable for IPTV than m3u8)
-            UnifiedLog.d(TAG) { "LIVE: Defaulting to ts (no allowedFormats or containerExt)" }
+            UnifiedLog.d(TAG) { "LIVE: Defaulting to ts" }
             return "ts"
         }
 
@@ -519,22 +394,12 @@ class XtreamPlaybackSourceFactoryImpl
          * Resolve extension for file-based content (VOD/SERIES).
          *
          * **container_extension is SSOT for VOD/Series!**
+         * The actual file on the server determines the extension.
          *
-         * **For SERIES (containerExtension-first, minimal fallback):**
-         * 1. containerExtension if provided (mkv, mp4, avi, etc. - the actual file on server) → USE IT
-         * 2. If missing: fallback to mkv (consistent with transport layer)
-         * 3. No m3u8/ts forcing for series (file-based, not adaptive streams)
-         *
-         * **For VOD:**
-         * 1. containerExtension if provided → USE IT
-         * 2. Fallback to mp4 (most common)
-         *
-         * Note: allowed_output_formats is NOT used for VOD/Series (only for Live).
-         * The container_extension describes the actual file on the server, not a streaming format.
+         * Fallback: mkv (series, consistent with transport layer) or mp4 (VOD, most common).
          */
         private fun resolveFileExtension(
             containerExt: String?,
-            allowedFormats: Set<String>,
             contentType: String,
         ): String {
             // Known video container formats (files, not streams)
@@ -558,15 +423,12 @@ class XtreamPlaybackSourceFactoryImpl
 
             // Fallback when containerExtension is missing
             if (contentType == CONTENT_TYPE_SERIES) {
-                // SERIES: mkv (first fallback) - consistent with transport layer
-                // This matches DefaultXtreamApiClient.buildSeriesEpisodeUrl fallback
                 UnifiedLog.w(TAG) {
                     "$contentType: No containerExtension provided. Using fallback: mkv " +
                         "(consistent with transport layer fallback)"
                 }
                 return "mkv"
             } else {
-                // VOD: Fallback to mp4 (most common container format)
                 UnifiedLog.w(TAG) {
                     "$contentType: No containerExtension provided, defaulting to mp4."
                 }
@@ -592,20 +454,22 @@ class XtreamPlaybackSourceFactoryImpl
         /**
          * Determine MIME type from the resolved output extension.
          *
-         * This maps the actual streaming format (m3u8, ts, mp4) to its MIME type. The extension comes
-         * from resolveOutputExtension which considers HLS capability.
+         * **Sniffing-First Policy:** Only adaptive streaming formats (HLS) need an explicit MIME type
+         * to route to the correct MediaSource (HlsMediaSource). ALL progressive formats (mp4, mkv,
+         * ts, avi, flv, webm, etc.) return null — ExoPlayer's DefaultExtractorsFactory will sniff
+         * the container via magic bytes, which is more reliable than extension-based guessing.
+         *
+         * **Why:** ExoPlayer maps progressive MIME types to CONTENT_TYPE_OTHER anyway, so setting
+         * video/mp4 or video/x-matroska has zero effect on format detection. The extension in
+         * Xtream URLs tells the SERVER what format to deliver, NOT ExoPlayer what to expect.
          *
          * @param extension The resolved extension (e.g., "m3u8", "ts", "mp4")
-         * @return The MIME type or null to let ExoPlayer auto-detect
+         * @return The MIME type only for adaptive formats, null for progressive (sniffing)
          */
         private fun determineMimeTypeFromExtension(extension: String?): String? =
             when (extension?.lowercase()) {
-                "m3u8" -> "application/x-mpegURL"
-                "ts" -> "video/mp2t"
-                "mp4" -> "video/mp4"
-                "mkv" -> "video/x-matroska"
-                "avi" -> "video/x-msvideo"
-                else -> null // Let ExoPlayer detect
+                "m3u8" -> "application/x-mpegURL" // HLS: must route to HlsMediaSource
+                else -> null // Progressive: ExoPlayer sniffs via DefaultExtractorsFactory
             }
 
         /**

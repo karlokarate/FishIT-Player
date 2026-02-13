@@ -206,8 +206,6 @@ class TelegramGoldenFileTest {
         assertEquals("42", raw.playbackHints[PlaybackHintKeys.Telegram.MESSAGE_ID])
         assertEquals("BQACAgIAAxkDAAI_inception_remote", raw.playbackHints[PlaybackHintKeys.Telegram.REMOTE_ID])
         assertEquals("video/mp4", raw.playbackHints[PlaybackHintKeys.Telegram.MIME_TYPE])
-        assertEquals("2147483648", raw.playbackHints[PlaybackHintKeys.Telegram.FILE_SIZE])
-        assertEquals("Inception.2010.1080p.BluRay.x264-GROUP.mkv", raw.playbackHints[PlaybackHintKeys.Telegram.FILE_NAME])
     }
 
     @Test

@@ -92,7 +92,6 @@ fun XtreamVodItem.toRawMetadata(
         tmdbId?.let { ExternalIds(tmdb = TmdbRef(TmdbMediaType.MOVIE, it)) }
             ?: ExternalIds()
     // Build playback hints for VOD URL construction
-    // BUG FIX (Jan 2026): Include categoryId for proper category-based filtering
     // BUG FIX (Feb 2026): Include streamType as vodKind for correct URL building
     val hints =
         buildMap {
@@ -100,9 +99,6 @@ fun XtreamVodItem.toRawMetadata(
             put(PlaybackHintKeys.Xtream.VOD_ID, id.toString())
             containerExtension?.takeIf { it.isNotBlank() }?.let {
                 put(PlaybackHintKeys.Xtream.CONTAINER_EXT, it)
-            }
-            categoryId?.takeIf { it.isNotBlank() }?.let {
-                put(PlaybackHintKeys.Xtream.CATEGORY_ID, it)
             }
             // Persist streamType as vodKind for URL building (movie, vod, movies)
             streamType?.takeIf { it.isNotBlank() }?.let {
@@ -542,10 +538,6 @@ fun XtreamVodInfo.toRawMediaMetadata(
                     put(PlaybackHintKeys.Xtream.CONTAINER_EXT, it)
                 } ?: vodItem.containerExtension?.takeIf { it.isNotBlank() }?.let {
                     put(PlaybackHintKeys.Xtream.CONTAINER_EXT, it)
-                }
-                // Include categoryId for consistency with list API
-                vodItem.categoryId?.takeIf { it.isNotBlank() }?.let {
-                    put(PlaybackHintKeys.Xtream.CATEGORY_ID, it)
                 }
                 // === Video/Audio Quality from ffprobe (G8 fix) ===
                 infoBlock?.videoInfo?.codec?.takeIf { it.isNotBlank() }?.let {

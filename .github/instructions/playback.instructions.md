@@ -280,14 +280,14 @@ context.extras = mapOf(
     PlaybackHintKeys. Xtream. CONTENT_TYPE to "vod",  // live | vod | series
     PlaybackHintKeys. Xtream.VOD_ID to vodId. toString(),
     PlaybackHintKeys.Xtream. CONTAINER_EXT to "mkv",
-    PlaybackHintKeys.Xtream. ALLOWED_OUTPUT_FORMATS to "m3u8,ts",
 )
 ```
 
-**Format Selection Priority:**
-1. HLS (m3u8) - If allowed + HLS module present
-2. TS (ts) - If allowed OR server restricts
-3. MP4 (mp4) - Fallback
+**Extension Resolution (Sniffing-First Architecture):**
+- ExoPlayer uses native content sniffing for ALL progressive formats
+- MIME type is ONLY set for adaptive streaming (HLS/DASH/SS)
+- `container_extension` is SSOT for VOD/Series file extension
+- LIVE defaults to `ts` (most reliable for IPTV)
 
 **Compile-Time Gating (Issue #564):**
 - Chucker gating centralized in `infra/networking` (debug/release source sets)

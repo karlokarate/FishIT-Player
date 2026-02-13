@@ -92,12 +92,6 @@ fun TelegramMediaItem.toRawMediaMetadata(): RawMediaMetadata {
             mimeType?.takeIf { it.isNotBlank() }?.let {
                 put(PlaybackHintKeys.Telegram.MIME_TYPE, it)
             }
-            sizeBytes?.let {
-                put(PlaybackHintKeys.Telegram.FILE_SIZE, it.toString())
-            }
-            fileName?.takeIf { it.isNotBlank() }?.let {
-                put(PlaybackHintKeys.Telegram.FILE_NAME, it)
-            }
         }
 
     return RawMediaMetadata(
