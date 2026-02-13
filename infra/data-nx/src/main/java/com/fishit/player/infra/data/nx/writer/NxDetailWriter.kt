@@ -14,14 +14,24 @@
  *   NX_WorkVariant, and NX_WorkRelation entities for each episode.
  *
  * ## SSOT Contract
- * Uses the SAME key formats as [NxCatalogWriter]:
+ * Uses the SAME builders as [NxCatalogWriter] to guarantee field-level consistency:
+ * - [WorkEntityBuilder] for NX_Work construction (recognition state, normalized fields)
+ * - [VariantBuilder] for NX_WorkVariant construction (container extraction, hints)
  * - sourceKey: `src:{sourceType}:{identifier}:{sourceId}` (via [SourceKeyParser])
  * - variantKey: `{sourceKey}#original`
  * - workKey: via [NxKeyGenerator]
  *
- * ## Call Order
- * For series detail: [NxEnrichmentWriter] enriches the series NX_Work first,
- * then NxDetailWriter creates episode NX_Works.
+ * ## Playback Hints — Minimal Episode Pattern
+ * Follows the same reduced-hint approach as VOD in [NxCatalogWriter]:
+ * only Xtream identification keys required for URL construction at playback time.
+ * Technical metadata (codecs, bitrate) lives on NX_WorkVariant fields directly,
+ * NOT duplicated into playbackHints.
+ *
+ * ## tmdbId Handling
+ * Episodes are created with heuristic workKeys (no tmdbId in key).
+ * After batch creation, the caller ([NxXtreamSeriesIndexRepository.upsertEpisodes])
+ * runs [NxEnrichmentWriter] over parent + all children to set tmdbId via
+ * ALWAYS_UPDATE semantics.
  *
  * @see NxCatalogWriter for sync-time writing
  * @see NxEnrichmentWriter for detail-time enrichment of existing works
@@ -30,12 +40,16 @@
 package com.fishit.player.infra.data.nx.writer
 
 import com.fishit.player.core.detail.domain.EpisodeIndexItem
+import com.fishit.player.core.model.ExternalIds
 import com.fishit.player.core.model.ImageRef
+import com.fishit.player.core.model.MediaType
+import com.fishit.player.core.model.NormalizedMediaMetadata
 import com.fishit.player.core.model.PlaybackHintKeys
+import com.fishit.player.core.model.TmdbMediaType
+import com.fishit.player.core.model.TmdbRef
 import com.fishit.player.core.model.repository.NxWorkRelationRepository
 import com.fishit.player.core.model.repository.NxWorkRelationRepository.RelationType
 import com.fishit.player.core.model.repository.NxWorkRepository
-import com.fishit.player.core.model.repository.NxWorkRepository.WorkType
 import com.fishit.player.core.model.repository.NxWorkSourceRefRepository
 import com.fishit.player.core.model.repository.NxWorkSourceRefRepository.SourceItemKind
 import com.fishit.player.core.model.repository.NxWorkSourceRefRepository.SourceType
@@ -44,6 +58,7 @@ import com.fishit.player.core.persistence.obx.NxKeyGenerator
 import com.fishit.player.infra.data.nx.mapper.SourceKeyParser
 import com.fishit.player.infra.data.nx.mapper.base.PlaybackHintsDecoder
 import com.fishit.player.infra.data.nx.writer.builder.VariantBuilder
+import com.fishit.player.infra.data.nx.writer.builder.WorkEntityBuilder
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -61,15 +76,19 @@ data class EpisodeDetailResult(
 
 @Singleton
 class NxDetailWriter @Inject constructor(
+    private val workEntityBuilder: WorkEntityBuilder,
     private val variantBuilder: VariantBuilder,
 ) {
     /**
      * Build NX entities for a batch of episodes from the Xtream Series Detail API.
      *
-     * Uses SSOT key formats consistent with [NxCatalogWriter]:
-     * - sourceKey: `src:xtream:{identifier}:episode:series:{id}:s{S}:e{E}`
-     * - variantKey: `{sourceKey}#original`
-     * - accountKey: Inherited from parent series' source ref
+     * Uses the SAME [WorkEntityBuilder] and [VariantBuilder] as [NxCatalogWriter]
+     * to guarantee identical field population (sortTitle, titleNormalized,
+     * recognitionState, etc.).
+     *
+     * PlaybackHints are reduced to the minimal Xtream identification keys:
+     * `CONTENT_TYPE`, `SERIES_ID`, `SEASON_NUMBER`, `EPISODE_NUMBER`,
+     * `EPISODE_ID`, `CONTAINER_EXT` — matching the VOD pattern.
      *
      * @param episodes The episode data from the detail API
      * @param seriesWorkKey The workKey of the parent series NX_Work (for relations)
@@ -94,6 +113,7 @@ class NxDetailWriter @Inject constructor(
         val identifier = accountKey.removePrefix("xtream:")
 
         for (episode in episodes) {
+            val now = episode.lastUpdatedMs
             val episodeWorkKey = buildEpisodeWorkKey(episode, seriesWork)
 
             // ── sourceKey: SSOT format via SourceKeyParser ──────────────
@@ -104,25 +124,9 @@ class NxDetailWriter @Inject constructor(
                 sourceId = cleanSourceId,
             )
 
-            // ── NX_Work ────────────────────────────────────────────────
-            works += NxWorkRepository.Work(
-                workKey = episodeWorkKey,
-                type = WorkType.EPISODE,
-                displayTitle = episode.title ?: "Episode ${episode.episodeNumber}",
-                season = episode.seasonNumber,
-                episode = episode.episodeNumber,
-                year = null,
-                runtimeMs = episode.durationSecs?.let { it.toLong() * 1000 },
-                poster = ImageRef.fromString(episode.thumbUrl),
-                backdrop = ImageRef.fromString(episode.coverUrl),
-                thumbnail = ImageRef.fromString(episode.thumbnailUrl),
-                rating = episode.rating,
-                plot = episode.plot,
-                releaseDate = episode.airDate,
-                tmdbId = episode.tmdbId?.toString(),
-                createdAtMs = episode.addedTimestamp?.toLongOrNull() ?: 0L,
-                updatedAtMs = episode.lastUpdatedMs,
-            )
+            // ── NX_Work (via WorkEntityBuilder — same as NxCatalogWriter) ──
+            val normalized = toNormalizedMetadata(episode, seriesWork)
+            works += workEntityBuilder.build(normalized, episodeWorkKey, now)
 
             // ── NX_WorkSourceRef ───────────────────────────────────────
             sourceRefs += NxWorkSourceRefRepository.SourceRef(
@@ -133,7 +137,9 @@ class NxDetailWriter @Inject constructor(
                 sourceItemKind = SourceItemKind.EPISODE,
                 sourceItemKey = "series:${episode.seriesId}:s${episode.seasonNumber}:e${episode.episodeNumber}",
                 sourceTitle = episode.title,
-                lastSeenAtMs = episode.lastUpdatedMs,
+                firstSeenAtMs = now,
+                lastSeenAtMs = now,
+                sourceLastModifiedMs = episode.addedTimestamp?.toLongOrNull(),
             )
 
             // ── NX_WorkRelation (series → episode) ─────────────────────
@@ -148,47 +154,13 @@ class NxDetailWriter @Inject constructor(
                 )
             }
 
-            // ── NX_WorkVariant (via VariantBuilder SSOT) ───────────────
-            val hintsJson = episode.playbackHintsJson
-            val hasVariantData = !hintsJson.isNullOrEmpty() ||
-                episode.videoCodec != null || episode.audioCodec != null || episode.bitrateKbps != null
-
-            if (hasVariantData) {
+            // ── NX_WorkVariant (via VariantBuilder — same as NxCatalogWriter) ──
+            // Minimal playbackHints: only Xtream identification keys for URL building.
+            // Technical metadata (codecs, bitrate, resolution) goes on Variant fields
+            // via VariantBuilder, NOT duplicated in hints map.
+            val playbackHints = buildEpisodePlaybackHints(episode)
+            if (playbackHints.isNotEmpty()) {
                 val variantKey = "$sourceKey#original"
-
-                // Build COMPLETE playbackHints map with ALL metadata.
-                // VariantBuilder extracts explicit variant fields FROM this map,
-                // ensuring consistency with NxCatalogWriter's pipeline-built hints.
-                val playbackUrl = hintsJson?.let { extractPlaybackUrlFromHints(it) }?.ifEmpty { null }
-                val containerExt = hintsJson?.let { extractContainerFromHints(it) }?.ifEmpty { null }
-
-                val playbackHints = buildMap<String, String> {
-                    // ── Xtream identification (required for playback URL building) ──
-                    put(PlaybackHintKeys.Xtream.CONTENT_TYPE, PlaybackHintKeys.Xtream.CONTENT_SERIES)
-                    put(PlaybackHintKeys.Xtream.SERIES_ID, episode.seriesId.toString())
-                    put(PlaybackHintKeys.Xtream.SEASON_NUMBER, episode.seasonNumber.toString())
-                    put(PlaybackHintKeys.Xtream.EPISODE_NUMBER, episode.episodeNumber.toString())
-                    episode.episodeId?.let {
-                        put(PlaybackHintKeys.Xtream.EPISODE_ID, it.toString())
-                        put(PlaybackHintKeys.Xtream.STREAM_ID, it.toString())
-                    }
-                    // ── Playback URLs & container ──
-                    playbackUrl?.let { put(PlaybackHintKeys.Xtream.DIRECT_SOURCE, it) }
-                    containerExt?.let { put(PlaybackHintKeys.Xtream.CONTAINER_EXT, it) }
-                    // ── Technical metadata (also used by VariantBuilder) ──
-                    episode.videoHeight?.let { put(PlaybackHintKeys.VIDEO_HEIGHT, it.toString()) }
-                    episode.videoWidth?.let { put(PlaybackHintKeys.VIDEO_WIDTH, it.toString()) }
-                    episode.videoCodec?.let { put(PlaybackHintKeys.VIDEO_CODEC, it) }
-                    episode.audioCodec?.let { put(PlaybackHintKeys.AUDIO_CODEC, it) }
-                    episode.bitrateKbps?.let { put(PlaybackHintKeys.Xtream.BITRATE, it.toString()) }
-                    episode.videoAspectRatio?.let { put(PlaybackHintKeys.VIDEO_ASPECT_RATIO, it) }
-                    episode.audioChannels?.let { put(PlaybackHintKeys.AUDIO_CHANNELS, it.toString()) }
-                    episode.audioLanguage?.let { put(PlaybackHintKeys.AUDIO_LANGUAGE, it) }
-                    episode.durationString?.let { put(PlaybackHintKeys.DURATION_DISPLAY, it) }
-                    episode.customSid?.let { put(PlaybackHintKeys.Xtream.CUSTOM_SID, it) }
-                }
-
-                // Delegate to VariantBuilder — SSOT for variant entity construction
                 val durationMs = episode.durationSecs?.let { it.toLong() * 1000 }
                 variants += variantBuilder.build(
                     variantKey = variantKey,
@@ -196,7 +168,7 @@ class NxDetailWriter @Inject constructor(
                     sourceKey = sourceKey,
                     playbackHints = playbackHints,
                     durationMs = durationMs,
-                    now = episode.lastUpdatedMs,
+                    now = now,
                 )
             }
         }
@@ -207,6 +179,70 @@ class NxDetailWriter @Inject constructor(
     // =========================================================================
     // Private Helpers
     // =========================================================================
+
+    /**
+     * Convert [EpisodeIndexItem] to [NormalizedMediaMetadata] so we can
+     * delegate to [WorkEntityBuilder] — the SSOT for NX_Work field population.
+     *
+     * This ensures episodes get the same fields as catalog-created works:
+     * sortTitle, titleNormalized, recognitionState, etc.
+     *
+     * Note: tmdbId is intentionally included here. WorkEntityBuilder will set it
+     * on the NX_Work entity. The workKey remains heuristic (tmdbId not in key).
+     */
+    private fun toNormalizedMetadata(
+        episode: EpisodeIndexItem,
+        seriesWork: NxWorkRepository.Work?,
+    ): NormalizedMediaMetadata {
+        val tmdbRef = episode.tmdbId?.let { TmdbRef(TmdbMediaType.TV, it) }
+        return NormalizedMediaMetadata(
+            canonicalTitle = episode.title ?: "Episode ${episode.episodeNumber}",
+            mediaType = MediaType.SERIES_EPISODE,
+            year = seriesWork?.year,
+            season = episode.seasonNumber,
+            episode = episode.episodeNumber,
+            tmdb = tmdbRef,
+            externalIds = ExternalIds(tmdb = tmdbRef),
+            poster = ImageRef.fromString(episode.thumbUrl),
+            backdrop = ImageRef.fromString(episode.coverUrl),
+            thumbnail = ImageRef.fromString(episode.thumbnailUrl),
+            plot = episode.plot,
+            rating = episode.rating,
+            durationMs = episode.durationSecs?.let { it.toLong() * 1000 },
+            releaseDate = episode.airDate,
+            addedTimestamp = episode.addedTimestamp?.toLongOrNull(),
+        )
+    }
+
+    /**
+     * Build minimal playbackHints for episode — matching the VOD pattern.
+     *
+     * Only includes Xtream identification keys required for playback URL construction:
+     * - CONTENT_TYPE, SERIES_ID, SEASON_NUMBER, EPISODE_NUMBER
+     * - EPISODE_ID (= stream ID for URL building)
+     * - CONTAINER_EXT (when available)
+     *
+     * Technical metadata (videoCodec, audioCodec, bitrate, resolution) is extracted
+     * by [VariantBuilder] from these hints into dedicated Variant fields — NOT
+     * duplicated as extra hint keys. This matches [NxCatalogWriter]'s VOD pattern.
+     */
+    private fun buildEpisodePlaybackHints(episode: EpisodeIndexItem): Map<String, String> {
+        return buildMap {
+            put(PlaybackHintKeys.Xtream.CONTENT_TYPE, PlaybackHintKeys.Xtream.CONTENT_SERIES)
+            put(PlaybackHintKeys.Xtream.SERIES_ID, episode.seriesId.toString())
+            put(PlaybackHintKeys.Xtream.SEASON_NUMBER, episode.seasonNumber.toString())
+            put(PlaybackHintKeys.Xtream.EPISODE_NUMBER, episode.episodeNumber.toString())
+            episode.episodeId?.let {
+                put(PlaybackHintKeys.Xtream.EPISODE_ID, it.toString())
+            }
+            // Container from pre-parsed hints JSON (when available)
+            episode.playbackHintsJson?.let { json ->
+                extractContainerFromHints(json)?.takeIf { it.isNotBlank() }?.let {
+                    put(PlaybackHintKeys.Xtream.CONTAINER_EXT, it)
+                }
+            }
+        }
+    }
 
     /**
      * Build episode workKey using [NxKeyGenerator.episodeKey] — SSOT.
@@ -228,11 +264,6 @@ class NxDetailWriter @Inject constructor(
             season = episode.seasonNumber,
             episode = episode.episodeNumber,
         )
-    }
-
-    private fun extractPlaybackUrlFromHints(hintsJson: String): String? {
-        val hints = PlaybackHintsDecoder.decodeJson(hintsJson) ?: return null
-        return hints[PlaybackHintKeys.Xtream.DIRECT_SOURCE]
     }
 
     private fun extractContainerFromHints(hintsJson: String): String? {

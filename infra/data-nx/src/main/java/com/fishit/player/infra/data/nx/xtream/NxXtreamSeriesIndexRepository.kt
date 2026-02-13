@@ -52,6 +52,7 @@ class NxXtreamSeriesIndexRepository @Inject constructor(
     private val sourceRefRepository: NxWorkSourceRefRepository,
     private val variantRepository: NxWorkVariantRepository,
     private val detailWriter: NxDetailWriter,
+    private val enrichmentWriter: NxEnrichmentWriter,
 ) : XtreamSeriesIndexRepository {
 
     // =========================================================================
@@ -274,6 +275,33 @@ class NxXtreamSeriesIndexRepository @Inject constructor(
         UnifiedLog.d(TAG) {
             "upsertEpisodes: Batch-persisted ${episodes.size} episodes " +
                 "(${result.works.size}W/${result.sourceRefs.size}S/${result.relations.size}R/${result.variants.size}V) for series $seriesId"
+        }
+
+        // ── Enrichment pass: write tmdbId to parent + all children ─────────
+        // Episodes are created with heuristic workKeys. Now that they exist in DB,
+        // run NxEnrichmentWriter over parent series AND all episode works to set
+        // tmdbId (ALWAYS_UPDATE) and any other enrichable fields from the episode data.
+        // This mirrors how CatalogWriter works: CatalogWriter creates works at sync,
+        // then EnrichmentWriter enriches them at detail time.
+        val seriesTmdbId = seriesWork?.tmdbId?.toIntOrNull()
+        if (seriesTmdbId != null && seriesWorkKey != null) {
+            // Enrich parent series with its own tmdbId
+            val seriesEnrichment = com.fishit.player.core.model.repository.NxWorkRepository.Enrichment(
+                tmdbId = seriesTmdbId.toString(),
+            )
+            workRepository.enrichIfAbsent(seriesWorkKey, seriesEnrichment)
+        }
+
+        // Enrich each episode work with its episode-level tmdbId
+        for (episode in episodes) {
+            val episodeTmdbId = episode.tmdbId ?: continue
+            val episodeWorkKey = result.works.find {
+                it.season == episode.seasonNumber && it.episode == episode.episodeNumber
+            }?.workKey ?: continue
+            val enrichment = com.fishit.player.core.model.repository.NxWorkRepository.Enrichment(
+                tmdbId = episodeTmdbId.toString(),
+            )
+            workRepository.enrichIfAbsent(episodeWorkKey, enrichment)
         }
     }
 
