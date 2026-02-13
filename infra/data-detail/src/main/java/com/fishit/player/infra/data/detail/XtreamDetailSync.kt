@@ -5,29 +5,33 @@ import com.fishit.player.core.detail.domain.EpisodeIndexItem
 import com.fishit.player.core.detail.domain.SeasonIndexItem
 import com.fishit.player.core.detail.domain.UnifiedDetailLoader
 import com.fishit.player.core.detail.domain.XtreamSeriesIndexRepository
+import com.fishit.player.core.metadata.MediaMetadataNormalizer
 import com.fishit.player.core.model.ExternalIds
 import com.fishit.player.core.model.ImageRef
 import com.fishit.player.core.model.MediaType
 import com.fishit.player.core.model.NormalizedMediaMetadata
 import com.fishit.player.core.model.PlaybackHintKeys
-import com.fishit.player.infra.data.nx.mapper.base.PlaybackHintsDecoder
 import com.fishit.player.core.model.SourceType
 import com.fishit.player.core.model.TmdbMediaType
 import com.fishit.player.core.model.TmdbRef
 import com.fishit.player.core.model.ids.XtreamIdCodec
 import com.fishit.player.core.model.repository.CanonicalMediaRepository
 import com.fishit.player.core.model.repository.CanonicalMediaWithSources
+import com.fishit.player.core.model.repository.NxWorkRelationRepository
+import com.fishit.player.core.model.repository.NxWorkRelationRepository.RelationType
+import com.fishit.player.core.model.repository.NxWorkSourceRefRepository
 import com.fishit.player.infra.data.nx.mapper.SourceKeyParser
+import com.fishit.player.infra.data.nx.writer.NxCatalogWriter
 import com.fishit.player.infra.data.nx.writer.NxEnrichmentWriter
 import com.fishit.player.infra.logging.UnifiedLog
 import com.fishit.player.infra.priority.ApiPriorityDispatcher
 import com.fishit.player.infra.transport.xtream.XtreamApiClient
-import com.fishit.player.infra.transport.xtream.XtreamEpisodeInfo
 import com.fishit.player.infra.transport.xtream.XtreamSeriesInfo
 import com.fishit.player.infra.transport.xtream.XtreamSeriesInfoBlock
 import com.fishit.player.infra.transport.xtream.XtreamVodInfo
 import com.fishit.player.infra.transport.xtream.XtreamVodInfoBlock
-import kotlinx.coroutines.CompletableDeferred
+import com.fishit.player.pipeline.xtream.adapter.toEpisodes
+import com.fishit.player.pipeline.xtream.mapper.toRawMediaMetadata
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.SupervisorJob
@@ -38,87 +42,39 @@ import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withTimeout
-
 import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.coroutines.coroutineContext
 
-// ╔══════════════════════════════════════════════════════════════════════════════╗
-// ║                                                                              ║
-// ║                    🏆 PLATIN IMPLEMENTATION 🏆                               ║
-// ║                                                                              ║
-// ║  UnifiedDetailLoaderImpl - Single Source of Truth for ALL Detail API Calls  ║
-// ║                                                                              ║
-// ║  This class is the ONLY location where getSeriesInfo() and getVodInfo()     ║
-// ║  should be called for detail enrichment and index population.               ║
-// ║                                                                              ║
-// ║  Layer: infra:data-detail (correct per AGENTS.md Section 4)                 ║
-// ║                                                                              ║
-// ║  Deprecates:                                                                 ║
-// ║  - XtreamSeriesIndexRefresherImpl (2-3 separate API calls → 1)              ║
-// ║  - DetailEnrichmentServiceImpl.enrichSeriesFromXtream() (partial save)      ║
-// ║  - DetailEnrichmentServiceImpl.enrichVodFromXtream() (partial save)         ║
-// ║                                                                              ║
-// ╚══════════════════════════════════════════════════════════════════════════════╝
-
 /**
- * 🏆 PLATIN Implementation: Unified Detail Loader for Series AND VOD.
+ * XtreamDetailSync — On-demand detail loader for Xtream sources.
  *
- * **Why This Exists:**
- * Previously, detail fetching was scattered across 3 modules:
- * - `DetailEnrichmentServiceImpl` → saved metadata only
- * - `XtreamSeriesIndexRefresherImpl` → made 2-3 separate API calls
- * - `XtreamCatalogScanWorker` → background sync with own API calls
+ * Implements [UnifiedDetailLoader] for Series, VOD, and Live detail loading.
  *
- * This resulted in up to 3x the necessary API calls for the same data!
+ * ## Architecture (2-Writer)
+ * | Writer | When | What |
+ * |--------|------|------|
+ * | [NxCatalogWriter] | Catalog Sync + Detail Open | Creates/updates NX_Work + SourceRef + Variant |
+ * | [NxEnrichmentWriter] | Detail Open | Enriches EXISTING works with info_call metadata |
  *
- * **PLATIN Solution:**
- * ONE class, ONE API call, ALL data saved atomically.
+ * ## Episode Pipeline Chain (SSOT)
+ * When a series detail is opened:
+ * 1. `xtreamApiClient.getSeriesInfo()` → `XtreamSeriesInfo`
+ * 2. `seriesInfo.toEpisodes()` → `List<XtreamEpisode>` (pipeline adapter SSOT)
+ * 3. `episode.toRawMediaMetadata()` → `RawMediaMetadata` (pipeline mapper SSOT)
+ * 4. `normalizer.normalize(raw)` → `NormalizedMediaMetadata`
+ * 5. `nxCatalogWriter.ingest(raw, normalized, accountKey)` → NX entities
+ * 6. `relationRepository.upsertBatch(relations)` → series↔episode links
  *
- * **Key Features:**
- * 1. **ONE API call** - fetches all data atomically (getSeriesInfo/getVodInfo)
- * 2. **Deduplication** - prevents concurrent duplicate calls (like legacy inflightSeries)
- * 3. **Priority System** - integrates with ApiPriorityDispatcher
- * 4. **Atomic Persistence** - metadata + seasons + episodes saved together
- * 5. **TTL Caching** - respects freshness from domain models
- * 6. **Layer Compliance** - all API calls in infra:data-detail per AGENTS.md
+ * This is the SAME chain that [XtreamCatalogSync] uses during catalog sync,
+ * guaranteeing identical field population.
  *
- * **Data Flow:**
- * ```
- * User clicks tile
- *   ↓
- * loadDetailImmediate(media)
- *   ↓
- * Check deduplication (inflightRequests)
- *   ↓
- * Check cache freshness (repository)
- *   ↓
- * If stale: ONE API call
- *   ↓
- * Persist ALL data atomically
- *   ↓
- * Return DetailBundle to UI
- * ```
- *
- * **Usage:**
- * ```kotlin
- * // Replace ALL of these:
- * // - detailEnrichmentService.enrich(media) → only saved metadata
- * // - seriesIndexRefresher.refreshSeasons(id) → separate API call
- * // - seriesIndexRefresher.refreshEpisodes(id, season) → another API call
- *
- * // With ONE call:
- * val result = unifiedDetailLoader.loadDetailImmediate(workId, forceRefresh)
- * // result.media has enriched metadata
- * // result.seriesIndex has seasons AND episodes (for Series)
- * ```
- *
- * @see UnifiedDetailLoader Interface contract
- * @see PLATIN_API_CONSOLIDATION_ANALYSIS.md Full analysis document
+ * @see NxCatalogWriter for entity creation (shared with catalog sync)
+ * @see NxEnrichmentWriter for detail-time enrichment of existing works
  */
 @Singleton
-class UnifiedDetailLoaderImpl
+class XtreamDetailSync
     @Inject
     constructor(
         private val xtreamApiClient: XtreamApiClient,
@@ -126,18 +82,20 @@ class UnifiedDetailLoaderImpl
         private val seriesIndexRepository: XtreamSeriesIndexRepository,
         private val priorityDispatcher: ApiPriorityDispatcher,
         private val enrichmentWriter: NxEnrichmentWriter,
+        private val normalizer: MediaMetadataNormalizer,
+        private val nxCatalogWriter: NxCatalogWriter,
+        private val relationRepository: NxWorkRelationRepository,
+        private val sourceRefRepository: NxWorkSourceRefRepository,
     ) : UnifiedDetailLoader {
     companion object {
-        private const val TAG = "UnifiedDetailLoader"
+        private const val TAG = "XtreamDetailSync"
         private const val API_TIMEOUT_MS = 12_000L
     }
 
     // =========================================================================
     // Deduplication: Prevents concurrent API calls for the same media
-    // (Like legacy's inflightSeries HashMap)
     // =========================================================================
 
-    /** Cache key: VOD uses "vod:123", Series uses "series:456" */
     private val inflightRequests = ConcurrentHashMap<String, Deferred<DetailBundle?>>()
     private val inflightMutex = Mutex()
 
@@ -148,31 +106,25 @@ class UnifiedDetailLoaderImpl
     override suspend fun loadDetailImmediate(media: CanonicalMediaWithSources): DetailBundle? {
         val startMs = System.currentTimeMillis()
 
-        // Determine media type and extract source ID
         val cacheKey = getCacheKey(media) ?: run {
             UnifiedLog.d(TAG) { "loadDetailImmediate: no Xtream source for ${media.canonicalId.key.value}" }
             return null
         }
 
-        // Fast path: check cache freshness AND cache has actual data
-        // PLATIN FIX: Don't return null for fresh-but-empty cache!
         if (isDetailFresh(media)) {
             val cachedBundle = buildBundleFromCache(media)
             if (cachedBundle != null) {
                 UnifiedLog.d(TAG) { "loadDetailImmediate: using cached data for $cacheKey (fast path)" }
                 return cachedBundle
             }
-            // Cache is "fresh" by timestamp but EMPTY - force API call
             UnifiedLog.d(TAG) { "loadDetailImmediate: cache fresh but empty for $cacheKey, forcing API call" }
         }
 
-        // Deduplication check: is another coroutine already fetching this?
         inflightRequests[cacheKey]?.let { existingDeferred ->
             UnifiedLog.d(TAG) { "loadDetailImmediate: joining inflight request for $cacheKey" }
             return existingDeferred.await()
         }
 
-        // HIGH priority - pauses background sync
         return priorityDispatcher.withHighPriority(
             tag = "DetailLoad:$cacheKey",
         ) {
@@ -186,17 +138,11 @@ class UnifiedDetailLoaderImpl
     ): DetailBundle? {
         val cacheKey = getCacheKey(media) ?: return null
 
-        // Fast path: already loaded, fresh, AND has data
-        // PLATIN FIX: Same as loadDetailImmediate - don't skip API for fresh-but-empty
         if (isDetailFresh(media)) {
             val cachedBundle = buildBundleFromCache(media)
-            if (cachedBundle != null) {
-                return cachedBundle
-            }
-            // Cache fresh but empty - continue to API call
+            if (cachedBundle != null) return cachedBundle
         }
 
-        // CRITICAL priority with timeout
         return priorityDispatcher.withCriticalPriority(
             tag = "EnsureDetail:$cacheKey",
             timeoutMs = timeoutMs,
@@ -211,31 +157,25 @@ class UnifiedDetailLoaderImpl
         return when (media.mediaType) {
             MediaType.SERIES -> isSeriesDetailFresh(media)
             MediaType.MOVIE -> isVodDetailFresh(media)
-            MediaType.LIVE -> true // Live doesn't need enrichment
+            MediaType.LIVE -> true
             else -> true
         }
     }
 
     override fun observeDetail(media: CanonicalMediaWithSources): Flow<DetailBundle?> = flow {
-        // Initial load
         val bundle = loadDetailImmediate(media)
         emit(bundle)
-
-        // For series, we could observe changes from repository
-        // For now, just emit the loaded bundle
     }
 
     // =========================================================================
-    // PLATIN Phase 2: Direct ID-based loading (for delegation from deprecated APIs)
+    // Direct ID-based loading (delegation from deprecated APIs)
     // =========================================================================
 
     override suspend fun loadSeriesDetailBySeriesId(seriesId: Int): DetailBundle.Series? {
         UnifiedLog.d(TAG) { "loadSeriesDetailBySeriesId: seriesId=$seriesId" }
 
-        // Try multiple sourceId patterns to find the media
-        // Priority order: legacy format first (most common), then new format patterns
         val sourceIdPatterns = listOf(
-            XtreamIdCodec.series(seriesId), // Legacy format via SSOT
+            XtreamIdCodec.series(seriesId),
         )
 
         for (pattern in sourceIdPatterns) {
@@ -243,38 +183,24 @@ class UnifiedDetailLoaderImpl
             val media = canonicalMediaRepository.findBySourceId(sourceId)
 
             if (media != null) {
-                // Verify it's actually a series
                 if (media.mediaType != MediaType.SERIES) {
-                    UnifiedLog.w(TAG) {
-                        "loadSeriesDetailBySeriesId: found media but type=${media.mediaType}, expected SERIES"
-                    }
+                    UnifiedLog.w(TAG) { "loadSeriesDetailBySeriesId: type=${media.mediaType}, expected SERIES" }
                     continue
                 }
-
-                UnifiedLog.d(TAG) {
-                    "loadSeriesDetailBySeriesId: found media via pattern=$pattern, delegating to loadDetailImmediate"
-                }
-
-                // Delegate to loadDetailImmediate
                 val bundle = loadDetailImmediate(media)
                 return bundle as? DetailBundle.Series
             }
         }
 
-        UnifiedLog.w(TAG) {
-            "loadSeriesDetailBySeriesId: no CanonicalMedia found for seriesId=$seriesId. " +
-                "Tried patterns: $sourceIdPatterns. " +
-                "Caller should use loadDetailImmediate(media) instead."
-        }
+        UnifiedLog.w(TAG) { "loadSeriesDetailBySeriesId: no CanonicalMedia found for seriesId=$seriesId" }
         return null
     }
 
     override suspend fun loadVodDetailByVodId(vodId: Int): DetailBundle.Vod? {
         UnifiedLog.d(TAG) { "loadVodDetailByVodId: vodId=$vodId" }
 
-        // Try multiple sourceId patterns to find the media
         val sourceIdPatterns = listOf(
-            XtreamIdCodec.vod(vodId), // Legacy format via SSOT
+            XtreamIdCodec.vod(vodId),
         )
 
         for (pattern in sourceIdPatterns) {
@@ -282,55 +208,34 @@ class UnifiedDetailLoaderImpl
             val media = canonicalMediaRepository.findBySourceId(sourceId)
 
             if (media != null) {
-                // Verify it's actually a movie/vod
                 if (media.mediaType != MediaType.MOVIE) {
-                    UnifiedLog.w(TAG) {
-                        "loadVodDetailByVodId: found media but type=${media.mediaType}, expected MOVIE"
-                    }
+                    UnifiedLog.w(TAG) { "loadVodDetailByVodId: type=${media.mediaType}, expected MOVIE" }
                     continue
                 }
-
-                UnifiedLog.d(TAG) {
-                    "loadVodDetailByVodId: found media via pattern=$pattern, delegating to loadDetailImmediate"
-                }
-
-                // Delegate to loadDetailImmediate
                 val bundle = loadDetailImmediate(media)
                 return bundle as? DetailBundle.Vod
             }
         }
 
-        UnifiedLog.w(TAG) {
-            "loadVodDetailByVodId: no CanonicalMedia found for vodId=$vodId. " +
-                "Tried patterns: $sourceIdPatterns. " +
-                "Caller should use loadDetailImmediate(media) instead."
-        }
+        UnifiedLog.w(TAG) { "loadVodDetailByVodId: no CanonicalMedia found for vodId=$vodId" }
         return null
     }
 
     // =========================================================================
-    // Private: Deduplication Logic
+    // Private: Deduplication
     // =========================================================================
 
-    /**
-     * Load detail with deduplication.
-     *
-     * Uses inflightRequests map to ensure only ONE coroutine fetches at a time.
-     * Other coroutines for the same key will await the result.
-     */
     private suspend fun loadDetailDeduped(
         media: CanonicalMediaWithSources,
         cacheKey: String,
         startMs: Long,
     ): DetailBundle? {
         return inflightMutex.withLock {
-            // Double-check after acquiring lock
             inflightRequests[cacheKey]?.let { existingDeferred ->
                 UnifiedLog.d(TAG) { "loadDetailDeduped: joining inflight (after lock) for $cacheKey" }
                 return@withLock existingDeferred.await()
             }
 
-            // Create deferred and register
             val scope = CoroutineScope(coroutineContext + SupervisorJob())
             val deferred = scope.async {
                 try {
@@ -346,8 +251,7 @@ class UnifiedDetailLoaderImpl
                 val result = deferred.await()
                 val durationMs = System.currentTimeMillis() - startMs
                 UnifiedLog.i(TAG) {
-                    "loadDetailDeduped: completed in ${durationMs}ms for $cacheKey " +
-                        "hasData=${result != null}"
+                    "loadDetailDeduped: completed in ${durationMs}ms for $cacheKey hasData=${result != null}"
                 }
                 result
             } finally {
@@ -356,9 +260,6 @@ class UnifiedDetailLoaderImpl
         }
     }
 
-    /**
-     * Internal detail loading - does the actual API call and persistence.
-     */
     private suspend fun loadDetailInternal(
         media: CanonicalMediaWithSources,
         cacheKey: String,
@@ -372,7 +273,7 @@ class UnifiedDetailLoaderImpl
     }
 
     // =========================================================================
-    // SERIES: One API call → metadata + seasons + ALL episodes
+    // SERIES: Pipeline chain → NxCatalogWriter
     // =========================================================================
 
     private suspend fun loadSeriesDetailInternal(
@@ -384,7 +285,7 @@ class UnifiedDetailLoaderImpl
 
         UnifiedLog.d(TAG) { "loadSeriesDetailInternal: fetching seriesId=$seriesId" }
 
-        // ONE API CALL - gets EVERYTHING
+        // ONE API CALL
         val seriesInfo: XtreamSeriesInfo = withTimeout(API_TIMEOUT_MS) {
             xtreamApiClient.getSeriesInfo(seriesId)
         } ?: run {
@@ -394,41 +295,74 @@ class UnifiedDetailLoaderImpl
 
         val info = seriesInfo.info
 
-        // 1. PERSIST METADATA → CanonicalMediaRepository
+        // 1. ENRICH parent series work via NxEnrichmentWriter
         if (info != null) {
             persistSeriesMetadata(media, info)
         }
 
-        // 2. PERSIST SEASONS → XtreamSeriesIndexRepository
-        val seasons = extractSeasons(seriesInfo, seriesId, now)
-        if (seasons.isNotEmpty()) {
-            seriesIndexRepository.upsertSeasons(seriesId, seasons)
-            UnifiedLog.d(TAG) { "loadSeriesDetailInternal: persisted ${seasons.size} seasons" }
-        }
+        // 2. PERSIST EPISODES via pipeline chain (SSOT)
+        val seriesWorkKey = media.canonicalId.key.value
+        val seriesName = info?.name ?: media.canonicalTitle
 
-        // 3. EXTRACT ALL EPISODES across ALL seasons, then batch-persist ONCE
-        val episodesBySeason = mutableMapOf<Int, List<EpisodeIndexItem>>()
-        val allEpisodes = mutableListOf<EpisodeIndexItem>()
+        // Derive accountKey from the series' NX_WorkSourceRef
+        val accountKey = sourceRefRepository.findByWorkKey(seriesWorkKey)
+            .firstOrNull { it.sourceType == NxWorkSourceRefRepository.SourceType.XTREAM }
+            ?.accountKey
+            ?: "xtream:unknown"
+        val accountLabel = accountKey.removePrefix("xtream:")
 
-        seriesInfo.episodes?.forEach { (seasonKey, episodeList) ->
-            val seasonNum = seasonKey.toIntOrNull() ?: return@forEach
-            val episodes = extractEpisodes(episodeList, seriesId, seasonNum, now)
-            if (episodes.isNotEmpty()) {
-                episodesBySeason[seasonNum] = episodes
-                allEpisodes += episodes
+        // Pipeline chain: toEpisodes → toRawMediaMetadata → normalizer → NxCatalogWriter
+        val xtreamEpisodes = seriesInfo.toEpisodes(seriesId, seriesName)
+        val episodeWorkKeys = mutableListOf<Pair<String, Int>>() // workKey to episodeIndex
+
+        if (xtreamEpisodes.isNotEmpty()) {
+            for ((index, ep) in xtreamEpisodes.withIndex()) {
+                val raw = ep.toRawMediaMetadata(accountLabel = accountLabel)
+                val normalized = normalizer.normalize(raw)
+                val workKey = nxCatalogWriter.ingest(raw, normalized, accountKey)
+                if (workKey != null) {
+                    episodeWorkKeys.add(workKey to index)
+                }
+            }
+
+            // Create series→episode relations
+            val relations = episodeWorkKeys.map { (workKey, index) ->
+                val ep = xtreamEpisodes[index]
+                NxWorkRelationRepository.Relation(
+                    parentWorkKey = seriesWorkKey,
+                    childWorkKey = workKey,
+                    relationType = RelationType.SERIES_EPISODE,
+                    seasonNumber = ep.seasonNumber,
+                    episodeNumber = ep.episodeNumber,
+                    orderIndex = ep.seasonNumber * 1000 + ep.episodeNumber,
+                )
+            }
+            relationRepository.upsertBatch(relations)
+
+            // NOTE: Episode tmdbIds are already persisted via the pipeline chain.
+            // toRawMediaMetadata() sets PlaybackHintKeys.Xtream.EPISODE_TMDB_ID,
+            // which normalizer + NxCatalogWriter handle correctly.
+
+            UnifiedLog.i(TAG) {
+                "loadSeriesDetailInternal: persisted ${episodeWorkKeys.size}/${xtreamEpisodes.size} episodes " +
+                    "via pipeline chain for series $seriesId"
             }
         }
 
-        // Single batch persist for ALL episodes (4 batch writes instead of N×4 individual)
-        if (allEpisodes.isNotEmpty()) {
-            seriesIndexRepository.upsertEpisodes(allEpisodes)
+        // 3. SEASONS from API response (parsing only, no entity creation)
+        val seasons = extractSeasons(seriesInfo, seriesId, now)
+
+        // 4. BUILD RETURN BUNDLE — episodes from DB (just written by NxCatalogWriter)
+        val episodesBySeason = mutableMapOf<Int, List<EpisodeIndexItem>>()
+        var totalEpisodeCount = 0
+        for (season in seasons) {
+            val episodes = seriesIndexRepository.getEpisodesForSeason(seriesId, season.seasonNumber)
+            if (episodes.isNotEmpty()) {
+                episodesBySeason[season.seasonNumber] = episodes
+                totalEpisodeCount += episodes.size
+            }
         }
 
-        UnifiedLog.i(TAG) {
-            "loadSeriesDetailInternal: batch-persisted ${allEpisodes.size} episodes across ${episodesBySeason.size} seasons"
-        }
-
-        // 4. BUILD AND RETURN BUNDLE
         return DetailBundle.Series(
             seriesId = seriesId,
             plot = info?.resolvedPlot,
@@ -443,7 +377,7 @@ class UnifiedDetailLoaderImpl
             imdbId = info?.imdbId?.takeIf { it.isNotBlank() },
             seasons = seasons,
             episodesBySeason = episodesBySeason,
-            totalEpisodeCount = allEpisodes.size,
+            totalEpisodeCount = totalEpisodeCount,
             fetchedAtMs = now,
         )
     }
@@ -451,9 +385,7 @@ class UnifiedDetailLoaderImpl
     /**
      * Enrich existing series NX_Work with metadata from `get_series_info`.
      *
-     * Delegates ALL writes to [NxEnrichmentWriter] — the SSOT for detail-time enrichment.
-     * Builds [NormalizedMediaMetadata] from the API response, then calls
-     * [NxEnrichmentWriter.enrichWork] which applies enrichIfAbsent semantics.
+     * Delegates to [NxEnrichmentWriter.enrichWork] with enrichIfAbsent semantics.
      */
     private suspend fun persistSeriesMetadata(
         media: CanonicalMediaWithSources,
@@ -491,8 +423,6 @@ class UnifiedDetailLoaderImpl
             trailer = info.resolvedTrailer ?: media.trailer,
         )
 
-        // Single enrichment call — NxEnrichmentWriter handles enrichIfAbsent
-        // for all fields including tmdbId/imdbId (ALWAYS_UPDATE semantics).
         val workKey = media.canonicalId.key.value
         enrichmentWriter.enrichWork(workKey, normalized)
     }
@@ -516,64 +446,6 @@ class UnifiedDetailLoaderImpl
         }.orEmpty()
     }
 
-    private fun extractEpisodes(
-        episodeList: List<XtreamEpisodeInfo>,
-        seriesId: Int,
-        seasonNum: Int,
-        now: Long,
-    ): List<EpisodeIndexItem> {
-        return episodeList.mapNotNull { ep ->
-            val episodeNum = ep.episodeNum ?: return@mapNotNull null
-            val sourceKey = XtreamIdCodec.episodeComposite(seriesId, seasonNum, episodeNum)
-            val resolvedId = ep.resolvedEpisodeId
-
-            val hintsJson = resolvedId?.let { streamId ->
-                buildPlaybackHintsJson(
-                    streamId = streamId,
-                    containerExtension = ep.containerExtension,
-                    directUrl = ep.directSource,
-                )
-            }
-
-            EpisodeIndexItem(
-                seriesId = seriesId,
-                seasonNumber = seasonNum,
-                episodeNumber = episodeNum,
-                sourceKey = sourceKey,
-                episodeId = resolvedId,
-                title = ep.title ?: ep.info?.name,
-                // --- Images: all sources preserved ---
-                thumbUrl = ep.info?.movieImage ?: ep.info?.posterPath ?: ep.info?.stillPath,
-                coverUrl = ep.info?.cover,
-                thumbnailUrl = ep.info?.thumbnail ?: ep.info?.img,
-                // --- Core metadata: full, unlimited ---
-                durationSecs = ep.info?.durationSecs,
-                durationString = ep.info?.duration,
-                plot = ep.info?.plot, // Full plot — never truncated
-                rating = ep.info?.rating?.toDoubleOrNull(),
-                airDate = ep.info?.releaseDate ?: ep.info?.airDate,
-                // --- External IDs ---
-                tmdbId = ep.info?.tmdbId,
-                // --- Xtream-specific ---
-                addedTimestamp = ep.added,
-                customSid = ep.customSid,
-                // --- Technical stream metadata ---
-                videoCodec = ep.info?.video?.codec,
-                videoWidth = ep.info?.video?.width,
-                videoHeight = ep.info?.video?.height,
-                videoAspectRatio = ep.info?.video?.aspectRatio,
-                audioCodec = ep.info?.audio?.codec,
-                audioChannels = ep.info?.audio?.channels,
-                audioLanguage = ep.info?.audio?.language,
-                bitrateKbps = ep.info?.bitrate,
-                // --- Playback ---
-                playbackHintsJson = hintsJson,
-                lastUpdatedMs = now,
-                playbackHintsUpdatedMs = if (hintsJson != null) now else 0L,
-            )
-        }
-    }
-
     // =========================================================================
     // VOD: One API call → metadata + playback hints
     // =========================================================================
@@ -585,13 +457,11 @@ class UnifiedDetailLoaderImpl
         val vodId = parseVodId(cacheKey) ?: return null
         val now = System.currentTimeMillis()
 
-        // Extract vodKind from PlaybackHints for correct API call
         val xtreamSource = media.sources.firstOrNull { it.sourceType == SourceType.XTREAM }
         val vodKind = xtreamSource?.playbackHints?.get(PlaybackHintKeys.Xtream.VOD_KIND)
 
         UnifiedLog.d(TAG) { "loadVodDetailInternal: fetching vodId=$vodId with kind=$vodKind" }
 
-        // ONE API CALL with correct kind/alias
         val vodInfo: XtreamVodInfo = withTimeout(API_TIMEOUT_MS) {
             xtreamApiClient.getVodInfo(vodId, vodKind)
         } ?: run {
@@ -602,12 +472,10 @@ class UnifiedDetailLoaderImpl
         val info = vodInfo.info
         val movieData = vodInfo.movieData
 
-        // 1. PERSIST METADATA → CanonicalMediaRepository
         if (info != null) {
             persistVodMetadata(media, info, movieData)
         }
 
-        // 2. BUILD AND RETURN BUNDLE
         return DetailBundle.Vod(
             vodId = vodId,
             plot = info?.resolvedPlot,
@@ -626,14 +494,6 @@ class UnifiedDetailLoaderImpl
         )
     }
 
-    /**
-     * Enrich existing VOD NX_Work with metadata from `get_vod_info`.
-     *
-     * Delegates ALL writes to [NxEnrichmentWriter]:
-     * 1. [NxEnrichmentWriter.enrichWork] — enriches NX_Work fields (plot, poster, etc.)
-     * 2. [NxEnrichmentWriter.updateVariantPlaybackHints] — updates variant with
-     *    containerExtension, directSource from movieData
-     */
     private suspend fun persistVodMetadata(
         media: CanonicalMediaWithSources,
         info: XtreamVodInfoBlock,
@@ -671,22 +531,14 @@ class UnifiedDetailLoaderImpl
             trailer = info.resolvedTrailer ?: media.trailer,
         )
 
-        // Single enrichment call — replaces canonicalMediaRepository.upsertCanonicalMedia()
         val workKey = media.canonicalId.key.value
         enrichmentWriter.enrichWork(workKey, normalized)
 
-        // Update variant playback hints (containerExtension, directSource)
         if (movieData?.containerExtension != null) {
             updateVodSourcePlaybackHints(media, workKey, movieData)
         }
     }
 
-    /**
-     * Update VOD variant playback hints via [NxEnrichmentWriter].
-     *
-     * Replaces the previous path through canonicalMediaRepository.addOrUpdateSourceRef()
-     * which rebuilt the entire sourceRef. Now directly updates only the variant hints.
-     */
     private suspend fun updateVodSourcePlaybackHints(
         media: CanonicalMediaWithSources,
         workKey: String,
@@ -695,7 +547,6 @@ class UnifiedDetailLoaderImpl
         val xtreamSource = media.sources.firstOrNull { it.sourceType == SourceType.XTREAM }
             ?: return
 
-        // Build hints update map using SSOT PlaybackHintKeys constants
         val hintsUpdate = buildMap {
             put(PlaybackHintKeys.Xtream.CONTENT_TYPE, PlaybackHintKeys.Xtream.CONTENT_VOD)
             movieData.containerExtension?.let { put(PlaybackHintKeys.Xtream.CONTAINER_EXT, it) }
@@ -720,13 +571,7 @@ class UnifiedDetailLoaderImpl
 
         return DetailBundle.Live(
             channelId = channelId,
-            // SSOT: Use PlaybackHintKeys constant — pipeline writes DIRECT_SOURCE for live channels
             streamUrl = xtreamSource?.playbackHints?.get(PlaybackHintKeys.Xtream.DIRECT_SOURCE),
-            // TODO(SSOT-CONSOLIDATION): epgChannelId is stored on NX_WorkSourceRef entity field,
-            // NOT in playbackHints. MediaSourceRef doesn't expose it. Needs either:
-            // 1) Add PlaybackHintKeys.Xtream.EPG_CHANNEL_ID + write in pipeline, or
-            // 2) Surface NX_WorkSourceRef.epgChannelId through MediaSourceRef
-            // Tracked in: ROADMAP.md → SSOT Consolidation Debt
             epgChannelId = xtreamSource?.playbackHints?.get("epgChannelId"),
             fetchedAtMs = System.currentTimeMillis(),
         )
@@ -737,25 +582,19 @@ class UnifiedDetailLoaderImpl
     // =========================================================================
 
     private suspend fun isSeriesDetailFresh(media: CanonicalMediaWithSources): Boolean {
-        // Check if metadata is present
         if (media.plot.isNullOrBlank()) return false
-
-        // Check if seasons are cached and fresh
         val seriesId = extractSeriesIdFromMedia(media) ?: return false
         return seriesIndexRepository.hasFreshSeasons(seriesId)
     }
 
     private fun isVodDetailFresh(media: CanonicalMediaWithSources): Boolean {
-        // Check if metadata is present
         if (media.plot.isNullOrBlank()) return false
-
-        // Check if playback hints are present (use SSOT key constant)
         val xtreamSource = media.sources.firstOrNull { it.sourceType == SourceType.XTREAM }
         return xtreamSource?.playbackHints?.get(PlaybackHintKeys.Xtream.CONTAINER_EXT) != null
     }
 
     // =========================================================================
-    // Build Bundle from Cache (no API call)
+    // Build Bundle from Cache
     // =========================================================================
 
     private suspend fun buildBundleFromCache(media: CanonicalMediaWithSources): DetailBundle? {
@@ -820,7 +659,7 @@ class UnifiedDetailLoaderImpl
             containerExtension = xtreamSource?.playbackHints?.get(PlaybackHintKeys.Xtream.CONTAINER_EXT),
             tmdbId = media.tmdbId?.value,
             imdbId = media.imdbId,
-            fetchedAtMs = System.currentTimeMillis(), // No stored timestamp for VOD cache
+            fetchedAtMs = System.currentTimeMillis(),
         )
     }
 
@@ -866,17 +705,14 @@ class UnifiedDetailLoaderImpl
     }
 
     private fun parseSeriesIdFromSourceKey(sourceKey: String): Int? {
-        // NX_CONSOLIDATION_PLAN Phase 7: Delegate to SourceKeyParser SSOT
         return SourceKeyParser.extractNumericItemKey(sourceKey)?.toInt()
     }
 
     private fun parseVodIdFromSourceKey(sourceKey: String): Int? {
-        // NX_CONSOLIDATION_PLAN Phase 7: Delegate to SourceKeyParser SSOT
         return SourceKeyParser.extractNumericItemKey(sourceKey)?.toInt()
     }
 
     private fun parseChannelIdFromSourceKey(sourceKey: String): Int? {
-        // NX_CONSOLIDATION_PLAN Phase 7: Delegate to SourceKeyParser SSOT
         return SourceKeyParser.extractNumericItemKey(sourceKey)?.toInt()
     }
 
@@ -892,30 +728,14 @@ class UnifiedDetailLoaderImpl
         return parseVodIdFromSourceKey(xtreamSource.sourceId.value)
     }
 
-    private fun buildPlaybackHintsJson(
-        streamId: Int,
-        containerExtension: String?,
-        directUrl: String?,
-    ): String {
-        val hints = buildMap<String, String> {
-            put(PlaybackHintKeys.Xtream.EPISODE_ID, streamId.toString())
-            put(PlaybackHintKeys.Xtream.STREAM_ID, streamId.toString())
-            containerExtension?.let { put(PlaybackHintKeys.Xtream.CONTAINER_EXT, it) }
-            directUrl?.let { put(PlaybackHintKeys.Xtream.DIRECT_SOURCE, it) }
-        }
-        return PlaybackHintsDecoder.encodeToJson(hints) ?: "{}"
-    }
-
     // =========================================================================
-    // Extension: Repository helper (add to XtreamSeriesIndexRepository)
+    // Extension: Repository helper
     // =========================================================================
 
     private suspend fun XtreamSeriesIndexRepository.getEpisodesForSeason(
         seriesId: Int,
         seasonNumber: Int,
     ): List<EpisodeIndexItem> {
-        // Use existing observeEpisodes and take first emission
-        // StateFlow-backed observeEpisodes always emits at least one value
         var result: List<EpisodeIndexItem> = emptyList()
         observeEpisodes(seriesId, seasonNumber, page = 0, pageSize = 500)
             .take(1)

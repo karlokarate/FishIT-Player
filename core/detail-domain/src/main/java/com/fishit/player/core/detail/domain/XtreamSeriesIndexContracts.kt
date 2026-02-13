@@ -175,5 +175,5 @@ interface XtreamSeriesIndexRepository {
 // - Proper layer boundaries (detail API in infra:data-detail)
 // - Reduced code complexity and maintenance burden
 //
-// See: UnifiedDetailLoader, UnifiedDetailLoaderImpl
+// See: UnifiedDetailLoader, XtreamDetailSync
 // =============================================================================

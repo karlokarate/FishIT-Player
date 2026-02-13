@@ -24,7 +24,7 @@
           ]
         },
         {
-          "path": "core/catalog-sync/src/main/java/com/fishit/player/core/catalogsync/sources/xtream/DefaultXtreamSyncService.kt",
+          "path": "core/catalog-sync/src/main/java/com/fishit/player/core/catalogsync/sources/xtream/XtreamCatalogSync.kt",
           "loc": 492,
           "purpose": "Xtream-specific sync",
           "invariants": [
@@ -133,7 +133,7 @@
     ],
     "missingTests": [
       "IncrementalSyncDeciderTest.kt (0 tests for 240 LOC)",
-      "DefaultXtreamSyncServiceTest.kt (0 tests for 492 LOC)"
+      "XtreamCatalogSyncTest.kt (0 tests for 492 LOC)"
     ]
   },
   "lastVerified": "2026-02-09",

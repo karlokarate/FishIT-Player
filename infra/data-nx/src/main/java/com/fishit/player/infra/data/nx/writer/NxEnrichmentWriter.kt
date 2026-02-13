@@ -1,11 +1,10 @@
 /**
  * NxEnrichmentWriter — Enriches EXISTING NX entities with detail API metadata.
  *
- * ## 3-Writer Architecture
+ * ## 2-Writer Architecture
  * | Writer | When | What |
  * |--------|------|------|
- * | [NxCatalogWriter] | Catalog Sync | Creates NX_Work + SourceRef + Variant from listing API |
- * | [NxDetailWriter] | Detail Open | Creates NEW works (e.g., Episodes from series detail API) |
+ * | [NxCatalogWriter] | Catalog Sync + Detail Open | Creates NX_Work + SourceRef + Variant |
  * | **NxEnrichmentWriter** | Detail Open | Enriches EXISTING works with info_call metadata |
  *
  * ## Responsibilities
@@ -26,11 +25,10 @@
  * - **IMMUTABLE:** workKey, workType, canonicalTitle → never changed
  *
  * ## Call Order
- * NxEnrichmentWriter runs BEFORE [NxDetailWriter] for series, so that the
- * parent series work is fully enriched before episode works are created.
+ * NxEnrichmentWriter runs BEFORE [NxCatalogWriter] for series episode creation,
+ * so that the parent series work is fully enriched before episode works are created.
  *
- * @see NxCatalogWriter for sync-time writing
- * @see NxDetailWriter for detail-time creation of new works
+ * @see NxCatalogWriter for sync-time + detail-time entity creation (shared by both orchestrators)
  */
 package com.fishit.player.infra.data.nx.writer
 

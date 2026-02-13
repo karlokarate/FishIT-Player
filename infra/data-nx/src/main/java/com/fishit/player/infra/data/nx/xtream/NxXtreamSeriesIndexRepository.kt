@@ -34,8 +34,6 @@ import com.fishit.player.core.model.repository.NxWorkVariantRepository
 import com.fishit.player.core.model.PlaybackHintKeys
 import com.fishit.player.infra.data.nx.mapper.SourceKeyParser
 import com.fishit.player.infra.data.nx.mapper.base.PlaybackHintsDecoder
-import com.fishit.player.infra.data.nx.writer.NxDetailWriter
-import com.fishit.player.infra.data.nx.writer.NxEnrichmentWriter
 import com.fishit.player.infra.logging.UnifiedLog
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -51,8 +49,6 @@ class NxXtreamSeriesIndexRepository @Inject constructor(
     private val relationRepository: NxWorkRelationRepository,
     private val sourceRefRepository: NxWorkSourceRefRepository,
     private val variantRepository: NxWorkVariantRepository,
-    private val detailWriter: NxDetailWriter,
-    private val enrichmentWriter: NxEnrichmentWriter,
 ) : XtreamSeriesIndexRepository {
 
     // =========================================================================
@@ -236,72 +232,12 @@ class NxXtreamSeriesIndexRepository @Inject constructor(
         works.values.any { it.updatedAtMs > cutoff }
     }
 
-    override suspend fun upsertEpisodes(episodes: List<EpisodeIndexItem>) = withContext(Dispatchers.IO) {
-        if (episodes.isEmpty()) return@withContext
-
-        val seriesId = episodes.first().seriesId
-        val seriesWorkKey = findSeriesWorkKeyBySeriesId(seriesId)
-
-        // Look up series NX_Work for title+year (needed for episode workKey)
-        val seriesWork = seriesWorkKey?.let { workRepository.get(it) }
-
-        // Derive accountKey from the series' NX_WorkSourceRef (SSOT source)
-        val seriesAccountKey = seriesWorkKey?.let { key ->
-            sourceRefRepository.findByWorkKey(key)
-                .firstOrNull { it.sourceType == SourceType.XTREAM }
-                ?.accountKey
-        } ?: "xtream:unknown"
-
-        // ── Delegate entity construction to NxDetailWriter (SSOT) ──────────
-        val result = detailWriter.buildEpisodeEntities(
-            episodes = episodes,
-            seriesWorkKey = seriesWorkKey,
-            seriesWork = seriesWork,
-            accountKey = seriesAccountKey,
-        )
-
-        if (result.isEmpty) return@withContext
-
-        // ── 4 batch writes (each uses runInTx internally) ────────────────
-        workRepository.upsertBatch(result.works)
-        sourceRefRepository.upsertBatch(result.sourceRefs)
-        if (result.relations.isNotEmpty()) {
-            relationRepository.upsertBatch(result.relations)
-        }
-        if (result.variants.isNotEmpty()) {
-            variantRepository.upsertBatch(result.variants)
-        }
-
+    override suspend fun upsertEpisodes(episodes: List<EpisodeIndexItem>) {
+        // No-op: Episode writes are handled by XtreamDetailSync via the
+        // pipeline chain (toRawMediaMetadata → normalizer → NxCatalogWriter).
+        // This repository is now read-only for episodes.
         UnifiedLog.d(TAG) {
-            "upsertEpisodes: Batch-persisted ${episodes.size} episodes " +
-                "(${result.works.size}W/${result.sourceRefs.size}S/${result.relations.size}R/${result.variants.size}V) for series $seriesId"
-        }
-
-        // ── Enrichment pass: write tmdbId to parent + all children ─────────
-        // Episodes are created with heuristic workKeys. Now that they exist in DB,
-        // run NxEnrichmentWriter over parent series AND all episode works to set
-        // tmdbId (ALWAYS_UPDATE) and any other enrichable fields from the episode data.
-        // This mirrors how CatalogWriter works: CatalogWriter creates works at sync,
-        // then EnrichmentWriter enriches them at detail time.
-        val seriesTmdbId = seriesWork?.tmdbId?.toIntOrNull()
-        if (seriesTmdbId != null && seriesWorkKey != null) {
-            // Enrich parent series with its own tmdbId
-            val seriesEnrichment = com.fishit.player.core.model.repository.NxWorkRepository.Enrichment(
-                tmdbId = seriesTmdbId.toString(),
-            )
-            workRepository.enrichIfAbsent(seriesWorkKey, seriesEnrichment)
-        }
-
-        // Enrich each episode work with its episode-level tmdbId
-        for (episode in episodes) {
-            val episodeTmdbId = episode.tmdbId ?: continue
-            val episodeWorkKey = result.works.find {
-                it.season == episode.seasonNumber && it.episode == episode.episodeNumber
-            }?.workKey ?: continue
-            val enrichment = com.fishit.player.core.model.repository.NxWorkRepository.Enrichment(
-                tmdbId = episodeTmdbId.toString(),
-            )
-            workRepository.enrichIfAbsent(episodeWorkKey, enrichment)
+            "upsertEpisodes: no-op — writes handled by XtreamDetailSync (${episodes.size} episodes)"
         }
     }
 

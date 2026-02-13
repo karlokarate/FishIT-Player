@@ -1,9 +1,9 @@
 // Module: core/catalog-sync/sources/xtream/di
-// Hilt DI bindings for unified Xtream sync service
+// Hilt DI bindings for Xtream catalog sync
 
 package com.fishit.player.core.catalogsync.sources.xtream.di
 
-import com.fishit.player.core.catalogsync.sources.xtream.DefaultXtreamSyncService
+import com.fishit.player.core.catalogsync.sources.xtream.XtreamCatalogSync
 import com.fishit.player.core.catalogsync.sources.xtream.XtreamSyncService
 import dagger.Binds
 import dagger.Module
@@ -32,6 +32,6 @@ abstract class XtreamSyncModule {
     @Binds
     @Singleton
     abstract fun bindXtreamSyncService(
-        impl: DefaultXtreamSyncService,
+        impl: XtreamCatalogSync,
     ): XtreamSyncService
 }

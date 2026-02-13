@@ -1,5 +1,5 @@
 // Module: core/catalog-sync/sources/xtream
-// Unified Xtream sync service implementation — single parallel pipeline call
+// XtreamCatalogSync — catalog sync orchestrator for Xtream sources
 
 package com.fishit.player.core.catalogsync.sources.xtream
 
@@ -38,7 +38,10 @@ import javax.inject.Singleton
 import kotlin.time.Duration.Companion.milliseconds
 
 /**
- * Default implementation of unified Xtream sync service.
+ * XtreamCatalogSync — catalog sync orchestrator for Xtream sources.
+ *
+ * Uses the same pipeline chain as [XtreamDetailSync]:
+ * `toRawMediaMetadata()` → `normalizer.normalize()` → `NxCatalogWriter.ingest()`
  *
  * **Architecture:**
  * - Single pipeline call with ALL content types enabled → PhaseScanOrchestrator
@@ -55,7 +58,7 @@ import kotlin.time.Duration.Companion.milliseconds
  * @see XtreamSyncConfig Configuration options
  */
 @Singleton
-class DefaultXtreamSyncService @Inject constructor(
+class XtreamCatalogSync @Inject constructor(
     private val pipeline: XtreamCatalogPipeline,
     private val nxCatalogWriter: NxCatalogWriter,
     private val normalizer: MediaMetadataNormalizer,
@@ -486,7 +489,7 @@ class DefaultXtreamSyncService @Inject constructor(
     }
 
     companion object {
-        private const val TAG = "XtreamSyncService"
+        private const val TAG = "XtreamCatalogSync"
         private const val SYNC_SOURCE = "xtream"
     }
 }

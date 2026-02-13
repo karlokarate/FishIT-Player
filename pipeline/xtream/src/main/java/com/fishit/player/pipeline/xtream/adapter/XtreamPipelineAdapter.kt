@@ -287,7 +287,21 @@ internal fun XtreamLiveStream.toPipelineItem(): XtreamChannel =
         directSource = directSource?.takeIf { it.isNotBlank() },
     )
 
-internal fun XtreamSeriesInfo.toEpisodes(
+/**
+ * Convert [XtreamSeriesInfo] episodes to flattened [XtreamEpisode] pipeline DTOs.
+ *
+ * Flattens all nested episode fields (video/audio codec, bitrate, tmdbId, etc.)
+ * from the Xtream `get_series_info` response into the pipeline-level [XtreamEpisode] model.
+ *
+ * Used by:
+ * - [XtreamCatalogPipeline] during catalog sync (episodes phase)
+ * - XtreamDetailSync during on-demand detail loading
+ *
+ * @param seriesId The Xtream series ID (for identity keys)
+ * @param seriesName The series title (embedded in each [XtreamEpisode] for context)
+ * @return Flattened list of all episodes across all seasons
+ */
+fun XtreamSeriesInfo.toEpisodes(
     seriesId: Int,
     seriesName: String?,
 ): List<XtreamEpisode> {
