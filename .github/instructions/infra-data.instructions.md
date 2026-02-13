@@ -23,6 +23,10 @@ applyTo:
 >
 > **Key Principle:** Works ONLY with `RawMediaMetadata` (source-agnostic canonical model).
 > NO pipeline DTOs, NO transport DTOs, NO business logic. 
+>
+> **DEV PHASE:** No legacy/migration/backward-compat code for old entity data.
+> Every test starts with a fresh sync. Fix writers to produce correct data, delete
+> legacy readers. No fallback paths for old key formats or field layouts.
 
 ---
 

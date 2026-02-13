@@ -12,7 +12,9 @@ applyTo:
 > **PLATIN STANDARD** - Xtream Codes API Transport Layer (Absolute Perfection).
 >
 > **Purpose:** Provides HTTP-based access to Xtream Codes panels with maximum compatibility.
-> This module OWNS OkHttp configuration, rate limiting, credential storage, and panel discovery.
+> This module DERIVES `@XtreamHttpClient` from `@PlatformHttpClient` (infra/networking) via `.newBuilder()`.
+> The platform client provides connection pool, Chucker, User-Agent, and base timeouts.
+> This module adds Xtream-specific: Accept:json, Dispatcher parallelism, callTimeout, followSslRedirects=false.
 > Upper layers (pipeline, playback) consume typed interfaces - NEVER raw OkHttp types.
 >
 > **Binding Contracts (Priority Order):**
@@ -20,11 +22,12 @@ applyTo:
 > 2. `contracts/GLOSSARY_v2_naming_and_modules.md` (Section 1.4) - Infrastructure Terms
 > 3. `contracts/LOGGING_CONTRACT_V2.md` (v1.1) - Logging rules
 >
-> **Core Principle: Premium Contract Compliance**
+> **Parent–Child HTTP Client Architecture:**
 > ```
-> Timeouts: connectTimeout=30s, readTimeout=30s, writeTimeout=30s, callTimeout=30s
-> Headers:  User-Agent: FishIT-Player/2.x (Android), Accept: application/json, Accept-Encoding: gzip
-> Parallelism: Phone/Tablet=10, FireTV/low-RAM=3 (OkHttp Dispatcher + Semaphore)
+> @PlatformHttpClient (infra/networking)        ← generic: pool + Chucker + User-Agent + 30s base timeouts
+>   └── @XtreamHttpClient (transport-xtream)    ← +Accept:json, +Dispatcher, +callTimeout=30s, -followSslRedirects
+>         ├── streamingClient (lazy .newBuilder) ← +readTimeout=120s, +callTimeout=180s
+>         └── playbackClient (lazy .newBuilder)  ← +followSslRedirects=true
 > ```
 
 ---
@@ -34,43 +37,50 @@ applyTo:
 ### 1. Premium Contract HTTP Configuration (MANDATORY)
 
 ```kotlin
-// Per Premium Contract Section 3: HTTP Timeouts
+// @XtreamHttpClient is derived from @PlatformHttpClient via .newBuilder()
+// Base timeouts (connect/read/write 30s), User-Agent, Chucker → inherited from platform
 
-// ✅ MANDATORY in OkHttpClient provider
-val xtreamHttpClient = OkHttpClient.Builder()
-    .connectTimeout(30, TimeUnit.SECONDS)   // Premium Contract
-    .readTimeout(30, TimeUnit.SECONDS)      // Premium Contract
-    .writeTimeout(30, TimeUnit.SECONDS)     // Premium Contract
-    .callTimeout(30, TimeUnit.SECONDS)      // Premium Contract (MANDATORY)
-    .addInterceptor(headerInterceptor)      // Per Section 4
-    .dispatcher(xtreamDispatcher)           // Per Section 5
+// ✅ CORRECT: Derive from platform, add Xtream-specific settings
+@Provides @XtreamHttpClient
+fun provideXtreamOkHttpClient(
+    @PlatformHttpClient platformClient: OkHttpClient,
+    parallelism: XtreamParallelism,
+): OkHttpClient = platformClient.newBuilder()
+    .callTimeout(30, TimeUnit.SECONDS)          // Premium Contract Section 3
+    .followSslRedirects(false)                  // Xtream security
+    .addInterceptor { /* Accept: application/json */ }
+    .dispatcher(Dispatcher().apply {            // Premium Contract Section 5
+        maxRequests = parallelism.value
+        maxRequestsPerHost = parallelism.value
+    })
     .build()
 
-// ❌ FORBIDDEN: Non-compliant timeouts
-val wrongClient = OkHttpClient.Builder()
-    .connectTimeout(60, TimeUnit.SECONDS)   // WRONG - must be 30s!
-    .readTimeout(120, TimeUnit.SECONDS)     // WRONG - must be 30s!
-    // No callTimeout                        // WRONG - mandatory!
+// ❌ FORBIDDEN: Creating a standalone OkHttpClient (bypasses platform)
+val wrongClient = OkHttpClient.Builder()        // WRONG - use platformClient.newBuilder()!
+    .connectTimeout(30, TimeUnit.SECONDS)
     .build()
 ```
 
 ### 2. Premium Contract Headers (MANDATORY - Section 4)
 
 ```kotlin
+// User-Agent → set by @PlatformHttpClient (inherited, no need to add)
+// Accept: application/json → set by @XtreamHttpClient interceptor
+
 object XtreamTransportConfig {
-    const val USER_AGENT = "FishIT-Player/2.x (Android)"
+    // User-Agent delegates to PlatformHttpConfig (app-wide SSOT)
+    const val USER_AGENT = PlatformHttpConfig.USER_AGENT
     const val ACCEPT_JSON = "application/json"
-    const val ACCEPT_ENCODING = "gzip"
 }
 
-// ✅ MANDATORY: API request interceptor
-val headerInterceptor = Interceptor { chain ->
-    val request = chain.request().newBuilder()
-        .header("User-Agent", XtreamTransportConfig.USER_AGENT)
-        .header("Accept", XtreamTransportConfig.ACCEPT_JSON)
-        .header("Accept-Encoding", XtreamTransportConfig.ACCEPT_ENCODING)
-        .build()
-    chain.proceed(request)
+// ✅ Xtream-specific Accept header (added in XtreamTransportModule)
+.addInterceptor { chain ->
+    val request = chain.request()
+    if (request.header("Accept") == null) {
+        chain.proceed(request.newBuilder().header("Accept", ACCEPT_JSON).build())
+    } else {
+        chain.proceed(request)
+    }
 }
 
 // ⚠️ CRITICAL: Two Distinct Header Profiles

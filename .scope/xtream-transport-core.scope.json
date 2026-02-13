@@ -59,7 +59,7 @@
         },
         {
           "path": "infra/transport-xtream/src/main/java/com/fishit/player/infra/transport/xtream/XtreamTransportConfig.kt",
-          "purpose": "SSOT for timeouts, User-Agent, parallelism",
+          "purpose": "SSOT for Xtream-specific timeouts, parallelism. Delegates User-Agent to PlatformHttpConfig.",
           "invariants": [
             "Respect Premium Contract parallelism limits",
             "FireTV low RAM: 3, Phone/Tablet: 12"
@@ -101,15 +101,7 @@
       ],
       "diModules": [
         "infra/transport-xtream/src/main/java/com/fishit/player/infra/transport/xtream/di/XtreamTransportModule.kt"
-      ],
-      "sourceSetFiles": {
-        "debug": [
-          "infra/transport-xtream/src/debug/java/com/fishit/player/infra/transport/xtream/di/DebugInterceptorModule.kt"
-        ],
-        "release": [
-          "infra/transport-xtream/src/release/java/com/fishit/player/infra/transport/xtream/di/DebugInterceptorModule.kt"
-        ]
-      }
+      ]
     }
   },
   "relatedScopes": [
@@ -119,7 +111,7 @@
   ],
   "globalInvariants": [
     "NO imports from pipeline/, data/, playback/, feature/",
-    "MAY import: core:model, core:device-api, infra:logging, infra:http-client",
+    "MAY import: core:model, core:device-api, infra:logging, infra:networking",
     "XtreamError sealed class for all error states",
     "Credentials NEVER logged - use redactCredentials()"
   ],

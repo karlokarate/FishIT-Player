@@ -30,6 +30,9 @@ NEVER_DO:
   - Create a second implementation when an SSOT already exists for that purpose
   - Keep duplicate/fallback implementations that serve the same purpose as an SSOT
   - Skip duplicate findings — ALWAYS consolidate or document + roadmap
+  - Write legacy/migration/backward-compat code for old entity data (DEV PHASE)
+  - Add fallback readers for old key formats or field layouts (DEV PHASE)
+  - Keep "legacy" codepaths that reconstruct data from denormalized entity fields
 
 ALWAYS_DO:
   - Check /.scope/*.scope.json before editing covered files
@@ -170,12 +173,54 @@ Full index: `.github/instructions/_index.instructions.md`
 
 ### SSOT Enforcement (Global)
 
-**Every agent MUST follow `.github/instructions/ssot-enforcement.instructions.md`:**
-- For every unique purpose → exactly ONE SSOT implementation
-- Duplicates, semantic duplicates, legacy leftovers → CONSOLIDATE or DELETE
-- Unnecessary fallbacks → DELETE (they produce incompatible output)
-- Unused implementations → evaluate: needed → TODO+ROADMAP; not needed → DELETE
-- Naming must be unambiguous repo-wide (see GLOSSARY)
+> **Full details:** `.github/instructions/ssot-enforcement.instructions.md`
+
+**Core Rule:** For every unique purpose → exactly ONE implementation. No exceptions.
+
+```yaml
+SSOT_DECISION_TREE:
+  duplicate_found:
+    - Superior SSOT exists?  → DELETE duplicate (don't "align" it)
+    - No clear SSOT?         → CONSOLIDATE best parts → CREATE one SSOT → DELETE rest
+    - Duplicate is fallback?  → DELETE (fallbacks produce incompatible output)
+    - Too large for scope?    → TODO + ROADMAP.md (NEVER skip silently)
+```
+
+**DEV PHASE — No Migration, No Backward Compatibility:**
+```yaml
+DEV_PHASE_RULE:  # Until first production release
+  - Fix the writer to produce correct data
+  - DELETE any fallback/legacy reader for old format
+  - DO NOT write migration code or "if old format" fallbacks
+  - Next sync writes fresh, correct data — done
+  - Reason: No production data exists. Every test = fresh sync.
+```
+
+**SSOT Registry — Use these, never create alternatives:**
+
+| Purpose | SSOT Location | Key API |
+|---------|---------------|---------|
+| Resolution → label | `core/model/util/ResolutionLabel.kt` | `fromHeight()`, `badgeLabel()` |
+| File size → string | `core/model/util/FileSizeFormatter.kt` | `format()` |
+| MIME → container | `core/model/util/ContainerGuess.kt` | `fromMimeType()` |
+| Source priority | `core/model/util/SourcePriority.kt` | `basePriority()`, `totalPriority()` |
+| Playback hints codec | `infra/data-nx/mapper/base/PlaybackHintsDecoder.kt` | `decodeFromVariant()`, `encodeToJson()` |
+| Hint key constants | `core/model/PlaybackHintKeys.kt` | `Xtream.*`, `Telegram.*` |
+| Source labels | `infra/data-nx/mapper/TypeMappers.kt` | `SourceLabelBuilder` |
+| Quality tags | `core/model/MediaVariant.kt` | `QualityTags.fromResolutionHeight()` |
+| Slug generation | `core/model/util/SlugGenerator.kt` | `toSlug()` |
+
+**SSOT Placement by Layer:**
+
+| Purpose Type | Correct Layer |
+|-------------|---------------|
+| Pure data mapping | `core/model/util/` |
+| Entity logic | `core/model/` or `core/persistence/` |
+| Transport encoding | `infra/transport-*/` |
+| Cross-source mapping | `infra/data-*/mapper/` |
+| Pipeline extraction | `pipeline/*/` |
+| UI presentation | `feature/*/ui/` or `core/ui-*/` |
+| Sync orchestration | `core/catalog-sync/` |
 
 ---
 
@@ -188,6 +233,7 @@ Full index: `.github/instructions/_index.instructions.md`
 - [ ] Read module README.md
 - [ ] Verify change is under allowed paths
 - [ ] No forbidden imports in plan
+- [ ] Search for existing SSOT before implementing any logic
 
 ### Post-Change (MANDATORY)
 
@@ -195,6 +241,8 @@ Full index: `.github/instructions/_index.instructions.md`
 - [ ] No com.chris.m3usuite outside legacy/
 - [ ] Code compiles
 - [ ] Naming follows Glossary patterns
+- [ ] No duplicate implementations introduced (check SSOT Registry)
+- [ ] No legacy/migration/fallback code added (DEV PHASE)
 
 ---
 

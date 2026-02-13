@@ -10,7 +10,7 @@
   ],
   "modules": {
     "playback/xtream": {
-      "fileCount": 8,
+      "fileCount": 5,
       "totalLOC": 800,
       "criticalFiles": [
         {
@@ -24,19 +24,12 @@
           ]
         },
         {
-          "path": "playback/xtream/src/main/java/com/fishit/player/playback/xtream/XtreamHttpDataSourceFactory.kt",
-          "purpose": "Custom Media3 DataSource.Factory with OkHttp",
+          "path": "playback/xtream/src/main/java/com/fishit/player/playback/xtream/DefaultXtreamDataSourceFactoryProvider.kt",
+          "purpose": "Provides OkHttpDataSource.Factory using shared @XtreamHttpClient",
           "invariants": [
-            "Handles HTTP redirects reliably (Cloudflare/CDN)",
-            "Preserves headers across 302 redirects"
-          ]
-        },
-        {
-          "path": "playback/xtream/src/main/java/com/fishit/player/playback/xtream/XtreamOkHttpClientProvider.kt",
-          "purpose": "Interface for OkHttpClient with streaming timeouts",
-          "invariants": [
-            "Compile-time gating for debug tools",
-            "Base builder in interface, impl in source sets"
+            "Uses @XtreamHttpClient OkHttpClient from transport-xtream DI",
+            "Overrides followSslRedirects=true for CDN redirect compatibility",
+            "Shares connection pool with transport layer"
           ]
         },
         {
@@ -52,14 +45,6 @@
         "playback/xtream/src/main/java/com/fishit/player/playback/xtream/di/XtreamPlaybackModule.kt"
       ]
     }
-  },
-  "sourceSetFiles": {
-    "debug": [
-      "playback/xtream/src/debug/java/com/fishit/player/playback/xtream/XtreamOkHttpClientProviderImpl.kt"
-    ],
-    "release": [
-      "playback/xtream/src/release/java/com/fishit/player/playback/xtream/XtreamOkHttpClientProviderImpl.kt"
-    ]
   },
   "relatedScopes": [
     "xtream-transport-core",
@@ -92,7 +77,6 @@
   },
   "testFiles": [
     "playback/xtream/src/test/java/com/fishit/player/playback/xtream/HlsCapabilityFallbackTest.kt",
-    "playback/xtream/src/test/java/com/fishit/player/playback/xtream/XtreamHttpRedirectTest.kt",
     "playback/xtream/src/test/java/com/fishit/player/playback/xtream/XtreamPlaybackHardeningTest.kt"
   ]
 }

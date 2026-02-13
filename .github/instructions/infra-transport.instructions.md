@@ -18,16 +18,13 @@ applyTo:
 > **for business/source data access**. 
 >
 > **Allowed Infrastructure Dependencies:**
-> - `infra/http-client`: Generic HTTP client providing rate limiting, caching, GZIP handling, and streaming
->   for all HTTP-based transport layers. Contains NO business logic - only technical HTTP infrastructure.
 > - `infra/logging`: Generic logging infrastructure (all modules)
+> - `infra/networking`: Platform HTTP client (`@PlatformHttpClient`) — shared connection pool, Chucker, User-Agent
+> - Each transport module derives its own OkHttpClient via `.newBuilder()` from `@PlatformHttpClient`
+>   (e.g., `@XtreamHttpClient` adds Accept:json, Dispatcher, callTimeout)
 >
 > **Exception:** `core/ui-imaging` (Coil) is explicitly allowed to use OkHttp for image fetching - 
 > this is NOT a transport violation as imaging is a separate concern from business data access.
->
-> **Similarly**, `infra/http-client` provides generic HTTP infrastructure reused across all HTTP-based
-> transport modules (Xtream, M3U, Jellyfin, WebDAV). It contains NO business logic and prevents
-> code duplication of rate limiting, caching, and GZIP handling across multiple transport layers.
 >
 > All upper layers consume clean, typed interfaces with source-agnostic DTOs.
 >

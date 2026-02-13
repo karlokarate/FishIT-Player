@@ -105,33 +105,29 @@ import org.drinkless.td.TdApi.*                              // Direct TDLib
 
 **OkHttp Exception (playback/xtream ONLY):**
 
-`playback/xtream` MAY use OkHttp **ONLY via provider pattern**:
+`playback/xtream` MAY use OkHttp **ONLY via the shared `@XtreamHttpClient` OkHttpClient** from `infra/transport-xtream`:
 
 ```kotlin
-// ✅ CORRECT: Interface + provider pattern (playback/xtream)
-interface XtreamOkHttpClientProvider {
-    fun createClient(): OkHttpClient
+// ✅ CORRECT: Inject shared @XtreamHttpClient (playback/xtream)
+@Inject constructor(
+    @XtreamHttpClient private val xtreamOkHttpClient: OkHttpClient
+) {
+    // Override followSslRedirects for CDN compatibility
+    private val playbackClient by lazy {
+        xtreamOkHttpClient.newBuilder().followSslRedirects(true).build()
+    }
 }
 
-class DebugXtreamOkHttpClientProvider : XtreamOkHttpClientProvider {
-    override fun createClient() = OkHttpClient.Builder()
-        .addInterceptor(ChuckerInterceptor(context))  // Debug only
-        .build()
-}
-
-class ReleaseXtreamOkHttpClientProvider : XtreamOkHttpClientProvider {
-    override fun createClient() = OkHttpClient.Builder().build()  // No debug overhead
-}
-
+// ❌ FORBIDDEN: Creating separate OkHttpClient instances
 // ❌ FORBIDDEN: Direct OkHttp import in other playback modules
 // playback/telegram MUST NOT import okhttp3.*
 // playback/local MUST NOT import okhttp3.*
 ```
 
-**Why Provider Pattern?**
-- Compile-time gating: Debug builds include Chucker, release builds don't (zero overhead)
-- Interface in `main/`, implementations in `debug/` and `release/` source sets
-- Aligns with Issue #564 compile-time dependency separation
+**HTTP Architecture:**
+- Uses shared `@XtreamHttpClient` from `infra/transport-xtream` (derived from `@PlatformHttpClient` in `infra/networking`)
+- Chucker gating is centralized in `infra/networking` debug/release source sets
+- No separate OkHttp wrapper needed — `DefaultXtreamDataSourceFactoryProvider` injects `@XtreamHttpClient` directly
 
 
 ---
@@ -260,9 +256,8 @@ tg://file/<fileId>? chatId=<chatId>&messageId=<messageId>&remoteId=<remoteId>&mi
 
 **Public Surface:**
 - `XtreamPlaybackSourceFactoryImpl` - Factory implementation
-- `XtreamDataSourceFactoryProvider` - Provides DataSource. Factory with per-request headers
-- `XtreamHttpDataSourceFactory` - OkHttpClient-based factory
-- `XtreamOkHttpClientProvider` - Interface for HTTP client creation (debug/release variants)
+- `XtreamDataSourceFactoryProvider` - Provides DataSource.Factory with per-request headers
+- `DefaultXtreamDataSourceFactoryProvider` - Uses shared `@XtreamHttpClient` OkHttpClient
 - `HlsCapabilityDetector` - Runtime detection of HLS module availability
 
 **Architecture:**
@@ -275,9 +270,7 @@ XtreamUrlBuilder (transport - builds authenticated URL)
     ↓
 PlaybackSource (HTTP URL + DataSourceType.XTREAM_HTTP)
     ↓
-XtreamHttpDataSourceFactory (with per-request headers)
-    ↓
-OkHttpClient (with redirect logging in debug builds only)
+OkHttpDataSource.Factory (via @XtreamHttpClient, followSslRedirects=true)
 ```
 
 **Playback Hints Contract:**
@@ -297,15 +290,15 @@ context.extras = mapOf(
 3. MP4 (mp4) - Fallback
 
 **Compile-Time Gating (Issue #564):**
-- Debug builds:  Chucker + RedirectLoggingInterceptor
-- Release builds: NO Chucker, NO debug interceptors, zero overhead
-- Pattern: Interface in main/, implementations in debug/ and release/ source sets
+- Chucker gating centralized in `infra/networking` (debug/release source sets)
+- `playback/xtream` inherits Chucker via `@XtreamHttpClient` → `@PlatformHttpClient` chain
+- Release builds: NO Chucker, zero overhead (no-op interceptor in release source set)
 
 **Dependencies:**
 - `playback/domain` - Interfaces
 - `infra/transport-xtream` - XtreamUrlBuilder
 - `androidx.media3:media3-datasource` - DataSource base classes
-- `okhttp3` - HTTP client (via provider pattern)
+- `okhttp3` - HTTP client (via `@XtreamHttpClient` from transport-xtream)
 
 ---
 
@@ -544,7 +537,7 @@ find playback/ -name "*PlaybackModule. kt" -exec grep -L "@IntoSet" {} \;
 - [ ] HLS format selected when available + HLS module present
 - [ ] Fallback to TS when HLS unavailable
 - [ ] Returns `DataSourceType.XTREAM_HTTP` for proper redirect handling
-- [ ] Chucker ONLY in debug builds (compile-time gating via source sets)
+- [ ] Chucker inherited via @XtreamHttpClient (gated in infra/networking)
 
 ### playback/domain Specific
 - [ ] `@Multibinds` declared for empty set support

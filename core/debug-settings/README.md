@@ -97,12 +97,12 @@ override fun intercept(chain: Chain): Response {
 ### OkHttpClient (Xtream Transport)
 
 ```kotlin
-// Debug variant: infra/transport-xtream/src/debug/.../DebugInterceptorModule.kt
+// Debug variant: infra/networking/src/debug/.../DebugInterceptorModule.kt
 @Provides
 @Singleton
 fun provideChuckerInterceptor(gated: GatedChuckerInterceptor): Interceptor = gated
 
-// Release variant: infra/transport-xtream/src/release/.../DebugInterceptorModule.kt
+// Release variant: infra/networking/src/release/.../DebugInterceptorModule.kt
 @Provides
 @Singleton
 fun provideChuckerInterceptor(): Interceptor = Interceptor { chain ->

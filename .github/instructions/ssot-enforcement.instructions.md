@@ -107,7 +107,41 @@ NEVER_DO:
   - Import a legacy implementation when a v2 SSOT exists
   - Leave unused imports/implementations without evaluation
   - Rationalize duplicates as "not true duplicates" when they serve the same purpose
+  - Write legacy/migration/backward-compat fallback code for old entity data (DEV PHASE)
+  - Add fallback readers for old key formats or field layouts (DEV PHASE)
+  - Keep "legacy" codepaths that reconstruct data from denormalized entity fields
 ```
+
+---
+
+## ⚡ DEV PHASE: No Migration, No Backward Compatibility
+
+> **We are in active development. Every app test starts with a fresh sync.**
+> **There is NO production data to migrate. There are NO users on old schemas.**
+
+### The Rule
+
+```
+When fixing a bug in entity writing:
+  1. Fix the writer to produce correct data
+  2. DELETE any fallback/legacy reader for the old format
+  3. DO NOT write migration code
+  4. DO NOT add "if old format, try this" fallback
+  5. Next sync writes fresh, correct data — done.
+```
+
+### Why This Matters
+
+Legacy/migration code:
+- Adds complexity that makes bugs HARDER to find
+- Creates a second codepath that itself can have bugs
+- Gives false confidence that "old data still works" (it doesn't — it's wrong data)
+- Blocks forward progress by requiring backward thinking
+
+### When This Changes
+
+This rule applies **until first production release**. At that point, a migration strategy
+will be defined in a separate contract. Until then: **fix forward, sync fresh, no fallbacks.**
 
 ---
 
