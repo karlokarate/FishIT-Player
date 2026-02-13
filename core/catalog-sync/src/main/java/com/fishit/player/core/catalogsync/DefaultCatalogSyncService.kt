@@ -1,6 +1,7 @@
 package com.fishit.player.core.catalogsync
 
 import com.fishit.player.core.feature.auth.TelegramAuthRepository
+import com.fishit.player.core.synccommon.metrics.SyncPerfMetrics
 import com.fishit.player.core.metadata.MediaMetadataNormalizer
 import com.fishit.player.core.model.PlaybackHintKeys
 import com.fishit.player.core.model.RawMediaMetadata

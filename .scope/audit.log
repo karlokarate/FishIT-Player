@@ -538,3 +538,10 @@
 {"action":"read","scopeId":"telegram-playback","status":"ACKNOWLEDGED","timestamp":"2026-02-13T11:33:55.650Z"}
 {"action":"check","filePath":"pipeline/telegram/src/main/java/com/fishit/player/pipeline/telegram/model/TelegramRawMetadataExtensions.kt","status":"ALLOWED","agentMode":"interactive","scopeId":"telegram-pipeline","timestamp":"2026-02-13T11:34:00.622Z"}
 {"action":"check","filePath":"core/model/src/main/java/com/fishit/player/core/model/PlaybackHintKeys.kt","status":"UNTRACKED","agentMode":"interactive","timestamp":"2026-02-13T11:34:05.476Z"}
+{"action":"session_start","status":"STARTED","agentMode":"interactive","details":"session-1770985999257","timestamp":"2026-02-13T12:33:19.257Z"}
+{"action":"check","filePath":"pipeline/xtream/src/main/java/com/fishit/player/pipeline/xtream/catalog/MemoryPressureMonitor.kt","status":"ALLOWED","agentMode":"interactive","scopeId":"xtream-pipeline-catalog","timestamp":"2026-02-13T12:33:40.280Z"}
+{"action":"check","filePath":"pipeline/xtream/src/main/java/com/fishit/player/pipeline/xtream/ids/XtreamSourceId.kt","status":"ALLOWED","agentMode":"interactive","scopeId":"xtream-pipeline-mapping","timestamp":"2026-02-13T12:33:40.280Z"}
+{"action":"check","filePath":"pipeline/xtream/src/main/java/com/fishit/player/pipeline/xtream/model/XtreamSearchResult.kt","status":"ALLOWED","agentMode":"interactive","scopeId":"xtream-pipeline-mapping","timestamp":"2026-02-13T12:33:40.281Z"}
+{"action":"check","filePath":"pipeline/xtream/src/main/java/com/fishit/player/pipeline/xtream/model/XtreamEpgEntry.kt","status":"ALLOWED","agentMode":"interactive","scopeId":"xtream-pipeline-mapping","timestamp":"2026-02-13T12:33:40.282Z"}
+{"action":"check","filePath":"core/catalog-sync/src/main/java/com/fishit/player/core/catalogsync/ChannelSyncBuffer.kt","status":"ALLOWED","agentMode":"interactive","scopeId":"catalog-sync","timestamp":"2026-02-13T12:33:40.282Z"}
+{"action":"check","filePath":"core/catalog-sync/src/main/java/com/fishit/player/core/catalogsync/SyncPerfMetrics.kt","status":"ALLOWED","agentMode":"interactive","scopeId":"catalog-sync","timestamp":"2026-02-13T12:33:40.283Z"}

@@ -1,5 +1,7 @@
 package com.fishit.player.core.catalogsync
 
+import com.fishit.player.core.model.sync.SyncPhase
+import com.fishit.player.core.synccommon.metrics.SyncPerfMetrics
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -42,15 +44,15 @@ class SyncPerformanceRegressionTest {
         val metrics = SyncPerfMetrics(isEnabled = true)
         
         // Simulate a sync phase
-        metrics.startPhase(SyncPhase.LIVE)
+        metrics.startPhase(SyncPhase.LIVE_CHANNELS)
         
         val itemCount = 100
-        metrics.recordItemsDiscovered(SyncPhase.LIVE, itemCount)
+        metrics.recordItemsDiscovered(SyncPhase.LIVE_CHANNELS, itemCount)
         metrics.recordPersist(
-            phase = SyncPhase.LIVE,
+            phase = SyncPhase.LIVE_CHANNELS,
             durationMs = 50, // 50ms to persist 100 items
             itemCount = itemCount,
-            isTimeBased = false
+            wasTimeBasedFlush = false
         )
         
         // Simulate elapsed time for phase (2 seconds)
@@ -59,9 +61,9 @@ class SyncPerformanceRegressionTest {
             // Busy wait for precise timing
         }
         
-        metrics.endPhase(SyncPhase.LIVE)
+        metrics.endPhase(SyncPhase.LIVE_CHANNELS)
         
-        val phaseMetrics = metrics.getPhaseMetrics(SyncPhase.LIVE)!!
+        val phaseMetrics = metrics.getPhaseMetrics(SyncPhase.LIVE_CHANNELS)!!
         val throughput = phaseMetrics.itemsPersistedPerSec
         
         assertTrue(
@@ -79,22 +81,22 @@ class SyncPerformanceRegressionTest {
     fun `baseline persist time should be under 100ms per batch`() = runTest {
         val metrics = SyncPerfMetrics(isEnabled = true)
         
-        metrics.startPhase(SyncPhase.MOVIES)
+        metrics.startPhase(SyncPhase.VOD_MOVIES)
         
         // Record multiple persist operations
         val batchCount = 5
         repeat(batchCount) {
             metrics.recordPersist(
-                phase = SyncPhase.MOVIES,
+                phase = SyncPhase.VOD_MOVIES,
                 durationMs = 80, // 80ms per batch (acceptable)
                 itemCount = 100,
-                isTimeBased = false
+                wasTimeBasedFlush = false
             )
         }
         
-        metrics.endPhase(SyncPhase.MOVIES)
+        metrics.endPhase(SyncPhase.VOD_MOVIES)
         
-        val phaseMetrics = metrics.getPhaseMetrics(SyncPhase.MOVIES)!!
+        val phaseMetrics = metrics.getPhaseMetrics(SyncPhase.VOD_MOVIES)!!
         val avgPersistMs = phaseMetrics.avgPersistMs
         
         assertTrue(
@@ -112,19 +114,19 @@ class SyncPerformanceRegressionTest {
     fun `baseline error rate should be under 5 percent`() = runTest {
         val metrics = SyncPerfMetrics(isEnabled = true)
         
-        metrics.startPhase(SyncPhase.SERIES)
+        metrics.startPhase(SyncPhase.SERIES_INDEX)
         
         val totalItems = 1000
         val errors = 40 // 4% error rate (acceptable)
         
-        metrics.recordItemsDiscovered(SyncPhase.SERIES, totalItems)
+        metrics.recordItemsDiscovered(SyncPhase.SERIES_INDEX, totalItems)
         repeat(errors) {
-            metrics.recordError(SyncPhase.SERIES)
+            metrics.recordError(SyncPhase.SERIES_INDEX)
         }
         
-        metrics.endPhase(SyncPhase.SERIES)
+        metrics.endPhase(SyncPhase.SERIES_INDEX)
         
-        val phaseMetrics = metrics.getPhaseMetrics(SyncPhase.SERIES)!!
+        val phaseMetrics = metrics.getPhaseMetrics(SyncPhase.SERIES_INDEX)!!
         val errorRate = phaseMetrics.errorRatePer1000 / 10.0 // Convert to percentage
         
         assertTrue(
@@ -146,7 +148,7 @@ class SyncPerformanceRegressionTest {
         for (phase in SyncPhase.entries) {
             metrics.startPhase(phase)
             metrics.recordItemsDiscovered(phase, 100)
-            metrics.recordPersist(phase, durationMs = 50, itemCount = 100, isTimeBased = false)
+            metrics.recordPersist(phase, durationMs = 50, itemCount = 100, wasTimeBasedFlush = false)
             metrics.recordError(phase)
             metrics.recordRetry(phase)
             metrics.endPhase(phase)
@@ -157,7 +159,7 @@ class SyncPerformanceRegressionTest {
         
         assertTrue("Report should not be empty", report.isNotEmpty())
         assertTrue("Report should contain phase data", report.contains("Duration:"))
-        assertTrue("Report should contain totals", report.contains("TOTALS"))
+        assertTrue("Report should contain totals", report.contains("Total Duration"))
     }
 
     /**
@@ -167,7 +169,7 @@ class SyncPerformanceRegressionTest {
     fun `memory pressure tracking should return non-negative values`() = runTest {
         val metrics = SyncPerfMetrics(isEnabled = true)
         
-        metrics.startPhase(SyncPhase.EPISODES)
+        metrics.startPhase(SyncPhase.SERIES_EPISODES)
         
         // Simulate some work that might trigger GC
         val tempData = mutableListOf<ByteArray>()
@@ -175,9 +177,9 @@ class SyncPerformanceRegressionTest {
             tempData.add(ByteArray(512 * 1024)) // 512KB allocations
         }
         
-        metrics.endPhase(SyncPhase.EPISODES)
+        metrics.endPhase(SyncPhase.SERIES_EPISODES)
         
-        val phaseMetrics = metrics.getPhaseMetrics(SyncPhase.EPISODES)!!
+        val phaseMetrics = metrics.getPhaseMetrics(SyncPhase.SERIES_EPISODES)!!
         
         // Memory variance should be non-negative (it's a delta/variance measure)
         assertTrue(
@@ -195,12 +197,12 @@ class SyncPerformanceRegressionTest {
         val throughputs = mutableListOf<Double>()
         
         // Test each phase
-        for (phase in listOf(SyncPhase.LIVE, SyncPhase.MOVIES, SyncPhase.SERIES)) {
+        for (phase in listOf(SyncPhase.LIVE_CHANNELS, SyncPhase.VOD_MOVIES, SyncPhase.SERIES_INDEX)) {
             metrics.startPhase(phase)
             
             val itemCount = 100
             metrics.recordItemsDiscovered(phase, itemCount)
-            metrics.recordPersist(phase, durationMs = 50, itemCount = itemCount, isTimeBased = false)
+            metrics.recordPersist(phase, durationMs = 50, itemCount = itemCount, wasTimeBasedFlush = false)
             
             // Simulate elapsed time for the phase
             val workStartTime = System.currentTimeMillis()
@@ -230,7 +232,7 @@ class SyncPerformanceRegressionTest {
     fun `large batch performance should meet baseline thresholds`() = runTest {
         val metrics = SyncPerfMetrics(isEnabled = true)
         
-        metrics.startPhase(SyncPhase.MOVIES)
+        metrics.startPhase(SyncPhase.VOD_MOVIES)
         
         // Large batch scenario
         val totalItems = 1000
@@ -238,12 +240,12 @@ class SyncPerformanceRegressionTest {
         val batches = totalItems / batchSize
         
         repeat(batches) {
-            metrics.recordItemsDiscovered(SyncPhase.MOVIES, batchSize)
+            metrics.recordItemsDiscovered(SyncPhase.VOD_MOVIES, batchSize)
             metrics.recordPersist(
-                phase = SyncPhase.MOVIES,
+                phase = SyncPhase.VOD_MOVIES,
                 durationMs = 200, // 200ms per batch of 250 items
                 itemCount = batchSize,
-                isTimeBased = false
+                wasTimeBasedFlush = false
             )
         }
         
@@ -253,9 +255,9 @@ class SyncPerformanceRegressionTest {
             // Busy wait for precise timing
         }
         
-        metrics.endPhase(SyncPhase.MOVIES)
+        metrics.endPhase(SyncPhase.VOD_MOVIES)
         
-        val phaseMetrics = metrics.getPhaseMetrics(SyncPhase.MOVIES)!!
+        val phaseMetrics = metrics.getPhaseMetrics(SyncPhase.VOD_MOVIES)!!
         
         // Verify throughput
         assertTrue(
