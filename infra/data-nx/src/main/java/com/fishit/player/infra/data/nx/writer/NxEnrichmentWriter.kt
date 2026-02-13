@@ -25,8 +25,17 @@
  * - **IMMUTABLE:** workKey, workType, canonicalTitle → never changed
  *
  * ## Call Order
- * NxEnrichmentWriter runs BEFORE [NxCatalogWriter] for series episode creation,
- * so that the parent series work is fully enriched before episode works are created.
+ * Enrichment can only happen AFTER the info call, which itself requires the persisted ID
+ * from catalog sync. The de facto call order is:
+ *
+ * 1. **[NxCatalogWriter]** persists entities from catalog sync (VOD/Series as NX_Work)
+ * 2. On detail page open, the info call is made using the persisted source ID
+ * 3. **For VOD:** NxEnrichmentWriter enriches the VOD work immediately with info call data
+ * 4. **For Series:**
+ *    a. Episodes are persisted as child works via [NxCatalogWriter] (pipeline chain) FIRST
+ *    b. THEN the parent series work is enriched via NxEnrichmentWriter
+ *    c. THEN inheritable parent fields (poster, backdrop, genres, rating, etc.) are
+ *       propagated to child episode works via [inheritParentFields]
  *
  * @see NxCatalogWriter for sync-time + detail-time entity creation (shared by both orchestrators)
  */
@@ -34,6 +43,7 @@ package com.fishit.player.infra.data.nx.writer
 
 import com.fishit.player.core.model.NormalizedMediaMetadata
 import com.fishit.player.core.model.PlaybackHintKeys
+import com.fishit.player.core.model.repository.NxWorkRelationRepository
 import com.fishit.player.core.model.repository.NxWorkRepository
 import com.fishit.player.core.model.repository.NxWorkVariantRepository
 import com.fishit.player.core.model.repository.toEnrichment
@@ -46,6 +56,7 @@ import javax.inject.Singleton
 class NxEnrichmentWriter @Inject constructor(
     private val workRepository: NxWorkRepository,
     private val variantRepository: NxWorkVariantRepository,
+    private val relationRepository: NxWorkRelationRepository,
     private val workEntityBuilder: WorkEntityBuilder,
 ) {
     companion object {
@@ -146,5 +157,60 @@ class NxEnrichmentWriter @Inject constructor(
             "updateVariantPlaybackHints: Updated variant for $sourceKey " +
                 "(${hintsUpdate.size} hints merged, technical fields preserved)"
         }
+    }
+
+    /**
+     * Inherit fields from an enriched parent work to its child works.
+     *
+     * After a series parent is enriched with detail API metadata (poster, backdrop,
+     * genres, rating, etc.), those fields should be propagated to child episode works
+     * that lack them. Uses [NxWorkRepository.enrichIfAbsent] semantics so child-specific
+     * values are never overwritten — only null fields are filled from the parent.
+     *
+     * Inheritable fields: poster, backdrop, genres, rating, director, cast, trailer,
+     * tmdbId, imdbId, tvdbId.
+     *
+     * @param parentWorkKey The workKey of the enriched parent work
+     * @return Number of child works that were enriched
+     */
+    suspend fun inheritParentFields(parentWorkKey: String): Int {
+        val parent = workRepository.get(parentWorkKey) ?: run {
+            UnifiedLog.w(TAG) { "inheritParentFields: parent NX_Work($parentWorkKey) not found" }
+            return 0
+        }
+
+        val childRelations = relationRepository.findChildren(parentWorkKey)
+        if (childRelations.isEmpty()) {
+            UnifiedLog.d(TAG) { "inheritParentFields: no children for NX_Work($parentWorkKey)" }
+            return 0
+        }
+
+        val parentEnrichment = NxWorkRepository.Enrichment(
+            poster = parent.poster,
+            backdrop = parent.backdrop,
+            genres = parent.genres,
+            rating = parent.rating,
+            director = parent.director,
+            cast = parent.cast,
+            trailer = parent.trailer,
+            tmdbId = parent.tmdbId,
+            imdbId = parent.imdbId,
+            tvdbId = parent.tvdbId,
+        )
+
+        var enrichedCount = 0
+        for (relation in childRelations) {
+            val result = workRepository.enrichIfAbsent(relation.childWorkKey, parentEnrichment)
+            if (result != null) {
+                enrichedCount++
+            }
+        }
+
+        UnifiedLog.d(TAG) {
+            "inheritParentFields: enriched $enrichedCount/${childRelations.size} children " +
+                "of NX_Work($parentWorkKey)"
+        }
+
+        return enrichedCount
     }
 }
