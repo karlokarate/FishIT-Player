@@ -30,8 +30,7 @@ import com.fishit.player.infra.transport.xtream.XtreamSeriesInfo
 import com.fishit.player.infra.transport.xtream.XtreamSeriesInfoBlock
 import com.fishit.player.infra.transport.xtream.XtreamVodInfo
 import com.fishit.player.infra.transport.xtream.XtreamVodInfoBlock
-import com.fishit.player.pipeline.xtream.adapter.toEpisodes
-import com.fishit.player.pipeline.xtream.mapper.toRawMediaMetadata
+import com.fishit.player.pipeline.xtream.adapter.XtreamPipelineAdapter
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.SupervisorJob
@@ -60,15 +59,15 @@ import kotlin.coroutines.coroutineContext
  *
  * ## Episode Pipeline Chain (SSOT)
  * When a series detail is opened:
- * 1. `xtreamApiClient.getSeriesInfo()` → `XtreamSeriesInfo`
- * 2. `seriesInfo.toEpisodes()` → `List<XtreamEpisode>` (pipeline adapter SSOT)
- * 3. `episode.toRawMediaMetadata()` → `RawMediaMetadata` (pipeline mapper SSOT)
- * 4. `normalizer.normalize(raw)` → `NormalizedMediaMetadata`
- * 5. `nxCatalogWriter.ingest(raw, normalized, accountKey)` → NX entities
- * 6. `relationRepository.upsertBatch(relations)` → series↔episode links
+ * 1. `pipelineAdapter.convertEpisodesToRaw(seriesInfo)` → `List<RawMediaMetadata>` (uses already-fetched info)
+ * 2. `normalizer.normalize(raw)` → `NormalizedMediaMetadata`
+ * 3. `nxCatalogWriter.ingest(raw, normalized, accountKey)` → NX entities
+ * 4. `relationRepository.upsertBatch(relations)` → series↔episode links
  *
- * This is the SAME chain that [XtreamCatalogSync] uses during catalog sync,
- * guaranteeing identical field population.
+ * This uses the SAME pipeline chain that [XtreamCatalogSync] uses during catalog sync,
+ * guaranteeing identical field population. The adapter method avoids duplicate API calls
+ * by accepting the already-fetched `XtreamSeriesInfo` and returns `RawMediaMetadata`
+ * directly, preventing pipeline DTO leakage to the data layer.
  *
  * @see NxCatalogWriter for entity creation (shared with catalog sync)
  * @see NxEnrichmentWriter for detail-time enrichment of existing works
@@ -78,6 +77,7 @@ class XtreamDetailSync
     @Inject
     constructor(
         private val xtreamApiClient: XtreamApiClient,
+        private val pipelineAdapter: XtreamPipelineAdapter,
         private val canonicalMediaRepository: CanonicalMediaRepository,
         private val seriesIndexRepository: XtreamSeriesIndexRepository,
         private val priorityDispatcher: ApiPriorityDispatcher,
@@ -302,22 +302,19 @@ class XtreamDetailSync
 
         // 2. PERSIST EPISODES via pipeline chain (SSOT)
         val seriesWorkKey = media.canonicalId.key.value
-        val seriesName = info?.name ?: media.canonicalTitle
-
-        // Derive accountKey from the series' NX_WorkSourceRef
         val accountKey = sourceRefRepository.findByWorkKey(seriesWorkKey)
             .firstOrNull { it.sourceType == NxWorkSourceRefRepository.SourceType.XTREAM }
             ?.accountKey
             ?: "xtream:unknown"
         val accountLabel = accountKey.removePrefix("xtream:")
 
-        // Pipeline chain: toEpisodes → toRawMediaMetadata → normalizer → NxCatalogWriter
-        val xtreamEpisodes = seriesInfo.toEpisodes(seriesId, seriesName)
+        // Pipeline chain: pipelineAdapter.convertEpisodesToRaw → normalizer → NxCatalogWriter
+        // Uses already-fetched seriesInfo to avoid duplicate API call
+        val rawEpisodes = pipelineAdapter.convertEpisodesToRaw(seriesInfo, seriesId, accountLabel)
         val episodeWorkKeys = mutableListOf<Pair<String, Int>>() // workKey to episodeIndex
 
-        if (xtreamEpisodes.isNotEmpty()) {
-            for ((index, ep) in xtreamEpisodes.withIndex()) {
-                val raw = ep.toRawMediaMetadata(accountLabel = accountLabel)
+        if (rawEpisodes.isNotEmpty()) {
+            for ((index, raw) in rawEpisodes.withIndex()) {
                 val normalized = normalizer.normalize(raw)
                 val workKey = nxCatalogWriter.ingest(raw, normalized, accountKey)
                 if (workKey != null) {
@@ -327,14 +324,14 @@ class XtreamDetailSync
 
             // Create series→episode relations
             val relations = episodeWorkKeys.map { (workKey, index) ->
-                val ep = xtreamEpisodes[index]
+                val raw = rawEpisodes[index]
                 NxWorkRelationRepository.Relation(
                     parentWorkKey = seriesWorkKey,
                     childWorkKey = workKey,
                     relationType = RelationType.SERIES_EPISODE,
-                    seasonNumber = ep.seasonNumber,
-                    episodeNumber = ep.episodeNumber,
-                    orderIndex = ep.seasonNumber * 1000 + ep.episodeNumber,
+                    seasonNumber = raw.season,
+                    episodeNumber = raw.episode,
+                    orderIndex = (raw.season ?: 0) * 1000 + (raw.episode ?: 0),
                 )
             }
             relationRepository.upsertBatch(relations)
@@ -344,7 +341,7 @@ class XtreamDetailSync
             // which normalizer + NxCatalogWriter handle correctly.
 
             UnifiedLog.i(TAG) {
-                "loadSeriesDetailInternal: persisted ${episodeWorkKeys.size}/${xtreamEpisodes.size} episodes " +
+                "loadSeriesDetailInternal: persisted ${episodeWorkKeys.size}/${rawEpisodes.size} episodes " +
                     "via pipeline chain for series $seriesId"
             }
         }

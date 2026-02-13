@@ -127,6 +127,15 @@ class NxEnrichmentWriter @Inject constructor(
             sourceKey = sourceKey,
             label = existing?.label ?: "Original",
             isDefault = existing?.isDefault ?: true,
+            // Preserve existing technical metadata to avoid silent wipe
+            qualityHeight = existing?.qualityHeight,
+            qualityWidth = existing?.qualityWidth,
+            bitrateKbps = existing?.bitrateKbps,
+            videoCodec = existing?.videoCodec,
+            audioCodec = existing?.audioCodec,
+            audioLang = existing?.audioLang,
+            durationMs = existing?.durationMs,
+            // Update container from hints if provided, otherwise preserve existing
             container = hintsUpdate[PlaybackHintKeys.Xtream.CONTAINER_EXT] ?: existing?.container,
             playbackHints = mergedHints,
             updatedAtMs = System.currentTimeMillis(),
@@ -135,7 +144,7 @@ class NxEnrichmentWriter @Inject constructor(
 
         UnifiedLog.d(TAG) {
             "updateVariantPlaybackHints: Updated variant for $sourceKey " +
-                "(${hintsUpdate.size} hints merged)"
+                "(${hintsUpdate.size} hints merged, technical fields preserved)"
         }
     }
 }

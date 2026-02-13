@@ -1,5 +1,6 @@
 package com.fishit.player.pipeline.xtream.adapter
 
+import com.fishit.player.core.model.RawMediaMetadata
 import com.fishit.player.core.model.util.EpochConverter
 import com.fishit.player.core.model.util.RatingNormalizer
 import com.fishit.player.infra.transport.xtream.XtreamApiClient
@@ -9,6 +10,7 @@ import com.fishit.player.infra.transport.xtream.XtreamLiveStream
 import com.fishit.player.infra.transport.xtream.XtreamSeriesInfo
 import com.fishit.player.infra.transport.xtream.XtreamSeriesStream
 import com.fishit.player.infra.transport.xtream.XtreamVodStream
+import com.fishit.player.pipeline.xtream.mapper.toRawMediaMetadata
 import com.fishit.player.pipeline.xtream.model.XtreamChannel
 import com.fishit.player.pipeline.xtream.model.XtreamEpisode
 import com.fishit.player.pipeline.xtream.model.XtreamSeriesItem
@@ -90,6 +92,32 @@ class XtreamPipelineAdapter
             // Use provided name or try to get it from seriesInfo
             val resolvedSeriesName = seriesName ?: seriesInfo.info?.name
             return seriesInfo.toEpisodes(seriesId, resolvedSeriesName)
+        }
+
+        /**
+         * Convert already-fetched series info to RawMediaMetadata list.
+         *
+         * This method accepts a pre-fetched [XtreamSeriesInfo] to avoid duplicate API calls
+         * and converts episodes directly to [RawMediaMetadata], preventing pipeline DTO
+         * leakage to the data layer.
+         *
+         * **Use case:** When [XtreamSeriesInfo] has already been fetched (e.g., for detail
+         * loading), this avoids a second `getSeriesInfo()` call and provides data layer
+         * a clean core model interface without exposing [XtreamEpisode] DTOs.
+         *
+         * @param seriesInfo Already-fetched series info from API
+         * @param seriesId The series ID (for episode identity keys)
+         * @param accountLabel Account label for source identification (e.g., "server1")
+         * @return List of RawMediaMetadata for episodes, suitable for direct ingestion
+         */
+        fun convertEpisodesToRaw(
+            seriesInfo: XtreamSeriesInfo,
+            seriesId: Int,
+            accountLabel: String,
+        ): List<RawMediaMetadata> {
+            val seriesName = seriesInfo.info?.name
+            val episodes = seriesInfo.toEpisodes(seriesId, seriesName)
+            return episodes.map { it.toRawMediaMetadata(accountLabel = accountLabel) }
         }
 
         /**
@@ -301,7 +329,7 @@ internal fun XtreamLiveStream.toPipelineItem(): XtreamChannel =
  * @param seriesName The series title (embedded in each [XtreamEpisode] for context)
  * @return Flattened list of all episodes across all seasons
  */
-fun XtreamSeriesInfo.toEpisodes(
+internal fun XtreamSeriesInfo.toEpisodes(
     seriesId: Int,
     seriesName: String?,
 ): List<XtreamEpisode> {
