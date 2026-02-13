@@ -2,7 +2,7 @@ package com.fishit.player.infra.transport.xtream.di
 
 import android.content.Context
 import com.fishit.player.core.device.DeviceClassProvider
-import com.fishit.player.infra.http.HttpClient
+import com.fishit.player.infra.networking.di.PlatformHttpClient
 import com.fishit.player.infra.transport.xtream.DefaultXtreamApiClient
 import com.fishit.player.infra.transport.xtream.EncryptedXtreamCredentialsStore
 import com.fishit.player.infra.transport.xtream.XtreamApiClient
@@ -22,14 +22,23 @@ import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import kotlinx.serialization.json.Json
-import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import java.util.concurrent.TimeUnit
 import javax.inject.Qualifier
 import javax.inject.Singleton
 
 /**
- * Qualifier for Xtream-specific OkHttpClient with Premium Contract settings.
+ * Qualifier for Xtream-specific OkHttpClient — **child** of [@PlatformHttpClient].
+ *
+ * Derived via [OkHttpClient.newBuilder()] from the platform client, adding:
+ * - Accept: application/json
+ * - callTimeout: 30s (Premium Contract Section 3)
+ * - followSslRedirects: false (Xtream security)
+ * - Device-class Dispatcher parallelism (Premium Contract Section 5)
+ *
+ * Inherits from platform: connection pool, Chucker, User-Agent, base timeouts.
+ *
+ * @see PlatformHttpClient the parent client
  */
 @Qualifier
 @Retention(AnnotationRetention.BINARY)
@@ -40,14 +49,14 @@ annotation class XtreamHttpClient
  *
  * Provides XtreamApiClient, XtreamDiscovery, and related transport components.
  *
- * Premium Contract Compliance:
- * - Section 3: HTTP Timeouts (connect/read/write/call all 30s)
- * - Section 4: User-Agent FishIT-Player/2.x (Android)
- * - Section 5: Device-class parallelism (OkHttp Dispatcher limits)
+ * **Parent–Child HTTP Client Architecture:**
+ * - [@PlatformHttpClient] (infra/networking) provides shared infrastructure
+ * - [@XtreamHttpClient] derives via `.newBuilder()`, adding Xtream-specific settings
  *
- * **Debug Runtime Toggles:**
- * - Chucker HTTP Inspector: OFF by default, gated via GatedChuckerInterceptor
- * - User can enable/disable via Settings (debug builds only)
+ * Premium Contract Compliance:
+ * - Section 3: callTimeout 30s (added here; connect/read/write inherited from platform)
+ * - Section 4: Accept: application/json (added here; User-Agent inherited from platform)
+ * - Section 5: Device-class parallelism (OkHttp Dispatcher limits)
  *
  * @see <a href="contracts/XTREAM_SCAN_PREMIUM_CONTRACT_V1.md">Premium Contract</a>
  */
@@ -82,63 +91,46 @@ object XtreamTransportModule {
         )
 
     /**
-     * Provides Xtream-specific OkHttpClient with Premium Contract settings.
+     * Provides Xtream-specific OkHttpClient — derived from [@PlatformHttpClient].
      *
-     * Timeouts per Section 3:
-     * - connectTimeout: 30s
-     * - readTimeout: 30s
-     * - writeTimeout: 30s
-     * - callTimeout: 30s (mandatory)
-     *
-     * Headers per Section 4:
+     * **Inherited from platform (via .newBuilder(), shared connection pool):**
+     * - connectTimeout: 30s, readTimeout: 30s, writeTimeout: 30s
      * - User-Agent: FishIT-Player/2.x (Android)
-     * - Accept: application/json
-     * - Accept-Encoding: gzip
+     * - Chucker HTTP Inspector (gated)
+     * - followRedirects: true, followSslRedirects: true
      *
-     * Parallelism per Section 5:
-     * - Phone/Tablet: maxRequests=10, maxRequestsPerHost=10
-     * - FireTV/low-RAM: maxRequests=3, maxRequestsPerHost=3
-     *
-     * **Debug Runtime Toggles:**
-     * - Chucker: Gated via GatedChuckerInterceptor (OFF by default in debug)
-     * - Release: No Chucker (no-op implementation)
+     * **Added here (Xtream-specific):**
+     * - callTimeout: 30s (Premium Contract Section 3 — mandatory hard stop)
+     * - followSslRedirects: false (Xtream panels often use non-standard SSL)
+     * - Accept: application/json (Xtream API returns JSON)
+     * - Dispatcher parallelism per device class (Premium Contract Section 5)
      */
     @Provides
     @Singleton
     @XtreamHttpClient
     fun provideXtreamOkHttpClient(
-        @ApplicationContext context: Context,
+        @PlatformHttpClient platformClient: OkHttpClient,
         parallelism: XtreamParallelism,
-        chuckerInterceptor: Interceptor, // GatedChuckerInterceptor in debug, no-op in release
     ): OkHttpClient =
-        OkHttpClient
-            .Builder()
-            // Premium Contract Section 3: HTTP Timeouts
-            .connectTimeout(XtreamTransportConfig.CONNECT_TIMEOUT_SECONDS, TimeUnit.SECONDS)
-            .readTimeout(XtreamTransportConfig.READ_TIMEOUT_SECONDS, TimeUnit.SECONDS)
-            .writeTimeout(XtreamTransportConfig.WRITE_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+        platformClient
+            .newBuilder()
+            // Xtream-specific: hard call timeout (Premium Contract Section 3)
             .callTimeout(XtreamTransportConfig.CALL_TIMEOUT_SECONDS, TimeUnit.SECONDS)
-            // Redirect handling (many Xtream panels use HTTP on non-standard ports)
-            .followRedirects(true)
+            // Xtream-specific: many panels use HTTP on non-standard ports
             .followSslRedirects(false)
-            // Chucker HTTP Inspector (gated in debug, no-op in release)
-            .addInterceptor(chuckerInterceptor)
-            // Premium Contract Section 4: Headers via interceptor
+            // Xtream-specific: Accept header for JSON API responses
             .addInterceptor { chain ->
                 val original = chain.request()
-                val builder = original.newBuilder()
-
-                // Always set User-Agent per Premium Contract
-                builder.header("User-Agent", XtreamTransportConfig.USER_AGENT)
-                // Accept headers
                 if (original.header("Accept") == null) {
-                    builder.header("Accept", XtreamTransportConfig.ACCEPT_JSON)
+                    chain.proceed(
+                        original
+                            .newBuilder()
+                            .header("Accept", XtreamTransportConfig.ACCEPT_JSON)
+                            .build(),
+                    )
+                } else {
+                    chain.proceed(original)
                 }
-                if (original.header("Accept-Encoding") == null) {
-                    builder.header("Accept-Encoding", XtreamTransportConfig.ACCEPT_ENCODING)
-                }
-
-                chain.proceed(builder.build())
             }.apply {
                 // Premium Contract Section 5: Device-class parallelism
                 dispatcher(
@@ -176,11 +168,11 @@ object XtreamTransportModule {
     @Provides
     @Singleton
     fun provideConnectionManager(
-        httpClient: HttpClient,
+        @XtreamHttpClient okHttpClient: OkHttpClient,
         json: Json,
         urlBuilder: XtreamUrlBuilder,
         discovery: XtreamDiscovery,
-    ): XtreamConnectionManager = XtreamConnectionManager(httpClient, json, urlBuilder, discovery)
+    ): XtreamConnectionManager = XtreamConnectionManager(okHttpClient, json, urlBuilder, discovery)
 
     /**
      * Provides XtreamCategoryFetcher - handles category operations.
@@ -188,10 +180,10 @@ object XtreamTransportModule {
     @Provides
     @Singleton
     fun provideCategoryFetcher(
-        httpClient: HttpClient,
+        @XtreamHttpClient okHttpClient: OkHttpClient,
         json: Json,
         urlBuilder: XtreamUrlBuilder,
-    ): XtreamCategoryFetcher = XtreamCategoryFetcher(httpClient, json, urlBuilder)
+    ): XtreamCategoryFetcher = XtreamCategoryFetcher(okHttpClient, json, urlBuilder)
 
     /**
      * Provides XtreamStreamFetcher - handles stream fetching and batch operations.
@@ -199,11 +191,11 @@ object XtreamTransportModule {
     @Provides
     @Singleton
     fun provideStreamFetcher(
-        httpClient: HttpClient,
+        @XtreamHttpClient okHttpClient: OkHttpClient,
         json: Json,
         urlBuilder: XtreamUrlBuilder,
         fallbackStrategy: CategoryFallbackStrategy,
-    ): XtreamStreamFetcher = XtreamStreamFetcher(httpClient, json, urlBuilder, fallbackStrategy)
+    ): XtreamStreamFetcher = XtreamStreamFetcher(okHttpClient, json, urlBuilder, fallbackStrategy)
 
     /**
      * Provides XtreamApiClient with handler injection.

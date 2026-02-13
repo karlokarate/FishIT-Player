@@ -1,4 +1,4 @@
-package com.fishit.player.infra.transport.xtream.di
+package com.fishit.player.infra.networking.di
 
 import dagger.Module
 import dagger.Provides
@@ -13,6 +13,8 @@ import javax.inject.Singleton
  * **Contract:**
  * - No debug tools in release builds
  * - Zero overhead (immediate pass-through)
+ *
+ * @see com.fishit.player.infra.networking.di.NetworkingModule consumes this interceptor
  */
 @Module
 @InstallIn(SingletonComponent::class)

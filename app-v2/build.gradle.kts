@@ -230,6 +230,7 @@ dependencies {
     implementation(project(":core:ui-imaging"))
 
     // v2 Infrastructure
+    implementation(project(":infra:networking"))
     implementation(project(":infra:logging"))
     implementation(project(":infra:imaging"))
     implementation(project(":infra:cache"))

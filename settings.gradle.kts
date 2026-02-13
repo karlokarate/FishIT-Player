@@ -96,8 +96,9 @@ include(":feature:settings")
 include(":feature:onboarding")
 
 // Infrastructure
+include(":infra:networking")
 include(":infra:logging")
-include(":infra:http-client")
+
 include(":infra:api-priority")
 include(":infra:cache")
 include(":infra:device-android")
