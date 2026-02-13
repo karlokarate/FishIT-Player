@@ -43,9 +43,7 @@ fun NX_Work.toDomain(): Work = Work(
     isAdult = isAdult,
     recognitionState = MappingUtils.safeEnumFromString(
         this.recognitionState,
-        // Migration fallback: if recognitionState not yet set, use legacy needsReview
-        @Suppress("DEPRECATION")
-        if (this.needsReview) RecognitionState.NEEDS_REVIEW else RecognitionState.HEURISTIC,
+        RecognitionState.HEURISTIC,
     ),
     createdAtMs = createdAt,
     updatedAtMs = updatedAt,

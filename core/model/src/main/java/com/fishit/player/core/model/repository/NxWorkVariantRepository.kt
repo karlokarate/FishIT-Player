@@ -26,6 +26,7 @@ interface NxWorkVariantRepository {
         val isDefault: Boolean = false,
         // optional technical metadata
         val qualityHeight: Int? = null,
+        val qualityWidth: Int? = null,
         val bitrateKbps: Int? = null,
         val container: String? = null,
         val videoCodec: String? = null,

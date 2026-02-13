@@ -44,9 +44,14 @@ class VariantBuilder @Inject constructor() {
             variantKey = variantKey,
             workKey = workKey,
             sourceKey = sourceKey,
-            label = "Original", // Default label - could be enhanced with quality info
+            label = "Original",
             isDefault = true,
+            qualityHeight = playbackHints[PlaybackHintKeys.VIDEO_HEIGHT]?.toIntOrNull(),
+            qualityWidth = playbackHints[PlaybackHintKeys.VIDEO_WIDTH]?.toIntOrNull(),
+            bitrateKbps = playbackHints[PlaybackHintKeys.Xtream.BITRATE]?.toIntOrNull(),
             container = extractContainerFromHints(playbackHints),
+            videoCodec = playbackHints[PlaybackHintKeys.VIDEO_CODEC],
+            audioCodec = playbackHints[PlaybackHintKeys.AUDIO_CODEC],
             durationMs = durationMs,
             playbackHints = playbackHints,
             createdAtMs = now,
@@ -58,13 +63,11 @@ class VariantBuilder @Inject constructor() {
      * Extract container format from playback hints.
      *
      * Matches NxCatalogWriter logic with proper key mapping and normalization.
-     * Common keys: "xtream.containerExtension", "containerExtension", "extension"
+     * SSOT key: PlaybackHintKeys.Xtream.CONTAINER_EXT ("xtream.containerExtension")
      */
     private fun extractContainerFromHints(hints: Map<String, String>): String? {
-        // Check all possible keys (Xtream uses "xtream.containerExtension")
+        // SSOT: Only use PlaybackHintKeys constants — no raw-string fallbacks (DEV PHASE)
         val ext = hints[PlaybackHintKeys.Xtream.CONTAINER_EXT]
-            ?: hints["containerExtension"]
-            ?: hints["extension"]
         return when (ext?.lowercase()) {
             "mp4" -> "mp4"
             "mkv" -> "mkv"

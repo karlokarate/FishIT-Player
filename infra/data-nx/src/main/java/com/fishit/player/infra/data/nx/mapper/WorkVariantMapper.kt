@@ -18,6 +18,7 @@ fun NX_WorkVariant.toDomain(): Variant = Variant(
     label = buildLabel(),
     isDefault = qualityTag == "source",
     qualityHeight = height,
+    qualityWidth = width,
     bitrateKbps = bitrateBps?.let { (it / 1000).toInt() },
     container = containerFormat,
     videoCodec = videoCodec,
@@ -41,15 +42,13 @@ fun Variant.toEntity(existingEntity: NX_WorkVariant? = null): NX_WorkVariant {
         qualityTag = qualityHeight?.let { "${it}p" } ?: "source",
         languageTag = audioLang ?: "original",
         workKey = this.workKey,
-        // Legacy fields kept for backwards compatibility (may be null with new JSON storage)
-        playbackUrl = playbackHints[PlaybackHintKeys.Xtream.DIRECT_SOURCE]
-            ?: playbackHints["url"]
-            ?: playbackHints["playbackUrl"],
-        playbackMethod = playbackHints["method"] ?: playbackHints["playbackMethod"] ?: "DIRECT",
+        // Denormalized fields for indexed queries — SSOT is playbackHintsJson
+        playbackUrl = playbackHints[PlaybackHintKeys.Xtream.DIRECT_SOURCE],
+        playbackMethod = "DIRECT",
         containerFormat = container,
         videoCodec = videoCodec,
         audioCodec = audioCodec,
-        width = null, // Derived from height with aspect ratio
+        width = qualityWidth,
         height = qualityHeight,
         bitrateBps = bitrateKbps?.toLong()?.times(1000),
         // JSON-serialized playbackHints (source-agnostic storage)

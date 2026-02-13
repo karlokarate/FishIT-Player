@@ -124,7 +124,7 @@ class WorkDetailMapper @Inject constructor() {
             // File info (from sourceRef)
             fileSizeBytes = sourceRef.fileSizeBytes,
             // Hints for PlaybackSourceFactory
-            playbackHints = PlaybackHintsDecoder.decodeFromVariantAndSource(variant, sourceRef),
+            playbackHints = PlaybackHintsDecoder.decodeFromVariantAndSource(variant),
             // Selection priority
             priority = SourcePriority.totalPriority(
                 sourceType = sourceRef.sourceType,
@@ -165,7 +165,7 @@ class WorkDetailMapper @Inject constructor() {
             // File info
             fileSizeBytes = sourceRef.fileSizeBytes,
             // Hints
-            playbackHints = PlaybackHintsDecoder.decodeFromVariantAndSource(null, sourceRef),
+            playbackHints = PlaybackHintsDecoder.decodeFromVariantAndSource(null),
             // Lower priority than explicit variants
             priority = SourcePriority.totalPriority(
                 sourceType = sourceRef.sourceType,

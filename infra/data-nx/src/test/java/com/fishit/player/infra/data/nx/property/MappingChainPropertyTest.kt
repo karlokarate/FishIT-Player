@@ -227,8 +227,8 @@ class MappingChainPropertyTest {
         val hlsHints = Arb.of(
             mapOf("xtream.containerExtension" to "m3u8"),
             mapOf("xtream.containerExtension" to "m3u"),
-            mapOf("containerExtension" to "m3u8"),
-            mapOf("containerExtension" to "m3u"),
+            mapOf("xtream.containerExtension" to "m3u8"),
+            mapOf("xtream.containerExtension" to "m3u"),
             mapOf("xtream.containerExtension" to "M3U8"),
             mapOf("xtream.containerExtension" to "M3U"),
         )

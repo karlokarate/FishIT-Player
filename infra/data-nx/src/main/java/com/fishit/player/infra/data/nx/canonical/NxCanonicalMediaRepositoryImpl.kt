@@ -713,8 +713,7 @@ class NxCanonicalMediaRepositoryImpl @Inject constructor(
             this.qualityTag = qualityTag
             this.languageTag = "original"
             this.playbackUrl = source.playbackHints[PlaybackHintKeys.Xtream.DIRECT_SOURCE]
-                ?: source.playbackHints["playbackUrl"] // legacy fallback
-            this.playbackMethod = source.playbackHints["playbackMethod"] ?: "DIRECT"
+            this.playbackMethod = "DIRECT"
             this.containerFormat = source.format?.container
             this.videoCodec = source.format?.videoCodec ?: source.quality?.codec
             this.width = null

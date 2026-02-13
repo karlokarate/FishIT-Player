@@ -32,9 +32,9 @@ class VariantBuilderTest {
     }
     
     @Test
-    fun `build() extracts container from containerExtension hint`() {
+    fun `build() extracts container from xtream containerExtension hint mp4`() {
         val playbackHints = mapOf(
-            "containerExtension" to "mp4"
+            "xtream.containerExtension" to "mp4"
         )
         
         val variant = builder.build(
@@ -49,9 +49,9 @@ class VariantBuilderTest {
     }
     
     @Test
-    fun `build() extracts container from extension hint`() {
+    fun `build() extracts container from xtream containerExtension hint avi`() {
         val playbackHints = mapOf(
-            "extension" to "avi"
+            "xtream.containerExtension" to "avi"
         )
         
         val variant = builder.build(
@@ -68,7 +68,7 @@ class VariantBuilderTest {
     @Test
     fun `build() normalizes m3u8 to hls`() {
         val playbackHints = mapOf(
-            "containerExtension" to "m3u8"
+            "xtream.containerExtension" to "m3u8"
         )
         
         val variant = builder.build(
@@ -85,7 +85,7 @@ class VariantBuilderTest {
     @Test
     fun `build() normalizes m3u to hls`() {
         val playbackHints = mapOf(
-            "containerExtension" to "m3u"
+            "xtream.containerExtension" to "m3u"
         )
         
         val variant = builder.build(

@@ -351,7 +351,7 @@ class NxDetailMediaRepositoryImpl @Inject constructor(
             isExplicitVariant = true,
         ),
         isAvailable = true,
-        playbackHints = PlaybackHintsDecoder.decodeFromVariantAndSource(variant, sourceRef),
+        playbackHints = PlaybackHintsDecoder.decodeFromVariantAndSource(variant),
     )
 
     private fun mapSourceWithDefault(
@@ -374,7 +374,7 @@ class NxDetailMediaRepositoryImpl @Inject constructor(
             isExplicitVariant = false,
         ),
         isAvailable = true,
-        playbackHints = PlaybackHintsDecoder.decodeFromVariantAndSource(null, sourceRef),
+        playbackHints = PlaybackHintsDecoder.decodeFromVariantAndSource(null),
     )
 
     private fun buildSourceLabel(sourceRef: NX_WorkSourceRef): String =

@@ -163,7 +163,7 @@ object Generators {
         mapOf("xtream.containerExtension" to "m3u"),
         mapOf("xtream.containerExtension" to "mkv"),
         mapOf("xtream.containerExtension" to "ts"),
-        mapOf("containerExtension" to "avi"),
+        mapOf("xtream.containerExtension" to "avi"),
         mapOf("telegram.fileId" to "BQACAgIAAxkBAAIBZ"),
     )
 

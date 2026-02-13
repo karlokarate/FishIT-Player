@@ -208,16 +208,6 @@ data class NX_WorkSourceRef(
     var fileSizeBytes: Long? = null,
     /** MIME type */
     var mimeType: String? = null,
-    // === Telegram-Specific ===
-    /** Telegram chat ID (for telegram sources) */
-    var telegramChatId: Long? = null,
-    /** Telegram message ID (for telegram sources) */
-    var telegramMessageId: Long? = null,
-    // === Xtream-Specific ===
-    /** Xtream stream ID */
-    var xtreamStreamId: Int? = null,
-    /** Xtream category ID */
-    var xtreamCategoryId: Int? = null,
     // === Live Channel Specific (EPG/Catchup) ===
     /** EPG channel ID for program guide integration */
     var epgChannelId: String? = null,

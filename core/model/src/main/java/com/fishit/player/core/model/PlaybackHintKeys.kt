@@ -35,6 +35,15 @@ object PlaybackHintKeys {
     /** Audio channel count (e.g., "2" for stereo, "6" for 5.1) */
     const val AUDIO_CHANNELS = "audio.channels"
 
+    /** Audio language tag (e.g., "en", "de", "original") */
+    const val AUDIO_LANGUAGE = "audio.language"
+
+    /** Display aspect ratio (e.g., "16:9", "4:3") */
+    const val VIDEO_ASPECT_RATIO = "video.aspectRatio"
+
+    /** Human-readable duration string from API (e.g., "01:36:00") */
+    const val DURATION_DISPLAY = "duration.display"
+
     /**
      * Xtream-specific playback hints.
      *
@@ -147,6 +156,13 @@ object PlaybackHintKeys {
          * Note: externalIds.tmdb carries the series-level TMDB ID per Gold Decision.
          */
         const val EPISODE_TMDB_ID = "xtream.episodeTmdbId"
+
+        /**
+         * Custom SID from Xtream API (`custom_sid` field).
+         *
+         * Provider-specific session/stream identifier. May be empty.
+         */
+        const val CUSTOM_SID = "xtream.customSid"
     }
 
     /** Telegram-specific playback hints. */

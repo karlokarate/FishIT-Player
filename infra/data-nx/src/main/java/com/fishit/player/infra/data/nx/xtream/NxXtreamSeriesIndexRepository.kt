@@ -193,7 +193,7 @@ class NxXtreamSeriesIndexRepository @Inject constructor(
             thumbnailUrl = episodeWork.thumbnail?.toUriString(),
             // --- Core metadata ---
             durationSecs = episodeWork.runtimeMs?.let { (it / 1000).toInt() },
-            durationString = defaultVariant?.playbackHints?.get("duration_display"),
+            durationString = defaultVariant?.playbackHints?.get(PlaybackHintKeys.DURATION_DISPLAY),
             plot = episodeWork.plot,
             rating = episodeWork.rating,
             airDate = episodeWork.releaseDate,
@@ -201,14 +201,14 @@ class NxXtreamSeriesIndexRepository @Inject constructor(
             tmdbId = episodeWork.tmdbId?.toIntOrNull(),
             // --- Xtream-specific ---
             addedTimestamp = episodeWork.createdAtMs.takeIf { it > 0 }?.toString(),
-            customSid = defaultVariant?.playbackHints?.get("custom_sid"),
+            customSid = defaultVariant?.playbackHints?.get(PlaybackHintKeys.Xtream.CUSTOM_SID),
             // --- Technical stream metadata ---
             videoCodec = defaultVariant?.videoCodec,
-            videoWidth = defaultVariant?.playbackHints?.get("video_width")?.toIntOrNull(),
+            videoWidth = defaultVariant?.qualityWidth,
             videoHeight = defaultVariant?.qualityHeight,
-            videoAspectRatio = defaultVariant?.playbackHints?.get("aspect_ratio"),
+            videoAspectRatio = defaultVariant?.playbackHints?.get(PlaybackHintKeys.VIDEO_ASPECT_RATIO),
             audioCodec = defaultVariant?.audioCodec,
-            audioChannels = defaultVariant?.playbackHints?.get("audio_channels")?.toIntOrNull(),
+            audioChannels = defaultVariant?.playbackHints?.get(PlaybackHintKeys.AUDIO_CHANNELS)?.toIntOrNull(),
             audioLanguage = defaultVariant?.audioLang,
             bitrateKbps = defaultVariant?.bitrateKbps,
             // --- Playback ---
@@ -320,12 +320,12 @@ class NxXtreamSeriesIndexRepository @Inject constructor(
                     playbackUrl?.let { put(PlaybackHintKeys.Xtream.DIRECT_SOURCE, it) }
                     containerExt?.let { put(PlaybackHintKeys.Xtream.CONTAINER_EXT, it) }
                     // ── Technical metadata ──
-                    episode.customSid?.let { put("custom_sid", it) }
+                    episode.customSid?.let { put(PlaybackHintKeys.Xtream.CUSTOM_SID, it) }
                     episode.videoWidth?.let { put(PlaybackHintKeys.VIDEO_WIDTH, it.toString()) }
-                    episode.videoAspectRatio?.let { put("aspect_ratio", it) }
+                    episode.videoAspectRatio?.let { put(PlaybackHintKeys.VIDEO_ASPECT_RATIO, it) }
                     episode.audioChannels?.let { put(PlaybackHintKeys.AUDIO_CHANNELS, it.toString()) }
-                    episode.audioLanguage?.let { put("audio_language", it) }
-                    episode.durationString?.let { put("duration_display", it) }
+                    episode.audioLanguage?.let { put(PlaybackHintKeys.AUDIO_LANGUAGE, it) }
+                    episode.durationString?.let { put(PlaybackHintKeys.DURATION_DISPLAY, it) }
                 }
 
                 variants += NxWorkVariantRepository.Variant(
@@ -335,6 +335,7 @@ class NxXtreamSeriesIndexRepository @Inject constructor(
                     label = "source",
                     isDefault = true,
                     qualityHeight = episode.videoHeight,
+                    qualityWidth = episode.videoWidth,
                     bitrateKbps = episode.bitrateKbps,
                     container = containerExt,
                     videoCodec = episode.videoCodec,
@@ -417,7 +418,7 @@ class NxXtreamSeriesIndexRepository @Inject constructor(
             episodeId = episodeId,
             streamId = episodeId, // Often the same
             containerExtension = variant.container,
-            directUrl = variant.playbackHints["direct_url"],
+            directUrl = variant.playbackHints[PlaybackHintKeys.Xtream.DIRECT_SOURCE],
         )
     }
 
@@ -591,7 +592,7 @@ class NxXtreamSeriesIndexRepository @Inject constructor(
                 thumbnailUrl = episodeWork.thumbnail?.toUriString(),
                 // --- Core metadata ---
                 durationSecs = episodeWork.runtimeMs?.let { (it / 1000).toInt() },
-                durationString = defaultVariant?.playbackHints?.get("duration_display"),
+                durationString = defaultVariant?.playbackHints?.get(PlaybackHintKeys.DURATION_DISPLAY),
                 plot = episodeWork.plot, // Full plot — never truncated
                 rating = episodeWork.rating,
                 airDate = episodeWork.releaseDate,
@@ -599,14 +600,14 @@ class NxXtreamSeriesIndexRepository @Inject constructor(
                 tmdbId = episodeWork.tmdbId?.toIntOrNull(),
                 // --- Xtream-specific ---
                 addedTimestamp = episodeWork.createdAtMs.takeIf { it > 0 }?.toString(),
-                customSid = defaultVariant?.playbackHints?.get("custom_sid"),
+                customSid = defaultVariant?.playbackHints?.get(PlaybackHintKeys.Xtream.CUSTOM_SID),
                 // --- Technical stream metadata ---
                 videoCodec = defaultVariant?.videoCodec,
-                videoWidth = defaultVariant?.playbackHints?.get("video_width")?.toIntOrNull(),
+                videoWidth = defaultVariant?.qualityWidth,
                 videoHeight = defaultVariant?.qualityHeight,
-                videoAspectRatio = defaultVariant?.playbackHints?.get("aspect_ratio"),
+                videoAspectRatio = defaultVariant?.playbackHints?.get(PlaybackHintKeys.VIDEO_ASPECT_RATIO),
                 audioCodec = defaultVariant?.audioCodec,
-                audioChannels = defaultVariant?.playbackHints?.get("audio_channels")?.toIntOrNull(),
+                audioChannels = defaultVariant?.playbackHints?.get(PlaybackHintKeys.AUDIO_CHANNELS)?.toIntOrNull(),
                 audioLanguage = defaultVariant?.audioLang,
                 bitrateKbps = defaultVariant?.bitrateKbps,
                 // --- Playback ---
@@ -642,15 +643,11 @@ class NxXtreamSeriesIndexRepository @Inject constructor(
     private fun extractPlaybackUrlFromHints(hintsJson: String): String? {
         val hints = PlaybackHintsDecoder.decodeJson(hintsJson) ?: return null
         return hints[PlaybackHintKeys.Xtream.DIRECT_SOURCE]
-            ?: hints["direct_url"] // legacy fallback
-            ?: hints["directUrl"]  // legacy fallback
     }
 
     private fun extractContainerFromHints(hintsJson: String): String? {
         val hints = PlaybackHintsDecoder.decodeJson(hintsJson) ?: return null
         return hints[PlaybackHintKeys.Xtream.CONTAINER_EXT]
-            ?: hints["container_extension"] // legacy fallback
-            ?: hints["containerExtension"]  // legacy fallback
     }
 
     private fun buildPlaybackHintsJsonFromVariant(variant: NxWorkVariantRepository.Variant): String =

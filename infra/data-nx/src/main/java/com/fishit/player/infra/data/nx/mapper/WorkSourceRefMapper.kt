@@ -54,13 +54,25 @@ fun SourceRef.toEntity(existingEntity: NX_WorkSourceRef? = null): NX_WorkSourceR
 }
 
 /**
- * Derives SourceItemKind from entity fields.
- * Falls back to UNKNOWN if cannot determine.
+ * Derives SourceItemKind from sourceKey using SourceKeyParser (SSOT).
+ *
+ * Parses the itemKind segment from sourceKey format:
+ * `src:{sourceType}:{accountKey}:{itemKind}:{itemKey}`
+ *
+ * Examples:
+ * - `src:xtream:server:vod:12345` → VOD
+ * - `src:xtream:server:live:456` → LIVE
+ * - `src:telegram:acc:file:123:456` → FILE
+ * - `src:xtream:server:episode:series:1:s1:e3` → EPISODE
  */
 private fun NX_WorkSourceRef.deriveSourceItemKind(): SourceItemKind {
-    return when {
-        xtreamStreamId != null -> SourceItemKind.VOD // Could also be LIVE - need more context
-        telegramMessageId != null -> SourceItemKind.FILE
+    val itemKind = SourceKeyParser.extractItemKind(sourceKey)
+    return when (itemKind?.lowercase()) {
+        "vod" -> SourceItemKind.VOD
+        "live" -> SourceItemKind.LIVE
+        "file" -> SourceItemKind.FILE
+        "series" -> SourceItemKind.SERIES
+        "episode" -> SourceItemKind.EPISODE
         else -> SourceItemKind.UNKNOWN
     }
 }
