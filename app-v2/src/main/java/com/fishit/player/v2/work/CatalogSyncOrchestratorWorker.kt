@@ -336,13 +336,32 @@ class CatalogSyncOrchestratorWorker
                     ).toSet(),
                 )
             } else {
+                // capabilities == null should not happen after gate check (XOC-3),
+                // but if it does, use empty sets → all content types will be disabled.
+                UnifiedLog.w(TAG) { "XtreamApiClient.capabilities is null during config build — no categories will be synced" }
                 Triple(emptySet(), emptySet(), emptySet())
             }
+
+            // XOC-10/XOC-11: Derive syncVod/syncSeries/syncLive from selected categories.
+            // After category selection gate (XOC-2), empty selected IDs means the user
+            // intentionally deselected ALL categories for that type → skip that content type.
+            // The pipeline treats empty categoryIds as "no filter = fetch ALL" which is wrong
+            // when the user explicitly deselected everything.
+            val syncVod = vodCategoryIds.isNotEmpty()
+            val syncSeries = seriesCategoryIds.isNotEmpty()
+            val syncLive = liveCategoryIds.isNotEmpty()
+
+            if (!syncVod) UnifiedLog.i(TAG) { "VOD sync disabled: no VOD categories selected" }
+            if (!syncSeries) UnifiedLog.i(TAG) { "Series sync disabled: no series categories selected" }
+            if (!syncLive) UnifiedLog.i(TAG) { "Live sync disabled: no live categories selected" }
 
             return when (input.syncMode) {
                 WorkerConstants.SYNC_MODE_INCREMENTAL -> {
                     XtreamSyncConfig.incremental(accountKey).copy(
                         deviceProfile = deviceProfile,
+                        syncVod = syncVod,
+                        syncSeries = syncSeries,
+                        syncLive = syncLive,
                         vodCategoryIds = vodCategoryIds,
                         seriesCategoryIds = seriesCategoryIds,
                         liveCategoryIds = liveCategoryIds,
@@ -351,6 +370,9 @@ class CatalogSyncOrchestratorWorker
                 WorkerConstants.SYNC_MODE_FORCE_RESCAN -> {
                     XtreamSyncConfig.fullSync(accountKey).copy(
                         deviceProfile = deviceProfile,
+                        syncVod = syncVod,
+                        syncSeries = syncSeries,
+                        syncLive = syncLive,
                         vodCategoryIds = vodCategoryIds,
                         seriesCategoryIds = seriesCategoryIds,
                         liveCategoryIds = liveCategoryIds,
@@ -361,9 +383,9 @@ class CatalogSyncOrchestratorWorker
                         accountKey = accountKey,
                         deviceProfile = deviceProfile,
                         forceFullSync = input.syncMode == WorkerConstants.SYNC_MODE_FORCE_RESCAN,
-                        syncVod = true,
-                        syncSeries = true,
-                        syncLive = true,
+                        syncVod = syncVod,
+                        syncSeries = syncSeries,
+                        syncLive = syncLive,
                         syncEpisodes = false,
                         vodCategoryIds = vodCategoryIds,
                         seriesCategoryIds = seriesCategoryIds,
