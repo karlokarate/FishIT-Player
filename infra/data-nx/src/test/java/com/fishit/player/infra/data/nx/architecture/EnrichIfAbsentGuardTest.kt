@@ -5,7 +5,7 @@
  *
  * The SSOT for enrichment is [NxWorkRepositoryImpl.enrichIfAbsent] (listing/inheritance)
  * and [NxWorkRepositoryImpl.enrichFromDetail] (detail info API), which both use:
- * - [MappingUtils.enrichOnly] — set only if existing is null/blank (enrichIfAbsent)
+ * - [MappingUtils.enrichOnly] — set only if existing is null (blank strings are treated as present)
  * - [MappingUtils.alwaysUpdate] — always overwrite with new value (enrichFromDetail, external IDs)
  * - [MappingUtils.monotonicUp] — only upgrade, never downgrade
  *
