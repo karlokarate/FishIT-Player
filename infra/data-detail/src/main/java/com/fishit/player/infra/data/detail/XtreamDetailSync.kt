@@ -295,12 +295,9 @@ class XtreamDetailSync
 
         val info = seriesInfo.info
 
-        // 1. ENRICH parent series work via NxEnrichmentWriter
-        if (info != null) {
-            persistSeriesMetadata(media, info)
-        }
-
-        // 2. PERSIST EPISODES via pipeline chain (SSOT)
+        // 1. PERSIST EPISODES via pipeline chain (SSOT) — episodes are child works
+        //    that must exist BEFORE the parent is enriched, so that field inheritance
+        //    from parent to children can run in a single pass.
         val seriesWorkKey = media.canonicalId.key.value
         val accountKey = sourceRefRepository.findByWorkKey(seriesWorkKey)
             .firstOrNull { it.sourceType == NxWorkSourceRefRepository.SourceType.XTREAM }
@@ -346,10 +343,23 @@ class XtreamDetailSync
             }
         }
 
-        // 3. SEASONS from API response (parsing only, no entity creation)
+        // 2. ENRICH parent series work via NxEnrichmentWriter — runs AFTER episodes
+        //    are persisted so the parent has the full info_call metadata before inheritance.
+        if (info != null) {
+            persistSeriesMetadata(media, info)
+        }
+
+        // 3. INHERIT parent fields to child episode works — propagates enriched fields
+        //    (poster, backdrop, genres, rating, etc.) from the series to episodes
+        //    that lack those fields. Uses enrichIfAbsent semantics (no overwrites).
+        if (episodeWorkKeys.isNotEmpty()) {
+            enrichmentWriter.inheritParentFields(seriesWorkKey)
+        }
+
+        // 4. SEASONS from API response (parsing only, no entity creation)
         val seasons = extractSeasons(seriesInfo, seriesId, now)
 
-        // 4. BUILD RETURN BUNDLE — episodes from DB (just written by NxCatalogWriter)
+        // 5. BUILD RETURN BUNDLE — episodes from DB (just written by NxCatalogWriter)
         val episodesBySeason = mutableMapOf<Int, List<EpisodeIndexItem>>()
         var totalEpisodeCount = 0
         for (season in seasons) {
