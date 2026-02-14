@@ -595,11 +595,16 @@ class XtreamDetailSync
     }
 
     private fun isVodDetailFresh(media: CanonicalMediaWithSources): Boolean {
+        // VOD is "fresh" only if we have ALL key detail-enrichment markers:
+        // 1. Plot must be present (from info-call)
+        // 2. containerExtension must be present (playback-relevant)
+        // 3. At least one external ID (tmdbId or imdbId) must be present
+        //    → without this, the info-call data was never persisted
         if (media.plot.isNullOrBlank()) return false
         val xtreamSource = media.sources.firstOrNull { it.sourceType == SourceType.XTREAM }
         if (xtreamSource?.playbackHints?.get(PlaybackHintKeys.Xtream.CONTAINER_EXT) == null) return false
-        if (media.tmdbId == null && media.imdbId.isNullOrBlank()) return false
-        return true
+        // External IDs from info-call — if both are missing, we need to re-fetch
+        return media.tmdbId != null || !media.imdbId.isNullOrBlank()
     }
 
     // =========================================================================

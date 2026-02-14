@@ -562,3 +562,10 @@
 {"action":"confirm","filePath":"infra/data-nx/src/main/java/com/fishit/player/infra/data/nx/writer/NxDetailWriter.kt","scopeId":"xtream-data","status":"CONFIRMED","timestamp":"2026-02-13T15:16:14.655Z"}
 {"action":"confirm","filePath":"infra/data-detail/src/main/java/com/fishit/player/infra/data/detail/UnifiedDetailLoaderImpl.kt","scopeId":"xtream-data","status":"CONFIRMED","timestamp":"2026-02-13T15:16:19.996Z"}
 {"action":"session_start","status":"STARTED","agentMode":"interactive","details":"session-1770996925345","timestamp":"2026-02-13T15:35:25.345Z"}
+{"action":"session_start","status":"STARTED","agentMode":"interactive","details":"session-1771091946365","timestamp":"2026-02-14T17:59:06.365Z"}
+{"action":"check","filePath":"infra/data-nx/src/main/java/com/fishit/player/infra/data/nx/writer/NxEnrichmentWriter.kt","status":"UNTRACKED","agentMode":"interactive","timestamp":"2026-02-14T17:59:11.857Z"}
+{"action":"check","filePath":"core/model/src/main/java/com/fishit/player/core/model/repository/NxWorkRepository.kt","status":"BLOCKED","agentMode":"interactive","scopeId":"xtream-onboarding-category","timestamp":"2026-02-14T17:59:22.394Z"}
+{"action":"check","filePath":"infra/data-nx/src/main/java/com/fishit/player/infra/data/nx/repository/NxWorkRepositoryImpl.kt","status":"UNTRACKED","agentMode":"interactive","timestamp":"2026-02-14T17:59:22.395Z"}
+{"action":"check","filePath":"infra/data-detail/src/main/java/com/fishit/player/infra/data/detail/XtreamDetailSync.kt","status":"UNTRACKED","agentMode":"interactive","timestamp":"2026-02-14T17:59:22.395Z"}
+{"action":"read","scopeId":"xtream-data","status":"ACKNOWLEDGED","timestamp":"2026-02-14T17:59:27.433Z"}
+{"action":"read","scopeId":"xtream-onboarding-category","status":"ACKNOWLEDGED","timestamp":"2026-02-14T17:59:27.433Z"}

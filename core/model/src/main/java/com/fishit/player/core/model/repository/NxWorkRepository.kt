@@ -316,6 +316,30 @@ interface NxWorkRepository {
      */
     suspend fun enrichIfAbsent(workKey: String, enrichment: Enrichment): Work?
 
+    /**
+     * Enrich an existing work with metadata from a detail info API call
+     * (e.g. `get_vod_info` or `get_series_info`).
+     *
+     * Unlike [enrichIfAbsent], this method treats the enrichment data as **authoritative**:
+     * the detail API provides richer, more accurate metadata than the listing API.
+     * Non-null enrichment values **overwrite** existing values for enrichable fields.
+     *
+     * Field update rules:
+     * - **IMMUTABLE** fields: same as [enrichIfAbsent] — never changed
+     * - **DETAIL_OVERWRITE** fields (non-null enrichment value always wins):
+     *   poster, backdrop, thumbnail, plot, genres, director, cast, rating,
+     *   runtimeMs, trailer, releaseDate, season, episode
+     * - **ALWAYS_UPDATE** / **MONOTONIC_UP** / **AUTO**: same as [enrichIfAbsent]
+     *
+     * **Note:** This is for Xtream info-call enrichment, NOT for TMDB API enrichment.
+     * The Xtream info-call returns tmdb_id, plot, poster etc. from the Xtream server.
+     *
+     * @param workKey Key of the work to enrich
+     * @param enrichment Enrichment data from detail info API
+     * @return Updated work, or null if workKey doesn't exist
+     */
+    suspend fun enrichFromDetail(workKey: String, enrichment: Enrichment): Work?
+
     suspend fun upsertBatch(works: List<Work>): List<Work>
 
     /**
@@ -327,7 +351,8 @@ interface NxWorkRepository {
 /**
  * Converts a full [NxWorkRepository.Work] into an [NxWorkRepository.Enrichment],
  * extracting only the enrichable fields. Used by callers that already have a full
- * Work (e.g., from [WorkEntityBuilder.build]) to pass into [NxWorkRepository.enrichIfAbsent].
+ * Work (e.g., from [WorkEntityBuilder.build]) to pass into [NxWorkRepository.enrichIfAbsent]
+ * or [NxWorkRepository.enrichFromDetail].
  */
 fun NxWorkRepository.Work.toEnrichment(): NxWorkRepository.Enrichment = NxWorkRepository.Enrichment(
     season = season,
