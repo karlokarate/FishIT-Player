@@ -294,7 +294,7 @@ class DetailEnrichmentServiceImpl
             if (xtreamSource != null) {
                 val hasContainerExt = !xtreamSource.playbackHints[PlaybackHintKeys.Xtream.CONTAINER_EXT].isNullOrBlank()
                 val hasExternalId = media.tmdbId != null || !media.imdbId.isNullOrBlank()
-                if (!hasContainerExt && !hasExternalId) return false
+                if (!hasContainerExt || !hasExternalId) return false
             }
             return true
         }
