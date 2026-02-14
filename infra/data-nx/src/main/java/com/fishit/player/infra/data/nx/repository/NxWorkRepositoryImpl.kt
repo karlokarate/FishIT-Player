@@ -460,17 +460,20 @@ class NxWorkRepositoryImpl @Inject constructor(
 
             // IMMUTABLE: workKey, workType, canonicalTitle, canonicalTitleLower, year, createdAt — SKIP
 
-            // DETAIL_OVERWRITE: non-null enrichment value always wins (detail API is authoritative)
+            // DETAIL_OVERWRITE: non-null, non-blank enrichment value wins (detail API is authoritative)
+            fun nonBlankOrExisting(existing: String?, enrichmentValue: String?): String? =
+                if (enrichmentValue.isNullOrBlank()) existing else enrichmentValue
+
             existing.season = MappingUtils.alwaysUpdate(existing.season, enrichment.season)
             existing.episode = MappingUtils.alwaysUpdate(existing.episode, enrichment.episode)
             existing.durationMs = MappingUtils.alwaysUpdate(existing.durationMs, enrichment.runtimeMs)
             existing.rating = MappingUtils.alwaysUpdate(existing.rating, enrichment.rating)
-            existing.genres = MappingUtils.alwaysUpdate(existing.genres, enrichment.genres)
-            existing.plot = MappingUtils.alwaysUpdate(existing.plot, enrichment.plot)
-            existing.director = MappingUtils.alwaysUpdate(existing.director, enrichment.director)
-            existing.cast = MappingUtils.alwaysUpdate(existing.cast, enrichment.cast)
-            existing.trailer = MappingUtils.alwaysUpdate(existing.trailer, enrichment.trailer)
-            existing.releaseDate = MappingUtils.alwaysUpdate(existing.releaseDate, enrichment.releaseDate)
+            existing.genres = nonBlankOrExisting(existing.genres, enrichment.genres)
+            existing.plot = nonBlankOrExisting(existing.plot, enrichment.plot)
+            existing.director = nonBlankOrExisting(existing.director, enrichment.director)
+            existing.cast = nonBlankOrExisting(existing.cast, enrichment.cast)
+            existing.trailer = nonBlankOrExisting(existing.trailer, enrichment.trailer)
+            existing.releaseDate = nonBlankOrExisting(existing.releaseDate, enrichment.releaseDate)
 
             // DETAIL_OVERWRITE for ImageRef — non-null enrichment wins
             enrichment.poster?.let { existing.poster = it }
