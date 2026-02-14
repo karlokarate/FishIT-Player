@@ -11,6 +11,31 @@
 package com.fishit.player.infra.data.nx.mapper.base
 
 /**
+ * Update policy for field enrichment.
+ *
+ * Defines how existing entity fields should be updated when new values are available.
+ */
+enum class UpdatePolicy {
+    /**
+     * ENRICH_ONLY: Only set if existing value is null.
+     * Used for general enrichment where we don't want to overwrite existing data.
+     */
+    ENRICH_ONLY,
+
+    /**
+     * AUTHORITY_WINS: Always overwrite with new non-null value.
+     * Used for authoritative sources (e.g., TMDB) that should take precedence.
+     */
+    AUTHORITY_WINS,
+
+    /**
+     * ALWAYS_UPDATE: Always take new value if non-null, same as AUTHORITY_WINS.
+     * Alias for consistency with existing terminology.
+     */
+    ALWAYS_UPDATE,
+}
+
+/**
  * Shared mapping utilities used by all NX entity mappers.
  *
  * Provides:
@@ -18,6 +43,7 @@ package com.fishit.player.infra.data.nx.mapper.base
  * - [enrichOnly]: Write-once guard (only sets if existing is null)
  * - [alwaysUpdate]: Always-overwrite (new value takes precedence)
  * - [monotonicUp]: Monotonic upgrade (never downgrades enum ordinal)
+ * - [applyWithPolicy]: Apply enrichment with configurable update policy
  */
 object MappingUtils {
 
@@ -81,5 +107,22 @@ object MappingUtils {
             new == null -> existing
             new.ordinal < existing.ordinal -> new // Lower ordinal = higher confidence
             else -> existing
+        }
+
+    /**
+     * Apply enrichment value according to specified update policy.
+     *
+     * This method consolidates the different enrichment strategies to eliminate
+     * duplication between enrichIfAbsent() and updateTmdbEnriched().
+     *
+     * @param existing Current entity value
+     * @param new Incoming enrichment value
+     * @param policy Update policy to apply
+     * @return Updated value according to policy
+     */
+    fun <T> applyWithPolicy(existing: T?, new: T?, policy: UpdatePolicy): T? =
+        when (policy) {
+            UpdatePolicy.ENRICH_ONLY -> enrichOnly(existing, new)
+            UpdatePolicy.AUTHORITY_WINS, UpdatePolicy.ALWAYS_UPDATE -> alwaysUpdate(existing, new)
         }
 }

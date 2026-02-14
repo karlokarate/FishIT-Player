@@ -31,7 +31,10 @@ import com.fishit.player.core.persistence.obx.NX_Work_
 import com.fishit.player.core.persistence.obx.NxKeyGenerator
 import com.fishit.player.infra.data.nx.mapper.MediaTypeMapper
 import com.fishit.player.infra.data.nx.mapper.SourceLabelBuilder
+import com.fishit.player.infra.data.nx.mapper.base.EnrichmentHelper
 import com.fishit.player.infra.data.nx.mapper.base.PlaybackHintsDecoder
+import com.fishit.player.infra.data.nx.mapper.base.UpdatePolicy
+import com.fishit.player.infra.data.nx.mapper.base.toEnrichmentData
 import io.objectbox.Box
 import io.objectbox.BoxStore
 import io.objectbox.query.QueryCondition
@@ -348,28 +351,16 @@ class NxCanonicalMediaRepositoryImpl @Inject constructor(
             .findFirst() ?: return@withContext
 
         // TMDB data is authoritative — always overwrite non-null fields.
-        // AUTHORITY_WINS: poster, backdrop, thumbnail (TMDB images replace pipeline images)
-        enriched.poster?.let { work.poster = it }
-        enriched.backdrop?.let { work.backdrop = it }
-        enriched.thumbnail?.let { work.thumbnail = it }
-        // AUTHORITY_WINS: plot, rating, durationMs, genres, director, cast
-        enriched.plot?.let { work.plot = it }
-        enriched.rating?.let { work.rating = it }
-        enriched.durationMs?.let { work.durationMs = it }
-        enriched.genres?.let { work.genres = it }
-        enriched.director?.let { work.director = it }
-        enriched.cast?.let { work.cast = it }
-        // ALWAYS_UPDATE: external IDs
-        enriched.externalIds.effectiveTmdbId?.let { work.tmdbId = it.toString() }
-        enriched.externalIds.imdbId?.let { work.imdbId = it }
-
-        // Update authorityKey when tmdbId changes (cross-reference index)
-        enriched.externalIds.effectiveTmdbId?.let { newTmdbId ->
-            val workType = work.workType.lowercase()
-            work.authorityKey = NxKeyGenerator.authorityKey("TMDB", workType, newTmdbId.toString())
-        }
-
+        // Delegate to shared enrichment helper with AUTHORITY_WINS policy (Issue #716)
+        EnrichmentHelper.applyEnrichment(
+            entity = work,
+            enrichment = enriched.toEnrichmentData(),
+            policy = UpdatePolicy.AUTHORITY_WINS,
+        )
+        
+        // Override updatedAt with resolvedAt timestamp (TMDB enrichment tracking)
         work.updatedAt = resolvedAt
+
         workBox.put(work)
     }
 

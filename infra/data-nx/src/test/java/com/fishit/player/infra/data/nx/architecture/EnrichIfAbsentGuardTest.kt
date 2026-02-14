@@ -33,6 +33,7 @@ class EnrichIfAbsentGuardTest {
      * - NxCanonicalMediaRepositoryImpl: TMDB detail enrichment
      * - NxWorkAuthorityRepositoryImpl: authority key management
      * - NxDetailMediaRepositoryImpl: updatedAt timestamp only
+     * - EnrichmentHelper: Shared enrichment logic with policy-based guards (Issue #716)
      */
     private val approvedWriteFiles = setOf(
         "WorkEntityBuilder.kt",
@@ -41,6 +42,7 @@ class EnrichIfAbsentGuardTest {
         "NxCanonicalMediaRepositoryImpl.kt",
         "NxWorkAuthorityRepositoryImpl.kt",
         "NxDetailMediaRepositoryImpl.kt",
+        "EnrichmentHelper.kt",
         // Test files
         "EnrichIfAbsentGuardTest.kt",
         "WorkEntityBuilderTest.kt",
