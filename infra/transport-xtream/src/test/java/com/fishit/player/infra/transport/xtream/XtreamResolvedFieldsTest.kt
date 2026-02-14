@@ -222,4 +222,58 @@ class XtreamResolvedFieldsTest {
         val stream = XtreamSeriesStream(year = null, releaseDate = "invalid")
         assertEquals(null, stream.resolvedYear)
     }
+
+    // =========================================================================
+    // XtreamSeriesInfoBlock.resolvedReleaseDate
+    // Priority: releasedate → releaseDate (camelCase)
+    // =========================================================================
+
+    @Test
+    fun `seriesInfoBlock resolvedReleaseDate prefers lowercase releasedate`() {
+        val block = XtreamSeriesInfoBlock(
+            releaseDate = "2008-01-20",
+            releaseDateCamel = "2010-06-15",
+        )
+        assertEquals("2008-01-20", block.resolvedReleaseDate)
+    }
+
+    @Test
+    fun `seriesInfoBlock resolvedReleaseDate falls back to camelCase`() {
+        val block = XtreamSeriesInfoBlock(
+            releaseDate = null,
+            releaseDateCamel = "2008-01-20",
+        )
+        assertEquals("2008-01-20", block.resolvedReleaseDate)
+    }
+
+    @Test
+    fun `seriesInfoBlock resolvedReleaseDate ignores blank lowercase`() {
+        val block = XtreamSeriesInfoBlock(
+            releaseDate = "",
+            releaseDateCamel = "2008-01-20",
+        )
+        assertEquals("2008-01-20", block.resolvedReleaseDate)
+    }
+
+    @Test
+    fun `seriesInfoBlock resolvedReleaseDate handles all null`() {
+        val block = XtreamSeriesInfoBlock()
+        assertNull(block.resolvedReleaseDate)
+    }
+
+    // =========================================================================
+    // XtreamSeriesInfoBlock new fields (lastModified, categoryId)
+    // =========================================================================
+
+    @Test
+    fun `seriesInfoBlock stores lastModified`() {
+        val block = XtreamSeriesInfoBlock(lastModified = "1706025493")
+        assertEquals("1706025493", block.lastModified)
+    }
+
+    @Test
+    fun `seriesInfoBlock stores categoryId`() {
+        val block = XtreamSeriesInfoBlock(categoryId = "42")
+        assertEquals("42", block.categoryId)
+    }
 }

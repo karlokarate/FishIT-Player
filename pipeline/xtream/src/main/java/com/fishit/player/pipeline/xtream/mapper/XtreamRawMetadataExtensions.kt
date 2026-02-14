@@ -266,9 +266,10 @@ fun XtreamEpisode.toRawMediaMetadata(
     // Note: episodeTmdbId (when available) is stored in playbackHints for optional
     // direct episode metadata lookup, but externalIds.tmdb always uses seriesTmdbId
     // to maintain consistency with the normalizer/resolver which expects series context.
-    val externalIds =
-        seriesTmdbId?.let { ExternalIds(tmdb = TmdbRef(TmdbMediaType.TV, it)) }
-            ?: ExternalIds()
+    val externalIds = ExternalIds(
+        tmdb = seriesTmdbId?.let { TmdbRef(TmdbMediaType.TV, it) },
+        imdbId = seriesImdbId,
+    )
     // Build playback hints for episode URL construction
     // **Critical:** episodeId (this.id) is the stream ID needed for playback URL
     // BUG FIX (Feb 2026): Include seriesKind for correct URL building

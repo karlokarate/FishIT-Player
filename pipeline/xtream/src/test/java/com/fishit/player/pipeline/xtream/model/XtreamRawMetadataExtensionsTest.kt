@@ -228,6 +228,65 @@ class XtreamRawMetadataExtensionsTest {
     // - Falls back to vodItem.added when movieData.added is null
 
     // =======================================================================
+    // BUG FIX TESTS: Episode seriesTmdbId/seriesImdbId propagation (Feb 2026)
+    // =======================================================================
+
+    @Test
+    fun `BUG FIX - Episode with seriesTmdbId sets ExternalIds tmdb`() {
+        val episode = XtreamEpisode(
+            id = 789,
+            seriesId = 456,
+            seasonNumber = 1,
+            episodeNumber = 5,
+            title = "Gray Matter",
+            seriesTmdbId = 1396, // Breaking Bad TMDB ID
+        )
+
+        val raw = episode.toRawMediaMetadata()
+
+        assertEquals(1396, raw.externalIds.tmdb?.id, "TMDB ID should be set from seriesTmdbId")
+        assertEquals(
+            com.fishit.player.core.model.TmdbMediaType.TV,
+            raw.externalIds.tmdb?.type,
+            "TMDB type should be TV for episodes",
+        )
+    }
+
+    @Test
+    fun `BUG FIX - Episode with seriesImdbId sets ExternalIds imdbId`() {
+        val episode = XtreamEpisode(
+            id = 789,
+            seriesId = 456,
+            seasonNumber = 1,
+            episodeNumber = 5,
+            title = "Gray Matter",
+            seriesImdbId = "tt0903747", // Breaking Bad IMDB ID
+        )
+
+        val raw = episode.toRawMediaMetadata()
+
+        assertEquals("tt0903747", raw.externalIds.imdbId, "IMDB ID should be set from seriesImdbId")
+    }
+
+    @Test
+    fun `BUG FIX - Episode with both seriesTmdbId and seriesImdbId sets both`() {
+        val episode = XtreamEpisode(
+            id = 789,
+            seriesId = 456,
+            seasonNumber = 1,
+            episodeNumber = 5,
+            title = "Gray Matter",
+            seriesTmdbId = 1396,
+            seriesImdbId = "tt0903747",
+        )
+
+        val raw = episode.toRawMediaMetadata()
+
+        assertEquals(1396, raw.externalIds.tmdb?.id, "TMDB ID should be set")
+        assertEquals("tt0903747", raw.externalIds.imdbId, "IMDB ID should be set")
+    }
+
+    // =======================================================================
     // CONTRACT TEST: GlobalId Isolation (MEDIA_NORMALIZATION_CONTRACT Section 2.1.1)
     // =======================================================================
 

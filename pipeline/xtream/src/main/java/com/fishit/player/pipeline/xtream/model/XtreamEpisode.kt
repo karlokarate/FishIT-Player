@@ -57,6 +57,13 @@ data class XtreamEpisode(
      */
     val seriesTmdbId: Int? = null,
     /**
+     * IMDB ID inherited from parent series info block.
+     *
+     * The Xtream API provides imdb_id at the series level (not per-episode).
+     * Maps to ExternalIds.imdbId for episode lookup context.
+     */
+    val seriesImdbId: String? = null,
+    /**
      * Episode-specific TMDB ID from API info block.
      *
      * This is the episode's own TMDB ID (different from seriesTmdbId).
