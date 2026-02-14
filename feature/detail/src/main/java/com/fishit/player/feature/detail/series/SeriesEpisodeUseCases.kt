@@ -378,7 +378,7 @@ class EnsureEpisodePlaybackReadyUseCase
         private fun parseContainerExtension(hintsJson: String?): String? {
             if (hintsJson.isNullOrBlank()) return null
             return try {
-                val regex = """"containerExtension"\s*:\s*"([^"]*)"""".toRegex()
+                val regex = """"xtream\.containerExtension"\s*:\s*"([^"]*)"""".toRegex()
                 regex.find(hintsJson)?.groupValues?.get(1)?.takeIf { it.isNotBlank() }
             } catch (e: Exception) {
                 null
@@ -388,7 +388,7 @@ class EnsureEpisodePlaybackReadyUseCase
         private fun parseDirectUrl(hintsJson: String?): String? {
             if (hintsJson.isNullOrBlank()) return null
             return try {
-                val regex = """"directUrl"\s*:\s*"([^"]*)"""".toRegex()
+                val regex = """"xtream\.directSource"\s*:\s*"([^"]*)"""".toRegex()
                 regex.find(hintsJson)?.groupValues?.get(1)?.takeIf { it.isNotBlank() }
             } catch (e: Exception) {
                 null

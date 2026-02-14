@@ -597,7 +597,9 @@ class XtreamDetailSync
     private fun isVodDetailFresh(media: CanonicalMediaWithSources): Boolean {
         if (media.plot.isNullOrBlank()) return false
         val xtreamSource = media.sources.firstOrNull { it.sourceType == SourceType.XTREAM }
-        return xtreamSource?.playbackHints?.get(PlaybackHintKeys.Xtream.CONTAINER_EXT) != null
+        if (xtreamSource?.playbackHints?.get(PlaybackHintKeys.Xtream.CONTAINER_EXT) == null) return false
+        if (media.tmdbId == null && media.imdbId.isNullOrBlank()) return false
+        return true
     }
 
     // =========================================================================
