@@ -119,6 +119,23 @@ class NxKeyGeneratorTest {
         assertEquals("tvdb:series:81189", key)
     }
 
+    @Test
+    fun `workTypeToTmdbNamespace - SERIES maps to tv`() {
+        assertEquals("tv", NxKeyGenerator.workTypeToTmdbNamespace("SERIES"))
+        assertEquals("tv", NxKeyGenerator.workTypeToTmdbNamespace("series"))
+        assertEquals("tv", NxKeyGenerator.workTypeToTmdbNamespace("Series"))
+    }
+
+    @Test
+    fun `workTypeToTmdbNamespace - MOVIE maps to movie`() {
+        assertEquals("movie", NxKeyGenerator.workTypeToTmdbNamespace("MOVIE"))
+    }
+
+    @Test
+    fun `workTypeToTmdbNamespace - EPISODE maps to episode`() {
+        assertEquals("episode", NxKeyGenerator.workTypeToTmdbNamespace("EPISODE"))
+    }
+
     // =========================================================================
     // Source Key Tests — REMOVED
     // =========================================================================

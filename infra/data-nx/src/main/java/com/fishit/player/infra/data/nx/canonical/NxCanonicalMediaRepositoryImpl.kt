@@ -365,8 +365,8 @@ class NxCanonicalMediaRepositoryImpl @Inject constructor(
 
         // Update authorityKey when tmdbId changes (cross-reference index)
         enriched.externalIds.effectiveTmdbId?.let { newTmdbId ->
-            val workType = work.workType.lowercase()
-            work.authorityKey = NxKeyGenerator.authorityKey("TMDB", workType, newTmdbId.toString())
+            val tmdbNamespace = NxKeyGenerator.workTypeToTmdbNamespace(work.workType)
+            work.authorityKey = NxKeyGenerator.authorityKey("TMDB", tmdbNamespace, newTmdbId.toString())
         }
 
         work.updatedAt = resolvedAt

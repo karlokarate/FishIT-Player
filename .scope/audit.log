@@ -598,3 +598,15 @@
 {"action":"confirm","filePath":"infra/data-detail/src/main/java/com/fishit/player/infra/data/detail/XtreamDetailSync.kt","scopeId":"xtream-data","status":"CONFIRMED","timestamp":"2026-02-14T18:32:12.892Z"}
 {"action":"confirm","filePath":"core/model/src/main/java/com/fishit/player/core/model/repository/NxWorkRepository.kt","scopeId":"persistence","status":"CONFIRMED","timestamp":"2026-02-14T18:32:12.892Z"}
 {"action":"reload","status":"COMPLETED","details":"Reloaded 15 scopes (was 15)","timestamp":"2026-02-14T18:32:38.160Z"}
+{"action":"session_start","status":"STARTED","agentMode":"interactive","details":"session-1771094917176","timestamp":"2026-02-14T18:48:37.176Z"}
+{"action":"session_start","status":"STARTED","agentMode":"interactive","details":"session-1771095365814","timestamp":"2026-02-14T18:56:05.814Z"}
+{"action":"check","filePath":"infra/data-detail/src/main/java/com/fishit/player/infra/data/detail/XtreamDetailSync.kt","status":"UNTRACKED","agentMode":"interactive","timestamp":"2026-02-14T18:56:10.914Z"}
+{"action":"check","filePath":"infra/data-nx/src/main/java/com/fishit/player/infra/data/nx/repository/NxWorkRepositoryImpl.kt","status":"UNTRACKED","agentMode":"interactive","timestamp":"2026-02-14T18:56:10.915Z"}
+{"action":"check","filePath":"infra/data-nx/src/main/java/com/fishit/player/infra/data/nx/canonical/NxCanonicalMediaRepositoryImpl.kt","status":"UNTRACKED","agentMode":"interactive","timestamp":"2026-02-14T18:56:10.916Z"}
+{"action":"check","filePath":"core/persistence/src/main/java/com/fishit/player/core/persistence/obx/NxKeyGenerator.kt","status":"ALLOWED","agentMode":"interactive","scopeId":"persistence","timestamp":"2026-02-14T18:56:10.917Z"}
+{"action":"assign_pending","filePath":"infra/data-nx/src/main/java/com/fishit/player/infra/data/nx/repository/NxWorkRepositoryImpl.kt","scopeId":"xtream-data","status":"REQUIRES_USER_CONFIRMATION","agentMode":"interactive","timestamp":"2026-02-14T18:56:15.885Z"}
+{"action":"assign_pending","filePath":"infra/data-nx/src/main/java/com/fishit/player/infra/data/nx/canonical/NxCanonicalMediaRepositoryImpl.kt","scopeId":"xtream-data","status":"REQUIRES_USER_CONFIRMATION","agentMode":"interactive","timestamp":"2026-02-14T18:56:15.885Z"}
+{"action":"assign_pending","filePath":"infra/data-detail/src/main/java/com/fishit/player/infra/data/detail/XtreamDetailSync.kt","scopeId":"xtream-data","status":"REQUIRES_USER_CONFIRMATION","agentMode":"interactive","timestamp":"2026-02-14T18:56:21.330Z"}
+{"action":"confirm","filePath":"infra/data-nx/src/main/java/com/fishit/player/infra/data/nx/repository/NxWorkRepositoryImpl.kt","scopeId":"xtream-data","status":"CONFIRMED","timestamp":"2026-02-14T18:56:21.330Z"}
+{"action":"confirm","filePath":"infra/data-nx/src/main/java/com/fishit/player/infra/data/nx/canonical/NxCanonicalMediaRepositoryImpl.kt","scopeId":"xtream-data","status":"CONFIRMED","timestamp":"2026-02-14T18:56:21.331Z"}
+{"action":"confirm","filePath":"infra/data-detail/src/main/java/com/fishit/player/infra/data/detail/XtreamDetailSync.kt","scopeId":"xtream-data","status":"CONFIRMED","timestamp":"2026-02-14T18:56:25.647Z"}

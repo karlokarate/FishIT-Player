@@ -500,8 +500,8 @@ class NxWorkRepositoryImpl @Inject constructor(
 
         // Update authorityKey if tmdbId changed — delegate to NxKeyGenerator SSOT
         enrichment.tmdbId?.let { newTmdbId ->
-            val workType = existing.workType.lowercase()
-            existing.authorityKey = NxKeyGenerator.authorityKey("TMDB", workType, newTmdbId)
+            val tmdbNamespace = NxKeyGenerator.workTypeToTmdbNamespace(existing.workType)
+            existing.authorityKey = NxKeyGenerator.authorityKey("TMDB", tmdbNamespace, newTmdbId)
         }
 
         // MONOTONIC_UP: RecognitionState — only upgrade, never downgrade

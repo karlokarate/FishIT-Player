@@ -219,34 +219,37 @@ class XtreamDetailSync
         cacheKey: String,
         startMs: Long,
     ): DetailBundle? {
-        return inflightMutex.withLock {
+        // Acquire lock ONLY for map management, NOT during await().
+        // Previous version held inflightMutex across the entire await(),
+        // serializing ALL concurrent detail loads even for different cache keys.
+        val deferred = inflightMutex.withLock {
             inflightRequests[cacheKey]?.let { existingDeferred ->
-                UnifiedLog.d(TAG) { "loadDetailDeduped: joining inflight (after lock) for $cacheKey" }
-                return@withLock existingDeferred.await()
+                UnifiedLog.d(TAG) { "loadDetailDeduped: joining inflight for $cacheKey" }
+                return@withLock existingDeferred
             }
 
             // CoroutineScope(coroutineContext) — no SupervisorJob! Properly parented
             // to caller's Job for structured concurrency. Cancellation propagates correctly.
-            val deferred = CoroutineScope(coroutineContext).async {
+            CoroutineScope(coroutineContext).async {
                 try {
                     loadDetailInternal(media, cacheKey)
                 } catch (e: Exception) {
                     UnifiedLog.e(TAG, "loadDetailInternal failed", e)
                     null
                 }
-            }
-            inflightRequests[cacheKey] = deferred
+            }.also { inflightRequests[cacheKey] = it }
+        }
 
-            try {
-                val result = deferred.await()
-                val durationMs = System.currentTimeMillis() - startMs
-                UnifiedLog.i(TAG) {
-                    "loadDetailDeduped: completed in ${durationMs}ms for $cacheKey hasData=${result != null}"
-                }
-                result
-            } finally {
-                inflightRequests.remove(cacheKey)
+        // Await OUTSIDE the lock — parallel loads for different keys proceed concurrently.
+        return try {
+            val result = deferred.await()
+            val durationMs = System.currentTimeMillis() - startMs
+            UnifiedLog.i(TAG) {
+                "loadDetailDeduped: completed in ${durationMs}ms for $cacheKey hasData=${result != null}"
             }
+            result
+        } finally {
+            inflightMutex.withLock { inflightRequests.remove(cacheKey) }
         }
     }
 
@@ -552,7 +555,7 @@ class XtreamDetailSync
 
     private suspend fun isSeriesDetailFresh(media: CanonicalMediaWithSources): Boolean {
         if (media.plot.isNullOrBlank()) return false
-        val seriesId = extractSeriesIdFromMedia(media) ?: return false
+        val seriesId = extractXtreamIdFromMedia(media) ?: return false
         return seriesIndexRepository.hasFreshSeasons(seriesId)
     }
 
@@ -582,7 +585,7 @@ class XtreamDetailSync
     }
 
     private suspend fun buildSeriesBundleFromCache(media: CanonicalMediaWithSources): DetailBundle.Series? {
-        val seriesId = extractSeriesIdFromMedia(media) ?: return null
+        val seriesId = extractXtreamIdFromMedia(media) ?: return null
         val seasons = seriesIndexRepository.getSeasons(seriesId)
         if (seasons.isEmpty()) return null
 
@@ -617,7 +620,7 @@ class XtreamDetailSync
     }
 
     private fun buildVodBundleFromCache(media: CanonicalMediaWithSources): DetailBundle.Vod? {
-        val vodId = extractVodIdFromMedia(media) ?: return null
+        val vodId = extractXtreamIdFromMedia(media) ?: return null
         val xtreamSource = media.sources.firstOrNull { it.sourceType == SourceType.XTREAM }
 
         return DetailBundle.Vod(
@@ -689,13 +692,13 @@ class XtreamDetailSync
     private fun parseNumericIdFromSourceKey(sourceKey: String): Int? =
         SourceKeyParser.extractNumericItemKey(sourceKey)?.toInt()
 
-    private fun extractSeriesIdFromMedia(media: CanonicalMediaWithSources): Int? {
-        val xtreamSource = media.sources.firstOrNull { it.sourceType == SourceType.XTREAM }
-            ?: return null
-        return parseNumericIdFromSourceKey(xtreamSource.sourceId.value)
-    }
-
-    private fun extractVodIdFromMedia(media: CanonicalMediaWithSources): Int? {
+    /**
+     * Extract the numeric Xtream ID from a [CanonicalMediaWithSources].
+     *
+     * Consolidates the former `extractSeriesIdFromMedia` / `extractVodIdFromMedia`
+     * which were 100% identical (SSOT dedup).
+     */
+    private fun extractXtreamIdFromMedia(media: CanonicalMediaWithSources): Int? {
         val xtreamSource = media.sources.firstOrNull { it.sourceType == SourceType.XTREAM }
             ?: return null
         return parseNumericIdFromSourceKey(xtreamSource.sourceId.value)

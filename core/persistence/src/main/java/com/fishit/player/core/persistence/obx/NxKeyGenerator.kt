@@ -132,6 +132,18 @@ object NxKeyGenerator {
     ): String = "${authority.lowercase()}:${type.lowercase()}:$id"
 
     /**
+     * Map internal WorkType name to TMDB namespace.
+     *
+     * WorkType "SERIES" → TMDB namespace "tv" (not "series").
+     * WorkType "EPISODE" → "episode", "MOVIE" → "movie".
+     */
+    fun workTypeToTmdbNamespace(workType: String): String = when (workType.uppercase()) {
+        "SERIES" -> "tv"
+        "EPISODE" -> "episode"
+        else -> workType.lowercase() // "MOVIE" → "movie"
+    }
+
+    /**
      * Generate TMDB authority key.
      */
     fun tmdbKey(
