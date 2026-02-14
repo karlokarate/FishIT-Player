@@ -377,7 +377,7 @@ class NxXtreamSeriesIndexRepository @Inject constructor(
      * Searches NX_WorkSourceRef for entries with:
      * - sourceType = XTREAM
      * - sourceItemKind = SERIES
-     * - sourceItemKey contains seriesId
+     * - sourceItemKey equals seriesId
      */
     private suspend fun findSeriesWorkKeyBySeriesId(seriesId: Int): String? {
         val sourceRefs = sourceRefRepository.findBySourceTypeAndKind(
@@ -427,7 +427,7 @@ class NxXtreamSeriesIndexRepository @Inject constructor(
     /**
      * Build episode index from relations and works.
      *
-     * Uses batch queries (3 total) instead of N+1 individual queries per episode.
+     * Uses batch queries (4 total) instead of N+1 individual queries per episode.
      * For a series with 274 episodes, this reduces ~822 queries to 4.
      */
     private suspend fun buildEpisodeIndex(

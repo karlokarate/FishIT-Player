@@ -209,7 +209,8 @@ class NxWorkRepositoryImpl @Inject constructor(
 
         val queryLower = query.lowercase().trim()
 
-        // Search in title, plot, cast, director
+        // Search in title (canonicalTitleLower only)
+        // TODO: Extend to search plot, cast, director fields
         val queryBuilder = box.query()
 
         // Title search (primary)

@@ -58,12 +58,12 @@ import kotlin.coroutines.coroutineContext
  *
  * ## Episode Pipeline Chain (SSOT)
  * When a series detail is opened:
- * 1. `pipelineAdapter.convertEpisodesToRaw(seriesInfo)` → `List<RawMediaMetadata>` (uses already-fetched info)
+ * 1. `pipelineAdapter.convertEpisodesToRaw(seriesInfo, seriesId, accountLabel)` → `List<RawMediaMetadata>`
  * 2. `normalizer.normalize(raw)` → `NormalizedMediaMetadata`
  * 3. `nxCatalogWriter.ingest(raw, normalized, accountKey)` → NX entities
  * 4. `relationRepository.upsertBatch(relations)` → series↔episode links
  *
- * This uses the SAME pipeline chain that [XtreamCatalogSync] uses during catalog sync,
+ * This uses the SAME pipeline chain that XtreamCatalogSync uses during catalog sync,
  * guaranteeing identical field population. The adapter method avoids duplicate API calls
  * by accepting the already-fetched `XtreamSeriesInfo` and returns `RawMediaMetadata`
  * directly, preventing pipeline DTO leakage to the data layer.

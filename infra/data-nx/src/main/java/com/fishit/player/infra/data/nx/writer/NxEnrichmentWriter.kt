@@ -165,13 +165,13 @@ class NxEnrichmentWriter @Inject constructor(
      *
      * After a series parent is enriched with detail API metadata (poster, backdrop,
      * genres, rating, etc.), those fields should be propagated to child episode works
-     * that lack them. Uses [NxWorkRepository.enrichIfAbsent] semantics so child-specific
+     * that lack them. Uses [NxWorkRepository.enrichIfAbsentBatch] semantics so child-specific
      * values are never overwritten — only null fields are filled from the parent.
      *
      * Inheritable fields: poster, backdrop, genres, rating, director, cast, trailer.
      *
      * **Authority IDs (tmdbId, imdbId, tvdbId) are intentionally EXCLUDED.**
-     * These are `ALWAYS_UPDATE` in [NxWorkRepository.enrichIfAbsent], meaning they
+     * These are `ALWAYS_UPDATE` in [NxWorkRepository.enrichIfAbsentBatch], meaning they
      * would overwrite episode-specific IDs with the parent series ID. Episodes get
      * their own authority IDs from the pipeline (info call), which are more specific
      * than the series-level IDs. The data flow for authority IDs is child→parent

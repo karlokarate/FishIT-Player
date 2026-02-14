@@ -14,12 +14,12 @@ import io.objectbox.relation.ToOne
 /**
  * NX_* Entity Definitions for OBX PLATIN Refactor (Issue #621)
  *
- * This file defines the 17 NX_* ObjectBox entities that form the SSOT Work Graph.
+ * This file defines the 18 NX_* ObjectBox entities that form the SSOT Work Graph.
  *
- * **SSOT Contract:** docs/v2/NX_SSOT_CONTRACT.md
+ * **SSOT Contract:** contracts/NX_SSOT_CONTRACT.md
  * **Roadmap:** docs/v2/OBX_PLATIN_REFACTOR_ROADMAP.md
  *
- * ## Entity Overview (17 total)
+ * ## Entity Overview (18 total)
  *
  * ### Work Graph (Core)
  * - [NX_Work] - Central UI SSOT for canonical media works
@@ -56,11 +56,14 @@ import io.objectbox.relation.ToOne
  * ### Migration Support
  * - [NX_WorkRedirect] - Canonical merge redirects
  *
+ * ### Xtream Onboarding
+ * - [NX_XtreamCategorySelection] - Xtream category selection for sync filtering
+ *
  * ## Key Formats (per NX_SSOT_CONTRACT.md)
  *
- * - **workKey:** `<workType>:<canonicalSlug>:<year|LIVE>`
+ * - **workKey:** `<workType>:<authority>:<id>` where authority is `heuristic` or `tmdb`
  * - **authorityKey:** `<authority>:<type>:<id>`
- * - **sourceKey:** `<sourceType>:<accountKey>:<sourceId>`
+ * - **sourceKey:** `src:<sourceType>:<accountKey>:<itemKind>:<itemKey>`
  * - **variantKey:** `<sourceKey>#<qualityTag>:<languageTag>`
  *
  * ## Invariants (BINDING)
@@ -82,10 +85,10 @@ import io.objectbox.relation.ToOne
  * This is the **only** entity that UI should read from (after Phase 4).
  * Created via deterministic "link-or-create" resolution from pipeline ingest.
  *
- * **Key format:** `<workType>:<canonicalSlug>:<year|LIVE>`
+ * **Key format:** `<workType>:<authority>:<id>` where authority is `heuristic` or `tmdb`
  *
  * @property workKey Globally unique canonical key
- * @property workType MOVIE, EPISODE, SERIES, CLIP, LIVE, AUDIOBOOK, UNKNOWN
+ * @property workType MOVIE, EPISODE, SERIES, CLIP, LIVE_CHANNEL, MUSIC_TRACK, AUDIOBOOK, UNKNOWN
  * @property canonicalTitle Normalized title (cleaned by normalizer)
  * @property canonicalTitleLower Lowercase for case-insensitive search
  * @property year Release year (null for LIVE)
@@ -97,9 +100,9 @@ import io.objectbox.relation.ToOne
 data class NX_Work(
     @Id var id: Long = 0,
     // === Identity ===
-    /** Unique canonical key: `<workType>:<slug>:<year>` */
+    /** Unique canonical key: `<workType>:<authority>:<id>` */
     @Unique @Index var workKey: String = "",
-    /** Work type: MOVIE, EPISODE, SERIES, CLIP, LIVE, AUDIOBOOK, UNKNOWN */
+    /** Work type: MOVIE, EPISODE, SERIES, CLIP, LIVE_CHANNEL, MUSIC_TRACK, AUDIOBOOK, UNKNOWN */
     @Index var workType: String = "UNKNOWN",
     // === Core Metadata ===
     /** Normalized title (cleaned by normalizer) */
@@ -180,7 +183,7 @@ data class NX_Work(
  *
  * Supports multi-account by including accountKey in sourceKey.
  *
- * **Key format:** `<sourceType>:<accountKey>:<sourceId>`
+ * **Key format:** `src:<sourceType>:<accountKey>:<itemKind>:<itemKey>`
  *
  * @property sourceKey Globally unique source reference
  * @property sourceType Pipeline source: telegram, xtream, local, plex
@@ -191,7 +194,7 @@ data class NX_Work(
 data class NX_WorkSourceRef(
     @Id var id: Long = 0,
     // === Identity ===
-    /** Unique source key: `<sourceType>:<accountKey>:<sourceId>` */
+    /** Unique source key: `src:<sourceType>:<accountKey>:<itemKind>:<itemKey>` */
     @Unique @Index var sourceKey: String = "",
     /** Pipeline source type */
     @Index var sourceType: String = "",

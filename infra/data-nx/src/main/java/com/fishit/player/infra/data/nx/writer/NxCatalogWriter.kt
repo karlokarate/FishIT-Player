@@ -3,8 +3,8 @@
  *
  * ✅ REFACTORED: Now uses WorkEntityBuilder, SourceRefBuilder, VariantBuilder
  * - Before: 610 lines, CC ~28
- * - After: ~300 lines, CC ~8
- * - Reduction: 51% (-310 lines)
+ * - After: ~220 lines, CC ~8
+ * - Reduction: ~64% (-390 lines)
  *
  * This is the ingest entry point for the NX system. It receives normalized
  * media metadata and creates/updates:
@@ -185,15 +185,15 @@ class NxCatalogWriter @Inject constructor(
     /**
      * Build source key from raw metadata.
      *
-     * [accountKey] uses the NxKeyGenerator format `{sourceType}:{identifier}` (e.g.,
+     * [accountKey] uses the NxKeyGenerator format `{sourceType}:{accountKey}` (e.g.,
      * `xtream:user@server.com`). [SourceKeyParser.buildSourceKey] already prepends sourceType,
-     * so we extract only the identifier portion to avoid a duplicate prefix like
+     * so we extract only the accountKey portion to avoid a duplicate prefix like
      * `src:xtream:xtream:user@server.com:…`.
      *
-     * Format: src:{sourceType}:{identifier}:{sourceId}
+     * Format: src:{sourceType}:{accountKey}:{itemKind}:{itemKey}
      * Examples:
      * - src:xtream:user@server.com:vod:12345
-     * - src:telegram:+491234567890:msg:789:101
+     * - src:telegram:+491234567890:file:789:101
      */
     private fun buildSourceKey(raw: RawMediaMetadata, accountKey: String): String {
     val identifier = accountKey.removePrefix("${raw.sourceType.name.lowercase()}:")

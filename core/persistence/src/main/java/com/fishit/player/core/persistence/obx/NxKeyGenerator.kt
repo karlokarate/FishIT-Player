@@ -12,9 +12,9 @@ import java.util.Locale
  *
  * ## Key Format Specifications
  *
- * - **workKey:** `<workType>:heuristic:<slug>` (always heuristic for immutability)
+ * - **workKey:** `<workType>:<authority>:<id>` where authority is `heuristic` (slug-based) or `tmdb` (ID-based)
  * - **authorityKey:** `<authority>:<type>:<id>`
- * - **sourceKey:** Handled by `SourceKeyParser` (infra/data-nx). Format: `src:<sourceType>:<accountKey>:<sourceId>`
+ * - **sourceKey:** Handled by `SourceKeyParser` (infra/data-nx). Format: `src:<sourceType>:<accountKey>:<itemKind>:<itemKey>`
  * - **variantKey:** `<sourceKey>#<qualityTag>:<languageTag>`
  * - **categoryKey:** `<sourceType>:<accountKey>:<categoryId>`
  *
@@ -32,14 +32,15 @@ object NxKeyGenerator {
     /**
      * Generate a canonical work key.
      *
-     * Format: `<workType>:heuristic:<slug-year>` — **always heuristic**.
+     * Format: `<workType>:<authority>:<id>`
      *
-     * The authority is always `heuristic` (slug-based) to guarantee workKey
-     * immutability. tmdbId is stored as a separate indexed field on NX_Work
-     * and used for cross-reference via Dual-Lookup.
+     * When `tmdbId` is provided, authority is `tmdb` and the key uses the numeric
+     * TMDB ID directly (e.g., `movie:tmdb:603`). Otherwise, authority is `heuristic`
+     * and the key uses a slug-based ID (e.g., `movie:heuristic:matrix-1999`).
      *
      * Examples:
      * - `movie:heuristic:matrix-1999`
+     * - `movie:tmdb:603`
      * - `episode:heuristic:breaking-bad-2008-s02e07`
      * - `live_channel:heuristic:cnn-live`
      * - `series:heuristic:game-of-thrones-2011`
@@ -47,7 +48,7 @@ object NxKeyGenerator {
      * @param workType Type of work (MOVIE, EPISODE, SERIES, etc.)
      * @param title Canonical title (articles stripped by [SlugGenerator])
      * @param year Release year (null for LIVE)
-     * @param tmdbId Unused — kept for API compat. tmdbId is stored on NX_Work directly.
+     * @param tmdbId If non-null, produces a TMDB-authority key instead of heuristic-slug key
      * @param season Season number (for EPISODE keys)
      * @param episode Episode number (for EPISODE keys)
      * @return Canonical work key

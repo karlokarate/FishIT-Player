@@ -40,8 +40,8 @@ import kotlin.time.Duration.Companion.milliseconds
 /**
  * XtreamCatalogSync — catalog sync orchestrator for Xtream sources.
  *
- * Uses the same pipeline chain as [XtreamDetailSync]:
- * `toRawMediaMetadata()` → `normalizer.normalize()` → `NxCatalogWriter.ingest()`
+ * Uses the same pipeline chain as XtreamDetailSync:
+ * Pipeline emits pre-converted `RawMediaMetadata` → `normalizer.normalize()` → `NxCatalogWriter.ingestBatch()`
  *
  * **Architecture:**
  * - Single pipeline call with ALL content types enabled → PhaseScanOrchestrator
@@ -501,7 +501,7 @@ class XtreamCatalogSync @Inject constructor(
 /**
  * Internal wrapper for items flowing through the sync buffer.
  *
- * @property raw The normalized RawMediaMetadata from pipeline
+ * @property raw The raw (unnormalized) RawMediaMetadata from pipeline
  */
 internal data class XtreamSyncItem(
     val raw: RawMediaMetadata,

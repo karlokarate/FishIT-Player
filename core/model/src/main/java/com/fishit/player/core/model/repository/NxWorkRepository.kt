@@ -1,14 +1,3 @@
-/**
- * TEMP IMPLEMENTATION NOTES (REMOVE AFTER IMPLEMENTATION)
- * -------------------------------------------------------
- * - DOMAIN interface only: must not reference ObjectBox entities or BoxStore.
- * - Implementation maps between:
- *     Domain: NxWorkRepository.Work
- *     Persistence: NX_Work entity (infra/data-nx)
- * - SSOT: UI reads ONLY from NX graph via repositories (no legacy Obx* reads).
- * - Keep this MVP surface stable and small. Add diagnostics to NxWorkDiagnostics only.
- * - Remove this block after infra/data-nx implementation + integration tests are green.
- */
 package com.fishit.player.core.model.repository
 
 import com.fishit.player.core.model.ImageRef
@@ -98,7 +87,7 @@ interface NxWorkRepository {
     )
 
     /**
-     * Enrichment payload for [enrichIfAbsent].
+     * Enrichment payload for [enrichIfAbsent], [enrichFromDetail], and [enrichIfAbsentBatch].
      *
      * Contains **only** the fields that enrichment can touch — callers never need
      * to supply dummy values for IMMUTABLE fields like `type` or `displayTitle`.
@@ -254,9 +243,10 @@ interface NxWorkRepository {
     suspend fun count(options: QueryOptions): Int
 
     /**
-     * Advanced search across multiple fields.
+     * Advanced search across title field.
      *
-     * Searches title, plot, cast, and director fields.
+     * Currently searches canonicalTitleLower only.
+     * TODO: Extend to search plot, cast, and director fields.
      *
      * @param query Search text (case-insensitive)
      * @param options Additional query options for filtering/sorting results
@@ -303,7 +293,7 @@ interface NxWorkRepository {
      *   workKey, type, displayTitle, sortTitle, titleNormalized, year, createdAtMs
      * - **ENRICH_ONLY** fields (overwrite only if currently null/default):
      *   poster, backdrop, thumbnail, plot, genres, director, cast, rating,
-     *   runtimeMs, trailer, releaseDate, season, episode, isAdult
+     *   runtimeMs, trailer, releaseDate, season, episode
      * - **ALWAYS_UPDATE** fields (always overwritten when new value non-null):
      *   tmdbId, imdbId, tvdbId
      * - **MONOTONIC_UP** for recognitionState:
@@ -356,7 +346,8 @@ interface NxWorkRepository {
     suspend fun upsertBatch(works: List<Work>): List<Work>
 
     /**
-     * Soft delete preferred. Implementation sets isDeleted=true and updates updatedAtMs.
+     * Soft delete preferred. Implementation currently sets needsReview=true
+     * (full soft-delete with isDeleted flag pending entity migration).
      */
     suspend fun softDelete(workKey: String): Boolean
 }

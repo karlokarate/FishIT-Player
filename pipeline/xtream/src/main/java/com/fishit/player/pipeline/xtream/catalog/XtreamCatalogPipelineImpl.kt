@@ -29,13 +29,17 @@ import javax.inject.Inject
  * - Extracted phase handlers (Live, VOD, Series, Episodes)
  * - Reduced CC from ~38 to ~10
  * - Improved testability and maintainability
- * - ~395 lines → ~120 lines
+ * - ~395 lines → ~210 lines
  *
- * **Scan Order (Optimized for Perceived Speed):**
- * 1. LIVE channels first (smallest items, most frequently accessed)
- * 2. VOD/Movies next (quick browsing, no child items)
- * 3. Series containers last (index only, episodes loaded lazily)
- * 4. Episodes are streamed in parallel after phases 1-3
+ * **Scan Execution (Parallel via PhaseScanOrchestrator):**
+ * All content phases (LIVE, VOD, Series) run in PARALLEL via
+ * async/awaitAll + Semaphore(3). Episodes are processed sequentially
+ * per series within the series phase.
+ *
+ * **Phase Details:**
+ * - LIVE channels (smallest items, most frequently accessed)
+ * - VOD/Movies (quick browsing, no child items)
+ * - Series containers (index only, episodes loaded lazily)
  *
  * **Streaming-First Emit (Jan 2026 - Performance Fix):**
  * Items are emitted immediately as they are parsed from JSON, WITHOUT
