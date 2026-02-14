@@ -104,8 +104,11 @@ class NxEnrichmentWriterInheritanceTest {
         assertEquals("Vince Gilligan", enrichment.director)
         assertEquals("Bryan Cranston,Aaron Paul", enrichment.cast)
         assertEquals("https://youtube.com/trailer", enrichment.trailer)
-        assertEquals("1396", enrichment.tmdbId)
-        assertEquals("tt0903747", enrichment.imdbId)
+
+        // AND: authority IDs are NOT inherited (ALWAYS_UPDATE would corrupt episode IDs)
+        assertEquals(null, enrichment.tmdbId)
+        assertEquals(null, enrichment.imdbId)
+        assertEquals(null, enrichment.tvdbId)
     }
 
     // =========================================================================

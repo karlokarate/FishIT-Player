@@ -36,6 +36,8 @@
  *    b. THEN the parent series work is enriched via NxEnrichmentWriter
  *    c. THEN inheritable parent fields (poster, backdrop, genres, rating, etc.) are
  *       propagated to child episode works via [inheritParentFields]
+ *       NOTE: Authority IDs (tmdbId, imdbId, tvdbId) are NOT inherited parent→child.
+ *       Episodes get their own IDs from the pipeline. The flow is child→parent.
  *
  * @see NxCatalogWriter for sync-time + detail-time entity creation (shared by both orchestrators)
  */
@@ -167,8 +169,14 @@ class NxEnrichmentWriter @Inject constructor(
      * that lack them. Uses [NxWorkRepository.enrichIfAbsent] semantics so child-specific
      * values are never overwritten — only null fields are filled from the parent.
      *
-     * Inheritable fields: poster, backdrop, genres, rating, director, cast, trailer,
-     * tmdbId, imdbId, tvdbId.
+     * Inheritable fields: poster, backdrop, genres, rating, director, cast, trailer.
+     *
+     * **Authority IDs (tmdbId, imdbId, tvdbId) are intentionally EXCLUDED.**
+     * These are `ALWAYS_UPDATE` in [NxWorkRepository.enrichIfAbsent], meaning they
+     * would overwrite episode-specific IDs with the parent series ID. Episodes get
+     * their own authority IDs from the pipeline (info call), which are more specific
+     * than the series-level IDs. The data flow for authority IDs is child→parent
+     * (episodes inform the series), never parent→child.
      *
      * @param parentWorkKey The workKey of the enriched parent work
      * @return Number of child works that were enriched
@@ -185,6 +193,10 @@ class NxEnrichmentWriter @Inject constructor(
             return 0
         }
 
+        // Authority IDs (tmdbId, imdbId, tvdbId) are intentionally EXCLUDED:
+        // enrichIfAbsent uses ALWAYS_UPDATE for these fields, so inheriting
+        // series-level IDs would corrupt episode-specific authority IDs that
+        // episodes already received from the pipeline (info call).
         val parentEnrichment = NxWorkRepository.Enrichment(
             poster = parent.poster,
             backdrop = parent.backdrop,
@@ -193,9 +205,6 @@ class NxEnrichmentWriter @Inject constructor(
             director = parent.director,
             cast = parent.cast,
             trailer = parent.trailer,
-            tmdbId = parent.tmdbId,
-            imdbId = parent.imdbId,
-            tvdbId = parent.tvdbId,
         )
 
         var enrichedCount = 0
