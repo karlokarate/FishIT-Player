@@ -18,8 +18,9 @@
  * - **Live:** No enrichment possible — Xtream has no `get_live_info` endpoint.
  *
  * ## Enrichment Semantics
- * Uses [NxWorkRepository.enrichIfAbsent] with defined field update policies:
- * - **ENRICH_ONLY:** plot, poster, backdrop, rating, genres, etc. → set only if currently null
+ * Uses [NxWorkRepository.enrichFromDetail] with defined field update policies:
+ * - **DETAIL_OVERWRITE:** plot, poster, backdrop, rating, genres, etc. → always overwrite with
+ *   non-null values from detail API (detail is more authoritative than listing API)
  * - **ALWAYS_UPDATE:** tmdbId, imdbId, tvdbId → always overwrite with non-null value
  * - **MONOTONIC_UP:** recognitionState → only upgrade, never downgrade
  * - **IMMUTABLE:** workKey, workType, canonicalTitle → never changed
@@ -78,8 +79,8 @@ class NxEnrichmentWriter @Inject constructor(
      * Works for any content type (Series, VOD). The [NormalizedMediaMetadata]
      * is constructed by the caller from the API response.
      *
-     * Uses [NxWorkRepository.enrichIfAbsent] semantics:
-     * - Fields like plot, poster, rating → set only if currently null on entity
+     * Uses [NxWorkRepository.enrichFromDetail] semantics:
+     * - Fields like plot, poster, rating → always overwrite (detail API is authoritative)
      * - tmdbId, imdbId → always overwrite (detail API is more authoritative)
      * - workType, canonicalTitle → never changed
      *
@@ -93,7 +94,7 @@ class NxEnrichmentWriter @Inject constructor(
     ): NxWorkRepository.Work? {
         val now = System.currentTimeMillis()
         val work = workEntityBuilder.build(metadata, workKey, now)
-        val enriched = workRepository.enrichIfAbsent(workKey, work.toEnrichment())
+        val enriched = workRepository.enrichFromDetail(workKey, work.toEnrichment())
 
         if (enriched != null) {
             UnifiedLog.d(TAG) {

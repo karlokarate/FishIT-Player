@@ -316,6 +316,27 @@ interface NxWorkRepository {
      */
     suspend fun enrichIfAbsent(workKey: String, enrichment: Enrichment): Work?
 
+    /**
+     * Enrich an existing work with metadata from a detail info API call.
+     *
+     * Unlike [enrichIfAbsent], this method treats the enrichment data as **authoritative**:
+     * the detail API (`get_vod_info`, `get_series_info`) provides richer, more accurate
+     * metadata than the listing API (`get_vod_streams`). Non-null enrichment values
+     * always overwrite existing values.
+     *
+     * Field update rules:
+     * - **IMMUTABLE** fields: same as [enrichIfAbsent] — never changed
+     * - **DETAIL_OVERWRITE** fields (always overwrite with non-null enrichment value):
+     *   poster, backdrop, thumbnail, plot, genres, director, cast, rating,
+     *   runtimeMs, trailer, releaseDate, season, episode
+     * - **ALWAYS_UPDATE** / **MONOTONIC_UP** / **AUTO**: same as [enrichIfAbsent]
+     *
+     * @param workKey Key of the work to enrich
+     * @param enrichment Enrichment data from detail info API
+     * @return Updated work, or null if workKey doesn't exist
+     */
+    suspend fun enrichFromDetail(workKey: String, enrichment: Enrichment): Work?
+
     suspend fun upsertBatch(works: List<Work>): List<Work>
 
     /**
@@ -327,7 +348,8 @@ interface NxWorkRepository {
 /**
  * Converts a full [NxWorkRepository.Work] into an [NxWorkRepository.Enrichment],
  * extracting only the enrichable fields. Used by callers that already have a full
- * Work (e.g., from [WorkEntityBuilder.build]) to pass into [NxWorkRepository.enrichIfAbsent].
+ * Work (e.g., from [WorkEntityBuilder.build]) to pass into [NxWorkRepository.enrichIfAbsent]
+ * or [NxWorkRepository.enrichFromDetail].
  */
 fun NxWorkRepository.Work.toEnrichment(): NxWorkRepository.Enrichment = NxWorkRepository.Enrichment(
     season = season,

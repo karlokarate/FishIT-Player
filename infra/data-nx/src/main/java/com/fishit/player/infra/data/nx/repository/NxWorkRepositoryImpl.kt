@@ -444,6 +444,69 @@ class NxWorkRepositoryImpl @Inject constructor(
             existing.toDomain()
         }
 
+    /**
+     * Enrich from detail API — non-null enrichment values ALWAYS overwrite existing values.
+     *
+     * The detail info API (`get_vod_info`, `get_series_info`) is more authoritative
+     * than the listing API. Fields like poster, plot, rating, genres etc. from the
+     * detail API should overwrite whatever the listing API set during catalog sync.
+     */
+    override suspend fun enrichFromDetail(workKey: String, enrichment: NxWorkRepository.Enrichment): NxWorkRepository.Work? =
+        withContext(Dispatchers.IO) {
+            val existing = box.query(NX_Work_.workKey.equal(workKey, StringOrder.CASE_SENSITIVE))
+                .build()
+                .findFirst()
+                ?: return@withContext null
+
+            // IMMUTABLE: workKey, workType, canonicalTitle, canonicalTitleLower, year, createdAt — SKIP
+
+            // DETAIL_OVERWRITE: non-null enrichment value always wins (detail API is authoritative)
+            existing.season = MappingUtils.alwaysUpdate(existing.season, enrichment.season)
+            existing.episode = MappingUtils.alwaysUpdate(existing.episode, enrichment.episode)
+            existing.durationMs = MappingUtils.alwaysUpdate(existing.durationMs, enrichment.runtimeMs)
+            existing.rating = MappingUtils.alwaysUpdate(existing.rating, enrichment.rating)
+            existing.genres = MappingUtils.alwaysUpdate(existing.genres, enrichment.genres)
+            existing.plot = MappingUtils.alwaysUpdate(existing.plot, enrichment.plot)
+            existing.director = MappingUtils.alwaysUpdate(existing.director, enrichment.director)
+            existing.cast = MappingUtils.alwaysUpdate(existing.cast, enrichment.cast)
+            existing.trailer = MappingUtils.alwaysUpdate(existing.trailer, enrichment.trailer)
+            existing.releaseDate = MappingUtils.alwaysUpdate(existing.releaseDate, enrichment.releaseDate)
+
+            // DETAIL_OVERWRITE for ImageRef — non-null enrichment wins
+            enrichment.poster?.let { existing.poster = it }
+            enrichment.backdrop?.let { existing.backdrop = it }
+            enrichment.thumbnail?.let { existing.thumbnail = it }
+
+            // ALWAYS_UPDATE: External IDs (come from detail enrichment)
+            existing.tmdbId = MappingUtils.alwaysUpdate(existing.tmdbId, enrichment.tmdbId)
+            existing.imdbId = MappingUtils.alwaysUpdate(existing.imdbId, enrichment.imdbId)
+            existing.tvdbId = MappingUtils.alwaysUpdate(existing.tvdbId, enrichment.tvdbId)
+
+            // Update authorityKey if tmdbId changed — delegate to NxKeyGenerator SSOT
+            enrichment.tmdbId?.let { newTmdbId ->
+                val workType = existing.workType.lowercase()
+                existing.authorityKey = NxKeyGenerator.authorityKey("TMDB", workType, newTmdbId)
+            }
+
+            // MONOTONIC_UP: RecognitionState — only upgrade, never downgrade
+            val currentState = MappingUtils.safeEnumFromString(
+                existing.recognitionState,
+                RecognitionState.HEURISTIC,
+            )
+            val upgradedState = MappingUtils.monotonicUp(currentState, enrichment.recognitionState)
+            if (upgradedState != null) {
+                existing.recognitionState = upgradedState.name
+                @Suppress("DEPRECATION")
+                existing.needsReview = upgradedState == RecognitionState.NEEDS_REVIEW
+            }
+
+            // AUTO: always update timestamp
+            existing.updatedAt = System.currentTimeMillis()
+
+            box.put(existing)
+            existing.toDomain()
+        }
+
     override suspend fun upsertBatch(works: List<Work>): List<Work> = withContext(Dispatchers.IO) {
         if (works.isEmpty()) return@withContext emptyList()
 

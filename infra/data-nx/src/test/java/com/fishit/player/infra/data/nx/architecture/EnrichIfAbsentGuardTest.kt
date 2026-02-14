@@ -3,16 +3,18 @@
  *
  * NX_CONSOLIDATION_PLAN Phase 8 — Prevents unguarded entity field writes.
  *
- * The SSOT for enrichment is [NxWorkRepositoryImpl.enrichIfAbsent], which uses:
- * - [MappingUtils.enrichOnly] — set only if existing is null/blank
- * - [MappingUtils.alwaysUpdate] — always overwrite with new value
+ * The SSOT for enrichment is [NxWorkRepositoryImpl.enrichIfAbsent] (listing/inheritance)
+ * and [NxWorkRepositoryImpl.enrichFromDetail] (detail info API), which both use:
+ * - [MappingUtils.enrichOnly] — set only if existing is null/blank (enrichIfAbsent)
+ * - [MappingUtils.alwaysUpdate] — always overwrite with new value (enrichFromDetail, external IDs)
  * - [MappingUtils.monotonicUp] — only upgrade, never downgrade
  *
  * Direct entity field writes outside approved files bypass these guards
  * and can cause data corruption (overwriting curated TMDB data with lower-quality data).
  *
- * If a test fails, route the write through NxWorkRepository.enrichIfAbsent() or
- * WorkEntityBuilder.build() instead of writing entity fields directly.
+ * If a test fails, route the write through NxWorkRepository.enrichIfAbsent(),
+ * NxWorkRepository.enrichFromDetail(), or WorkEntityBuilder.build() instead of
+ * writing entity fields directly.
  */
 package com.fishit.player.infra.data.nx.architecture
 
@@ -82,7 +84,7 @@ class EnrichIfAbsentGuardTest {
             violations.isEmpty(),
             "Direct writes to enrichable NX_Work fields in unapproved files:\n" +
                 violations.joinToString("\n") { "  ${it.file}:${it.lineNumber}: ${it.content.trim()}" } +
-                "\n\nFix: Route writes through NxWorkRepository.enrichIfAbsent() or WorkEntityBuilder.",
+                "\n\nFix: Route writes through NxWorkRepository.enrichIfAbsent(), enrichFromDetail(), or WorkEntityBuilder.",
         )
     }
 
