@@ -7,6 +7,7 @@ import com.fishit.player.core.model.ExternalIds
 import com.fishit.player.core.model.ImageRef
 import com.fishit.player.core.model.MediaType
 import com.fishit.player.core.model.NormalizedMediaMetadata
+import com.fishit.player.core.model.PlaybackHintKeys
 import com.fishit.player.core.model.SourceType
 import com.fishit.player.core.model.TmdbMediaType
 import com.fishit.player.core.model.TmdbRef
@@ -131,10 +132,10 @@ class DetailEnrichmentServiceImpl
         override suspend fun enrichImmediate(media: CanonicalMediaWithSources): CanonicalMediaWithSources {
             val startMs = System.currentTimeMillis()
 
-            // Fast path: already enriched
-            if (!media.plot.isNullOrBlank()) {
+            // Fast path: already fully enriched
+            if (isFullyEnriched(media)) {
                 UnifiedLog.d(TAG) {
-                    "enrichImmediate: skipped (already has plot) canonicalId=${media.canonicalId.key.value}"
+                    "enrichImmediate: skipped (already enriched) canonicalId=${media.canonicalId.key.value}"
                 }
                 return media
             }
@@ -149,7 +150,7 @@ class DetailEnrichmentServiceImpl
                     val currentMedia = canonicalMediaRepository.findByCanonicalId(media.canonicalId)
                         ?: return@withHighPriority media
 
-                    if (!currentMedia.plot.isNullOrBlank()) {
+                    if (isFullyEnriched(currentMedia)) {
                         return@withHighPriority currentMedia
                     }
 
@@ -178,9 +179,9 @@ class DetailEnrichmentServiceImpl
         private suspend fun enrichIfNeededInternal(media: CanonicalMediaWithSources): CanonicalMediaWithSources {
             val startMs = System.currentTimeMillis()
 
-            if (!media.plot.isNullOrBlank()) {
+            if (isFullyEnriched(media)) {
                 UnifiedLog.d(TAG) {
-                    "enrichIfNeededInternal: skipped (already has plot) canonicalId=${media.canonicalId.key.value}"
+                    "enrichIfNeededInternal: skipped (already enriched) canonicalId=${media.canonicalId.key.value}"
                 }
                 return media
             }
@@ -278,5 +279,23 @@ class DetailEnrichmentServiceImpl
             // NX format: src:xtream:{accountKey}:series:{id}
             val parsed = com.fishit.player.infra.data.nx.mapper.SourceKeyParser.parse(sourceId)
             return parsed?.itemKind == "series"
+        }
+
+        /**
+         * Check if media has been fully enriched (not just plot).
+         *
+         * For Xtream sources, plot alone is not sufficient — the detail API also
+         * provides containerExtension and TMDB/IMDB IDs. Enrichment should only
+         * be skipped when these additional fields are present.
+         */
+        private fun isFullyEnriched(media: CanonicalMediaWithSources): Boolean {
+            if (media.plot.isNullOrBlank()) return false
+            val xtreamSource = media.sources.firstOrNull { it.sourceType == SourceType.XTREAM }
+            if (xtreamSource != null) {
+                val hasContainerExt = !xtreamSource.playbackHints[PlaybackHintKeys.Xtream.CONTAINER_EXT].isNullOrBlank()
+                val hasExternalId = media.tmdbId != null || !media.imdbId.isNullOrBlank()
+                if (!hasContainerExt && !hasExternalId) return false
+            }
+            return true
         }
     }

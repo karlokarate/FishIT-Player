@@ -184,7 +184,8 @@ class NxXtreamSeriesIndexRepository @Inject constructor(
             seasonNumber = seasonNumber,
             episodeNumber = episodeNumber,
             sourceKey = sourceKey,
-            episodeId = SourceKeyParser.extractXtreamEpisodeId(sourceKey),
+            episodeId = defaultVariant?.playbackHints?.get(PlaybackHintKeys.Xtream.EPISODE_ID)?.toIntOrNull()
+                ?: SourceKeyParser.extractXtreamEpisodeId(sourceKey),
             title = episodeWork.displayTitle,
             // --- Images (ImageRef → String URL for EpisodeIndexItem DTO) ---
             thumbUrl = episodeWork.poster?.toUriString(),
@@ -289,13 +290,17 @@ class NxXtreamSeriesIndexRepository @Inject constructor(
         val variants = variantRepository.findByWorkKey(sourceRef.workKey)
         val variant = variants.firstOrNull() ?: return@withContext null
 
-        // Parse episodeId from sourceKey
+        // Parse episodeId from sourceKey (episode number for composite keys)
         val episodeId = SourceKeyParser.extractXtreamEpisodeId(sourceKey)
+        // Read actual Xtream stream ID from variant playback hints (SSOT)
+        val streamId = variant.playbackHints[PlaybackHintKeys.Xtream.EPISODE_ID]?.toIntOrNull()
+            ?: episodeId
 
         EpisodePlaybackHints(
             episodeId = episodeId,
-            streamId = episodeId, // Often the same
-            containerExtension = variant.container,
+            streamId = streamId,
+            containerExtension = variant.container
+                ?: variant.playbackHints[PlaybackHintKeys.Xtream.CONTAINER_EXT],
             directUrl = variant.playbackHints[PlaybackHintKeys.Xtream.DIRECT_SOURCE],
         )
     }
@@ -462,7 +467,8 @@ class NxXtreamSeriesIndexRepository @Inject constructor(
                 seasonNumber = seasonNumber,
                 episodeNumber = relation.episodeNumber ?: 0,
                 sourceKey = sourceKey,
-                episodeId = SourceKeyParser.extractXtreamEpisodeId(sourceKey),
+                episodeId = defaultVariant?.playbackHints?.get(PlaybackHintKeys.Xtream.EPISODE_ID)?.toIntOrNull()
+                    ?: SourceKeyParser.extractXtreamEpisodeId(sourceKey),
                 title = episodeWork.displayTitle,
                 // --- Images (ImageRef → String URL for EpisodeIndexItem DTO) ---
                 thumbUrl = episodeWork.poster?.toUriString(),
