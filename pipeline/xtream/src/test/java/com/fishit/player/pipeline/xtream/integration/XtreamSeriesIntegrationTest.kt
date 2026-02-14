@@ -277,6 +277,16 @@ class XtreamSeriesIntegrationTest {
                 assertEquals(expectedTs, raw.addedTimestamp, "addedTimestamp")
                 assertEquals(expectedTs, raw.lastModifiedTimestamp, "lastModifiedTimestamp")
 
+                // BUG FIX (Feb 2026): Verify episode TMDB ID is propagated to externalIds
+                // when available (fallback behavior when seriesTmdbId is null)
+                if (ep.info?.tmdb_id != null) {
+                    assertEquals(
+                        ep.info.tmdb_id,
+                        raw.externalIds.tmdb?.id,
+                        "Episode TMDB ID should be in externalIds when present"
+                    )
+                }
+
                 if (episodeCount <= 5) {
                     println("  ✅ S${seasonNum}E${ep.episode_num}: ${ep.title?.take(30) ?: "(no title)"}")
                 }
