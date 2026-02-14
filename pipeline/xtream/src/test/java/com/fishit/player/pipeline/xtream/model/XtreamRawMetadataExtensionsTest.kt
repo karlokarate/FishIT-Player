@@ -168,6 +168,67 @@ class XtreamRawMetadataExtensionsTest {
     }
 
     // =======================================================================
+    // BUG FIX TESTS: Episode TMDB ID fallback (Feb 2026)
+    // =======================================================================
+
+    @Test
+    fun `BUG FIX - Episode uses seriesTmdbId when available`() {
+        val episode =
+            XtreamEpisode(
+                id = 770328,
+                seriesId = 111,
+                seasonNumber = 2,
+                episodeNumber = 6,
+                title = "Kuckuck",
+                seriesTmdbId = 1396, // Breaking Bad series ID
+                episodeTmdbId = 62097, // Episode-specific ID
+            )
+
+        val raw = episode.toRawMediaMetadata(seriesNameOverride = "Breaking Bad", seriesKind = "series")
+
+        // Should use series TMDB ID (preferred per Gold Decision)
+        assertEquals(1396, raw.externalIds.tmdb?.id, "Should use seriesTmdbId when available")
+    }
+
+    @Test
+    fun `BUG FIX - Episode uses episodeTmdbId as fallback when seriesTmdbId is null`() {
+        val episode =
+            XtreamEpisode(
+                id = 770328,
+                seriesId = 111,
+                seasonNumber = 2,
+                episodeNumber = 6,
+                title = "Kuckuck",
+                seriesTmdbId = null, // No series TMDB ID (common for Xtream panels)
+                episodeTmdbId = 62097, // Episode TMDB ID from info block
+            )
+
+        val raw = episode.toRawMediaMetadata(seriesNameOverride = "Breaking Bad", seriesKind = "series")
+
+        // Should use episode TMDB ID as fallback
+        assertEquals(62097, raw.externalIds.tmdb?.id, "Should use episodeTmdbId when seriesTmdbId is null")
+    }
+
+    @Test
+    fun `BUG FIX - Episode leaves externalIds empty when both TMDB IDs are null`() {
+        val episode =
+            XtreamEpisode(
+                id = 770328,
+                seriesId = 111,
+                seasonNumber = 2,
+                episodeNumber = 6,
+                title = "Kuckuck",
+                seriesTmdbId = null,
+                episodeTmdbId = null,
+            )
+
+        val raw = episode.toRawMediaMetadata(seriesNameOverride = "Breaking Bad", seriesKind = "series")
+
+        // Should have no TMDB ID
+        assertNull(raw.externalIds.tmdb, "Should have no TMDB ID when both are null")
+    }
+
+    // =======================================================================
     // BUG FIX TESTS: lastModifiedTimestamp (Jan 2026)
     // =======================================================================
 
