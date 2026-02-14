@@ -590,6 +590,8 @@ data class XtreamSeriesInfoBlock(
     val actors: String? = null,
     val country: String? = null,
     @SerialName("releasedate") val releaseDate: String? = null,
+    // Some panels return camelCase "releaseDate" instead of lowercase "releasedate"
+    @SerialName("releaseDate") val releaseDateCamel: String? = null,
     @SerialName("imdb_id") val imdbId: String? = null,
     @SerialName("tmdb_id") val tmdbId: String? = null,
     @SerialName("poster_path") val posterPath: String? = null,
@@ -600,10 +602,18 @@ data class XtreamSeriesInfoBlock(
     @SerialName("youtube_trailer") val youtubeTrailer: String? = null,
     val trailer: String? = null,
     @SerialName("episode_run_time") val episodeRunTime: String? = null,
+    @SerialName("last_modified") val lastModified: String? = null,
+    @SerialName("category_id") val categoryId: String? = null,
 ) {
     // =========================================================================
     // Resolver properties to handle alternative field names across panels
     // =========================================================================
+
+    /** Resolved release date (handles releasedate, releaseDate) */
+    val resolvedReleaseDate: String?
+        get() =
+            releaseDate?.takeIf { it.isNotBlank() }
+                ?: releaseDateCamel?.takeIf { it.isNotBlank() }
 
     /** Resolved plot/description (handles plot, description, overview) */
     val resolvedPlot: String?
