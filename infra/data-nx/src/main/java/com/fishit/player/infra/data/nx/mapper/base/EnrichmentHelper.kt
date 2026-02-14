@@ -1,16 +1,46 @@
 /**
  * Shared enrichment logic for NX_Work entities.
  *
- * Eliminates duplication between:
- * - NxWorkRepositoryImpl.enrichIfAbsent() (ENRICH_ONLY policy)
- * - NxCanonicalMediaRepositoryImpl.updateTmdbEnriched() (ENRICH_ONLY policy)
+ * Eliminates duplication between two distinct enrichment workflows:
+ *
+ * 1. **Xtream info_call enrichment** (detail page open):
+ *    - API Calls: `get_vod_info` / `get_series_info`
+ *    - Data Source: Xtream server's detailed metadata (NOT TMDB API!)
+ *    - Fills: plot, poster, rating, tmdb_id, imdbId, genres, cast, director, etc.
+ *    
+ *    **VOD workflow**:
+ *    - Catalog: `get_vod_streams` → minimal VOD work created
+ *    - Info: `get_vod_info` → VOD work enriched with full metadata
+ *    
+ *    **Series workflow** (DUAL function):
+ *    - Catalog: `get_series` → minimal Series work created (parent only, NO episodes!)
+ *    - Info: `get_series_info` → THREE operations:
+ *      a) Series parent work enriched with full metadata
+ *      b) Episode works CREATED (first time they exist!)
+ *      c) Episodes inherit fields from parent (poster, backdrop, genres, rating, etc.)
+ *    
+ *    - Called via: `NxEnrichmentWriter.enrichWork()` → `NxWorkRepository.enrichIfAbsent()`
+ *    - Policy: ENRICH_ONLY
+ *
+ * 2. **TMDB API enrichment** (background worker - separate service):
+ *    - API Calls: tmdb.org REST API (GET /movie/{id}, GET /tv/{id})
+ *    - Data Source: The Movie Database external service
+ *    - Fills: Remaining nulls that Xtream info_call couldn't provide
+ *    - Called via: `TmdbEnrichmentBatchWorker` → `updateTmdbEnriched()`
+ *    - Policy: ENRICH_ONLY
+ *
+ * **Key Distinction**:
+ * - Xtream info_call is the PRIMARY enrichment source (called on detail page open)
+ * - For series: info_call also CREATES episode works and enriches them via inheritance
+ * - TMDB API is SECONDARY (background worker, fills remaining gaps)
+ * - Both deliver metadata, but from different servers/services
  *
  * **DRY Principle**: Single source of truth for field-by-field enrichment mapping.
  *
  * **Enrichment Philosophy**: "Once enriched = final"
- * - Both enrichment paths use ENRICH_ONLY policy (fill null/blank only, never overwrite)
+ * - Both paths use ENRICH_ONLY (fill null/blank only, never overwrite)
  * - Exception: External IDs (tmdbId, imdbId, tvdbId) always update via alwaysUpdate()
- * - This ensures catalog sync data is not overwritten by TMDB enrichment
+ * - Preserves initial catalog sync data quality
  *
  * **Issue Reference**: PR #716 - Consolidation of enrichment paths
  */
@@ -24,8 +54,13 @@ import com.fishit.player.core.persistence.obx.NxKeyGenerator
 
 /**
  * Enrichment data container that can be constructed from various sources:
- * - NxWorkRepository.Enrichment (from enrichIfAbsent)
- * - NormalizedMediaMetadata (from TMDB enrichment)
+ * - NxWorkRepository.Enrichment (from Xtream info_call via enrichIfAbsent)
+ * - NormalizedMediaMetadata (from TMDB API background worker)
+ *
+ * **Xtream API Structure**:
+ * - Catalog calls: `get_vod_streams`, `get_series` → minimal data (during sync)
+ * - Info calls: `get_vod_info`, `get_series_info` → full metadata (detail page)
+ * - Info calls provide tmdb_id, plot, poster from Xtream server (NOT TMDB API!)
  */
 data class EnrichmentData(
     // ENRICH_ONLY fields
@@ -115,20 +150,43 @@ object EnrichmentHelper {
     /**
      * Apply enrichment to entity with specified policy.
      *
-     * **Current Usage** (PR #716):
-     * - enrichIfAbsent(): ENRICH_ONLY - fill null fields only
-     * - updateTmdbEnriched(): ENRICH_ONLY - respect "once enriched=final" principle
+     * **Two Enrichment Workflows** (PR #716):
+     * 
+     * 1. **Xtream info_call** (detail page) → enrichIfAbsent() → ENRICH_ONLY
+     *    
+     *    **VOD**:
+     *    - Catalog: `get_vod_streams` (minimal data, during sync)
+     *    - Info: `get_vod_info` (full metadata, on detail open)
+     *    - Info call enriches the existing VOD work
+     *    
+     *    **Series** (DUAL function):
+     *    - Catalog: `get_series` (minimal data, parent work ONLY)
+     *    - Info: `get_series_info` performs THREE operations:
+     *      a) Enriches parent series work with full metadata
+     *      b) CREATES episode works (first time they exist!)
+     *      c) Episodes inherit fields from parent (poster, backdrop, genres, rating)
+     * 
+     * 2. **TMDB API** (background) → updateTmdbEnriched() → ENRICH_ONLY
+     *    - Separate external service (tmdb.org)
+     *    - Fills remaining nulls that Xtream couldn't provide
      *
      * **Policy Behavior**:
      * - ENRICH_ONLY: Only sets field if currently null (existing value preserved)
      * - AUTHORITY_WINS: Always overwrites with new non-null value (currently unused)
      *
-     * Field categories:
-     * - IMMUTABLE: workKey, workType, canonicalTitle, canonicalTitleLower, year, createdAt → SKIP
-     * - ENRICH_ONLY/AUTHORITY_WINS: Uses policy for poster, backdrop, thumbnail, plot, etc.
-     * - ALWAYS_UPDATE: tmdbId, imdbId, tvdbId → always overwrite with new non-null value
+     * **Field Categories**:
+     * - IMMUTABLE: workKey, workType, canonicalTitle, year, createdAt → SKIP
+     * - ENRICH_ONLY/AUTHORITY_WINS: Uses policy for poster, backdrop, plot, rating, etc.
+     * - ALWAYS_UPDATE: tmdbId, imdbId, tvdbId → always overwrite (cross-reference keys)
      * - MONOTONIC_UP: recognitionState → only upgrade (lower ordinal = higher confidence)
      * - AUTO: updatedAt → always current time
+     *
+     * **Why Both Use ENRICH_ONLY**:
+     * - Xtream info_call provides source-specific metadata from provider
+     * - Episode creation + inheritance happens during info_call (series only)
+     * - TMDB API fills remaining nulls from external database
+     * - "Once enriched = final" prevents ping-pong updates
+     * - Respects initial catalog + info_call data quality
      */
     fun applyEnrichment(
         entity: NX_Work,

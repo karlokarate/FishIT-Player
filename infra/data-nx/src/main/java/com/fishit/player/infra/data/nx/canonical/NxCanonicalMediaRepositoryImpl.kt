@@ -351,8 +351,20 @@ class NxCanonicalMediaRepositoryImpl @Inject constructor(
             .findFirst() ?: return@withContext
 
         // ENRICH_ONLY policy: Only fill null/blank fields, respect "once enriched=final" principle.
-        // Per PR #716: Fields from catalog sync should not be overwritten by TMDB enrichment.
+        //
+        // **Enrichment Source**: TMDB API (via TmdbEnrichmentBatchWorker → DefaultTmdbMetadataResolver)
+        // This is a BACKGROUND WORKER that calls the external tmdb.org API.
+        //
+        // **This is NOT the same as**:
+        // - Xtream catalog calls (`get_vod_streams`, `get_series`) → minimal data during sync
+        // - Xtream info calls (`get_vod_info`, `get_series_info`) → full metadata on detail page
+        //
+        // Info calls provide enrichment from Xtream server (uses enrichIfAbsent).
+        // This method provides enrichment from TMDB.org external service (separate).
+        //
+        // Per PR #716: Fields from catalog + info_call should not be overwritten by TMDB API.
         // Exception: External IDs (tmdbId, imdbId, tvdbId) always update via alwaysUpdate().
+        //
         // Delegate to shared enrichment helper with ENRICH_ONLY policy.
         EnrichmentHelper.applyEnrichment(
             entity = work,
