@@ -350,12 +350,14 @@ class NxCanonicalMediaRepositoryImpl @Inject constructor(
             .build()
             .findFirst() ?: return@withContext
 
-        // TMDB data is authoritative — always overwrite non-null fields.
-        // Delegate to shared enrichment helper with AUTHORITY_WINS policy (Issue #716)
+        // ENRICH_ONLY policy: Only fill null/blank fields, respect "once enriched=final" principle.
+        // Per PR #716: Fields from catalog sync should not be overwritten by TMDB enrichment.
+        // Exception: External IDs (tmdbId, imdbId, tvdbId) always update via alwaysUpdate().
+        // Delegate to shared enrichment helper with ENRICH_ONLY policy.
         EnrichmentHelper.applyEnrichment(
             entity = work,
             enrichment = enriched.toEnrichmentData(),
-            policy = UpdatePolicy.AUTHORITY_WINS,
+            policy = UpdatePolicy.ENRICH_ONLY,
         )
         
         // Override updatedAt with resolvedAt timestamp (TMDB enrichment tracking)

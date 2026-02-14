@@ -3,9 +3,14 @@
  *
  * Eliminates duplication between:
  * - NxWorkRepositoryImpl.enrichIfAbsent() (ENRICH_ONLY policy)
- * - NxCanonicalMediaRepositoryImpl.updateTmdbEnriched() (AUTHORITY_WINS policy)
+ * - NxCanonicalMediaRepositoryImpl.updateTmdbEnriched() (ENRICH_ONLY policy)
  *
  * **DRY Principle**: Single source of truth for field-by-field enrichment mapping.
+ *
+ * **Enrichment Philosophy**: "Once enriched = final"
+ * - Both enrichment paths use ENRICH_ONLY policy (fill null/blank only, never overwrite)
+ * - Exception: External IDs (tmdbId, imdbId, tvdbId) always update via alwaysUpdate()
+ * - This ensures catalog sync data is not overwritten by TMDB enrichment
  *
  * **Issue Reference**: PR #716 - Consolidation of enrichment paths
  */
@@ -109,6 +114,14 @@ object EnrichmentHelper {
     
     /**
      * Apply enrichment to entity with specified policy.
+     *
+     * **Current Usage** (PR #716):
+     * - enrichIfAbsent(): ENRICH_ONLY - fill null fields only
+     * - updateTmdbEnriched(): ENRICH_ONLY - respect "once enriched=final" principle
+     *
+     * **Policy Behavior**:
+     * - ENRICH_ONLY: Only sets field if currently null (existing value preserved)
+     * - AUTHORITY_WINS: Always overwrites with new non-null value (currently unused)
      *
      * Field categories:
      * - IMMUTABLE: workKey, workType, canonicalTitle, canonicalTitleLower, year, createdAt → SKIP
