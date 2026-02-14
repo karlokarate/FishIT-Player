@@ -32,9 +32,9 @@ import com.fishit.player.core.model.repository.NxWorkSourceRefRepository.SourceI
 import com.fishit.player.core.model.repository.NxWorkSourceRefRepository.SourceType
 import com.fishit.player.core.model.repository.NxWorkVariantRepository
 import com.fishit.player.core.model.PlaybackHintKeys
+import com.fishit.player.core.persistence.obx.NxKeyGenerator
 import com.fishit.player.infra.data.nx.mapper.SourceKeyParser
 import com.fishit.player.infra.data.nx.mapper.base.PlaybackHintsDecoder
-import com.fishit.player.infra.data.nx.writer.NxEnrichmentWriter
 import com.fishit.player.infra.logging.UnifiedLog
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -251,8 +251,8 @@ class NxXtreamSeriesIndexRepository @Inject constructor(
                 return@withContext
             }
 
-        // SSOT variantKey format: {sourceKey}#original (consistent with NxCatalogWriter)
-        val variantKey = NxEnrichmentWriter.buildVariantKey(sourceKey)
+        // SSOT variantKey format: {sourceKey}#original (NxKeyGenerator is canonical)
+        val variantKey = NxKeyGenerator.defaultVariantKey(sourceKey)
         val existingVariant = variantRepository.getByVariantKey(variantKey)
 
         // Parse hints if provided

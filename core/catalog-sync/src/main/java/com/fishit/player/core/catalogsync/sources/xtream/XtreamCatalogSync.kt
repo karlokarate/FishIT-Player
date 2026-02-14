@@ -248,15 +248,19 @@ class XtreamCatalogSync @Inject constructor(
                     buffer.consumeBatched(batchSize = 50) { items ->
                         if (items.isEmpty()) return@consumeBatched
 
-                        // Normalize and ingest each item via NxCatalogWriter
-                        items.forEach { syncItem ->
+                        // Normalize and batch-ingest via NxCatalogWriter
+                        val triples = items.mapNotNull { syncItem ->
                             try {
                                 val raw = syncItem.raw
                                 val normalized = normalizer.normalize(raw)
-                                nxCatalogWriter.ingest(raw, normalized, config.accountKey)
+                                Triple(raw, normalized, config.accountKey)
                             } catch (e: Exception) {
-                                UnifiedLog.w(TAG) { "Failed to ingest ${syncItem.raw.sourceId}: ${e.message}" }
+                                UnifiedLog.w(TAG) { "Failed to normalize ${syncItem.raw.sourceId}: ${e.message}" }
+                                null
                             }
+                        }
+                        if (triples.isNotEmpty()) {
+                            nxCatalogWriter.ingestBatch(triples)
                         }
                     }
                 } catch (e: Exception) {

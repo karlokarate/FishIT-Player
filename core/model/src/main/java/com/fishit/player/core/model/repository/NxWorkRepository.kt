@@ -340,6 +340,19 @@ interface NxWorkRepository {
      */
     suspend fun enrichFromDetail(workKey: String, enrichment: Enrichment): Work?
 
+    /**
+     * Batch version of [enrichIfAbsent] — enriches multiple works in a single DB operation.
+     *
+     * Loads all matching entities in one query, applies enrichment in-memory,
+     * and persists in a single batch put. Eliminates the N+1 pattern when
+     * inheriting parent fields to many children.
+     *
+     * @param workKeys Works to enrich
+     * @param enrichment Enrichment data (applied identically to all works)
+     * @return Number of works actually enriched
+     */
+    suspend fun enrichIfAbsentBatch(workKeys: List<String>, enrichment: Enrichment): Int
+
     suspend fun upsertBatch(works: List<Work>): List<Work>
 
     /**

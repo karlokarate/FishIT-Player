@@ -50,7 +50,6 @@ class NxCatalogWriter @Inject constructor(
     private val workEntityBuilder: WorkEntityBuilder,
     private val sourceRefBuilder: SourceRefBuilder,
     private val variantBuilder: VariantBuilder,
-    private val boxStore: io.objectbox.BoxStore,
 ) {
     companion object {
         private const val TAG = "NxCatalogWriter"
@@ -89,7 +88,7 @@ class NxCatalogWriter @Inject constructor(
 
             // 3. Build variant if playback hints available
             if (raw.playbackHints.isNotEmpty()) {
-                val variantKey = buildVariantKey(sourceKey)
+                val variantKey = NxKeyGenerator.defaultVariantKey(sourceKey)
                 val variant = variantBuilder.build(
                     variantKey = variantKey,
                     workKey = workKey,
@@ -109,7 +108,10 @@ class NxCatalogWriter @Inject constructor(
     }
 
     /**
-     * Ingest a batch of normalized media items.
+     * Batch ingest normalized media items into the NX work graph.
+     *
+     * Builds all entities first, then batch-upserts for efficiency.
+     * Used by [XtreamCatalogSync] consumer to reduce per-item transaction overhead.
      *
      * @param items List of (raw, normalized, accountKey) tuples
      * @return Number of successfully ingested items
@@ -117,6 +119,8 @@ class NxCatalogWriter @Inject constructor(
     suspend fun ingestBatch(
         items: List<Triple<RawMediaMetadata, NormalizedMediaMetadata, String>>,
     ): Int {
+        if (items.isEmpty()) return 0
+
         var successCount = 0
         val now = System.currentTimeMillis()
 
@@ -126,7 +130,6 @@ class NxCatalogWriter @Inject constructor(
 
         for ((raw, normalized, accountKey) in items) {
             try {
-                // Build entities using builders
                 val workKey = buildWorkKey(normalized)
                 works.add(workEntityBuilder.build(normalized, workKey, now))
 
@@ -134,7 +137,7 @@ class NxCatalogWriter @Inject constructor(
                 sourceRefs.add(sourceRefBuilder.build(raw, workKey, accountKey, sourceKey, now))
 
                 if (raw.playbackHints.isNotEmpty()) {
-                    val variantKey = buildVariantKey(sourceKey)
+                    val variantKey = NxKeyGenerator.defaultVariantKey(sourceKey)
                     variants.add(variantBuilder.build(variantKey, workKey, sourceKey, raw.playbackHints, normalized.durationMs, now))
                 }
 
@@ -144,7 +147,6 @@ class NxCatalogWriter @Inject constructor(
             }
         }
 
-        // Batch upsert
         try {
             workRepository.upsertBatch(works)
             sourceRefRepository.upsertBatch(sourceRefs)
@@ -154,47 +156,6 @@ class NxCatalogWriter @Inject constructor(
         } catch (e: Exception) {
             UnifiedLog.e(TAG, e) { "Failed to batch upsert" }
             return 0
-        }
-
-        return successCount
-    }
-
-    /**
-     * Optimized batch ingest using ObjectBox transactions.
-     *
-     * @param items List of (raw, normalized, accountKey) tuples
-     * @return Number of successfully ingested items
-     */
-    suspend fun ingestBatchOptimized(
-        items: List<Triple<RawMediaMetadata, NormalizedMediaMetadata, String>>,
-    ): Int {
-        var successCount = 0
-        val now = System.currentTimeMillis()
-
-        // TODO: Consider using ObjectBox callInTx with runBlocking for true transactions 
-        //       once performance becomes critical. Current approach calls suspend functions
-        //       sequentially which is correct for coroutines.
-        for ((raw, normalized, accountKey) in items) {
-            try {
-                // Build entities using builders
-                val workKey = buildWorkKey(normalized)
-                val work = workEntityBuilder.build(normalized, workKey, now)
-                workRepository.upsert(work)
-
-                val sourceKey = buildSourceKey(raw, accountKey)
-                val sourceRef = sourceRefBuilder.build(raw, workKey, accountKey, sourceKey, now)
-                sourceRefRepository.upsert(sourceRef)
-
-                if (raw.playbackHints.isNotEmpty()) {
-                    val variantKey = buildVariantKey(sourceKey)
-                    val variant = variantBuilder.build(variantKey, workKey, sourceKey, raw.playbackHints, normalized.durationMs, now)
-                    variantRepository.upsert(variant)
-                }
-
-                successCount++
-            } catch (e: Exception) {
-                UnifiedLog.e(TAG, e) { "Failed to ingest item: ${normalized.canonicalTitle}" }
-            }
         }
 
         return successCount
@@ -243,17 +204,6 @@ class NxCatalogWriter @Inject constructor(
     val cleanSourceId = raw.sourceId.removePrefix("${raw.sourceType.name.lowercase()}:")
     return SourceKeyParser.buildSourceKey(raw.sourceType, identifier, cleanSourceId)
 }
-
-    /**
-     * Build variant key from source key.
-     *
-     * Format: {sourceKey}#original
-     * Examples:
-     * - xtream:myserver:vod:12345#original
-     */
-    private fun buildVariantKey(sourceKey: String): String {
-        return "$sourceKey#original"
-    }
 
     // =========================================================================
     // Bulk Operations

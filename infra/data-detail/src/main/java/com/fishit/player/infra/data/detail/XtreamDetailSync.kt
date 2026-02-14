@@ -33,7 +33,6 @@ import com.fishit.player.infra.transport.xtream.XtreamVodInfoBlock
 import com.fishit.player.pipeline.xtream.adapter.XtreamPipelineAdapter
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
-import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
@@ -90,6 +89,10 @@ class XtreamDetailSync
     companion object {
         private const val TAG = "XtreamDetailSync"
         private const val API_TIMEOUT_MS = 12_000L
+
+        /** Split a comma-separated string into a trimmed, non-blank list. */
+        private fun String?.splitAndTrim(): List<String>? =
+            this?.split(",")?.map { it.trim() }?.filter { it.isNotBlank() }?.ifEmpty { null }
     }
 
     // =========================================================================
@@ -174,22 +177,15 @@ class XtreamDetailSync
     override suspend fun loadSeriesDetailBySeriesId(seriesId: Int): DetailBundle.Series? {
         UnifiedLog.d(TAG) { "loadSeriesDetailBySeriesId: seriesId=$seriesId" }
 
-        val sourceIdPatterns = listOf(
-            XtreamIdCodec.series(seriesId),
-        )
+        val sourceId = com.fishit.player.core.model.ids.PipelineItemId(XtreamIdCodec.series(seriesId))
+        val media = canonicalMediaRepository.findBySourceId(sourceId)
 
-        for (pattern in sourceIdPatterns) {
-            val sourceId = com.fishit.player.core.model.ids.PipelineItemId(pattern)
-            val media = canonicalMediaRepository.findBySourceId(sourceId)
-
-            if (media != null) {
-                if (media.mediaType != MediaType.SERIES) {
-                    UnifiedLog.w(TAG) { "loadSeriesDetailBySeriesId: type=${media.mediaType}, expected SERIES" }
-                    continue
-                }
-                val bundle = loadDetailImmediate(media)
-                return bundle as? DetailBundle.Series
+        if (media != null) {
+            if (media.mediaType != MediaType.SERIES) {
+                UnifiedLog.w(TAG) { "loadSeriesDetailBySeriesId: type=${media.mediaType}, expected SERIES" }
+                return null
             }
+            return loadDetailImmediate(media) as? DetailBundle.Series
         }
 
         UnifiedLog.w(TAG) { "loadSeriesDetailBySeriesId: no CanonicalMedia found for seriesId=$seriesId" }
@@ -199,22 +195,15 @@ class XtreamDetailSync
     override suspend fun loadVodDetailByVodId(vodId: Int): DetailBundle.Vod? {
         UnifiedLog.d(TAG) { "loadVodDetailByVodId: vodId=$vodId" }
 
-        val sourceIdPatterns = listOf(
-            XtreamIdCodec.vod(vodId),
-        )
+        val sourceId = com.fishit.player.core.model.ids.PipelineItemId(XtreamIdCodec.vod(vodId))
+        val media = canonicalMediaRepository.findBySourceId(sourceId)
 
-        for (pattern in sourceIdPatterns) {
-            val sourceId = com.fishit.player.core.model.ids.PipelineItemId(pattern)
-            val media = canonicalMediaRepository.findBySourceId(sourceId)
-
-            if (media != null) {
-                if (media.mediaType != MediaType.MOVIE) {
-                    UnifiedLog.w(TAG) { "loadVodDetailByVodId: type=${media.mediaType}, expected MOVIE" }
-                    continue
-                }
-                val bundle = loadDetailImmediate(media)
-                return bundle as? DetailBundle.Vod
+        if (media != null) {
+            if (media.mediaType != MediaType.MOVIE) {
+                UnifiedLog.w(TAG) { "loadVodDetailByVodId: type=${media.mediaType}, expected MOVIE" }
+                return null
             }
+            return loadDetailImmediate(media) as? DetailBundle.Vod
         }
 
         UnifiedLog.w(TAG) { "loadVodDetailByVodId: no CanonicalMedia found for vodId=$vodId" }
@@ -236,8 +225,9 @@ class XtreamDetailSync
                 return@withLock existingDeferred.await()
             }
 
-            val scope = CoroutineScope(coroutineContext + SupervisorJob())
-            val deferred = scope.async {
+            // CoroutineScope(coroutineContext) — no SupervisorJob! Properly parented
+            // to caller's Job for structured concurrency. Cancellation propagates correctly.
+            val deferred = CoroutineScope(coroutineContext).async {
                 try {
                     loadDetailInternal(media, cacheKey)
                 } catch (e: Exception) {
@@ -373,9 +363,9 @@ class XtreamDetailSync
         return DetailBundle.Series(
             seriesId = seriesId,
             plot = info?.resolvedPlot,
-            genres = info?.resolvedGenre?.split(",")?.map { it.trim() }?.filter { it.isNotBlank() },
+            genres = info?.resolvedGenre.splitAndTrim(),
             director = info?.director?.takeIf { it.isNotBlank() },
-            cast = info?.resolvedCast?.split(",")?.map { it.trim() }?.filter { it.isNotBlank() },
+            cast = info?.resolvedCast.splitAndTrim(),
             rating = info?.rating?.toDoubleOrNull() ?: info?.rating5Based?.let { it * 2.0 },
             poster = info?.resolvedPoster?.let { ImageRef.Http(it) },
             backdrop = info?.backdropPath?.let { ImageRef.Http(it) },
@@ -398,40 +388,25 @@ class XtreamDetailSync
         media: CanonicalMediaWithSources,
         info: XtreamSeriesInfoBlock,
     ) {
-        val tmdbIdFromApi = info.tmdbId?.toIntOrNull()
-        val tmdbRef = when {
-            tmdbIdFromApi != null -> TmdbRef(TmdbMediaType.TV, tmdbIdFromApi)
-            media.tmdbId != null -> TmdbRef(TmdbMediaType.TV, media.tmdbId!!.value)
-            else -> null
-        }
-
-        val normalized = NormalizedMediaMetadata(
-            canonicalTitle = media.canonicalTitle,
+        val normalized = buildDetailMetadata(
+            media = media,
             mediaType = MediaType.SERIES,
-            year = info.year?.toIntOrNull() ?: media.year,
-            season = media.season,
-            episode = media.episode,
-            tmdb = tmdbRef,
-            externalIds = ExternalIds(
-                tmdb = tmdbRef,
-                imdbId = info.imdbId?.takeIf { it.isNotBlank() } ?: media.imdbId,
-            ),
-            poster = info.resolvedPoster?.let { ImageRef.Http(it) } ?: media.poster,
-            backdrop = info.backdropPath?.let { ImageRef.Http(it) } ?: media.backdrop,
-            thumbnail = media.thumbnail,
-            plot = info.resolvedPlot ?: media.plot,
-            genres = info.resolvedGenre ?: media.genres,
-            director = info.director?.takeIf { it.isNotBlank() } ?: media.director,
-            cast = info.resolvedCast ?: media.cast,
-            rating = info.rating?.toDoubleOrNull()
-                ?: info.rating5Based?.let { it * 2.0 }
-                ?: media.rating,
+            tmdbMediaType = TmdbMediaType.TV,
+            tmdbIdStr = info.tmdbId,
+            imdbId = info.imdbId,
+            year = info.year,
+            poster = info.resolvedPoster,
+            backdrop = info.backdropPath,
+            plot = info.resolvedPlot,
+            genres = info.resolvedGenre,
+            director = info.director,
+            cast = info.resolvedCast,
+            rating = info.rating,
+            rating5Based = info.rating5Based,
+            trailer = info.resolvedTrailer,
             durationMs = media.durationMs,
-            trailer = info.resolvedTrailer ?: media.trailer,
         )
-
-        val workKey = media.canonicalId.key.value
-        enrichmentWriter.enrichWork(workKey, normalized)
+        enrichmentWriter.enrichWork(media.canonicalId.key.value, normalized)
     }
 
     private fun extractSeasons(
@@ -486,9 +461,9 @@ class XtreamDetailSync
         return DetailBundle.Vod(
             vodId = vodId,
             plot = info?.resolvedPlot,
-            genres = info?.resolvedGenre?.split(",")?.map { it.trim() }?.filter { it.isNotBlank() },
+            genres = info?.resolvedGenre.splitAndTrim(),
             director = info?.director?.takeIf { it.isNotBlank() },
-            cast = info?.resolvedCast?.split(",")?.map { it.trim() }?.filter { it.isNotBlank() },
+            cast = info?.resolvedCast.splitAndTrim(),
             rating = info?.rating?.toDoubleOrNull() ?: info?.rating5Based?.let { it * 2.0 },
             durationMs = info?.durationSecs?.let { it * 1000L },
             poster = info?.resolvedPoster?.let { ImageRef.Http(it) },
@@ -506,36 +481,23 @@ class XtreamDetailSync
         info: XtreamVodInfoBlock,
         movieData: com.fishit.player.infra.transport.xtream.XtreamMovieData?,
     ) {
-        val tmdbIdFromApi = info.tmdbId?.toIntOrNull()
-        val tmdbRef = when {
-            tmdbIdFromApi != null -> TmdbRef(TmdbMediaType.MOVIE, tmdbIdFromApi)
-            media.tmdbId != null -> TmdbRef(TmdbMediaType.MOVIE, media.tmdbId!!.value)
-            else -> null
-        }
-
-        val normalized = NormalizedMediaMetadata(
-            canonicalTitle = media.canonicalTitle,
+        val normalized = buildDetailMetadata(
+            media = media,
             mediaType = MediaType.MOVIE,
-            year = info.year?.toIntOrNull() ?: media.year,
-            season = media.season,
-            episode = media.episode,
-            tmdb = tmdbRef,
-            externalIds = ExternalIds(
-                tmdb = tmdbRef,
-                imdbId = info.imdbId?.takeIf { it.isNotBlank() } ?: media.imdbId,
-            ),
-            poster = info.resolvedPoster?.let { ImageRef.Http(it) } ?: media.poster,
-            backdrop = info.backdropPath?.let { ImageRef.Http(it) } ?: media.backdrop,
-            thumbnail = media.thumbnail,
-            plot = info.resolvedPlot ?: media.plot,
-            genres = info.resolvedGenre ?: media.genres,
-            director = info.director?.takeIf { it.isNotBlank() } ?: media.director,
-            cast = info.resolvedCast ?: media.cast,
-            rating = info.rating?.toDoubleOrNull()
-                ?: info.rating5Based?.let { it * 2.0 }
-                ?: media.rating,
+            tmdbMediaType = TmdbMediaType.MOVIE,
+            tmdbIdStr = info.tmdbId,
+            imdbId = info.imdbId,
+            year = info.year,
+            poster = info.resolvedPoster,
+            backdrop = info.backdropPath,
+            plot = info.resolvedPlot,
+            genres = info.resolvedGenre,
+            director = info.director,
+            cast = info.resolvedCast,
+            rating = info.rating,
+            rating5Based = info.rating5Based,
+            trailer = info.resolvedTrailer,
             durationMs = info.durationSecs?.let { it * 1000L } ?: media.durationMs,
-            trailer = info.resolvedTrailer ?: media.trailer,
         )
 
         val workKey = media.canonicalId.key.value
@@ -595,16 +557,15 @@ class XtreamDetailSync
     }
 
     private fun isVodDetailFresh(media: CanonicalMediaWithSources): Boolean {
-        // VOD is "fresh" only if we have ALL key detail-enrichment markers:
+        // VOD is "fresh" if we have key detail-enrichment markers:
         // 1. Plot must be present (from info-call)
         // 2. containerExtension must be present (playback-relevant)
-        // 3. At least one external ID (tmdbId or imdbId) must be present
-        //    → without this, the info-call data was never persisted
+        // Note: External IDs (tmdbId/imdbId) are NOT required — many titles on
+        // Xtream servers simply don't have them, and requiring them causes an
+        // infinite re-fetch loop for those titles.
         if (media.plot.isNullOrBlank()) return false
         val xtreamSource = media.sources.firstOrNull { it.sourceType == SourceType.XTREAM }
-        if (xtreamSource?.playbackHints?.get(PlaybackHintKeys.Xtream.CONTAINER_EXT) == null) return false
-        // External IDs from info-call — if both are missing, we need to re-fetch
-        return media.tmdbId != null || !media.imdbId.isNullOrBlank()
+        return xtreamSource?.playbackHints?.get(PlaybackHintKeys.Xtream.CONTAINER_EXT) != null
     }
 
     // =========================================================================
@@ -639,9 +600,9 @@ class XtreamDetailSync
         return DetailBundle.Series(
             seriesId = seriesId,
             plot = media.plot,
-            genres = media.genres?.split(",")?.map { it.trim() }?.filter { it.isNotBlank() },
+            genres = media.genres.splitAndTrim(),
             director = media.director,
-            cast = media.cast?.split(",")?.map { it.trim() }?.filter { it.isNotBlank() },
+            cast = media.cast.splitAndTrim(),
             rating = media.rating,
             poster = media.poster,
             backdrop = media.backdrop,
@@ -662,9 +623,9 @@ class XtreamDetailSync
         return DetailBundle.Vod(
             vodId = vodId,
             plot = media.plot,
-            genres = media.genres?.split(",")?.map { it.trim() }?.filter { it.isNotBlank() },
+            genres = media.genres.splitAndTrim(),
             director = media.director,
-            cast = media.cast?.split(",")?.map { it.trim() }?.filter { it.isNotBlank() },
+            cast = media.cast.splitAndTrim(),
             rating = media.rating,
             durationMs = media.durationMs,
             poster = media.poster,
@@ -689,15 +650,15 @@ class XtreamDetailSync
 
         return when {
             sourceKey.contains(":series:") -> {
-                val seriesId = parseSeriesIdFromSourceKey(sourceKey)
+                val seriesId = parseNumericIdFromSourceKey(sourceKey)
                 seriesId?.let { "series:$it" }
             }
             sourceKey.contains(":vod:") -> {
-                val vodId = parseVodIdFromSourceKey(sourceKey)
+                val vodId = parseNumericIdFromSourceKey(sourceKey)
                 vodId?.let { "vod:$it" }
             }
             sourceKey.contains(":live:") -> {
-                val channelId = parseChannelIdFromSourceKey(sourceKey)
+                val channelId = parseNumericIdFromSourceKey(sourceKey)
                 channelId?.let { "live:$it" }
             }
             else -> null
@@ -715,31 +676,95 @@ class XtreamDetailSync
     }
 
     private fun parseChannelId(sourceKey: String): Int? {
-        return parseChannelIdFromSourceKey(sourceKey)
+        return parseNumericIdFromSourceKey(sourceKey)
     }
 
-    private fun parseSeriesIdFromSourceKey(sourceKey: String): Int? {
-        return SourceKeyParser.extractNumericItemKey(sourceKey)?.toInt()
-    }
-
-    private fun parseVodIdFromSourceKey(sourceKey: String): Int? {
-        return SourceKeyParser.extractNumericItemKey(sourceKey)?.toInt()
-    }
-
-    private fun parseChannelIdFromSourceKey(sourceKey: String): Int? {
-        return SourceKeyParser.extractNumericItemKey(sourceKey)?.toInt()
-    }
+    /**
+     * Parse a numeric item ID from a sourceKey.
+     *
+     * Consolidates parseSeriesIdFromSourceKey, parseVodIdFromSourceKey,
+     * parseChannelIdFromSourceKey — all three were identical delegates
+     * to [SourceKeyParser.extractNumericItemKey].
+     */
+    private fun parseNumericIdFromSourceKey(sourceKey: String): Int? =
+        SourceKeyParser.extractNumericItemKey(sourceKey)?.toInt()
 
     private fun extractSeriesIdFromMedia(media: CanonicalMediaWithSources): Int? {
         val xtreamSource = media.sources.firstOrNull { it.sourceType == SourceType.XTREAM }
             ?: return null
-        return parseSeriesIdFromSourceKey(xtreamSource.sourceId.value)
+        return parseNumericIdFromSourceKey(xtreamSource.sourceId.value)
     }
 
     private fun extractVodIdFromMedia(media: CanonicalMediaWithSources): Int? {
         val xtreamSource = media.sources.firstOrNull { it.sourceType == SourceType.XTREAM }
             ?: return null
-        return parseVodIdFromSourceKey(xtreamSource.sourceId.value)
+        return parseNumericIdFromSourceKey(xtreamSource.sourceId.value)
+    }
+
+    // =========================================================================
+    // Shared Detail Metadata Builder
+    // =========================================================================
+
+    /**
+     * Build [NormalizedMediaMetadata] from detail API fields.
+     *
+     * SSOT for the shared construction logic between [persistSeriesMetadata]
+     * and [persistVodMetadata]. Eliminates ~85% code duplication.
+     *
+     * @param media Current canonical media (provides fallback values)
+     * @param mediaType SERIES or MOVIE
+     * @param tmdbMediaType TV or MOVIE (for TmdbRef)
+     * @param durationMs Duration override (series uses media.durationMs, VOD uses info.durationSecs * 1000)
+     */
+    private fun buildDetailMetadata(
+        media: CanonicalMediaWithSources,
+        mediaType: MediaType,
+        tmdbMediaType: TmdbMediaType,
+        tmdbIdStr: String?,
+        imdbId: String?,
+        year: String?,
+        poster: String?,
+        backdrop: String?,
+        plot: String?,
+        genres: String?,
+        director: String?,
+        cast: String?,
+        rating: String?,
+        rating5Based: Double?,
+        trailer: String?,
+        durationMs: Long?,
+    ): NormalizedMediaMetadata {
+        val tmdbIdFromApi = tmdbIdStr?.toIntOrNull()
+        val tmdbRef = when {
+            tmdbIdFromApi != null -> TmdbRef(tmdbMediaType, tmdbIdFromApi)
+            media.tmdbId != null -> TmdbRef(tmdbMediaType, media.tmdbId!!.value)
+            else -> null
+        }
+
+        return NormalizedMediaMetadata(
+            canonicalTitle = media.canonicalTitle,
+            mediaType = mediaType,
+            year = year?.toIntOrNull() ?: media.year,
+            season = media.season,
+            episode = media.episode,
+            tmdb = tmdbRef,
+            externalIds = ExternalIds(
+                tmdb = tmdbRef,
+                imdbId = imdbId?.takeIf { it.isNotBlank() } ?: media.imdbId,
+            ),
+            poster = poster?.let { ImageRef.Http(it) } ?: media.poster,
+            backdrop = backdrop?.let { ImageRef.Http(it) } ?: media.backdrop,
+            thumbnail = media.thumbnail,
+            plot = plot ?: media.plot,
+            genres = genres ?: media.genres,
+            director = director?.takeIf { it.isNotBlank() } ?: media.director,
+            cast = cast ?: media.cast,
+            rating = rating?.toDoubleOrNull()
+                ?: rating5Based?.let { it * 2.0 }
+                ?: media.rating,
+            durationMs = durationMs,
+            trailer = trailer ?: media.trailer,
+        )
     }
 
     // =========================================================================

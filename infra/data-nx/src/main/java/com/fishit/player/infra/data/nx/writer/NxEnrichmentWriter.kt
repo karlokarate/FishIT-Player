@@ -54,6 +54,7 @@ import com.fishit.player.core.model.repository.NxWorkRelationRepository
 import com.fishit.player.core.model.repository.NxWorkRepository
 import com.fishit.player.core.model.repository.NxWorkVariantRepository
 import com.fishit.player.core.model.repository.toEnrichment
+import com.fishit.player.core.persistence.obx.NxKeyGenerator
 import com.fishit.player.infra.data.nx.writer.builder.WorkEntityBuilder
 import com.fishit.player.infra.logging.UnifiedLog
 import javax.inject.Inject
@@ -68,13 +69,6 @@ class NxEnrichmentWriter @Inject constructor(
 ) {
     companion object {
         private const val TAG = "NxEnrichmentWriter"
-
-        /**
-         * Build the SSOT variantKey for a given sourceKey.
-         *
-         * Format: `{sourceKey}#original` — consistent with [NxCatalogWriter].
-         */
-        fun buildVariantKey(sourceKey: String): String = "$sourceKey#original"
     }
 
     /**
@@ -130,7 +124,7 @@ class NxEnrichmentWriter @Inject constructor(
         workKey: String,
         hintsUpdate: Map<String, String>,
     ) {
-        val variantKey = buildVariantKey(sourceKey)
+        val variantKey = NxKeyGenerator.defaultVariantKey(sourceKey)
         val existing = variantRepository.getByVariantKey(variantKey)
 
         // Merge: existing hints + new hints (new wins on collision)
@@ -212,13 +206,9 @@ class NxEnrichmentWriter @Inject constructor(
             trailer = parent.trailer,
         )
 
-        var enrichedCount = 0
-        for (relation in childRelations) {
-            val result = workRepository.enrichIfAbsent(relation.childWorkKey, parentEnrichment)
-            if (result != null) {
-                enrichedCount++
-            }
-        }
+        // Batch: single query + in-memory enrichment + single put (replaces N+1 loop)
+        val childWorkKeys = childRelations.map { it.childWorkKey }
+        val enrichedCount = workRepository.enrichIfAbsentBatch(childWorkKeys, parentEnrichment)
 
         UnifiedLog.d(TAG) {
             "inheritParentFields: enriched $enrichedCount/${childRelations.size} children " +

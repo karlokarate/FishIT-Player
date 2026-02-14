@@ -162,7 +162,20 @@ object NxKeyGenerator {
     // =========================================================================
 
     /**
-     * Generate a variant key.
+     * Generate the default variant key for a source.
+     *
+     * Format: `<sourceKey>#original`
+     *
+     * **SSOT:** Used by [NxCatalogWriter] and [NxEnrichmentWriter].
+     * Every source gets exactly one default variant with this key.
+     *
+     * @param sourceKey Parent source key
+     * @return Default variant key
+     */
+    fun defaultVariantKey(sourceKey: String): String = "$sourceKey#original"
+
+    /**
+     * Generate a variant key with explicit quality and language tags.
      *
      * Format: `<sourceKey>#<qualityTag>:<languageTag>`
      *
