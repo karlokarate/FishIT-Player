@@ -335,6 +335,12 @@ internal fun XtreamSeriesInfo.toEpisodes(
 ): List<XtreamEpisode> {
     val result = mutableListOf<XtreamEpisode>()
 
+    // BUG FIX (Feb 2026): Extract series-level TMDB/IMDB IDs from the info block
+    // and propagate to each episode. Without this, episodes had empty ExternalIds
+    // and no TMDB reference was ever persisted (seriesTmdbId defaulted to null).
+    val seriesTmdbIdParsed = info?.tmdbId?.toIntOrNull()
+    val seriesImdbIdParsed = info?.imdbId?.takeIf { it.isNotBlank() }
+
     episodes?.forEach { (seasonNumber, episodeList) ->
         val seasonNum = seasonNumber.toIntOrNull() ?: return@forEach
 
@@ -360,6 +366,10 @@ internal fun XtreamSeriesInfo.toEpisodes(
                     added = EpochConverter.secondsToMs(ep.added),
                     // BUG FIX (Jan 2026): bitrate from API for quality info in player
                     bitrate = ep.info?.bitrate,
+                    // Series-level TMDB ID from parent info block (Gold Decision Dec 2025)
+                    seriesTmdbId = seriesTmdbIdParsed,
+                    // Series-level IMDB ID from parent info block
+                    seriesImdbId = seriesImdbIdParsed,
                     // Episode-specific TMDB ID from info block
                     episodeTmdbId = ep.info?.tmdbId,
                     // Video codec info from ffprobe
