@@ -19,7 +19,7 @@
     "cast": null,
     "trailer": null,
     "releaseDate": null,
-    "tmdbId": "1396",
+    "tmdbId": null,
     "imdbId": "tt0903747",
     "tvdbId": null,
     "isAdult": false,
@@ -56,6 +56,7 @@
     "audioLang": null,
     "playbackHints": {
       "xtream.containerExtension": "m3u8",
+      "xtream.episodeTmdbId": "62094",
       "xtream.streamId": "5001"
     }
   }

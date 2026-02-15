@@ -216,7 +216,12 @@ class BuilderGoldenFileTest {
     @Test
     fun `series episode maps season and episode correctly`() {
         val metadata = createSeriesEpisodeMetadata()
-        val work = builder.build(metadata, "series:tmdb:1396", now = fixedNow)
+        // Episodes need episode-specific TMDB ID in playbackHints
+        // Breaking Bad S01E05 "Gray Matter" has TMDB episode ID 62085
+        val playbackHints = mapOf(
+            "xtream.episodeTmdbId" to "62085"
+        )
+        val work = builder.build(metadata, "episode:tmdb:1396:s01e05", now = fixedNow, playbackHints = playbackHints)
 
         assertGolden("builder_series_episode.json", work)
 
@@ -224,7 +229,7 @@ class BuilderGoldenFileTest {
         assertEquals(1, work.season)
         assertEquals(5, work.episode)
         assertEquals(NxWorkRepository.RecognitionState.CONFIRMED, work.recognitionState)
-        assertEquals("1396", work.tmdbId)
+        assertEquals("62085", work.tmdbId) // Episode-specific TMDB ID, not series ID
         assertEquals("tt0903747", work.imdbId)
         assertEquals("81189", work.tvdbId)
     }

@@ -91,7 +91,7 @@ class NxCatalogWriter
 
                 // 1. Build work key and entity
                 val workKey = buildWorkKey(normalized)
-                val work = workEntityBuilder.build(normalized, workKey, now)
+                val work = workEntityBuilder.build(normalized, workKey, now, raw.playbackHints)
                 workRepository.upsert(work)
 
                 // 2. Build source key and source ref
@@ -142,7 +142,7 @@ class NxCatalogWriter
             for ((raw, normalized, accountKey) in items) {
                 try {
                     val workKey = buildWorkKey(normalized)
-                    works.add(workEntityBuilder.build(normalized, workKey, now))
+                    works.add(workEntityBuilder.build(normalized, workKey, now, raw.playbackHints))
 
                     val sourceKey = buildSourceKey(raw, accountKey)
                     sourceRefs.add(sourceRefBuilder.build(raw, workKey, accountKey, sourceKey, now))

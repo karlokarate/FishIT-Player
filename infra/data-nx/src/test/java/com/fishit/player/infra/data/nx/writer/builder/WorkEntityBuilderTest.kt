@@ -10,6 +10,7 @@ import com.fishit.player.core.model.ExternalIds
 import com.fishit.player.core.model.ImageRef
 import com.fishit.player.core.model.MediaType
 import com.fishit.player.core.model.NormalizedMediaMetadata
+import com.fishit.player.core.model.PlaybackHintKeys
 import com.fishit.player.core.model.TmdbMediaType
 import com.fishit.player.core.model.TmdbRef
 import com.fishit.player.core.model.repository.NxWorkRepository
@@ -159,5 +160,119 @@ class WorkEntityBuilderTest {
         assertEquals(NxWorkRepository.RecognitionState.CONFIRMED, work.recognitionState)
         assertNotNull(work.createdAtMs)
         assertNotNull(work.updatedAtMs)
+    }
+
+    @Test
+    fun `build() extracts episode tmdb_id from playback hints for SERIES_EPISODE`() {
+        // Simulate episode metadata where:
+        // - externalIds.tmdb contains the series TMDB ID (per Gold Decision)
+        // - playbackHints contains the episode-specific TMDB ID
+        val seriesTmdbId = 1396 // Breaking Bad series
+        val episodeTmdbId = "62085" // Specific episode ID
+
+        val metadata =
+            NormalizedMediaMetadata(
+                canonicalTitle = "Pilot",
+                mediaType = MediaType.SERIES_EPISODE,
+                season = 1,
+                episode = 1,
+                year = 2008,
+                // Series TMDB ID in externalIds (per Gold Decision)
+                externalIds = ExternalIds(tmdb = TmdbRef(TmdbMediaType.TV, seriesTmdbId)),
+            )
+
+        val playbackHints =
+            mapOf(
+                PlaybackHintKeys.Xtream.EPISODE_TMDB_ID to episodeTmdbId,
+            )
+
+        val work = builder.build(metadata, "episode:tmdb:62085", playbackHints = playbackHints)
+
+        // Episode-specific TMDB ID should be extracted from playback hints
+        assertEquals(episodeTmdbId, work.tmdbId)
+        assertEquals(MediaTypeMapper.toWorkType(MediaType.SERIES_EPISODE), work.type)
+        assertEquals(1, work.season)
+        assertEquals(1, work.episode)
+    }
+
+    @Test
+    fun `build() uses series tmdb_id for episodes without episode-specific hint`() {
+        // Episode without episode-specific TMDB ID in hints
+        val seriesTmdbId = 1396
+
+        val metadata =
+            NormalizedMediaMetadata(
+                canonicalTitle = "Pilot",
+                mediaType = MediaType.SERIES_EPISODE,
+                season = 1,
+                episode = 1,
+                externalIds = ExternalIds(tmdb = TmdbRef(TmdbMediaType.TV, seriesTmdbId)),
+            )
+
+        // No episode-specific hint
+        val playbackHints = emptyMap<String, String>()
+
+        val work = builder.build(metadata, "episode:heuristic:pilot-s01e01", playbackHints = playbackHints)
+
+        // Should return null to avoid collision with series work (not fall back to series ID)
+        assertEquals(null, work.tmdbId)
+    }
+
+    @Test
+    fun `build() validates episode tmdb_id is numeric`() {
+        // Episode with invalid (non-numeric) episode TMDB ID in hints
+        val seriesTmdbId = 1396
+
+        val metadata =
+            NormalizedMediaMetadata(
+                canonicalTitle = "Pilot",
+                mediaType = MediaType.SERIES_EPISODE,
+                season = 1,
+                episode = 1,
+                externalIds = ExternalIds(tmdb = TmdbRef(TmdbMediaType.TV, seriesTmdbId)),
+            )
+
+        // Test various invalid values
+        val invalidHints = listOf(
+            mapOf(PlaybackHintKeys.Xtream.EPISODE_TMDB_ID to ""),
+            mapOf(PlaybackHintKeys.Xtream.EPISODE_TMDB_ID to "   "),
+            mapOf(PlaybackHintKeys.Xtream.EPISODE_TMDB_ID to "abc123"),
+            mapOf(PlaybackHintKeys.Xtream.EPISODE_TMDB_ID to "12.34"),
+        )
+
+        invalidHints.forEach { hints ->
+            val work = builder.build(metadata, "episode:heuristic:pilot-s01e01", playbackHints = hints)
+            // Should return null for invalid episode TMDB IDs
+            assertEquals(null, work.tmdbId, "Expected null for hints: $hints")
+        }
+
+        // Valid numeric values should work
+        val validHints = mapOf(PlaybackHintKeys.Xtream.EPISODE_TMDB_ID to "  62085  ")
+        val workValid = builder.build(metadata, "episode:heuristic:pilot-s01e01", playbackHints = validHints)
+        assertEquals("62085", workValid.tmdbId)
+    }
+
+    @Test
+    fun `build() ignores episode tmdb_id hint for non-episode media types`() {
+        // Movie with episode tmdb_id hint (should be ignored)
+        val movieTmdbId = 12345
+        val episodeTmdbId = "99999"
+
+        val metadata =
+            NormalizedMediaMetadata(
+                canonicalTitle = "Test Movie",
+                mediaType = MediaType.MOVIE,
+                tmdb = TmdbRef(TmdbMediaType.MOVIE, movieTmdbId),
+            )
+
+        val playbackHints =
+            mapOf(
+                PlaybackHintKeys.Xtream.EPISODE_TMDB_ID to episodeTmdbId,
+            )
+
+        val work = builder.build(metadata, "movie:tmdb:12345", playbackHints = playbackHints)
+
+        // Should use movie TMDB ID, not episode hint
+        assertEquals(movieTmdbId.toString(), work.tmdbId)
     }
 }
