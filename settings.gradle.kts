@@ -21,6 +21,9 @@ pluginManagement {
         // Quality tools
         id("io.gitlab.arturbosch.detekt") version "1.23.8" apply false
         id("org.jlleitschuh.gradle.ktlint") version "12.1.2" apply false
+
+        // Documentation
+        id("org.jetbrains.dokka") version "1.9.20" apply false
     }
     resolutionStrategy {
         eachPlugin {
@@ -115,3 +118,4 @@ include(":infra:work")
 
 // Tools (standalone JVM)
 include(":tools:mcp-server")
+include(":tools:doc-generator")

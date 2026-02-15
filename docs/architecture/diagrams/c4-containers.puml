@@ -1,0 +1,58 @@
+@startuml C4 Container Diagram
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+' Generated on 2026-02-15 - DO NOT EDIT MANUALLY
+' Regenerate: ./gradlew :tools:doc-generator:run --args="--diagrams"
+
+LAYOUT_WITH_LEGEND()
+
+System_Boundary(app, "FishIT-Player v2") {
+
+    ' UI Layer
+    Container(feature_home, "Home", "Jetpack Compose", "Browse catalog, continue watching")
+    Container(feature_library, "Library", "Jetpack Compose", "Media library with filters")
+    Container(feature_detail, "Detail", "Jetpack Compose", "Work detail + sources")
+    Container(feature_settings, "Settings", "Jetpack Compose", "App configuration")
+
+    ' Domain Layer
+    Container(core_domain, "Domain", "Kotlin", "Use cases, orchestration")
+
+    ' Data Layer
+    Container(infra_data_nx, "NX Data", "ObjectBox", "SSOT repository layer")
+
+    ' Pipeline Layer
+    Container(pipeline_xtream, "Xtream Pipeline", "Kotlin", "Catalog sync from Xtream")
+    Container(pipeline_telegram, "Telegram Pipeline", "Kotlin", "Catalog sync from Telegram")
+
+    ' Transport Layer
+    Container(transport_xtream, "Xtream Transport", "OkHttp", "Xtream API client")
+    Container(transport_telegram, "Telegram Transport", "TDLib", "Telegram client")
+
+    ' Player
+    Container(player, "Internal Player", "Media3", "Video/audio playback")
+
+    ' Core
+    ContainerDb(persistence, "ObjectBox DB", "ObjectBox", "NX_Work entities")
+    Container(core_model, "Core Model", "Kotlin", "Shared types, enums")
+}
+
+' External Systems
+System_Ext(xtream_api, "Xtream API", "VOD/Series/Live provider")
+System_Ext(telegram_api, "Telegram API", "TDLib-based media channels")
+System_Ext(tmdb, "TMDB API", "Movie/TV metadata enrichment")
+
+' Relationships
+Rel(feature_home, core_domain, "uses")
+Rel(core_domain, infra_data_nx, "queries")
+Rel(pipeline_xtream, transport_xtream, "fetches via")
+Rel(pipeline_telegram, transport_telegram, "fetches via")
+Rel(pipeline_xtream, infra_data_nx, "writes to")
+Rel(pipeline_telegram, infra_data_nx, "writes to")
+Rel(infra_data_nx, persistence, "stores in")
+Rel(transport_xtream, xtream_api, "HTTP")
+Rel(transport_telegram, telegram_api, "TDLib")
+Rel(core_domain, tmdb, "enriches from")
+Rel(player, transport_xtream, "streams from")
+Rel(player, transport_telegram, "streams from")
+
+@enduml

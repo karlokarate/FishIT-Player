@@ -12,6 +12,7 @@ plugins {
     id("com.github.ben-manes.versions") version "0.51.0" apply true
     id("org.jetbrains.kotlinx.kover") version "0.9.0" apply true
     id("com.osacky.doctor") version "0.10.0" apply true
+    id("org.jetbrains.dokka") version "1.9.20" apply false
     
     // Firebase plugins
     id("com.google.gms.google-services") version "4.4.4" apply false
@@ -28,6 +29,7 @@ subprojects {
     
     apply(plugin = "io.gitlab.arturbosch.detekt")
     apply(plugin = "org.jlleitschuh.gradle.ktlint")
+    apply(plugin = "org.jetbrains.dokka")
     
     configure<io.gitlab.arturbosch.detekt.extensions.DetektExtension> {
         config.setFrom(rootProject.files("detekt-config.yml"))
@@ -103,4 +105,120 @@ doctor {
     warnWhenNotUsingParallelGC = false
     // Enable test caching
     enableTestCaching = true
+}
+
+// ==============================================================================
+// DOCUMENTATION GENERATION (Issue #699)
+// ==============================================================================
+
+// Task: Generate Dokka HTML API reference for all Android modules
+tasks.register("dokkaHtmlMultiModule") {
+    group = "documentation"
+    description = "Generate API reference documentation for all modules using Dokka"
+    
+    // Depend on all subproject dokkaHtml tasks (except tools)
+    dependsOn(
+        subprojects
+            .filter { !it.path.startsWith(":tools:") }
+            .mapNotNull { subproject ->
+                try {
+                    subproject.tasks.findByName("dokkaHtml")?.path
+                } catch (_: Exception) {
+                    null
+                }
+            }
+    )
+    
+    doLast {
+        val outputDir = layout.buildDirectory.dir("docs/reference").get().asFile
+        outputDir.mkdirs()
+        
+        subprojects
+            .filter { !it.path.startsWith(":tools:") }
+            .forEach { subproject ->
+                val dokkaOutput = subproject.layout.buildDirectory.dir("dokka/html").get().asFile
+                if (dokkaOutput.exists()) {
+                    copy {
+                        from(dokkaOutput)
+                        into(outputDir.resolve(subproject.path.removePrefix(":").replace(":", "/")))
+                    }
+                }
+            }
+        
+        println("✅ Dokka API reference generated at: $outputDir")
+    }
+}
+
+// Task: Generate module dependency graph as Markdown with Mermaid diagram
+tasks.register("generateModuleDocs") {
+    group = "documentation"
+    description = "Generate module dependency documentation from build.gradle.kts files"
+    
+    doLast {
+        val output = file("docs/architecture/MODULE_DEPENDENCIES.md")
+        output.parentFile.mkdirs()
+        
+        val sb = StringBuilder()
+        sb.appendLine("# Module Dependencies")
+        sb.appendLine()
+        sb.appendLine("**Generated on ${java.time.LocalDate.now()} — DO NOT EDIT MANUALLY**")
+        sb.appendLine()
+        sb.appendLine("> Regenerate with: `./gradlew generateModuleDocs`")
+        sb.appendLine()
+        sb.appendLine("## Dependency Graph")
+        sb.appendLine()
+        sb.appendLine("```mermaid")
+        sb.appendLine("graph TD")
+        
+        val moduleDetails = mutableListOf<Triple<String, String, List<String>>>()
+        
+        subprojects.sortedBy { it.path }.forEach { module ->
+            val deps = mutableListOf<String>()
+            try {
+                module.configurations
+                    .filter { it.name == "implementation" || it.name == "api" }
+                    .flatMap { it.dependencies }
+                    .filterIsInstance<org.gradle.api.artifacts.ProjectDependency>()
+                    .forEach { dep ->
+                        val depPath = dep.dependencyProject.path
+                        val fromId = module.path.removePrefix(":").replace(":", "_")
+                        val toId = depPath.removePrefix(":").replace(":", "_")
+                        sb.appendLine("    $fromId --> $toId")
+                        deps.add(depPath)
+                    }
+            } catch (_: Exception) {
+                // Skip modules that can't be resolved yet
+            }
+            
+            moduleDetails.add(
+                Triple(
+                    module.path,
+                    module.projectDir.relativeTo(rootProject.projectDir).path,
+                    deps
+                )
+            )
+        }
+        
+        sb.appendLine("```")
+        sb.appendLine()
+        sb.appendLine("## Module Details")
+        sb.appendLine()
+        
+        moduleDetails.sortedBy { it.first }.forEach { (path, dir, deps) ->
+            sb.appendLine("### `$path`")
+            sb.appendLine()
+            sb.appendLine("**Path:** `$dir`")
+            sb.appendLine()
+            if (deps.isNotEmpty()) {
+                sb.appendLine("**Dependencies:**")
+                deps.sorted().forEach { sb.appendLine("- `$it`") }
+            } else {
+                sb.appendLine("**Dependencies:** None (leaf module)")
+            }
+            sb.appendLine()
+        }
+        
+        output.writeText(sb.toString())
+        println("✅ Module dependencies generated at: ${output.path}")
+    }
 }

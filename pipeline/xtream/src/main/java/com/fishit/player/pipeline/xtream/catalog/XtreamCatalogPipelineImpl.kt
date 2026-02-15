@@ -1,5 +1,7 @@
 package com.fishit.player.pipeline.xtream.catalog
 
+import com.fishit.player.core.model.Layer
+import com.fishit.player.core.model.PipelineComponent
 import com.fishit.player.infra.logging.UnifiedLog
 import com.fishit.player.pipeline.xtream.adapter.XtreamPipelineAdapter
 import com.fishit.player.pipeline.xtream.catalog.phase.PhaseScanOrchestrator
@@ -14,50 +16,31 @@ import javax.inject.Inject
 /**
  * Default implementation of [XtreamCatalogPipeline].
  *
- * Stateless producer that:
- * - Delegates phase execution to [PhaseScanOrchestrator]
- * - Emits [XtreamCatalogEvent] through a cold Flow
- * - Handles completion and error states
- * - Provides category fetching for selective sync
+ * Stateless producer that orchestrates catalog sync phases.
+ *
+ * @responsibility Stream VOD/Series/Live items in batches via PhaseScanOrchestrator
+ * @responsibility Map Xtream DTOs to RawMediaMetadata via phase handlers
+ * @responsibility Emit CatalogEvents progressively (streaming-first)
+ * @responsibility Provide category fetching for selective sync
  *
  * **Architecture:**
  * - No DB writes, no UI interaction, no playback URL generation
  * - Respects cancellation via coroutine context
  * - Logs progress via UnifiedLog
  *
- * **Refactored (Jan 2026):**
- * - Extracted phase handlers (Live, VOD, Series, Episodes)
- * - Reduced CC from ~38 to ~10
- * - Improved testability and maintainability
- * - ~395 lines → ~210 lines
- *
  * **Scan Execution (Parallel via PhaseScanOrchestrator):**
  * All content phases (LIVE, VOD, Series) run in PARALLEL via
  * async/awaitAll + Semaphore(3). Episodes are processed sequentially
  * per series within the series phase.
  *
- * **Phase Details:**
- * - LIVE channels (smallest items, most frequently accessed)
- * - VOD/Movies (quick browsing, no child items)
- * - Series containers (index only, episodes loaded lazily)
- *
- * **Streaming-First Emit (Jan 2026 - Performance Fix):**
- * Items are emitted immediately as they are parsed from JSON, WITHOUT
- * waiting for accumulation or sorting. This ensures:
- * - UI updates progressively (not blocked until all items parsed)
- * - All phases can start without waiting for previous phase to complete
- * - Memory stays low (no large in-memory lists)
- *
- * **Sorting moved to Repository:**
- * The NxWorkRepository sorts by canonicalTitle (indexed in ObjectBox).
- * This is more efficient than in-memory sort because:
- * - ObjectBox uses B-tree indexes for O(log n) ordering
- * - Sort happens at query time, not at sync time
- * - Incremental updates don't require re-sorting everything
- *
  * @param orchestrator Coordinator for parallel phase execution
  * @param adapter Pipeline adapter for category fetching
  */
+@PipelineComponent(
+    layer = Layer.PIPELINE,
+    sourceType = "Xtream",
+    genericPattern = "{Source}CatalogPipeline",
+)
 internal class XtreamCatalogPipelineImpl
     @Inject
     constructor(

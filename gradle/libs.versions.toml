@@ -1,4 +1,8 @@
 [versions]
+# Dokka - Kotlin documentation engine
+# Repository: https://github.com/Kotlin/dokka
+dokka = "1.9.20"
+
 # TMDB API - Kotlin Multiplatform client (published 2025-11-04)
 # Repository: https://github.com/MoviebaseApp/tmdb-kotlin
 tmdbApi = "1.6.0"
@@ -37,4 +41,5 @@ kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serializa
 # No bundles defined yet
 
 [plugins]
-# No plugins defined yet - plugins are managed in build.gradle.kts
+# Dokka - Kotlin documentation generation
+dokka = { id = "org.jetbrains.dokka", version.ref = "dokka" }

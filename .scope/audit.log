@@ -617,3 +617,15 @@
 {"action":"check","filePath":"infra/data-nx/src/test/java/com/fishit/player/infra/data/nx/schema/NxSchemaConsistencyTest.kt","status":"UNTRACKED","agentMode":"interactive","timestamp":"2026-02-14T20:57:30.958Z"}
 {"action":"check","filePath":"infra/data-nx/src/test/java/com/fishit/player/infra/data/nx/writer/NxEnrichmentWriterInheritanceTest.kt","status":"UNTRACKED","agentMode":"interactive","timestamp":"2026-02-14T20:57:30.958Z"}
 {"action":"read","scopeId":"xtream-data","status":"ACKNOWLEDGED","timestamp":"2026-02-14T20:57:35.361Z"}
+{"action":"session_start","status":"STARTED","agentMode":"interactive","details":"session-1771141058803","timestamp":"2026-02-15T07:37:38.803Z"}
+{"action":"check","filePath":"infra/data-nx/src/main/java/com/fishit/player/infra/data/nx/repository/NxWorkRepositoryImpl.kt","status":"UNTRACKED","agentMode":"interactive","timestamp":"2026-02-15T07:59:43.657Z"}
+{"action":"assign_pending","filePath":"infra/data-nx/src/main/java/com/fishit/player/infra/data/nx/repository/NxWorkRepositoryImpl.kt","scopeId":"xtream-data","status":"REQUIRES_USER_CONFIRMATION","agentMode":"interactive","timestamp":"2026-02-15T07:59:47.932Z"}
+{"action":"confirm","filePath":"infra/data-nx/src/main/java/com/fishit/player/infra/data/nx/repository/NxWorkRepositoryImpl.kt","scopeId":"xtream-data","status":"CONFIRMED","timestamp":"2026-02-15T08:00:01.792Z"}
+{"action":"session_start","status":"STARTED","agentMode":"interactive","details":"session-1771144063281","timestamp":"2026-02-15T08:27:43.281Z"}
+{"action":"check","filePath":"contracts/NX_SSOT_CONTRACT.md","status":"BUNDLE_BLOCKED","agentMode":"interactive","details":"contracts","timestamp":"2026-02-15T08:28:56.240Z"}
+{"action":"read_bundle","scopeId":"contracts","status":"ACKNOWLEDGED","timestamp":"2026-02-15T08:29:00.247Z"}
+{"action":"check","filePath":"build.gradle.kts","status":"BUNDLE_BLOCKED","agentMode":"interactive","details":"gradle-config","timestamp":"2026-02-15T08:30:34.947Z"}
+{"action":"read_bundle","scopeId":"gradle-config","status":"ACKNOWLEDGED","timestamp":"2026-02-15T08:30:38.950Z"}
+{"action":"check","filePath":"core/model/src/main/kotlin/com/fishit/player/core/PipelineComponent.kt","status":"UNTRACKED","agentMode":"interactive","timestamp":"2026-02-15T08:31:15.084Z"}
+{"action":"check","filePath":".github/workflows/generate-docs.yml","status":"BUNDLE_BLOCKED","agentMode":"interactive","details":"ci-infra","timestamp":"2026-02-15T08:35:40.821Z"}
+{"action":"read_bundle","scopeId":"ci-infra","status":"ACKNOWLEDGED","timestamp":"2026-02-15T08:35:45.103Z"}

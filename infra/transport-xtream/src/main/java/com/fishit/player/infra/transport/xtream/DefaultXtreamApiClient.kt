@@ -1,5 +1,7 @@
 package com.fishit.player.infra.transport.xtream
 
+import com.fishit.player.core.model.Layer
+import com.fishit.player.core.model.PipelineComponent
 import com.fishit.player.infra.transport.xtream.client.XtreamCategoryFetcher
 import com.fishit.player.infra.transport.xtream.client.XtreamConnectionManager
 import com.fishit.player.infra.transport.xtream.client.XtreamStreamFetcher
@@ -11,23 +13,24 @@ import javax.inject.Singleton
  * DefaultXtreamApiClient – Facade for Xtream Codes API (Sprint 5 Complete)
  *
  * **Architecture**: Thin orchestration layer delegating to specialized handlers
- * **LOC**: ~150 lines (down from 2312 - 93% reduction)
- * **Cyclomatic Complexity**: CC 8 (down from 52 - 85% reduction)
- * **Zero Breaking Changes**: API-compatible with v1 implementation
+ *
+ * @responsibility Provide unified API facade for Xtream Codes provider
+ * @responsibility Delegate lifecycle/auth to ConnectionManager
+ * @responsibility Delegate category fetching to CategoryFetcher
+ * @responsibility Delegate stream fetching to StreamFetcher
  *
  * **Handler Responsibilities**:
  * - [XtreamConnectionManager]: Lifecycle, auth, capabilities, URL building
  * - [XtreamCategoryFetcher]: Category enumeration (live/VOD/series)
  * - [XtreamStreamFetcher]: Stream fetching, EPG, series/VOD info
  *
- * **Migration Notes**:
- * - All HTTP operations now in handlers (using @XtreamHttpClient OkHttpClient)
- * - All JSON parsing now in handlers
- * - All URL building now in XtreamUrlBuilder (DI-injected in ConnectionManager)
- * - State management delegated to ConnectionManager
- *
  * @since Sprint 5 (PR #679, #682, Task 6)
  */
+@PipelineComponent(
+    layer = Layer.TRANSPORT,
+    sourceType = "Xtream",
+    genericPattern = "{Source}ApiClient",
+)
 @Singleton
 class DefaultXtreamApiClient
     @Inject

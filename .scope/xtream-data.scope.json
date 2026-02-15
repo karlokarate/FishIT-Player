@@ -10,7 +10,7 @@
   ],
   "modules": {
     "infra/data-xtream": {
-      "fileCount": 11,
+      "fileCount": 13,
       "totalLOC": 400,
       "criticalFiles": [
         {
@@ -67,6 +67,10 @@
       ],
       "diModules": [
         "infra/data-xtream/src/main/java/com/fishit/player/infra/data/xtream/di/XtreamAuthRepositoryModule.kt"
+      ],
+      "handlers": [
+        "infra/data-nx/src/main/java/com/fishit/player/infra/data/nx/repository/handler/NxWorkQueryHandler.kt",
+        "infra/data-nx/src/main/java/com/fishit/player/infra/data/nx/repository/handler/NxWorkEnrichmentHandler.kt"
       ]
     },
     "infra/data-nx/src/main/java/com/fishit/player/infra/data/nx/xtream": {
@@ -132,5 +136,5 @@
     "NX_WorkVariant": "Playback info (playbackHintsJson with xtream specifics)",
     "NX_WorkRelation": "Series \u2194 Episode links"
   },
-  "lastVerified": "2026-02-13"
+  "lastVerified": "2026-02-15"
 }
