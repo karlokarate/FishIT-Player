@@ -373,6 +373,6 @@ grep -rn "fun.*XtreamVodItem" pipeline/ | grep -v "private\|internal"
 2. `/contracts/TELEGRAM_STRUCTURED_BUNDLES_CONTRACT.md` - Bundle processing rules
 3. `/contracts/TELEGRAM_ID_ARCHITECTURE_CONTRACT.md` - remoteId-first design
 4. `/contracts/GLOSSARY_v2_naming_and_modules.md` - Terminology and module taxonomy
-5. `/docs/v2/PIPELINE_ARCHITECTURE_AUDIT.md` - Layer boundaries
+5. `/AGENTS.md (Layer Boundaries)` - Layer boundaries
 6. `/AGENTS.md` - Section 4.6 (Pipeline Guard Flags)
 7. `pipeline/telegram/README.md`, `pipeline/xtream/README.md`

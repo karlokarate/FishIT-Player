@@ -550,13 +550,11 @@ find playback/ -name "*PlaybackModule. kt" -exec grep -L "@IntoSet" {} \;
 ## 📚 Reference Documents (Priority Order)
 
 1. **`/AGENTS.md`** - Section "Playback Module Factory Pattern" (CRITICAL)
-2. **`/docs/v2/internal-player/PLAYER_ARCHITECTURE_V2.md`** - Layer boundaries
-3. **`/docs/v2/internal-player/PLAYER_MIGRATION_STATUS.md`** - Phase 4 implementation
-4. **`/contracts/INTERNAL_PLAYER_BEHAVIOR_CONTRACT.md`** - Playback behavior
-5. **`/contracts/TELEGRAM_ID_ARCHITECTURE_CONTRACT.md`** - remoteId-first design
-6. **`/playback/domain/README.md`** - Module-specific rules
-7. **`/playback/telegram/README.md`** - Telegram playback specifics
-8. **`/playback/xtream/README.md`** - Xtream playback specifics
+2. **`/contracts/INTERNAL_PLAYER_CONTRACT.md`** - Complete player contract (all phases)
+3. **`/contracts/TELEGRAM_ID_ARCHITECTURE_CONTRACT.md`** - remoteId-first design
+4. **`/playback/domain/README.md`** - Module-specific rules
+5. **`/playback/telegram/README.md`** - Telegram playback specifics
+6. **`/playback/xtream/README.md`** - Xtream playback specifics
 
 ---
 

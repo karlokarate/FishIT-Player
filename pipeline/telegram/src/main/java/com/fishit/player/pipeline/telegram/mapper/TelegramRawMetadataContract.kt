@@ -27,8 +27,8 @@ package com.fishit.player.pipeline.telegram.mapper
  * - `MediaMetadataNormalizer` - Title cleaning, scene-naming parser
  * - `TmdbMetadataResolver` - TMDB lookups and enrichment
  *
- * See: docs/v2/MEDIA_NORMALIZATION_CONTRACT.md for authoritative type definitions and rules.
- * See: docs/v2/MEDIA_NORMALIZATION_AND_UNIFICATION.md for architecture overview.
+ * See: contracts/MEDIA_NORMALIZATION_CONTRACT.md for authoritative type definitions and rules.
+ * See: contracts/MEDIA_NORMALIZATION_CONTRACT.md for architecture overview.
  *
  * ## Future Implementation (Phase 3+)
  *

@@ -18,7 +18,7 @@ package com.fishit.player.ui.api
  * - Once created, player:ui will depend on player:ui-api
  * - This enables future modularization of player UI
  *
- * See: docs/v2/FROZEN_MODULE_MANIFEST.md
+ * See: AGENTS.md
  */
 interface PlayerUiContract {
     // TODO: Define player UI contracts when ready for split

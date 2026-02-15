@@ -20,7 +20,7 @@ import dagger.hilt.components.SingletonComponent
  * - May accept source-specific fetchers via narrow interfaces
  * - Remains source-agnostic (no TDLib/Xtream direct dependencies)
  *
- * See: docs/v2/FROZEN_MODULE_MANIFEST.md
+ * See: AGENTS.md
  */
 @Module
 @InstallIn(SingletonComponent::class)

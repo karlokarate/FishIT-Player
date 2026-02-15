@@ -12,8 +12,8 @@ This module provides ObjectBox persistence infrastructure for the FishIT-Player 
 
 ## NX_* Entity System (OBX PLATIN Refactor)
 
-> **Contract:** `docs/v2/NX_SSOT_CONTRACT.md`
-> **Roadmap:** `docs/v2/OBX_PLATIN_REFACTOR_ROADMAP.md`
+> **Contract:** `contracts/NX_SSOT_CONTRACT.md`
+> **Roadmap:** `ROADMAP.md`
 
 ### Entity Overview (16 entities)
 

@@ -208,7 +208,7 @@ feature/* (UI consumption via repositories)
 
 ## 📚 Reference Documents
 
-1. `/docs/v2/OBJECTBOX_REACTIVE_PATTERNS.md` - Flow patterns
+1. `/contracts/NX_SSOT_CONTRACT.md` - Flow patterns
 2. `/contracts/MEDIA_NORMALIZATION_CONTRACT.md` - Canonical entities (AUTHORITATIVE)
 3. `/AGENTS.md` - Section 4.5 (Layer Boundary Enforcement)
 4. ObjectBox Kotlin documentation

@@ -85,9 +85,8 @@ For v1 roadmap history, see `legacy/docs/ROADMAP_v1.md`.
 **Status:** 🚧 Phase 8-14 in progress  
 **Goal:** Complete internal player features (error handling, series mode, kids gate, profile system).
 
-**Binding Contracts:**
-- `contracts/INTERNAL_PLAYER_BEHAVIOR_CONTRACT.md`
-- `contracts/INTERNAL_PLAYER_PHASE8_PERFORMANCE_LIFECYCLE_CONTRACT.md`
+**Binding Contract:**
+- `contracts/INTERNAL_PLAYER_CONTRACT.md`
 
 ### Completed (Phase 0-7) ✅
 
@@ -209,7 +208,7 @@ For v1 roadmap history, see `legacy/docs/ROADMAP_v1.md`.
 - [x] Structured bundle detection (PHOTO + TEXT + VIDEO)
 - [x] remoteId-first architecture
 - [ ] **Bundle albumId support:** Add albumId to TgMessage when transport exposes it (pipeline/telegram/TelegramMessageBundler.kt:147)
-- [ ] **Telegram Pipeline Redesign** → `docs/v2/TELEGRAM_PIPELINE_REDESIGN_CONTRACT.md`
+- [ ] **Telegram Pipeline Redesign** → `contracts/TELEGRAM_PARSER_CONTRACT.md`
   - [ ] Phase 1: Update `tdl-coroutines` to v8.0.0 (TDLib 1.8.60)
   - [ ] Phase 2: Transport platinum (RetryPolicy, PaginatedScanner, RateLimiter)
   - [ ] Phase 3: Fix `toRawMediaMetadata()` — close 17 field gaps vs Xtream

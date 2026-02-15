@@ -17,7 +17,7 @@ import io.objectbox.relation.ToOne
  * This file defines the 18 NX_* ObjectBox entities that form the SSOT Work Graph.
  *
  * **SSOT Contract:** contracts/NX_SSOT_CONTRACT.md
- * **Roadmap:** docs/v2/OBX_PLATIN_REFACTOR_ROADMAP.md
+ * **Roadmap:** ROADMAP.md
  *
  * ## Entity Overview (18 total)
  *

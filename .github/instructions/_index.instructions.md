@@ -128,15 +128,13 @@ All instruction files MUST comply with these authoritative contracts:
 | **LOGGING** | `/contracts/LOGGING_CONTRACT_V2.md` | UnifiedLog usage (v1.1) |
 | **NORMALIZATION** | `/contracts/MEDIA_NORMALIZATION_CONTRACT.md` | RawMediaMetadata, pipeline rules (AUTHORITATIVE) |
 | **TMDB_ENRICHMENT** | `/contracts/TMDB_ENRICHMENT_CONTRACT.md` | TMDB enrichment, canonical identity (AUTHORITATIVE) |
-| **STARTUP_TRIGGER** | `/docs/v2/STARTUP_TRIGGER_CONTRACT.md` | Smart empty states |
-| **PLAYER** | `/contracts/INTERNAL_PLAYER_*` | Player behavior, playback contracts |
+| **PLAYER** | `/contracts/INTERNAL_PLAYER_CONTRACT.md` | Player behavior, playback contracts |
 | **TELEGRAM** | `/contracts/TELEGRAM_*` | Telegram-specific contracts |
 | **XTREAM** | `/contracts/XTREAM_SCAN_PREMIUM_CONTRACT_V1.md` | Xtream Premium Contract |
 | **WORKERS** | `/contracts/CATALOG_SYNC_WORKERS_CONTRACT_V2.md` | Worker architecture (W-1 to W-22) |
 
 **Note on Contract Locations:**
-- **All binding contracts are in `/contracts/`**: GLOSSARY, LOGGING, NORMALIZATION, TMDB_ENRICHMENT, INTERNAL_PLAYER_*, TELEGRAM_*, XTREAM_*, WORKERS, NX_SSOT
-- **Only STARTUP_TRIGGER remains in `/docs/v2/`** (implementation guide, not a binding contract)
+- **All binding contracts are in `/contracts/`**: GLOSSARY, LOGGING, NORMALIZATION, TMDB_ENRICHMENT, INTERNAL_PLAYER_CONTRACT, TELEGRAM_*, XTREAM_*, WORKERS, NX_SSOT
 - When referencing contracts in instruction files, use `/contracts/` for all binding contracts
 
 ---
@@ -261,7 +259,7 @@ The following modules do NOT have dedicated instruction files:
 | Pipeline modules | `pipeline.instructions.md` | `MEDIA_NORMALIZATION_CONTRACT.md` |
 | Transport layer | `infra-transport-*.instructions.md` | `LOGGING_CONTRACT_V2.md` |
 | Data repositories | `infra-data.instructions.md` | `core-persistence.instructions.md` |
-| Player internals | `player.instructions.md` | `INTERNAL_PLAYER_*` contracts |
+| Player internals | `player.instructions.md` | `INTERNAL_PLAYER_CONTRACT.md` |
 | Playback sources | `playback.instructions.md` | `player.instructions.md` |
 | Feature screens | `feature-*.instructions.md` | `core-domain.instructions.md` |
 | WorkManager workers | `app-work.instructions.md` | `CATALOG_SYNC_WORKERS_CONTRACT_V2.md` |

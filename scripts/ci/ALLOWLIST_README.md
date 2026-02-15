@@ -226,5 +226,5 @@ The allowlist mechanism now enforces:
 
 See:
 - `AGENTS.md` Section 4.5 - Layer hierarchy rules
-- `docs/dev/ARCH_GUARDRAILS_IMPLEMENTATION.md` - Full implementation guide
+- `AGENTS.md` - Architecture rules and guardrails
 - `LOGGING_CONTRACT_V2.md` - Logging requirements

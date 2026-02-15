@@ -149,7 +149,7 @@ if [ $VIOLATIONS -gt 0 ]; then
     echo -e "${RED}❌ FAILED: $VIOLATIONS quality gate violations${NC}"
     echo ""
     echo "Fix the violations above before committing."
-    echo "See contracts/DTO_PLAYBOOK.md for rules."
+    echo "See contracts/GLOSSARY_v2_naming_and_modules.md for rules."
     exit 1
 else
     echo -e "${GREEN}✅ ALL DTO QUALITY GATES PASSED${NC}"

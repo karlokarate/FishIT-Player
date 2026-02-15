@@ -6,7 +6,7 @@ package com.fishit.player.core.persistence.obx
  * These enums define the valid values for string-typed fields in NX_* entities.
  * ObjectBox stores these as strings for compatibility and migration flexibility.
  *
- * **SSOT Contract:** docs/v2/NX_SSOT_CONTRACT.md
+ * **SSOT Contract:** contracts/NX_SSOT_CONTRACT.md
  *
  * ## Removed Enums (NX_CONSOLIDATION_PLAN Phase 6):
  * - `WorkType` → SSOT: `NxWorkRepository.WorkType` in core:model, mapped by `WorkTypeMapper`

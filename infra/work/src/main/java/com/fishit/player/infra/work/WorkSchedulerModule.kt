@@ -19,7 +19,7 @@ import javax.inject.Singleton
  *
  * Note: CatalogSyncWorkScheduler is provided by app-v2/di/AppWorkModule.
  *
- * See: docs/v2/FROZEN_MODULE_MANIFEST.md
+ * See: AGENTS.md
  */
 @Module
 @InstallIn(SingletonComponent::class)

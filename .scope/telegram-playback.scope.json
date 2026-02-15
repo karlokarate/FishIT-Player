@@ -4,7 +4,7 @@
   "version": "1.0.0",
   "description": "Telegram playback source - file streaming, mode detection, ExoPlayer integration",
   "mandatoryReadBeforeEdit": [
-    "contracts/INTERNAL_PLAYER_BEHAVIOR_CONTRACT.md",
+    "contracts/INTERNAL_PLAYER_CONTRACT.md",
     ".github/instructions/playback.instructions.md"
   ],
   "modules": {

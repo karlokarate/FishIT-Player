@@ -78,7 +78,7 @@ cp tools/fishit-cli-setup.sh "$DIST_DIR/fishit-cli/"
 echo "📄 Copying documentation..."
 mkdir -p "$DIST_DIR/fishit-cli/docs"
 cp tools/pipeline-cli/README.md "$DIST_DIR/fishit-cli/README.md"
-cp docs/v2/Pipeline_test_cli.md "$DIST_DIR/fishit-cli/docs/" 2>/dev/null || true
+cp docs/meta/DEVELOPER_GUIDE.md "$DIST_DIR/fishit-cli/docs/" 2>/dev/null || true
 
 # Create settings.gradle.kts for distribution (only needed modules)
 cat > "$DIST_DIR/fishit-cli/settings.gradle.kts" << 'EOF'

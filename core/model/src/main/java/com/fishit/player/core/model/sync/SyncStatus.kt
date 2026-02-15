@@ -6,7 +6,7 @@
  * Layer: 1 (Foundation - Zero Dependencies)
  *
  * This file is part of the unified sync architecture.
- * See: docs/v2/XTREAM_SYNC_REFACTORING_PLAN.md
+ * See: contracts/CATALOG_SYNC_WORKERS_CONTRACT_V2.md
  */
 package com.fishit.player.core.model.sync
 

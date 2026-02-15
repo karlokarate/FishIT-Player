@@ -130,9 +130,9 @@ SYNC_SSOT:
 | Area | Contract |
 |------|----------|
 | Any change | `/contracts/GLOSSARY_v2_naming_and_modules.md` |
-| Pipeline | `docs/v2/MEDIA_NORMALIZATION_CONTRACT.md` |
+| Pipeline | `/contracts/MEDIA_NORMALIZATION_CONTRACT.md` |
 | Logging | `/contracts/LOGGING_CONTRACT_V2.md` |
-| Player | `/contracts/INTERNAL_PLAYER_*.md` (all) |
+| Player | `/contracts/INTERNAL_PLAYER_CONTRACT.md` |
 | Telegram | `/contracts/TELEGRAM_PARSER_CONTRACT.md` |
 | NX SSOT | `/contracts/NX_SSOT_CONTRACT.md` |
 | Xtream Onboarding | `/contracts/XTREAM_ONBOARDING_CATEGORY_SELECTION_CONTRACT.md` |
@@ -251,7 +251,7 @@ DEV_PHASE_RULE:  # Until first production release
 | Topic | Location |
 |-------|----------|
 | Full checklists | `.scope/agent-checklists.rules.json` |
-| Player migration phases | `docs/v2/internal-player/PLAYER_MIGRATION_STATUS.md` |
+| Player migration phases | `ROADMAP.md` |
 | Pipeline migration | `legacy/gold/EXTRACTION_SUMMARY.md` |
 | MCP configuration | `.vscode/mcp.json`, `.devcontainer/devcontainer.json` |
 
@@ -259,5 +259,5 @@ DEV_PHASE_RULE:  # Until first production release
 
 > **Canonical Source:** `docs/meta/AGENT_RULES_CANONICAL.md`  
 > **Sync:** `scripts/sync-agent-rules.sh`  
-> **Full Archive:** `docs/meta/AGENT_RULES_CANONICAL_FULL_BACKUP.md`  
+> **Full Archive:** `.deprecated/docs-archive-2026-02-15/AGENT_RULES_CANONICAL_FULL_BACKUP.md`  
 > **Scope Files:** `.scope/layer-boundaries.rules.json`, `.scope/naming-rules.yaml`, `.scope/agent-checklists.rules.json`

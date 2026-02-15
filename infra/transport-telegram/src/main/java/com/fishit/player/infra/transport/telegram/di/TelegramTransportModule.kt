@@ -5,7 +5,7 @@ package com.fishit.player.infra.transport.telegram.di
 // Telegram transport is SSOT-finalized (December 2025).
 // Do NOT add additional Telegram transport implementations.
 // Do NOT create parallel TdlClient instances.
-// See docs/v2/architecture/TELEGRAM_TRANSPORT_SSOT.md
+// See infra/transport-telegram/README.md
 // ============================================================================
 
 import com.fishit.player.infra.transport.telegram.TelegramAuthClient

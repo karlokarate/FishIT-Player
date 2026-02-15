@@ -62,14 +62,14 @@
       "items": [
         "All relevant contracts from /contracts/ have been read",
         "For pipeline changes: Read MEDIA_NORMALIZATION_CONTRACT.md",
-        "For player changes: Read all INTERNAL_PLAYER_* contracts",
+        "For player changes: Read INTERNAL_PLAYER_CONTRACT.md",
         "For logging changes: Read LOGGING_CONTRACT_V2.md"
       ]
     },
     "6_docs": {
       "priority": "MEDIUM",
       "items": [
-        "Relevant v2 docs under docs/v2/** have been read",
+        "Relevant contracts under contracts/** have been read",
         "Canonical Media / Normalizer docs for pipeline/metadata changes",
         "Internal Player docs for player changes",
         "Logging/Telemetry/Cache docs for infra changes"
@@ -151,7 +151,7 @@
     "6_docs_and_changelog": {
       "priority": "MEDIUM",
       "items": [
-        "Behavioral change is reflected in docs/v2/**",
+        "Behavioral change is reflected in contracts/**",
         "Significant changes recorded in CHANGELOG.md",
         "Roadmap updated if change affects roadmap items"
       ]
@@ -179,13 +179,13 @@
       "/contracts/GLOSSARY_v2_naming_and_modules.md"
     ],
     "pipeline_modules": [
-      "docs/v2/MEDIA_NORMALIZATION_CONTRACT.md"
+      "/contracts/MEDIA_NORMALIZATION_CONTRACT.md"
     ],
     "logging_code": [
       "/contracts/LOGGING_CONTRACT_V2.md"
     ],
     "player_playback": [
-      "/contracts/INTERNAL_PLAYER_*.md"
+      "/contracts/INTERNAL_PLAYER_CONTRACT.md"
     ],
     "telegram_features": [
       "/contracts/TELEGRAM_PARSER_CONTRACT.md",

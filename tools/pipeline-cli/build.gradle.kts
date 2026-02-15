@@ -50,4 +50,4 @@ dependencies {
 
 // NOTE: This module is headless (no UI/Compose/DI)
 // It exists as an Android library ONLY because dependencies are Android modules
-// See docs/v2/FROZEN_MODULE_MANIFEST.md for JVM-only enforcement rules
+// See AGENTS.md for JVM-only enforcement rules

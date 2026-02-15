@@ -693,7 +693,7 @@ grep -rn "normalizeTitle\|classifyMediaType\|generateGlobalId\|searchTmdb" infra
 
 1. **`/contracts/NX_SSOT_CONTRACT.md`** - NX entity schema and invariants (AUTHORITATIVE for data-nx)
 2. **`/contracts/MEDIA_NORMALIZATION_CONTRACT.md`** - RawMediaMetadata contract (AUTHORITATIVE)
-3. **`/docs/v2/OBJECTBOX_REACTIVE_PATTERNS.md`** - Flow patterns
+3. **`/contracts/NX_SSOT_CONTRACT.md`** - Flow patterns
 4. **`/contracts/TELEGRAM_ID_ARCHITECTURE_CONTRACT.md`** - Telegram source ID format
 5. **`/AGENTS.md`** - Section 4.5 (Layer Boundary Enforcement)
 6. **`/contracts/GLOSSARY_v2_naming_and_modules.md`** - Data layer definition

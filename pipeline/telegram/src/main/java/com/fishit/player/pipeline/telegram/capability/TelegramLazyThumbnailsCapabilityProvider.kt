@@ -14,7 +14,7 @@ import javax.inject.Inject
  * - Efficient memory usage by loading thumbnails only when visible
  * - Automatic thumbnail caching
  *
- * See: docs/v2/features/telegram/FEATURE_telegram.lazy_thumbnails.md
+ * See: pipeline/telegram/README.md
  */
 class TelegramLazyThumbnailsCapabilityProvider
     @Inject

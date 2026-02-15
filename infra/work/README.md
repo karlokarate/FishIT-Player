@@ -30,5 +30,5 @@ This module is reserved for future WorkManager-based scheduling implementation. 
 
 ## References
 
-- `docs/v2/FROZEN_MODULE_MANIFEST.md` - Module manifest and rules
+- `AGENTS.md` - Module manifest and rules
 - `core/catalog-sync` - Catalog sync contracts (domain/types)

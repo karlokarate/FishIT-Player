@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Frozen Module Manifest Enforcement
-# This script enforces the frozen module manifest rules from docs/v2/FROZEN_MODULE_MANIFEST.md
+# This script enforces the frozen module manifest rules from AGENTS.md
 # NO new modules may be added after the one-time stub PR
 
 set -euo pipefail
@@ -21,7 +21,7 @@ VIOLATIONS=0
 # FROZEN MODULE LIST: Define the canonical list of allowed modules
 # ======================================================================
 
-# This is the FROZEN list from docs/v2/FROZEN_MODULE_MANIFEST.md
+# This is the FROZEN list from AGENTS.md
 # NO additions allowed after the one-time stub PR
 declare -a FROZEN_MODULES=(
     # App
@@ -247,7 +247,7 @@ else
     echo "❌ Found $VIOLATIONS module manifest violation(s)"
     echo "========================================="
     echo ""
-    echo "See docs/v2/FROZEN_MODULE_MANIFEST.md for rules"
+    echo "See AGENTS.md for rules"
     echo ""
     echo "The module manifest is FROZEN. NO new modules may be added."
     echo "The ONLY exception is the one-time stub PR adding exactly:"

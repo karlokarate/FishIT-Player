@@ -174,7 +174,6 @@ feature/* (UI uses FishImage composable)
 
 ## 📚 Reference Documents
 
-1. `/docs/v2/IMAGING_SYSTEM.md` - Architecture overview
-2. `/contracts/TELEGRAM_ID_ARCHITECTURE_CONTRACT.md` - remoteId-first
-3. Coil 3 documentation
-4. `core/ui-imaging/README.md`
+1. `/contracts/TELEGRAM_ID_ARCHITECTURE_CONTRACT.md` - remoteId-first
+2. Coil 3 documentation
+3. `core/ui-imaging/README.md`

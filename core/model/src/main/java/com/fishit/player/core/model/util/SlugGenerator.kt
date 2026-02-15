@@ -15,7 +15,7 @@ import java.util.Locale
  *
  * **NX_CONSOLIDATION_PLAN Phase 7 — Duplicate #1**
  *
- * @see docs/v2/NX_CONSOLIDATION_PLAN.md Section 13.3
+ * @see contracts/NX_SSOT_CONTRACT.md Section 13.3
  */
 object SlugGenerator {
     /**

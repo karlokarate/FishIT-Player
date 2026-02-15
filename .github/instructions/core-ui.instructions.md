@@ -203,6 +203,6 @@ feature/* (screens compose FishUI components)
 ## 📚 Reference Documents
 
 1. `/AGENTS.md` - UI Layout Centralization (Fish*) section
-2. `/docs/v2/UI_DESIGN_SYSTEM.md` - Full design spec
+2. `/contracts/GLOSSARY_v2_naming_and_modules.md` - Full design spec
 3. Material 3 design guidelines
 4. Android TV focus best practices

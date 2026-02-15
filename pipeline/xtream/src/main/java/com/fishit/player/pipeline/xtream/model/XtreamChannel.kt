@@ -52,7 +52,7 @@ data class XtreamChannel(
      * - streamIcon: Logo changes
      * - epgChannelId: EPG mapping changes
      *
-     * **Design:** docs/v2/INCREMENTAL_SYNC_DESIGN.md Section 7
+     * **Design:** contracts/CATALOG_SYNC_WORKERS_CONTRACT_V2.md Section 7
      */
     fun fingerprint(): Int =
         Objects.hash(

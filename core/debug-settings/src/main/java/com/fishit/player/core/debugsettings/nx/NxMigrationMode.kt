@@ -6,7 +6,7 @@ package com.fishit.player.core.debugsettings.nx
  * These modes control how the app reads, writes, and migrates data
  * between legacy Obx* entities and new NX_* entities.
  *
- * **Reference:** docs/v2/NX_SSOT_CONTRACT.md, docs/v2/OBX_PLATIN_REFACTOR_ROADMAP.md
+ * **Reference:** contracts/NX_SSOT_CONTRACT.md, ROADMAP.md
  *
  * @see NxMigrationSettingsRepository
  */

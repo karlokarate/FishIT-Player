@@ -31,6 +31,6 @@ This module is reserved for future player UI API extraction. It will contain sta
 
 ## References
 
-- `docs/v2/FROZEN_MODULE_MANIFEST.md` - Module manifest and rules
+- `AGENTS.md` - Module manifest and rules
 - `player/ui` - Current player UI implementation
 - `playback/domain` - Playback domain contracts

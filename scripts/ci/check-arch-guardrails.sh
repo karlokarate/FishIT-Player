@@ -239,7 +239,7 @@ fi
 
 # ======================================================================
 # PIPELINE_GLOBALID_ASSIGNMENT_GUARD: Pipelines MUST NOT assign globalId
-# See docs/v2/MEDIA_NORMALIZATION_CONTRACT.md Section 2.1.1
+# See contracts/MEDIA_NORMALIZATION_CONTRACT.md Section 2.1.1
 # ======================================================================
 echo "Running PIPELINE_GLOBALID_ASSIGNMENT_GUARD..."
 
@@ -249,7 +249,7 @@ pipeline_globalid_violations=$(grep -rn "globalId[[:space:]]*=[[:space:]]*[^\"[:
 if [[ -n "$pipeline_globalid_violations" ]]; then
     echo "$pipeline_globalid_violations"
     echo "❌ VIOLATION: Pipeline assigns globalId directly (must leave empty for normalizer)"
-    echo "   See docs/v2/MEDIA_NORMALIZATION_CONTRACT.md Section 2.1.1"
+    echo "   See contracts/MEDIA_NORMALIZATION_CONTRACT.md Section 2.1.1"
     VIOLATIONS=$((VIOLATIONS + 1))
 fi
 
@@ -259,10 +259,10 @@ fi
 echo "Running CONTRACT_SSOT_GUARD..."
 
 forwarder_path="./contracts/MEDIA_NORMALIZATION_CONTRACT.md"
-canonical_path="./docs/v2/MEDIA_NORMALIZATION_CONTRACT.md"
+canonical_path="./contracts/MEDIA_NORMALIZATION_CONTRACT.md"
 
 if [[ ! -f "$canonical_path" ]]; then
-    echo "❌ VIOLATION: docs/v2/MEDIA_NORMALIZATION_CONTRACT.md is missing (canonical contract must exist)."
+    echo "❌ VIOLATION: contracts/MEDIA_NORMALIZATION_CONTRACT.md is missing (canonical contract must exist)."
     VIOLATIONS=$((VIOLATIONS + 1))
 fi
 

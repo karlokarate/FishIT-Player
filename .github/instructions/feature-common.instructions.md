@@ -358,10 +358,9 @@ grep -rn "InternalPlayerSession\|InternalPlayerState" feature/
 ## 📚 Reference Documents
 
 1. `/AGENTS.md` - Feature layer architecture rules
-2. `/docs/v2/STARTUP_TRIGGER_CONTRACT.md` - Smart empty states (AUTHORITATIVE)
-3. `/contracts/INTERNAL_PLAYER_BEHAVIOR_CONTRACT.md` - Playback behavior
-4. Jetpack Compose documentation
-5. Hilt ViewModel documentation
+2. `/contracts/INTERNAL_PLAYER_CONTRACT.md` - Playback behavior
+3. Jetpack Compose documentation
+4. Hilt ViewModel documentation
 
 ---
 

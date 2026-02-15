@@ -290,7 +290,7 @@ style:
       # BoxStore must only be injected in repository implementations.
       # core/persistence is SCHEMA-ONLY (entities + DI wiring) - NO repositories!
       # Repository implementations belong in infra/data-* modules.
-      # See: docs/v2/OBX_PLATIN_DETEKT_GUARDRAILS_CONTRACT.md
+      # See: AGENTS.md Section 4 (Layer Boundaries)
       #
       # ALLOWED PATHS (enforced via excludes below):
       #   - infra/data-*/**         → Repository implementations
@@ -366,8 +366,7 @@ style:
   #
   # AUTHORITATIVE SOURCES:
   # - AGENTS.md Section 14 (Binding Naming Contract)
-  # - docs/v2/GLOSSARY_v2_naming_and_modules.md (vocabulary definitions)
-  # - docs/v2/NAMING_INVENTORY_v2.md (file-to-vocabulary mapping)
+  # - contracts/GLOSSARY_v2_naming_and_modules.md (vocabulary definitions)
   #
   # Automated enforcement for custom patterns requires detekt-rule-authors plugin.
   # Current enforcement: Agent audit (AGENTS.md 14.5) + Code review
@@ -379,7 +378,7 @@ style:
       # B5 ARCHITECTURE GUARDRAILS - Logging Contract Enforcement
       # =====================================================================
       # Prevent direct logging outside infra/logging
-      # See LOGGING_CONTRACT_V2.md and docs/dev/ARCH_GUARDRAILS.md
+      # See contracts/LOGGING_CONTRACT_V2.md and AGENTS.md
 
       - value: "kotlin.io.println"
         reason: "Use UnifiedLog from :infra:logging. See LOGGING_CONTRACT_V2.md"

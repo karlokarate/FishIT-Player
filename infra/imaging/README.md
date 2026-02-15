@@ -29,5 +29,5 @@ This module is reserved for future imaging infrastructure implementation. It wil
 
 ## References
 
-- `docs/v2/FROZEN_MODULE_MANIFEST.md` - Module manifest and rules
+- `AGENTS.md` - Module manifest and rules
 - `core/ui-imaging` - UI imaging primitives (render helpers, ImageRef usage)

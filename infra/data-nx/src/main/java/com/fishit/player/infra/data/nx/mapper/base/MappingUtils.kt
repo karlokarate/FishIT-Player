@@ -6,7 +6,7 @@
  *
  * **NX_CONSOLIDATION_PLAN Phase 5**
  *
- * @see docs/v2/NX_CONSOLIDATION_PLAN.md Section 8 (Phase 5)
+ * @see contracts/NX_SSOT_CONTRACT.md Section 8 (Phase 5)
  */
 package com.fishit.player.infra.data.nx.mapper.base
 

@@ -1,4 +1,4 @@
-1) Premium Contract: /docs/v2/XTREAM_SCAN_PREMIUM_CONTRACT_V1.md
+1) Premium Contract: /contracts/XTREAM_SCAN_PREMIUM_CONTRACT_V1.md
 
 Version: 1.0
 Date: 2025-12-22

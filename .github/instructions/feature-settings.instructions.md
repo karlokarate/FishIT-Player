@@ -250,7 +250,7 @@ DebugViewModel (StateFlow)
 1. `/feature/settings/README.md` - Settings architecture
 2. `/core/catalog-sync/README.md` - Sync SSOT documentation
 3. `/feature-common.instructions.md` - Common rules (INHERITED)
-4. `/docs/v2/SYNC_ARCHITECTURE.md` - WorkManager patterns
+4. `/contracts/CATALOG_SYNC_WORKERS_CONTRACT_V2.md` - WorkManager patterns
 
 ---
 

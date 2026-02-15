@@ -82,7 +82,7 @@ data class XtreamVodItem(
      * - streamIcon: Artwork changes
      * - rating: Metadata updates
      *
-     * **Design:** docs/v2/INCREMENTAL_SYNC_DESIGN.md Section 7
+     * **Design:** contracts/CATALOG_SYNC_WORKERS_CONTRACT_V2.md Section 7
      */
     fun fingerprint(): Int =
         Objects.hash(

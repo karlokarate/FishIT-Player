@@ -447,7 +447,7 @@ ForbiddenImport:
 
 1. **`/contracts/LOGGING_CONTRACT_V2.md`** - AUTHORITATIVE binding contract (v1.1)
 2. **`/AGENTS.md`** - Section 5 (Logging, Telemetry & Cache)
-3. **`/docs/dev/ARCH_GUARDRAILS.md`** - CI enforcement rules
+3. **`/AGENTS.md`** - Layer boundary enforcement
 4. **`/infra/logging/README.md`** - Module-specific documentation
 5. Android Logcat documentation
 

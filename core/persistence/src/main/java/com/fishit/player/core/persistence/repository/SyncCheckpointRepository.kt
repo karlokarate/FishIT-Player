@@ -18,7 +18,7 @@ import javax.inject.Singleton
  *
  * **Key format:** `<sourceType>:<accountId>:<contentType>`
  *
- * **Design:** docs/v2/INCREMENTAL_SYNC_DESIGN.md
+ * **Design:** contracts/CATALOG_SYNC_WORKERS_CONTRACT_V2.md
  */
 @Singleton
 class SyncCheckpointRepository

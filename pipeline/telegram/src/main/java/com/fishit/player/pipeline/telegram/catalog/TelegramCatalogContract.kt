@@ -20,7 +20,7 @@ import kotlinx.coroutines.flow.Flow
  * - Output: TelegramCatalogEvent stream
  * - Consumer: CatalogSync (persistence layer)
  *
- * See: docs/v2/MEDIA_NORMALIZATION_CONTRACT.md for RawMediaMetadata requirements
+ * See: contracts/MEDIA_NORMALIZATION_CONTRACT.md for RawMediaMetadata requirements
  */
 interface TelegramCatalogPipeline {
     /**

@@ -72,5 +72,5 @@ This directory also contains:
 **Prüft:**
 - JDK 21, Android SDK, Gradle, Node.js, MCP Server, IDE Config
 
-**Siehe:** [docs/dev/LOCAL_SETUP.md](../docs/dev/LOCAL_SETUP.md) für vollständiges Setup
+**Siehe:** [docs/meta/DEVELOPER_GUIDE.md](../docs/meta/DEVELOPER_GUIDE.md) für vollständiges Setup
 

@@ -37,7 +37,7 @@ import javax.inject.Singleton
  * }
  * ```
  *
- * @see docs/v2/OBX_KILL_SWITCH_GUIDE.md for full documentation
+ * @see contracts/NX_SSOT_CONTRACT.md for full documentation
  * @see contracts/NX_SSOT_CONTRACT.md for SSOT invariants
  */
 @Singleton
@@ -268,7 +268,7 @@ class CatalogModePreferences
          * Sets both read and write modes to LEGACY and updates migration state.
          * Use when NX mode causes issues.
          *
-         * @see docs/v2/OBX_KILL_SWITCH_GUIDE.md
+         * @see contracts/NX_SSOT_CONTRACT.md
          */
         fun rollbackToLegacy() {
             UnifiedLog.w(TAG, "\uD83D\uDEA8 ROLLBACK TO LEGACY TRIGGERED")

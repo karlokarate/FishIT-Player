@@ -101,7 +101,7 @@ import json
 import pandas as pd
 
 # Load exported entity data
-with open('/workspaces/FishIT-Player/docs/v2/obx/_intermediate/entity_inventory.json') as f:
+with open('/workspaces/FishIT-Player/.deprecated/docs-archive-2026-02-15/v2-subdirs/obx/_intermediate/entity_inventory.json') as f:
     entities = json.load(f)
 
 # Convert to DataFrame

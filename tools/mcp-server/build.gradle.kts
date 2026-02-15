@@ -60,7 +60,7 @@ application {
 // Run: ./gradlew :tools:mcp-server:run
 // Build fat JAR: ./gradlew :tools:mcp-server:fatJar
 //
-// See: docs/v2/MCP_SERVER.md
+// See: tools/mcp-server/README.md
 // =============================================================================
 
 tasks.register<Jar>("fatJar") {

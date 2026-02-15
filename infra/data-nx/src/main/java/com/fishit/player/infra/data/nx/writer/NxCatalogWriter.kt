@@ -13,7 +13,7 @@
  * - NX_WorkVariant (playback variant)
  *
  * **Usage:** Called by XtreamSyncService / sync orchestration after normalization.
- * **SSOT Contract:** docs/v2/NX_SSOT_CONTRACT.md
+ * **SSOT Contract:** contracts/NX_SSOT_CONTRACT.md
  */
 package com.fishit.player.infra.data.nx.writer
 

@@ -246,7 +246,7 @@ UnifiedDetailViewModel (StateFlow)
 1. `/feature/detail/README.md` - Detail screen architecture
 2. `/contracts/INTERNAL_PLAYER_BEHAVIOR_CONTRACT.md` - Playback behavior
 3. `/feature-common.instructions.md` - Common rules (INHERITED)
-4. `/docs/v2/DETAIL_SCREEN_ARCHITECTURE.md` - Race-free source selection
+4. `/contracts/GLOSSARY_v2_naming_and_modules.md` - Race-free source selection
 
 ---
 

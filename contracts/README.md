@@ -17,24 +17,17 @@
 | Contract | Version | Scope | Description |
 |----------|---------|-------|-------------|
 | [GLOSSARY_v2_naming_and_modules.md](GLOSSARY_v2_naming_and_modules.md) | 2.0 | **Global** | Authoritative vocabulary and naming conventions for all v2 code |
-| [DTO_PLAYBOOK.md](DTO_PLAYBOOK.md) | 1.0 | **Global** | DTO naming patterns, data class rules, serialization guidelines |
 | [MEDIA_NORMALIZATION_CONTRACT.md](MEDIA_NORMALIZATION_CONTRACT.md) | 1.0 | Pipelines, Normalizer | Rules for `RawMediaMetadata` → `NormalizedMediaMetadata` |
 | [TMDB_ENRICHMENT_CONTRACT.md](TMDB_ENRICHMENT_CONTRACT.md) | 1.0 | Normalizer, Enrichment | TMDB enrichment rules, canonical identity, imaging |
 | [CATALOG_SYNC_WORKERS_CONTRACT_V2.md](CATALOG_SYNC_WORKERS_CONTRACT_V2.md) | 2.0 | WorkManager | Catalog sync worker architecture (W-1 to W-22) |
 | [LOGGING_CONTRACT_V2.md](LOGGING_CONTRACT_V2.md) | 1.1 | All Modules | Unified logging rules, lambda-based lazy logging, allowed/forbidden APIs |
 | [NX_SSOT_CONTRACT.md](NX_SSOT_CONTRACT.md) | 1.0 | **Persistence Layer** | OBX PLATIN NX_* entities SSOT - deterministic keys, ingest ledger, invariants |
 
-### Player Contracts
+### Player Contract (Consolidated)
 
-| Contract | Phase | Scope | Description |
-|----------|-------|-------|-------------|
-| [INTERNAL_PLAYER_BEHAVIOR_CONTRACT.md](INTERNAL_PLAYER_BEHAVIOR_CONTRACT.md) | All | Resume, Kids Mode | Resume behavior rules, kids/screen-time enforcement |
-| [INTERNAL_PLAYER_BEHAVIOR_CONTRACT_FULL.md](INTERNAL_PLAYER_BEHAVIOR_CONTRACT_FULL.md) | All | Reference | Extended behavior contract (placeholder) |
-| [INTERNAL_PLAYER_SUBTITLE_CC_CONTRACT_PHASE4.md](INTERNAL_PLAYER_SUBTITLE_CC_CONTRACT_PHASE4.md) | 4 | Subtitles | Subtitle selection and styling contract |
-| [INTERNAL_PLAYER_PLAYER_SURFACE_CONTRACT_PHASE5.md](INTERNAL_PLAYER_PLAYER_SURFACE_CONTRACT_PHASE5.md) | 5 | Player Surface | PlayerView wrapper and surface management |
-| [INTERNAL_PLAYER_TV_INPUT_CONTRACT_PHASE6.md](INTERNAL_PLAYER_TV_INPUT_CONTRACT_PHASE6.md) | 6 | TV Input | DPAD/remote control handling for TV |
-| [INTERNAL_PLAYER_PLAYBACK_SESSION_CONTRACT_PHASE7.md](INTERNAL_PLAYER_PLAYBACK_SESSION_CONTRACT_PHASE7.md) | 7 | Session | Playback session lifecycle management |
-| [INTERNAL_PLAYER_PHASE8_PERFORMANCE_LIFECYCLE_CONTRACT.md](INTERNAL_PLAYER_PHASE8_PERFORMANCE_LIFECYCLE_CONTRACT.md) | 8 | Performance | Player performance and lifecycle optimization |
+| Contract | Scope | Description |
+|----------|-------|-------------|
+| [INTERNAL_PLAYER_CONTRACT.md](INTERNAL_PLAYER_CONTRACT.md) | All Player Phases | Consolidated: Resume/Kids, Subtitles, Surface, TV Input, Session, Performance |
 
 ### Pipeline Contracts
 
@@ -76,7 +69,7 @@ Before modifying code in any of these areas, agents **MUST** read the relevant c
 | Naming / New Classes | `GLOSSARY_v2_naming_and_modules.md` |
 | Pipelines | `MEDIA_NORMALIZATION_CONTRACT.md`, `GLOSSARY` |
 | Logging | `LOGGING_CONTRACT_V2.md` |
-| Player | All `INTERNAL_PLAYER_*` contracts |
+| Player | `INTERNAL_PLAYER_CONTRACT.md` |
 | Telegram | `TELEGRAM_PARSER_CONTRACT.md`, `TELEGRAM_ID_ARCHITECTURE_CONTRACT.md`, `TELEGRAM_STRUCTURED_BUNDLES_CONTRACT.md`, `MEDIA_NORMALIZATION_CONTRACT.md` |
 | Telegram IDs / Imaging | `TELEGRAM_ID_ARCHITECTURE_CONTRACT.md` |
 | Xtream | `XTREAM_SCAN_PREMIUM_CONTRACT_V1.md` |
@@ -109,4 +102,3 @@ Related documentation (not contracts, but important references):
 - [AGENTS.md](/AGENTS.md) – Agent rules for v2 development
 - [V2_PORTAL.md](/V2_PORTAL.md) – V2 architecture entry point
 - [ROADMAP.md](/ROADMAP.md) – Project roadmap
-- [docs/v2/internal-player/PLAYER_MIGRATION_STATUS.md](/docs/v2/internal-player/PLAYER_MIGRATION_STATUS.md) – Player migration progress

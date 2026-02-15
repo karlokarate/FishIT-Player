@@ -22,8 +22,8 @@ java -version
 
 ## Contracts
 
-- Authoritative v2 contracts live in `docs/v2/` (single source of truth).
-- `/contracts` contains forwarders only.
+- Authoritative v2 contracts live in `contracts/` (single source of truth).
+- Generated docs are in `docs/architecture/` and `docs/contracts/`.
 
 ## Quality & Build Tools
 

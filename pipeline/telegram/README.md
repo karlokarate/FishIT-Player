@@ -34,7 +34,7 @@ Per `contracts/TELEGRAM_STRUCTURED_BUNDLES_CONTRACT.md`:
 - **Pass-Through Fields:** `tmdbId`, `year`, `fsk`, `genres`, `rating` from TEXT messages
 - **No Normalization:** All structured fields are passed RAW to `RawMediaMetadata`
 
-See [TELEGRAM_STRUCTURED_BUNDLES_MASTERPLAN.md](../../docs/v2/TELEGRAM_STRUCTURED_BUNDLES_MASTERPLAN.md) for implementation details.
+See [TELEGRAM_STRUCTURED_BUNDLES_CONTRACT.md](../../contracts/TELEGRAM_STRUCTURED_BUNDLES_CONTRACT.md) for implementation details.
 
 ## Dependencies
 | May Import | Must Never Import |
@@ -62,5 +62,5 @@ Transport ← Pipeline ← Data ← Domain ← UI
 
 ## Related Contracts
 - [TELEGRAM_STRUCTURED_BUNDLES_CONTRACT.md](/contracts/TELEGRAM_STRUCTURED_BUNDLES_CONTRACT.md)
-- [MEDIA_NORMALIZATION_CONTRACT.md](/docs/v2/MEDIA_NORMALIZATION_CONTRACT.md)
+- [MEDIA_NORMALIZATION_CONTRACT.md](/contracts/MEDIA_NORMALIZATION_CONTRACT.md)
 - [TELEGRAM_PARSER_CONTRACT.md](/contracts/TELEGRAM_PARSER_CONTRACT.md)

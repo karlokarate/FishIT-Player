@@ -501,8 +501,8 @@ assert(acceptedCount <= worksWithSources) { "INV-2 violation: orphan accepts" }
 ## 9. References
 
 - **Parent Issue:** #621
-- **Roadmap:** `docs/v2/OBX_PLATIN_REFACTOR_ROADMAP.md`
-- **Entity Docs:** `docs/v2/obx/`
+- **Roadmap:** `ROADMAP.md`
+- **Entity Docs:** `contracts/NX_SSOT_CONTRACT.md (entity docs)`
 - **Architecture Authority:** `AGENTS.md` Section 4
 - **Normalization Contract:** `/contracts/MEDIA_NORMALIZATION_CONTRACT.md`
 

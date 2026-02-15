@@ -623,13 +623,9 @@ grep -rn "import com\.fishit\.player\.internal\." player/ | grep -v "player/inte
 ## 📚 Reference Documents (Priority Order)
 
 1. **`/AGENTS.md`** - Section 13 "Player Layer Isolation" (CRITICAL)
-2. **`/docs/v2/internal-player/PLAYER_ARCHITECTURE_V2.md`** - Complete architecture
-3. **`/docs/v2/internal-player/PLAYER_MIGRATION_STATUS.md`** - Phase status
-4. **`/docs/dev/ARCH_GUARDRAILS.md`** - Layer boundary enforcement
-5. **`/contracts/INTERNAL_PLAYER_BEHAVIOR_CONTRACT.md`** - Behavior contract
-6. **`/contracts/INTERNAL_PLAYER_PLAYBACK_SESSION_CONTRACT_PHASE7.md`** - MiniPlayer contract
-7. **`/player/internal/README.md`** - Module-specific rules
-8. **`/player/miniplayer/README.md`** - MiniPlayer specifics
+2. **`/contracts/INTERNAL_PLAYER_CONTRACT.md`** - Complete player contract (all phases)
+3. **`/player/internal/README.md`** - Module-specific rules
+4. **`/player/miniplayer/README.md`** - MiniPlayer specifics
 
 ---
 

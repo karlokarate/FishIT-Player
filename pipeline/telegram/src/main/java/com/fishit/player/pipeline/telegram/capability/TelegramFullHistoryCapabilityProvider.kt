@@ -14,7 +14,7 @@ import javax.inject.Inject
  * - Efficient message traversal without arbitrary limits
  * - Background synchronization of chat content
  *
- * See: docs/v2/features/telegram/FEATURE_telegram.full_history_streaming.md
+ * See: pipeline/telegram/README.md
  */
 class TelegramFullHistoryCapabilityProvider
     @Inject

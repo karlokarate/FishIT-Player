@@ -6,7 +6,7 @@ import org.junit.Test
 /**
  * Unit tests for NX_ migration mode enums.
  *
- * **Reference:** docs/v2/NX_SSOT_CONTRACT.md, docs/v2/OBX_PLATIN_REFACTOR_ROADMAP.md
+ * **Reference:** contracts/NX_SSOT_CONTRACT.md, ROADMAP.md
  */
 class NxMigrationModeTest {
     @Test

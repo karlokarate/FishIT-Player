@@ -29,7 +29,7 @@ import javax.inject.Singleton
  * - nx.migrationMode (default: OFF)
  * - nx.uiVisibility (default: HIDDEN)
  *
- * **Reference:** docs/v2/NX_SSOT_CONTRACT.md, docs/v2/OBX_PLATIN_REFACTOR_ROADMAP.md
+ * **Reference:** contracts/NX_SSOT_CONTRACT.md, ROADMAP.md
  */
 @Singleton
 class DataStoreNxMigrationSettingsRepository

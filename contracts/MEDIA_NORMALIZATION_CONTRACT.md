@@ -3,7 +3,7 @@
 
 This contract defines the **formal rules, data shapes, and responsibilities** for media metadata normalization and cross-pipeline unification in the FishIT-Player v2 architecture.
 
-This file is the **single authoritative copy** of the media normalization contract. No other `MEDIA_NORMALIZATION_CONTRACT.md` files may exist outside of `docs/v2/`.
+This file is the **single authoritative copy** of the media normalization contract. No other `MEDIA_NORMALIZATION_CONTRACT.md` files may exist outside of `contracts/`.
 
 It is **binding** for:
 - all pipeline modules (Telegram, Xtream, IO, Audiobook, Local, Plex, etc.),

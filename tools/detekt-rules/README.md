@@ -108,8 +108,8 @@ Per `contracts/MEDIA_NORMALIZATION_CONTRACT.md`:
 
 ## Documentation
 
-- **Contract:** [OBX_PLATIN_DETEKT_GUARDRAILS_CONTRACT.md](../../docs/v2/OBX_PLATIN_DETEKT_GUARDRAILS_CONTRACT.md)
-- **Roadmap:** [OBX_PLATIN_REFACTOR_ROADMAP.md](../../docs/v2/OBX_PLATIN_REFACTOR_ROADMAP.md)
+- **Contract:** [OBX_PLATIN_DETEKT_GUARDRAILS_CONTRACT.md](../../AGENTS.md (Layer Boundaries))
+- **Roadmap:** [OBX_PLATIN_REFACTOR_ROADMAP.md](../../ROADMAP.md)
 - **AGENTS.md:** Section 4 (Layer Boundaries)
 - **GLOSSARY:** `/contracts/GLOSSARY_v2_naming_and_modules.md`
 

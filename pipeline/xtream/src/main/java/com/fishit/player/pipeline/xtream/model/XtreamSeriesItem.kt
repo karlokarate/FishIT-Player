@@ -78,7 +78,7 @@ data class XtreamSeriesItem(
      * Note: Does NOT include episode count (not available in list response).
      * Episode count changes are detected when episodes are synced separately.
      *
-     * **Design:** docs/v2/INCREMENTAL_SYNC_DESIGN.md Section 7
+     * **Design:** contracts/CATALOG_SYNC_WORKERS_CONTRACT_V2.md Section 7
      */
     fun fingerprint(): Int =
         Objects.hash(

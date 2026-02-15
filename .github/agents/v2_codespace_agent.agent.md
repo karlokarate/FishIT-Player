@@ -34,7 +34,7 @@ infer: false
 | Any code change   | `/contracts/GLOSSARY_v2_naming_and_modules.md` |
 | Pipeline modules  | `/contracts/MEDIA_NORMALIZATION_CONTRACT.md`   |
 | Logging code      | `/contracts/LOGGING_CONTRACT_V2.md`            |
-| Player/Playback   | All `/contracts/INTERNAL_PLAYER_*` files       |
+| Player/Playback   | `/contracts/INTERNAL_PLAYER_CONTRACT.md`       |
 | Telegram features | `/contracts/TELEGRAM_PARSER_CONTRACT.md`       |
 
 ---

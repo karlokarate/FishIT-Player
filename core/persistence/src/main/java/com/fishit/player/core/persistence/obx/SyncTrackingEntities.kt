@@ -14,7 +14,7 @@ import io.objectbox.annotation.Unique
  * - Tier 3: Timestamp filtering (stored in [NX_SyncCheckpoint])
  * - Tier 4: Fingerprint comparison (stored in [NX_ItemFingerprint])
  *
- * **Design Document:** docs/v2/INCREMENTAL_SYNC_DESIGN.md
+ * **Design Document:** contracts/CATALOG_SYNC_WORKERS_CONTRACT_V2.md
  *
  * @since 2026-01 (Issue #621 - OBX PLATIN Refactor)
  */

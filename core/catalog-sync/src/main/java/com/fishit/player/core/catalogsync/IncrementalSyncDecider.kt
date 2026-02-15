@@ -18,7 +18,7 @@ import javax.inject.Singleton
  * Tier 4: Fingerprint  → Compare hashes for changed items
  * ```
  *
- * **Design:** docs/v2/INCREMENTAL_SYNC_DESIGN.md
+ * **Design:** contracts/CATALOG_SYNC_WORKERS_CONTRACT_V2.md
  */
 @Singleton
 class IncrementalSyncDecider

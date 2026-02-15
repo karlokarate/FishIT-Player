@@ -43,8 +43,8 @@ All **active** v2 work happens in these paths:
   - `pipeline/xtream`
   - `pipeline/audiobook`
   - `pipeline/io`
-- `docs/v2/` – v2 architecture, contracts and feature specifications.
-- `docs/meta/` – build, quality, workspace and agent meta-docs.
+- `docs/meta/` – canonical agent rules and developer guide.
+- `contracts/` – binding architecture contracts.
 - `scripts/` – build helpers, API probes, quality scripts.
 
 Everything under:
@@ -73,8 +73,7 @@ v2 uses a centralized Feature System for declaring and discovering capabilities:
 
 Key docs:
 
-- `docs/v2/architecture/FEATURE_SYSTEM_TARGET_MODEL.md`
-- Feature contracts: `docs/v2/features/<category>/FEATURE_<featureId>.md`
+- `contracts/GLOSSARY_v2_naming_and_modules.md` (feature naming, module layout)
 
 ### 3.1 Core & Canonical Media
 
@@ -84,12 +83,8 @@ Key docs:
 
 Key docs:
 
-- `docs/v2/ARCHITECTURE_OVERVIEW_V2.md`
-- `docs/v2/APP_VISION_AND_SCOPE.md`
-- `docs/v2/CANONICAL_MEDIA_SYSTEM.md`
 - `contracts/MEDIA_NORMALIZATION_CONTRACT.md` ⚠️ **Binding Contract**
-- `docs/v2/MEDIA_NORMALIZER_DESIGN.md`
-- `docs/v2/MEDIA_PARSER_DELIVERY_SUMMARY.md`
+- `contracts/GLOSSARY_v2_naming_and_modules.md`
 
 ### 3.2 Pipelines
 
@@ -109,7 +104,7 @@ Pipelines:
 
 #### Telegram Transport Status
 
-> **✅ FINALIZED (December 2025)** — See `docs/v2/architecture/TELEGRAM_TRANSPORT_SSOT.md`
+> ✅ **FINALIZED (December 2025)** — See `infra/transport-telegram/README.md`
 
 The v2 Telegram transport architecture uses typed interfaces instead of exposing TDLib directly:
 
@@ -139,19 +134,14 @@ The v2 Telegram transport architecture uses typed interfaces instead of exposing
 Key docs:
 
 - Telegram:
-  - `docs/v2/telegram/TDLIB_FINAL_REVIEW_UPDATED.md`
-  - `docs/v2/telegram/TELEGRAM_TDLIB_V2_INTEGRATION.md`
   - `/contracts/TELEGRAM_PARSER_CONTRACT.md` ⚠️ **Binding Contract (Draft)**
   - `/contracts/TELEGRAM_STRUCTURED_BUNDLES_CONTRACT.md` ⚠️ **Binding Contract**
-  - `docs/v2/TELEGRAM_STRUCTURED_BUNDLES_MASTERPLAN.md` – Structured bundle design
-  - `docs/v2/telegram/TELEGRAM_PLAYBACK_PIPELINE_AUDIT.md`
-  - `docs/v2/telegram/TDLIB_STREAMING_THUMBNAILS_SSOT.md`
-  - `docs/v2/telegram/TDLIB_STREAMING_WITH_HEADER_VALIDATION.md`
+  - `/contracts/TELEGRAM_ID_ARCHITECTURE_CONTRACT.md` ⚠️ **Binding Contract**
+  - `infra/transport-telegram/README.md`
+  - `pipeline/telegram/README.md`
 - Xtream:
-  - `docs/v2/XTREAM_PIPELINE_V2_REUSE_ANALYSIS.md`
-- Pipeline-wide:
-  - `docs/v2/PIPELINE_PR_CHECKLIST.md`
-  - `docs/v2/PIPELINE_SYNC_STATUS.md`
+  - `/contracts/XTREAM_ONBOARDING_CATEGORY_SELECTION_CONTRACT.md` ⚠️ **Binding Contract**
+  - `/contracts/XTREAM_SCAN_PREMIUM_CONTRACT_V1.md` ⚠️ **Binding Contract**
 
 ### 3.3 Internal Player (SIP) & Playback
 
@@ -181,18 +171,7 @@ Key docs:
 
 Key docs:
 
-- `/contracts/INTERNAL_PLAYER_BEHAVIOR_CONTRACT.md` ⚠️ **Binding Contract**
-- `/contracts/INTERNAL_PLAYER_BEHAVIOR_CONTRACT_FULL.md` ⚠️ **Binding Contract**
-- `docs/v2/internal-player/INTERNAL_PLAYER_REFACTOR_ROADMAP.md`
-- `docs/v2/internal-player/INTERNAL_PLAYER_REFACTOR_SSOT.md`
-- `docs/v2/internal-player/INTERNAL_PLAYER_REFACTOR_STATUS.md`
-- `docs/v2/internal-player/INTERNAL_PLAYER_PHASE*_CHECKLIST.md`
-- `/contracts/INTERNAL_PLAYER_SUBTITLE_CC_CONTRACT_PHASE4.md` ⚠️ **Binding Contract**
-- `/contracts/INTERNAL_PLAYER_PLAYER_SURFACE_CONTRACT_PHASE5.md` ⚠️ **Binding Contract**
-- `/contracts/INTERNAL_PLAYER_TV_INPUT_CONTRACT_PHASE6.md` ⚠️ **Binding Contract**
-- `/contracts/INTERNAL_PLAYER_PLAYBACK_SESSION_CONTRACT_PHASE7.md` ⚠️ **Binding Contract**
-- `/contracts/INTERNAL_PLAYER_PHASE8_PERFORMANCE_LIFECYCLE_CONTRACT.md` ⚠️ **Binding Contract**
-- `docs/v2/internal-player/TRICKPLAY_INTEGRATION.md`
+- `/contracts/INTERNAL_PLAYER_CONTRACT.md` ⚠️ **Binding Contract** (consolidated)
 
 ---
 
@@ -209,11 +188,6 @@ v2 has a unified logging and telemetry story:
 Key docs:
 
 - `/contracts/LOGGING_CONTRACT_V2.md` ⚠️ **Binding Contract**
-- `docs/v2/logging/LOGGING_SYSTEM_ANALYSIS.md`
-- `docs/v2/logging/UNIFIED_LOGGING.md`
-- `docs/v2/logging/LOG_VIEWER.md`
-- Telemetry (if present):
-  - `docs/v2/telemetry/**`
 
 ---
 
@@ -226,8 +200,8 @@ Key docs:
 
 Key docs:
 
-- `docs/v2/IMAGING_SYSTEM.md`
-- `docs/v2/features/imaging/**` (when populated)
+- `contracts/TELEGRAM_ID_ARCHITECTURE_CONTRACT.md` (imaging section)
+- `core/ui-imaging/README.md`
 
 ### 5.2 FFMpegKit & Media Tools
 
@@ -235,10 +209,7 @@ FFMpegKit handling is centralized in infra, not scattered across the app.
 
 Key docs:
 
-- `docs/v2/ffmpegkit/FFMPEGKIT_BUILD.md`
-- `docs/v2/ffmpegkit/FFMPEGKIT_IMPLEMENTATION.md`
-- `docs/v2/ffmpegkit/FFMPEGKIT_INTEGRATION.md`
-- `docs/v2/ffmpegkit/FFMPEGKIT_PRESETS.md`
+- `player/internal/README.md` (when populated)
 
 ---
 
@@ -253,8 +224,7 @@ Settings, cache and infra are centralized and must not be re-invented per featur
 
 See:
 
-- `docs/v2/settings/**` (when present)
-- `docs/meta/**` for workspace and environment guides.
+- `docs/meta/DEVELOPER_GUIDE.md`
 
 ### 6.2 Cache
 
@@ -269,7 +239,7 @@ See:
 
 See:
 
-- `docs/v2/LOGGING_CONTRACT_V2.md` and logging-related docs.
+- `contracts/LOGGING_CONTRACT_V2.md`
 
 ---
 
@@ -293,8 +263,7 @@ The UI must:
 
 See:
 
-- `docs/v2/ui/**`
-- Feature-specific docs under `docs/v2/features/ui/**` (when populated).
+- `feature/*/README.md` (per-module documentation)
 
 ---
 
@@ -383,7 +352,7 @@ If you are an agent or a human and you are not sure where something belongs:
 1. Check:
    - `AGENTS.md`
    - `V2_PORTAL.md` (this file)
-   - `docs/v2/ARCHITECTURE_OVERVIEW_V2.md`
+   - `contracts/GLOSSARY_v2_naming_and_modules.md`
 2. If it is still unclear:
    - propose a plan (for agents, in the PR / task),
    - wait for user feedback before performing a large architectural change.

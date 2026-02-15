@@ -26,12 +26,12 @@ All active development happens in the v2 modules:
 
 | Path | Description |
 |------|-------------|
-| `/docs/v2/` | Active v2 specs: canonical media, pipelines, internal player, logging |
+| `/contracts/` | Binding architecture contracts (naming, normalization, player, logging) |
 | `/docs/meta/` | Build, quality, workspace documentation |
 
 ### Contracts
 
-- Authoritative v2 contracts live in `docs/v2/` (single source of truth).
+- Authoritative v2 contracts live in `contracts/` (single source of truth).
 - `/contracts` contains forwarders only.
 
 ### Legacy (Archived)
@@ -64,7 +64,7 @@ The v1 codebase and historical documentation are archived under `/legacy/`:
 
 1. Start with **[V2_PORTAL.md](V2_PORTAL.md)** – the main entry point
 2. Read **[AGENTS.md](AGENTS.md)** – rules for all agents and automation
-3. Browse **[docs/v2/](docs/v2/)** – detailed v2 specifications
+3. Browse **[contracts/](contracts/)** – binding architecture contracts
 
 ### For Legacy Reference
 

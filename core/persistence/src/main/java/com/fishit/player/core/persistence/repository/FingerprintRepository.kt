@@ -23,7 +23,7 @@ import javax.inject.Singleton
  * - [putFingerprints] - Bulk upsert fingerprints
  * - [markStaleItems] - Find items not seen in current sync (deletions)
  *
- * **Design:** docs/v2/INCREMENTAL_SYNC_DESIGN.md
+ * **Design:** contracts/CATALOG_SYNC_WORKERS_CONTRACT_V2.md
  */
 @Singleton
 class FingerprintRepository

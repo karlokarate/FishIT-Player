@@ -157,7 +157,7 @@ Fields that may appear in TEXT messages from structured chats:
 ### 2.4 Contract Compliance
 
 **R10: MEDIA_NORMALIZATION_CONTRACT**
-> All rules from `docs/v2/MEDIA_NORMALIZATION_CONTRACT.md` continue to apply:
+> All rules from `contracts/MEDIA_NORMALIZATION_CONTRACT.md` continue to apply:
 >
 > - Pipeline MUST NOT normalize
 > - Pipeline MUST NOT perform TMDB lookups
@@ -423,8 +423,8 @@ Before each merge MUST be verified:
 
 ## 9. References
 
-- [TELEGRAM_STRUCTURED_BUNDLES_MASTERPLAN.md](docs/v2/TELEGRAM_STRUCTURED_BUNDLES_MASTERPLAN.md)
-- [MEDIA_NORMALIZATION_CONTRACT.md](docs/v2/MEDIA_NORMALIZATION_CONTRACT.md)
+- [TELEGRAM_STRUCTURED_BUNDLES_MASTERPLAN.md](contracts/TELEGRAM_STRUCTURED_BUNDLES_CONTRACT.md)
+- [MEDIA_NORMALIZATION_CONTRACT.md](contracts/MEDIA_NORMALIZATION_CONTRACT.md)
 - [LOGGING_CONTRACT_V2.md](contracts/LOGGING_CONTRACT_V2.md)
 - [GLOSSARY_v2_naming_and_modules.md](contracts/GLOSSARY_v2_naming_and_modules.md)
 - [TELEGRAM_PARSER_CONTRACT.md](contracts/TELEGRAM_PARSER_CONTRACT.md)

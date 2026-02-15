@@ -205,10 +205,10 @@ if [[ $EXIT_CODE -eq 0 ]]; then
   echo "✅ All guardrails passed!"
 elif [[ $EXIT_CODE -eq 1 ]]; then
   echo "❌ FAILED: BoxStore in forbidden locations (OBX-01)"
-  echo "   See: docs/v2/OBX_PLATIN_DETEKT_GUARDRAILS_CONTRACT.md"
+  echo "   See: AGENTS.md (Layer Boundaries)"
 elif [[ $EXIT_CODE -eq 2 ]]; then
   echo "❌ FAILED: Secrets in @Entity classes (OBX-02)"
-  echo "   See: docs/v2/OBX_PLATIN_DETEKT_GUARDRAILS_CONTRACT.md"
+  echo "   See: AGENTS.md (Layer Boundaries)"
 fi
 
 echo ""

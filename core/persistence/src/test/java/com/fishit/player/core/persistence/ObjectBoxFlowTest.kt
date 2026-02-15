@@ -27,7 +27,7 @@ import org.junit.Test
  * guarantees proper cleanup. Integration tests with real ObjectBox provide
  * stronger lifecycle guarantees.
  *
- * @see <a href="/docs/v2/OBJECTBOX_REACTIVE_PATTERNS.md">ObjectBox Reactive Patterns</a>
+ * @see <a href="/contracts/NX_SSOT_CONTRACT.md">ObjectBox Reactive Patterns</a>
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class ObjectBoxFlowTest {
