@@ -408,13 +408,23 @@ class MappingChainPropertyTest {
             checkAll(config, Generators.rawMediaMetadata) { raw ->
                 val normalized = normalizer.normalize(raw)
                 val workKey = buildWorkKey(normalized)
-                val work = workBuilder.build(normalized, workKey, fixedNow)
+                val work = workBuilder.build(normalized, workKey, fixedNow, raw.playbackHints)
 
-                val expectedTmdbId = (normalized.tmdb ?: normalized.externalIds.tmdb)?.id?.toString()
+                // For episodes: tmdbId comes from playbackHints (episode-specific ID)
+                // For other media types: tmdbId comes from normalized.tmdb or externalIds.tmdb
+                val expectedTmdbId = if (normalized.mediaType == MediaType.SERIES_EPISODE) {
+                    // Episodes need episode-specific TMDB ID from hints, otherwise null
+                    raw.playbackHints["xtream.episodeTmdbId"]
+                        ?.trim()
+                        ?.takeIf { it.isNotEmpty() && it.toLongOrNull() != null }
+                } else {
+                    (normalized.tmdb ?: normalized.externalIds.tmdb)?.id?.toString()
+                }
+                
                 assertEquals(
                     expectedTmdbId,
                     work.tmdbId,
-                    "tmdbId must prefer typed tmdb ref, fall back to externalIds.tmdb",
+                    "tmdbId: episodes need episode-specific ID from hints, others use tmdb ref or externalIds",
                 )
             }
         }

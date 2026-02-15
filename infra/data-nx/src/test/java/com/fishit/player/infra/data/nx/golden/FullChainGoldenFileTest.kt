@@ -161,6 +161,7 @@ class FullChainGoldenFileTest {
                 mapOf(
                     "xtream.containerExtension" to "m3u8",
                     "xtream.streamId" to "5001",
+                    "xtream.episodeTmdbId" to "62094", // Breaking Bad S02E07 episode-specific ID
                 ),
             addedTimestamp = 1680000000L,
         )
