@@ -10,7 +10,7 @@
   ],
   "modules": {
     "infra/data-xtream": {
-      "fileCount": 13,
+      "fileCount": 14,
       "totalLOC": 400,
       "criticalFiles": [
         {
@@ -62,6 +62,10 @@
         },
         {
           "path": "core/model/src/main/java/com/fishit/player/core/model/util/SourcePriority.kt",
+          "purpose": "Part of xtream-data scope"
+        },
+        {
+          "path": "infra/data-nx/src/main/java/com/fishit/player/infra/data/nx/writer/NxCatalogWriter.kt",
           "purpose": "Part of xtream-data scope"
         }
       ],

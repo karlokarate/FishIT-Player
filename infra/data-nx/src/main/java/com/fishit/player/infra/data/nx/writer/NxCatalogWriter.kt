@@ -17,7 +17,9 @@
  */
 package com.fishit.player.infra.data.nx.writer
 
+import com.fishit.player.core.model.Layer
 import com.fishit.player.core.model.NormalizedMediaMetadata
+import com.fishit.player.core.model.PipelineComponent
 import com.fishit.player.core.model.RawMediaMetadata
 import com.fishit.player.core.model.repository.NxWorkRepository
 import com.fishit.player.core.model.repository.NxWorkSourceRefRepository
@@ -41,7 +43,16 @@ import javax.inject.Singleton
  * - VariantBuilder: Constructs NX_WorkVariant entities (CC ~4)
  *
  * This class orchestrates the builders and handles repository upserts.
+ *
+ * @responsibility Ingest normalized media into the NX work graph
+ * @responsibility Create/update NX_Work, NX_WorkSourceRef, NX_WorkVariant entities
+ * @responsibility Delegate entity construction to WorkEntityBuilder, SourceRefBuilder, VariantBuilder
  */
+@PipelineComponent(
+    layer = Layer.PERSISTENCE,
+    sourceType = "All",
+    genericPattern = "CatalogWriter",
+)
 @Singleton
 class NxCatalogWriter
     @Inject

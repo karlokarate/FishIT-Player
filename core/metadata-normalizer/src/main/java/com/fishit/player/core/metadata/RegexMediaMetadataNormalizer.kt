@@ -2,8 +2,10 @@ package com.fishit.player.core.metadata
 
 import com.fishit.player.core.metadata.parser.Re2jSceneNameParser
 import com.fishit.player.core.metadata.parser.SceneNameParser
+import com.fishit.player.core.model.Layer
 import com.fishit.player.core.model.MediaType
 import com.fishit.player.core.model.NormalizedMediaMetadata
+import com.fishit.player.core.model.PipelineComponent
 import com.fishit.player.core.model.RawMediaMetadata
 import com.fishit.player.core.model.SourceType
 
@@ -26,7 +28,17 @@ import com.fishit.player.core.model.SourceType
  * system.
  *
  * @property sceneParser Parser for extracting metadata from filenames (RE2J by default)
+ *
+ * @responsibility Clean and normalize media titles from raw input
+ * @responsibility Extract year, season, episode from scene-style naming
+ * @responsibility Determine media type from metadata heuristics
+ * @responsibility Handle untrusted input safely with RE2J (O(n) guarantee)
  */
+@PipelineComponent(
+    layer = Layer.NORMALIZER,
+    sourceType = "All",
+    genericPattern = "MediaMetadataNormalizer",
+)
 class RegexMediaMetadataNormalizer(
     private val sceneParser: SceneNameParser = Re2jSceneNameParser(),
 ) : MediaMetadataNormalizer {

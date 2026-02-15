@@ -1,5 +1,7 @@
 package com.fishit.player.infra.transport.xtream.client
 
+import com.fishit.player.core.model.Layer
+import com.fishit.player.core.model.PipelineComponent
 import com.fishit.player.infra.logging.UnifiedLog
 import com.fishit.player.infra.transport.xtream.XtreamCategory
 import com.fishit.player.infra.transport.xtream.XtreamUrlBuilder
@@ -25,7 +27,15 @@ import javax.inject.Inject
  * - Handle VOD alias resolution (vod/movie/movies)
  *
  * CC Target: ≤ 6 per function
+ *
+ * @responsibility Fetch live/VOD/series categories from Xtream API
+ * @responsibility Resolve VOD path aliases (movie/vod/movies)
  */
+@PipelineComponent(
+    layer = Layer.TRANSPORT,
+    sourceType = "Xtream",
+    genericPattern = "{Source}CategoryFetcher",
+)
 class XtreamCategoryFetcher
     @Inject
     constructor(

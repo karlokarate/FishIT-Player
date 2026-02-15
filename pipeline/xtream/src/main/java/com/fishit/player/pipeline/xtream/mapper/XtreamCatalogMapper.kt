@@ -1,5 +1,7 @@
 package com.fishit.player.pipeline.xtream.mapper
 
+import com.fishit.player.core.model.Layer
+import com.fishit.player.core.model.PipelineComponent
 import com.fishit.player.pipeline.xtream.catalog.XtreamCatalogItem
 import com.fishit.player.pipeline.xtream.catalog.XtreamItemKind
 import com.fishit.player.pipeline.xtream.model.XtreamChannel
@@ -82,7 +84,16 @@ interface XtreamCatalogMapper {
  * Default implementation of XtreamCatalogMapper.
  *
  * Uses the existing toRawMetadata() extensions from XtreamRawMetadataExtensions.
+ *
+ * @responsibility Map XtreamVodItem to XtreamCatalogItem with RawMediaMetadata
+ * @responsibility Map XtreamSeriesItem/XtreamEpisode to XtreamCatalogItem
+ * @responsibility Map XtreamChannel (live) to XtreamCatalogItem
  */
+@PipelineComponent(
+    layer = Layer.PIPELINE,
+    sourceType = "Xtream",
+    genericPattern = "{Source}CatalogMapper",
+)
 class XtreamCatalogMapperImpl
     @Inject
     constructor() : XtreamCatalogMapper {

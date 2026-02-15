@@ -1,6 +1,8 @@
 package com.fishit.player.infra.transport.xtream.client
 
 import android.os.SystemClock
+import com.fishit.player.core.model.Layer
+import com.fishit.player.core.model.PipelineComponent
 import com.fishit.player.infra.logging.UnifiedLog
 import com.fishit.player.infra.transport.xtream.XtreamContentType
 import com.fishit.player.infra.transport.xtream.XtreamEpgProgramme
@@ -43,7 +45,17 @@ import javax.inject.Inject
  * - Count operations
  *
  * CC Target: ≤ 10 per function
+ *
+ * @responsibility Fetch VOD/Live/Series streams from Xtream API
+ * @responsibility Stream large result sets in batches (memory-efficient)
+ * @responsibility Fetch detail endpoints (getVodInfo, getSeriesInfo)
+ * @responsibility Handle VOD path alias resolution and fallback
  */
+@PipelineComponent(
+    layer = Layer.TRANSPORT,
+    sourceType = "Xtream",
+    genericPattern = "{Source}StreamFetcher",
+)
 class XtreamStreamFetcher
     @Inject
     constructor(

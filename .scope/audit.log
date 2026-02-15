@@ -629,3 +629,17 @@
 {"action":"check","filePath":"core/model/src/main/kotlin/com/fishit/player/core/PipelineComponent.kt","status":"UNTRACKED","agentMode":"interactive","timestamp":"2026-02-15T08:31:15.084Z"}
 {"action":"check","filePath":".github/workflows/generate-docs.yml","status":"BUNDLE_BLOCKED","agentMode":"interactive","details":"ci-infra","timestamp":"2026-02-15T08:35:40.821Z"}
 {"action":"read_bundle","scopeId":"ci-infra","status":"ACKNOWLEDGED","timestamp":"2026-02-15T08:35:45.103Z"}
+{"action":"session_start","status":"STARTED","agentMode":"interactive","details":"session-1771147191954","timestamp":"2026-02-15T09:19:51.954Z"}
+{"action":"check","filePath":"pipeline/xtream/src/main/java/com/fishit/player/pipeline/xtream/catalog/DefaultXtreamCatalogSource.kt","status":"BLOCKED","agentMode":"interactive","scopeId":"xtream-pipeline-catalog","timestamp":"2026-02-15T09:20:52.874Z"}
+{"action":"check","filePath":"infra/data-nx/src/main/java/com/fishit/player/infra/data/nx/writer/NxCatalogWriter.kt","status":"UNTRACKED","agentMode":"interactive","timestamp":"2026-02-15T09:20:52.875Z"}
+{"action":"check","filePath":"core/metadata-normalizer/src/main/java/com/fishit/player/core/metadata/RegexMediaMetadataNormalizer.kt","status":"UNTRACKED","agentMode":"interactive","timestamp":"2026-02-15T09:20:52.875Z"}
+{"action":"read","scopeId":"xtream-pipeline-catalog","status":"ACKNOWLEDGED","timestamp":"2026-02-15T09:20:58.423Z"}
+{"action":"read","scopeId":"xtream-pipeline-mapping","status":"ACKNOWLEDGED","timestamp":"2026-02-15T09:20:58.423Z"}
+{"action":"read","scopeId":"xtream-transport-core","status":"ACKNOWLEDGED","timestamp":"2026-02-15T09:20:58.424Z"}
+{"action":"read","scopeId":"xtream-data","status":"ACKNOWLEDGED","timestamp":"2026-02-15T09:20:58.424Z"}
+{"action":"read","scopeId":"catalog-sync","status":"ACKNOWLEDGED","timestamp":"2026-02-15T09:21:03.356Z"}
+{"action":"assign_pending","filePath":"infra/data-nx/src/main/java/com/fishit/player/infra/data/nx/writer/NxCatalogWriter.kt","scopeId":"xtream-data","status":"REQUIRES_USER_CONFIRMATION","agentMode":"interactive","timestamp":"2026-02-15T09:21:03.357Z"}
+{"action":"assign_pending","filePath":"core/metadata-normalizer/src/main/java/com/fishit/player/core/metadata/RegexMediaMetadataNormalizer.kt","scopeId":"catalog-sync","status":"REQUIRES_USER_CONFIRMATION","agentMode":"interactive","timestamp":"2026-02-15T09:21:03.358Z"}
+{"action":"confirm","filePath":"infra/data-nx/src/main/java/com/fishit/player/infra/data/nx/writer/NxCatalogWriter.kt","scopeId":"xtream-data","status":"CONFIRMED","timestamp":"2026-02-15T09:21:14.984Z"}
+{"action":"confirm","filePath":"core/metadata-normalizer/src/main/java/com/fishit/player/core/metadata/RegexMediaMetadataNormalizer.kt","scopeId":"catalog-sync","status":"CONFIRMED","timestamp":"2026-02-15T09:21:14.985Z"}
+{"action":"reload","status":"COMPLETED","details":"Reloaded 15 scopes (was 15)","timestamp":"2026-02-15T09:21:57.418Z"}

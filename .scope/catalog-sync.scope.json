@@ -11,7 +11,7 @@
   ],
   "modules": {
     "core/catalog-sync": {
-      "fileCount": 16,
+      "fileCount": 17,
       "totalLOC": 5400,
       "criticalFiles": [
         {
@@ -66,6 +66,10 @@
         },
         {
           "path": "core/model/src/main/java/com/fishit/player/core/model/PlaybackHintKeys.kt",
+          "purpose": "Part of catalog-sync scope"
+        },
+        {
+          "path": "core/metadata-normalizer/src/main/java/com/fishit/player/core/metadata/RegexMediaMetadataNormalizer.kt",
           "purpose": "Part of catalog-sync scope"
         }
       ],
@@ -136,6 +140,6 @@
       "XtreamCatalogSyncTest.kt (0 tests for 492 LOC)"
     ]
   },
-  "lastVerified": "2026-02-09",
+  "lastVerified": "2026-02-15",
   "auditedBy": "Multi-Agent Audit (5 parallel subagents)"
 }

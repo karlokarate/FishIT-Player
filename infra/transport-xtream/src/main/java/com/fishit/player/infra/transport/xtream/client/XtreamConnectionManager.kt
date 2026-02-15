@@ -1,6 +1,8 @@
 package com.fishit.player.infra.transport.xtream.client
 
 import android.os.SystemClock
+import com.fishit.player.core.model.Layer
+import com.fishit.player.core.model.PipelineComponent
 import com.fishit.player.infra.logging.UnifiedLog
 import com.fishit.player.infra.transport.xtream.XtreamApiConfig
 import com.fishit.player.infra.transport.xtream.XtreamAuthState
@@ -36,7 +38,17 @@ import javax.inject.Inject
  * - Connection validation
  *
  * CC Target: ≤ 10 per function
+ *
+ * @responsibility Handle port resolution and service discovery
+ * @responsibility Manage authentication state lifecycle
+ * @responsibility Detect and cache server capabilities
+ * @responsibility Validate connection health
  */
+@PipelineComponent(
+    layer = Layer.TRANSPORT,
+    sourceType = "Xtream",
+    genericPattern = "{Source}ConnectionManager",
+)
 class XtreamConnectionManager
     @Inject
     constructor(

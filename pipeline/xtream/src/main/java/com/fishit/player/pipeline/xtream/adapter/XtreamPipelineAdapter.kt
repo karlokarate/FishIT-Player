@@ -1,5 +1,7 @@
 package com.fishit.player.pipeline.xtream.adapter
 
+import com.fishit.player.core.model.Layer
+import com.fishit.player.core.model.PipelineComponent
 import com.fishit.player.core.model.RawMediaMetadata
 import com.fishit.player.core.model.util.EpochConverter
 import com.fishit.player.core.model.util.RatingNormalizer
@@ -36,7 +38,16 @@ import javax.inject.Singleton
  * - Transport Layer: XtreamApiClient (returns XtreamVodStream, XtreamLiveStream, etc.)
  * - Pipeline Layer: This adapter (converts to XtreamVodItem, XtreamChannel, etc.)
  * - Pipeline DTOs are internal and never exported to Data/Playback layers
+ *
+ * @responsibility Convert transport DTOs (XtreamVodStream, XtreamLiveStream) to pipeline DTOs
+ * @responsibility Expose auth/connection state from transport layer
+ * @responsibility Fetch and convert episodes for series
  */
+@PipelineComponent(
+    layer = Layer.PIPELINE,
+    sourceType = "Xtream",
+    genericPattern = "{Source}PipelineAdapter",
+)
 @Singleton
 class XtreamPipelineAdapter
     @Inject

@@ -1,5 +1,7 @@
 package com.fishit.player.pipeline.xtream.catalog
 
+import com.fishit.player.core.model.Layer
+import com.fishit.player.core.model.PipelineComponent
 import com.fishit.player.infra.logging.UnifiedLog
 import com.fishit.player.pipeline.xtream.adapter.XtreamPipelineAdapter
 import com.fishit.player.pipeline.xtream.model.XtreamChannel
@@ -27,7 +29,16 @@ import javax.inject.Singleton
  * - Pipeline Layer: This source uses XtreamPipelineAdapter
  * - XtreamPipelineAdapter wraps XtreamApiClient (Transport Layer)
  * - Internal DTOs (XtreamVodItem, etc.) stay within pipeline, converted to RawMediaMetadata
+ *
+ * @responsibility Delegate content loading to XtreamPipelineAdapter
+ * @responsibility Load VOD, Series, Live items and stream episodes
+ * @responsibility Wrap transport errors in XtreamCatalogSourceException
  */
+@PipelineComponent(
+    layer = Layer.PIPELINE,
+    sourceType = "Xtream",
+    genericPattern = "{Source}CatalogSource",
+)
 @Singleton
 class DefaultXtreamCatalogSource
     @Inject
