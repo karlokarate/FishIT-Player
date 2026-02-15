@@ -70,7 +70,6 @@ data class ParsedSourceKey(
  * 4. Null-safe extraction with clear fallback behavior
  */
 object SourceKeyParser {
-
     /**
      * Pattern for XtreamIdCodec composite episode itemKey: `series:{seriesId}:s{season}:e{episode}`
      * Captures: group(1)=seriesId (may be negative), group(2)=season, group(3)=episode
@@ -96,9 +95,11 @@ object SourceKeyParser {
      * @param sourceId The item-specific identifier containing kind and key
      * @return Complete sourceKey string
      */
-    fun buildSourceKey(sourceType: SourceType, accountKey: String, sourceId: String): String {
-        return "src:${sourceType.name.lowercase()}:$accountKey:$sourceId"
-    }
+    fun buildSourceKey(
+        sourceType: SourceType,
+        accountKey: String,
+        sourceId: String,
+    ): String = "src:${sourceType.name.lowercase()}:$accountKey:$sourceId"
 
     // =========================================================================
     // Parser Functions
@@ -118,7 +119,7 @@ object SourceKeyParser {
         if (sourceKey.isNullOrBlank()) return null
 
         val parts = sourceKey.split(":")
-        
+
         // ONLY handle sourceKey format: src:{sourceType}:{accountKey}:{itemKind}:{itemKey...}
         if (parts[0] == "src" && parts.size >= 5) {
             return ParsedSourceKey(
@@ -128,7 +129,7 @@ object SourceKeyParser {
                 itemKey = parts.drop(4).joinToString(":"),
             )
         }
-        
+
         return null
     }
 
@@ -198,7 +199,7 @@ object SourceKeyParser {
      */
     fun extractNumericItemKey(sourceKey: String?): Long? {
         if (sourceKey.isNullOrBlank()) return null
-        
+
         // If input is already just a number, return it
         sourceKey.toLongOrNull()?.let { return it }
 
@@ -221,21 +222,21 @@ object SourceKeyParser {
      */
     fun extractXtreamStreamId(sourceKey: String?): String? {
         if (sourceKey.isNullOrBlank()) return null
-        
+
         // Parse as sourceKey
         val parsed = parse(sourceKey) ?: return null
-        
+
         // For simple numeric IDs (VOD, Live, Series)
         if (parsed.itemKey.toLongOrNull() != null) {
             return parsed.itemKey
         }
-        
+
         // For composite episode IDs, extract the first numeric component
         // Format: "100_1_5" → "100"
         if (parsed.itemKind == "episode") {
             return parsed.itemKey.split("_").getOrNull(0)
         }
-        
+
         return null
     }
 
@@ -254,25 +255,25 @@ object SourceKeyParser {
      */
     fun extractXtreamEpisodeId(sourceKey: String?): Int? {
         if (sourceKey.isNullOrBlank()) return null
-        
+
         // Parse as sourceKey
         val itemKey = extractItemKey(sourceKey) ?: return null
-        
+
         // Try direct numeric ID first
         itemKey.toIntOrNull()?.let { return it }
-        
+
         // Try underscore composite format: seriesId_season_episode
         val underscoreParts = itemKey.split("_")
         if (underscoreParts.size >= 3) {
             return underscoreParts[2].toIntOrNull()
         }
-        
+
         // Try XtreamIdCodec composite format: series:{seriesId}:s{season}:e{episode}
         val codecMatch = EPISODE_CODEC_PATTERN.find(itemKey)
         if (codecMatch != null) {
             return codecMatch.groupValues[3].toIntOrNull()
         }
-        
+
         return null
     }
 
@@ -288,22 +289,22 @@ object SourceKeyParser {
      */
     fun extractXtreamSeriesIdFromEpisode(sourceKey: String?): Int? {
         if (sourceKey.isNullOrBlank()) return null
-        
+
         // Parse as sourceKey
         val itemKey = extractItemKey(sourceKey) ?: return null
-        
+
         // Underscore composite format: seriesId_season_episode
         val underscoreParts = itemKey.split("_")
         if (underscoreParts.size >= 3) {
             return underscoreParts[0].toIntOrNull()
         }
-        
+
         // XtreamIdCodec composite format: series:{seriesId}:s{season}:e{episode}
         val codecMatch = EPISODE_CODEC_PATTERN.find(itemKey)
         if (codecMatch != null) {
             return codecMatch.groupValues[1].toIntOrNull()
         }
-        
+
         return null
     }
 
@@ -319,9 +320,9 @@ object SourceKeyParser {
      */
     fun extractXtreamEpisodeInfo(sourceKey: String?): EpisodeInfo? {
         if (sourceKey.isNullOrBlank()) return null
-        
+
         val itemKey = extractItemKey(sourceKey) ?: return null
-        
+
         // Underscore composite: seriesId_season_episode
         val underscoreParts = itemKey.split("_")
         if (underscoreParts.size >= 3) {
@@ -330,7 +331,7 @@ object SourceKeyParser {
             val episode = underscoreParts[2].toIntOrNull() ?: return null
             return EpisodeInfo(seriesId, season, episode)
         }
-        
+
         // XtreamIdCodec composite: series:{seriesId}:s{season}:e{episode}
         val codecMatch = EPISODE_CODEC_PATTERN.find(itemKey)
         if (codecMatch != null) {
@@ -339,7 +340,7 @@ object SourceKeyParser {
             val episode = codecMatch.groupValues[3].toIntOrNull() ?: return null
             return EpisodeInfo(seriesId, season, episode)
         }
-        
+
         return null
     }
 

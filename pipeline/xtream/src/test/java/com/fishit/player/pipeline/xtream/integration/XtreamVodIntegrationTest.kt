@@ -55,15 +55,15 @@ import kotlin.test.assertTrue
  * Test data: `/test-data/xtream-responses/`
  */
 class XtreamVodIntegrationTest {
-
     private val testDataDir = File("test-data/xtream-responses")
     private val accountLabel = "test-account"
 
-    private val json = Json {
-        ignoreUnknownKeys = true
-        isLenient = true
-        coerceInputValues = true
-    }
+    private val json =
+        Json {
+            ignoreUnknownKeys = true
+            isLenient = true
+            coerceInputValues = true
+        }
 
     // =========================================================================
     // API DTOs for parsing real VOD JSON
@@ -147,23 +147,24 @@ class XtreamVodIntegrationTest {
         val apiItems: List<ApiVodItem> = json.decodeFromString(file.readText())
         assertTrue(apiItems.isNotEmpty(), "VOD list should not be empty")
         println("📺 VOD List: ${apiItems.size} items")
-        println("=" .repeat(70))
+        println("=".repeat(70))
 
         // Test 5 items using index-based access
         val count = minOf(5, apiItems.size)
         for (idx in 0 until count) {
             val api: ApiVodItem = apiItems[idx]
 
-            val dto = XtreamVodItem(
-                id = api.stream_id,
-                name = api.name,
-                streamIcon = api.stream_icon,
-                categoryId = api.category_id,
-                containerExtension = api.container_extension,
-                added = api.added?.toLongOrNull(),
-                rating = api.ratingDouble,
-                rating5Based = api.rating5BasedDouble,
-            )
+            val dto =
+                XtreamVodItem(
+                    id = api.stream_id,
+                    name = api.name,
+                    streamIcon = api.stream_icon,
+                    categoryId = api.category_id,
+                    containerExtension = api.container_extension,
+                    added = api.added?.toLongOrNull(),
+                    rating = api.ratingDouble,
+                    rating5Based = api.rating5BasedDouble,
+                )
 
             val raw = dto.toRawMetadata(accountLabel = accountLabel)
 
@@ -192,12 +193,12 @@ class XtreamVodIntegrationTest {
             assertEquals(
                 api.container_extension,
                 raw.playbackHints[PlaybackHintKeys.Xtream.CONTAINER_EXT],
-                "playbackHints.CONTAINER_EXT ← container_extension"
+                "playbackHints.CONTAINER_EXT ← container_extension",
             )
             assertEquals(
                 api.stream_id.toString(),
                 raw.playbackHints[PlaybackHintKeys.Xtream.VOD_ID],
-                "playbackHints.VOD_ID ← stream_id"
+                "playbackHints.VOD_ID ← stream_id",
             )
 
             println("✅ [${api.stream_id}] ${api.name.take(40)}")
@@ -207,7 +208,7 @@ class XtreamVodIntegrationTest {
             println("   rating: ${raw.rating}")
             println("   playbackHints: ${raw.playbackHints}")
         }
-        println("=" .repeat(70))
+        println("=".repeat(70))
     }
 
     @Test
@@ -224,11 +225,12 @@ class XtreamVodIntegrationTest {
             if (ratingVal == null || ratingVal <= 0.0) continue
             if (testedCount >= 3) break
 
-            val dto = XtreamVodItem(
-                id = api.stream_id,
-                name = api.name,
-                rating = ratingVal,
-            )
+            val dto =
+                XtreamVodItem(
+                    id = api.stream_id,
+                    name = api.name,
+                    rating = ratingVal,
+                )
             val raw = dto.toRawMetadata()
 
             assertEquals(ratingVal, raw.rating)
@@ -263,7 +265,7 @@ class XtreamVodIntegrationTest {
 
         val detail: ApiVodDetail = json.decodeFromString(file.readText())
         println("📺 VOD Detail: ${detail.info.name}")
-        println("=" .repeat(70))
+        println("=".repeat(70))
 
         val api = detail.info
         val movieData = detail.movie_data
@@ -272,22 +274,23 @@ class XtreamVodIntegrationTest {
         val tmdbId = api.tmdb_id?.toIntOrNull()
 
         // === Build XtreamVodItem with all available fields ===
-        // NOTE: XtreamVodItem has limited fields; for full detail test, 
+        // NOTE: XtreamVodItem has limited fields; for full detail test,
         // we verify the fields that ARE available via XtreamVodItem
-        val dto = XtreamVodItem(
-            id = movieData.stream_id,
-            name = movieData.name ?: api.name ?: "",
-            streamIcon = api.cover_big ?: api.movie_image,
-            categoryId = movieData.category_id,
-            containerExtension = movieData.container_extension,
-            added = movieData.added?.toLongOrNull(),
-            rating = api.rating?.toDoubleOrNull(),
-            tmdbId = tmdbId,
-            // XtreamVodItem fields available for detail enrichment:
-            plot = api.plot ?: api.description,
-            genre = api.genre,
-            duration = api.duration,
-        )
+        val dto =
+            XtreamVodItem(
+                id = movieData.stream_id,
+                name = movieData.name ?: api.name ?: "",
+                streamIcon = api.cover_big ?: api.movie_image,
+                categoryId = movieData.category_id,
+                containerExtension = movieData.container_extension,
+                added = movieData.added?.toLongOrNull(),
+                rating = api.rating?.toDoubleOrNull(),
+                tmdbId = tmdbId,
+                // XtreamVodItem fields available for detail enrichment:
+                plot = api.plot ?: api.description,
+                genre = api.genre,
+                duration = api.duration,
+            )
 
         val raw = dto.toRawMetadata(accountLabel = accountLabel)
 
@@ -324,7 +327,7 @@ class XtreamVodIntegrationTest {
         assertEquals(
             movieData.container_extension,
             raw.playbackHints[PlaybackHintKeys.Xtream.CONTAINER_EXT],
-            "playbackHints.CONTAINER_EXT"
+            "playbackHints.CONTAINER_EXT",
         )
 
         // === PRINT SUMMARY ===
@@ -346,7 +349,7 @@ class XtreamVodIntegrationTest {
         println("✅ Timestamps:")
         println("   addedTimestamp: ${raw.addedTimestamp}")
         println("   lastModifiedTimestamp: ${raw.lastModifiedTimestamp}")
-        println("=" .repeat(70))
+        println("=".repeat(70))
     }
 
     // =========================================================================

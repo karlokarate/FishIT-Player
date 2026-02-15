@@ -101,23 +101,25 @@ enum class SyncPhase {
         /**
          * Standard Xtream sync phases in order of execution.
          */
-        val XTREAM_STANDARD_ORDER: List<SyncPhase> = listOf(
-            INITIALIZING,
-            LIVE_CHANNELS,
-            VOD_MOVIES,
-            SERIES_INDEX,
-            SERIES_EPISODES,
-            FINALIZING,
-        )
+        val XTREAM_STANDARD_ORDER: List<SyncPhase> =
+            listOf(
+                INITIALIZING,
+                LIVE_CHANNELS,
+                VOD_MOVIES,
+                SERIES_INDEX,
+                SERIES_EPISODES,
+                FINALIZING,
+            )
 
         /**
          * Telegram sync phases in order of execution.
          */
-        val TELEGRAM_STANDARD_ORDER: List<SyncPhase> = listOf(
-            INITIALIZING,
-            VOD_MOVIES,
-            AUDIOBOOKS,
-            FINALIZING,
-        )
+        val TELEGRAM_STANDARD_ORDER: List<SyncPhase> =
+            listOf(
+                INITIALIZING,
+                VOD_MOVIES,
+                AUDIOBOOKS,
+                FINALIZING,
+            )
     }
 }

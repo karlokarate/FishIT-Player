@@ -2,25 +2,24 @@ package com.fishit.player.core.persistence.inspector
 
 import android.content.Context
 import android.net.Uri
-import com.fishit.player.core.persistence.obx.NX_Category
 import com.fishit.player.core.persistence.obx.NX_IngestLedger
+import com.fishit.player.core.persistence.obx.NX_IngestLedger_
 import com.fishit.player.core.persistence.obx.NX_Work
 import com.fishit.player.core.persistence.obx.NX_WorkCategoryRef
-import com.fishit.player.core.persistence.obx.NX_WorkEmbedding
-import com.fishit.player.core.persistence.obx.NX_WorkRelation
-import com.fishit.player.core.persistence.obx.NX_WorkRuntimeState
-import com.fishit.player.core.persistence.obx.NX_WorkSourceRef
-import com.fishit.player.core.persistence.obx.NX_WorkUserState
-import com.fishit.player.core.persistence.obx.NX_WorkVariant
-import com.fishit.player.core.persistence.obx.NX_Work_
 import com.fishit.player.core.persistence.obx.NX_WorkCategoryRef_
+import com.fishit.player.core.persistence.obx.NX_WorkEmbedding
 import com.fishit.player.core.persistence.obx.NX_WorkEmbedding_
+import com.fishit.player.core.persistence.obx.NX_WorkRelation
 import com.fishit.player.core.persistence.obx.NX_WorkRelation_
+import com.fishit.player.core.persistence.obx.NX_WorkRuntimeState
 import com.fishit.player.core.persistence.obx.NX_WorkRuntimeState_
+import com.fishit.player.core.persistence.obx.NX_WorkSourceRef
 import com.fishit.player.core.persistence.obx.NX_WorkSourceRef_
+import com.fishit.player.core.persistence.obx.NX_WorkUserState
 import com.fishit.player.core.persistence.obx.NX_WorkUserState_
+import com.fishit.player.core.persistence.obx.NX_WorkVariant
 import com.fishit.player.core.persistence.obx.NX_WorkVariant_
-import com.fishit.player.core.persistence.obx.NX_IngestLedger_
+import com.fishit.player.core.persistence.obx.NX_Work_
 import com.fishit.player.infra.logging.UnifiedLog
 import io.objectbox.BoxStore
 import kotlinx.coroutines.Dispatchers
@@ -28,7 +27,6 @@ import kotlinx.coroutines.withContext
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
-import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
@@ -444,10 +442,11 @@ class DefaultObxDatabaseInspector
         // Work Graph Export Implementation
         // =========================================================================
 
-        private val workGraphJson = Json {
-            prettyPrint = true
-            encodeDefaults = true
-        }
+        private val workGraphJson =
+            Json {
+                prettyPrint = true
+                encodeDefaults = true
+            }
 
         override suspend fun exportWorkGraph(workKey: String): DbWorkGraphExport? =
             withContext(Dispatchers.IO) {
@@ -455,11 +454,12 @@ class DefaultObxDatabaseInspector
 
                 // 1. Find the NX_Work by workKey
                 val workBox = boxStore.boxFor(NX_Work::class.java)
-                val work = workBox.query(NX_Work_.workKey.equal(workKey)).build().use { it.findFirst() }
-                    ?: run {
-                        UnifiedLog.w(TAG) { "Work not found: $workKey" }
-                        return@withContext null
-                    }
+                val work =
+                    workBox.query(NX_Work_.workKey.equal(workKey)).build().use { it.findFirst() }
+                        ?: run {
+                            UnifiedLog.w(TAG) { "Work not found: $workKey" }
+                            return@withContext null
+                        }
 
                 val workDump = dumpEntity(work, "NX_Work")
 
@@ -479,7 +479,7 @@ class DefaultObxDatabaseInspector
                 val parentRelations = relationBox.query(NX_WorkRelation_.parentWorkId.equal(work.id)).build().use { it.find() }
                 // Query for child relations (this work is the child)
                 val childRelations = relationBox.query(NX_WorkRelation_.childWorkId.equal(work.id)).build().use { it.find() }
-                
+
                 val relationExports = mutableListOf<DbWorkRelationExport>()
                 parentRelations.forEach { rel ->
                     val childWork = rel.childWork.target
@@ -488,7 +488,7 @@ class DefaultObxDatabaseInspector
                             relation = dumpEntity(rel, "NX_WorkRelation"),
                             direction = "PARENT",
                             relatedWorkKey = childWork?.workKey,
-                        )
+                        ),
                     )
                 }
                 childRelations.forEach { rel ->
@@ -498,7 +498,7 @@ class DefaultObxDatabaseInspector
                             relation = dumpEntity(rel, "NX_WorkRelation"),
                             direction = "CHILD",
                             relatedWorkKey = parentWork?.workKey,
-                        )
+                        ),
                     )
                 }
 
@@ -528,23 +528,25 @@ class DefaultObxDatabaseInspector
                 val runtimeStateDumps = runtimeStates.map { dumpEntity(it, "NX_WorkRuntimeState") }
 
                 // Build the export
-                val dateFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX", Locale.US).apply {
-                    timeZone = TimeZone.getTimeZone("UTC")
-                }
+                val dateFormat =
+                    SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX", Locale.US).apply {
+                        timeZone = TimeZone.getTimeZone("UTC")
+                    }
 
-                val export = DbWorkGraphExport(
-                    exportedAt = dateFormat.format(Date()),
-                    workKey = workKey,
-                    work = workDump,
-                    sourceRefs = sourceRefDumps,
-                    variants = variantDumps,
-                    relations = relationExports,
-                    userStates = userStateDumps,
-                    categories = categoryDumps,
-                    ingestLedger = ledgerDumps,
-                    embedding = embeddingDump,
-                    runtimeStates = runtimeStateDumps,
-                )
+                val export =
+                    DbWorkGraphExport(
+                        exportedAt = dateFormat.format(Date()),
+                        workKey = workKey,
+                        work = workDump,
+                        sourceRefs = sourceRefDumps,
+                        variants = variantDumps,
+                        relations = relationExports,
+                        userStates = userStateDumps,
+                        categories = categoryDumps,
+                        ingestLedger = ledgerDumps,
+                        embedding = embeddingDump,
+                        runtimeStates = runtimeStateDumps,
+                    )
 
                 UnifiedLog.i(TAG) {
                     "Work Graph export complete: ${sourceRefDumps.size} sources, " +
@@ -577,53 +579,57 @@ class DefaultObxDatabaseInspector
          */
         private fun workGraphExportToJson(export: DbWorkGraphExport): String {
             // Convert to JsonObject manually since DbWorkGraphExport is not @Serializable
-            val jsonObject = JsonObject(
-                mapOf(
-                    "exportedAt" to JsonPrimitive(export.exportedAt),
-                    "workKey" to JsonPrimitive(export.workKey),
-                    "work" to entityDumpToJson(export.work),
-                    "sourceRefs" to JsonArray(export.sourceRefs.map { entityDumpToJson(it) }),
-                    "variants" to JsonArray(export.variants.map { entityDumpToJson(it) }),
-                    "relations" to JsonArray(export.relations.map { relationExportToJson(it) }),
-                    "userStates" to JsonArray(export.userStates.map { entityDumpToJson(it) }),
-                    "categories" to JsonArray(export.categories.map { entityDumpToJson(it) }),
-                    "ingestLedger" to JsonArray(export.ingestLedger.map { entityDumpToJson(it) }),
-                    "embedding" to (export.embedding?.let { entityDumpToJson(it) } ?: JsonNull),
-                    "runtimeStates" to JsonArray(export.runtimeStates.map { entityDumpToJson(it) }),
+            val jsonObject =
+                JsonObject(
+                    mapOf(
+                        "exportedAt" to JsonPrimitive(export.exportedAt),
+                        "workKey" to JsonPrimitive(export.workKey),
+                        "work" to entityDumpToJson(export.work),
+                        "sourceRefs" to JsonArray(export.sourceRefs.map { entityDumpToJson(it) }),
+                        "variants" to JsonArray(export.variants.map { entityDumpToJson(it) }),
+                        "relations" to JsonArray(export.relations.map { relationExportToJson(it) }),
+                        "userStates" to JsonArray(export.userStates.map { entityDumpToJson(it) }),
+                        "categories" to JsonArray(export.categories.map { entityDumpToJson(it) }),
+                        "ingestLedger" to JsonArray(export.ingestLedger.map { entityDumpToJson(it) }),
+                        "embedding" to (export.embedding?.let { entityDumpToJson(it) } ?: JsonNull),
+                        "runtimeStates" to JsonArray(export.runtimeStates.map { entityDumpToJson(it) }),
+                    ),
                 )
-            )
             return workGraphJson.encodeToString(jsonObject)
         }
 
         private fun entityDumpToJson(dump: DbEntityDump): JsonObject {
-            val fieldsObj = JsonObject(
-                dump.fields.associate { field ->
-                    field.name to (field.value?.let { JsonPrimitive(it) } ?: JsonNull)
-                }
-            )
+            val fieldsObj =
+                JsonObject(
+                    dump.fields.associate { field ->
+                        field.name to (field.value?.let { JsonPrimitive(it) } ?: JsonNull)
+                    },
+                )
             return JsonObject(
                 mapOf(
                     "entityType" to JsonPrimitive(dump.entityTypeId),
                     "id" to JsonPrimitive(dump.id),
                     "fields" to fieldsObj,
-                )
+                ),
             )
         }
 
-        private fun relationExportToJson(rel: DbWorkRelationExport): JsonObject {
-            return JsonObject(
+        private fun relationExportToJson(rel: DbWorkRelationExport): JsonObject =
+            JsonObject(
                 mapOf(
                     "direction" to JsonPrimitive(rel.direction),
                     "relatedWorkKey" to (rel.relatedWorkKey?.let { JsonPrimitive(it) } ?: JsonNull),
                     "relation" to entityDumpToJson(rel.relation),
-                )
+                ),
             )
-        }
 
         /**
          * Generic entity dump helper - works for any ObjectBox entity.
          */
-        private fun <T : Any> dumpEntity(entity: T, entityTypeId: String): DbEntityDump {
+        private fun <T : Any> dumpEntity(
+            entity: T,
+            entityTypeId: String,
+        ): DbEntityDump {
             val id = readIdOrNull(entity) ?: 0L
             return DbEntityDump(
                 entityTypeId = entityTypeId,

@@ -61,160 +61,166 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class NxEnrichmentWriter @Inject constructor(
-    private val workRepository: NxWorkRepository,
-    private val variantRepository: NxWorkVariantRepository,
-    private val relationRepository: NxWorkRelationRepository,
-    private val workEntityBuilder: WorkEntityBuilder,
-) {
-    companion object {
-        private const val TAG = "NxEnrichmentWriter"
-    }
-
-    /**
-     * Enrich an existing NX_Work with metadata from a detail info_call.
-     *
-     * Works for any content type (Series, VOD). The [NormalizedMediaMetadata]
-     * is constructed by the caller from the API response.
-     *
-     * Uses [NxWorkRepository.enrichFromDetail] semantics:
-     * - Fields like plot, poster, rating → always overwrite with non-null detail API data
-     * - tmdbId, imdbId → always overwrite (detail API is more authoritative)
-     * - workType, canonicalTitle → never changed
-     *
-     * @param workKey The workKey of the existing NX_Work to enrich
-     * @param metadata The normalized metadata from the detail info_call
-     * @return The enriched work, or null if the work doesn't exist
-     */
-    suspend fun enrichWork(
-        workKey: String,
-        metadata: NormalizedMediaMetadata,
-    ): NxWorkRepository.Work? {
-        val now = System.currentTimeMillis()
-        val work = workEntityBuilder.build(metadata, workKey, now)
-        val enriched = workRepository.enrichFromDetail(workKey, work.toEnrichment())
-
-        if (enriched != null) {
-            UnifiedLog.d(TAG) {
-                "enrichWork: Enriched NX_Work($workKey) " +
-                    "tmdbId=${enriched.tmdbId}, plot=${enriched.plot?.take(30)}"
-            }
-        } else {
-            UnifiedLog.w(TAG) { "enrichWork: NX_Work($workKey) not found — skipping enrichment" }
-        }
-
-        return enriched
-    }
-
-    /**
-     * Update playback hints on an existing variant.
-     *
-     * Used for VOD detail enrichment: `get_vod_info` returns `containerExtension`,
-     * `directSource`, and other playback-relevant fields that aren't available
-     * in the listing API.
-     *
-     * Merges new hints with existing hints (existing hints preserved if not overwritten).
-     *
-     * @param sourceKey The sourceKey identifying the variant's source
-     * @param workKey The workKey of the NX_Work owning this variant
-     * @param hintsUpdate Map of hint keys to update/add
-     */
-    suspend fun updateVariantPlaybackHints(
-        sourceKey: String,
-        workKey: String,
-        hintsUpdate: Map<String, String>,
+class NxEnrichmentWriter
+    @Inject
+    constructor(
+        private val workRepository: NxWorkRepository,
+        private val variantRepository: NxWorkVariantRepository,
+        private val relationRepository: NxWorkRelationRepository,
+        private val workEntityBuilder: WorkEntityBuilder,
     ) {
-        val variantKey = NxKeyGenerator.defaultVariantKey(sourceKey)
-        val existing = variantRepository.getByVariantKey(variantKey)
-
-        // Merge: existing hints + new hints (new wins on collision)
-        val mergedHints = buildMap {
-            existing?.playbackHints?.forEach { (k, v) -> put(k, v) }
-            putAll(hintsUpdate)
+        companion object {
+            private const val TAG = "NxEnrichmentWriter"
         }
 
-        val variant = NxWorkVariantRepository.Variant(
-            variantKey = variantKey,
-            workKey = workKey,
-            sourceKey = sourceKey,
-            label = existing?.label ?: "Original",
-            isDefault = existing?.isDefault ?: true,
-            // Preserve existing technical metadata to avoid silent wipe
-            qualityHeight = existing?.qualityHeight,
-            qualityWidth = existing?.qualityWidth,
-            bitrateKbps = existing?.bitrateKbps,
-            videoCodec = existing?.videoCodec,
-            audioCodec = existing?.audioCodec,
-            audioLang = existing?.audioLang,
-            durationMs = existing?.durationMs,
-            // Update container from hints if provided, otherwise preserve existing
-            container = hintsUpdate[PlaybackHintKeys.Xtream.CONTAINER_EXT] ?: existing?.container,
-            playbackHints = mergedHints,
-            updatedAtMs = System.currentTimeMillis(),
-        )
-        variantRepository.upsert(variant)
+        /**
+         * Enrich an existing NX_Work with metadata from a detail info_call.
+         *
+         * Works for any content type (Series, VOD). The [NormalizedMediaMetadata]
+         * is constructed by the caller from the API response.
+         *
+         * Uses [NxWorkRepository.enrichFromDetail] semantics:
+         * - Fields like plot, poster, rating → always overwrite with non-null detail API data
+         * - tmdbId, imdbId → always overwrite (detail API is more authoritative)
+         * - workType, canonicalTitle → never changed
+         *
+         * @param workKey The workKey of the existing NX_Work to enrich
+         * @param metadata The normalized metadata from the detail info_call
+         * @return The enriched work, or null if the work doesn't exist
+         */
+        suspend fun enrichWork(
+            workKey: String,
+            metadata: NormalizedMediaMetadata,
+        ): NxWorkRepository.Work? {
+            val now = System.currentTimeMillis()
+            val work = workEntityBuilder.build(metadata, workKey, now)
+            val enriched = workRepository.enrichFromDetail(workKey, work.toEnrichment())
 
-        UnifiedLog.d(TAG) {
-            "updateVariantPlaybackHints: Updated variant for $sourceKey " +
-                "(${hintsUpdate.size} hints merged, technical fields preserved)"
+            if (enriched != null) {
+                UnifiedLog.d(TAG) {
+                    "enrichWork: Enriched NX_Work($workKey) " +
+                        "tmdbId=${enriched.tmdbId}, plot=${enriched.plot?.take(30)}"
+                }
+            } else {
+                UnifiedLog.w(TAG) { "enrichWork: NX_Work($workKey) not found — skipping enrichment" }
+            }
+
+            return enriched
+        }
+
+        /**
+         * Update playback hints on an existing variant.
+         *
+         * Used for VOD detail enrichment: `get_vod_info` returns `containerExtension`,
+         * `directSource`, and other playback-relevant fields that aren't available
+         * in the listing API.
+         *
+         * Merges new hints with existing hints (existing hints preserved if not overwritten).
+         *
+         * @param sourceKey The sourceKey identifying the variant's source
+         * @param workKey The workKey of the NX_Work owning this variant
+         * @param hintsUpdate Map of hint keys to update/add
+         */
+        suspend fun updateVariantPlaybackHints(
+            sourceKey: String,
+            workKey: String,
+            hintsUpdate: Map<String, String>,
+        ) {
+            val variantKey = NxKeyGenerator.defaultVariantKey(sourceKey)
+            val existing = variantRepository.getByVariantKey(variantKey)
+
+            // Merge: existing hints + new hints (new wins on collision)
+            val mergedHints =
+                buildMap {
+                    existing?.playbackHints?.forEach { (k, v) -> put(k, v) }
+                    putAll(hintsUpdate)
+                }
+
+            val variant =
+                NxWorkVariantRepository.Variant(
+                    variantKey = variantKey,
+                    workKey = workKey,
+                    sourceKey = sourceKey,
+                    label = existing?.label ?: "Original",
+                    isDefault = existing?.isDefault ?: true,
+                    // Preserve existing technical metadata to avoid silent wipe
+                    qualityHeight = existing?.qualityHeight,
+                    qualityWidth = existing?.qualityWidth,
+                    bitrateKbps = existing?.bitrateKbps,
+                    videoCodec = existing?.videoCodec,
+                    audioCodec = existing?.audioCodec,
+                    audioLang = existing?.audioLang,
+                    durationMs = existing?.durationMs,
+                    // Update container from hints if provided, otherwise preserve existing
+                    container = hintsUpdate[PlaybackHintKeys.Xtream.CONTAINER_EXT] ?: existing?.container,
+                    playbackHints = mergedHints,
+                    updatedAtMs = System.currentTimeMillis(),
+                )
+            variantRepository.upsert(variant)
+
+            UnifiedLog.d(TAG) {
+                "updateVariantPlaybackHints: Updated variant for $sourceKey " +
+                    "(${hintsUpdate.size} hints merged, technical fields preserved)"
+            }
+        }
+
+        /**
+         * Inherit fields from an enriched parent work to its child works.
+         *
+         * After a series parent is enriched with detail API metadata (poster, backdrop,
+         * genres, rating, etc.), those fields should be propagated to child episode works
+         * that lack them. Uses [NxWorkRepository.enrichIfAbsentBatch] semantics so child-specific
+         * values are never overwritten — only null fields are filled from the parent.
+         *
+         * Inheritable fields: poster, backdrop, genres, rating, director, cast, trailer.
+         *
+         * **Authority IDs (tmdbId, imdbId, tvdbId) are intentionally EXCLUDED.**
+         * These are `ALWAYS_UPDATE` in [NxWorkRepository.enrichIfAbsentBatch], meaning they
+         * would overwrite episode-specific IDs with the parent series ID. Episodes get
+         * their own authority IDs from the pipeline (info call), which are more specific
+         * than the series-level IDs. The data flow for authority IDs is child→parent
+         * (episodes inform the series), never parent→child.
+         *
+         * @param parentWorkKey The workKey of the enriched parent work
+         * @return Number of child works that were enriched
+         */
+        suspend fun inheritParentFields(parentWorkKey: String): Int {
+            val parent =
+                workRepository.get(parentWorkKey) ?: run {
+                    UnifiedLog.w(TAG) { "inheritParentFields: parent NX_Work($parentWorkKey) not found" }
+                    return 0
+                }
+
+            val childRelations = relationRepository.findChildren(parentWorkKey)
+            if (childRelations.isEmpty()) {
+                UnifiedLog.d(TAG) { "inheritParentFields: no children for NX_Work($parentWorkKey)" }
+                return 0
+            }
+
+            // Authority IDs (tmdbId, imdbId, tvdbId) are intentionally EXCLUDED:
+            // enrichIfAbsent uses ALWAYS_UPDATE for these fields, so inheriting
+            // series-level IDs would corrupt episode-specific authority IDs that
+            // episodes already received from the pipeline (info call).
+            val parentEnrichment =
+                NxWorkRepository.Enrichment(
+                    poster = parent.poster,
+                    backdrop = parent.backdrop,
+                    genres = parent.genres,
+                    rating = parent.rating,
+                    director = parent.director,
+                    cast = parent.cast,
+                    trailer = parent.trailer,
+                )
+
+            // Batch: single query + in-memory enrichment + single put (replaces N+1 loop)
+            val childWorkKeys = childRelations.map { it.childWorkKey }
+            val enrichedCount = workRepository.enrichIfAbsentBatch(childWorkKeys, parentEnrichment)
+
+            UnifiedLog.d(TAG) {
+                "inheritParentFields: enriched $enrichedCount/${childRelations.size} children " +
+                    "of NX_Work($parentWorkKey)"
+            }
+
+            return enrichedCount
         }
     }
-
-    /**
-     * Inherit fields from an enriched parent work to its child works.
-     *
-     * After a series parent is enriched with detail API metadata (poster, backdrop,
-     * genres, rating, etc.), those fields should be propagated to child episode works
-     * that lack them. Uses [NxWorkRepository.enrichIfAbsentBatch] semantics so child-specific
-     * values are never overwritten — only null fields are filled from the parent.
-     *
-     * Inheritable fields: poster, backdrop, genres, rating, director, cast, trailer.
-     *
-     * **Authority IDs (tmdbId, imdbId, tvdbId) are intentionally EXCLUDED.**
-     * These are `ALWAYS_UPDATE` in [NxWorkRepository.enrichIfAbsentBatch], meaning they
-     * would overwrite episode-specific IDs with the parent series ID. Episodes get
-     * their own authority IDs from the pipeline (info call), which are more specific
-     * than the series-level IDs. The data flow for authority IDs is child→parent
-     * (episodes inform the series), never parent→child.
-     *
-     * @param parentWorkKey The workKey of the enriched parent work
-     * @return Number of child works that were enriched
-     */
-    suspend fun inheritParentFields(parentWorkKey: String): Int {
-        val parent = workRepository.get(parentWorkKey) ?: run {
-            UnifiedLog.w(TAG) { "inheritParentFields: parent NX_Work($parentWorkKey) not found" }
-            return 0
-        }
-
-        val childRelations = relationRepository.findChildren(parentWorkKey)
-        if (childRelations.isEmpty()) {
-            UnifiedLog.d(TAG) { "inheritParentFields: no children for NX_Work($parentWorkKey)" }
-            return 0
-        }
-
-        // Authority IDs (tmdbId, imdbId, tvdbId) are intentionally EXCLUDED:
-        // enrichIfAbsent uses ALWAYS_UPDATE for these fields, so inheriting
-        // series-level IDs would corrupt episode-specific authority IDs that
-        // episodes already received from the pipeline (info call).
-        val parentEnrichment = NxWorkRepository.Enrichment(
-            poster = parent.poster,
-            backdrop = parent.backdrop,
-            genres = parent.genres,
-            rating = parent.rating,
-            director = parent.director,
-            cast = parent.cast,
-            trailer = parent.trailer,
-        )
-
-        // Batch: single query + in-memory enrichment + single put (replaces N+1 loop)
-        val childWorkKeys = childRelations.map { it.childWorkKey }
-        val enrichedCount = workRepository.enrichIfAbsentBatch(childWorkKeys, parentEnrichment)
-
-        UnifiedLog.d(TAG) {
-            "inheritParentFields: enriched $enrichedCount/${childRelations.size} children " +
-                "of NX_Work($parentWorkKey)"
-        }
-
-        return enrichedCount
-    }
-}

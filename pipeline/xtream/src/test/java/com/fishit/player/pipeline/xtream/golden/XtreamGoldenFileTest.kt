@@ -46,16 +46,16 @@ import kotlin.test.assertTrue
  * Golden files: `test-data/golden/xtream/`
  */
 class XtreamGoldenFileTest {
-
     private val testDataDir = File("test-data/xtream-responses")
     private val goldenDir = File("test-data/golden/xtream")
     private val accountLabel = "test-account"
 
-    private val json = Json {
-        ignoreUnknownKeys = true
-        isLenient = true
-        coerceInputValues = true
-    }
+    private val json =
+        Json {
+            ignoreUnknownKeys = true
+            isLenient = true
+            coerceInputValues = true
+        }
 
     private val shouldUpdate: Boolean
         get() = System.getProperty("golden.update") == "true"
@@ -169,7 +169,10 @@ class XtreamGoldenFileTest {
      * Compare [raw] against the golden file at [goldenFileName].
      * If the golden file doesn't exist or `-Dgolden.update=true`, writes it.
      */
-    private fun assertGolden(raw: RawMediaMetadata, goldenFileName: String) {
+    private fun assertGolden(
+        raw: RawMediaMetadata,
+        goldenFileName: String,
+    ) {
         val actualJson = RawMetadataJsonSerializer.toJsonElement(raw)
         val actualString = RawMetadataJsonSerializer.toJsonString(raw)
 
@@ -214,22 +217,23 @@ class XtreamGoldenFileTest {
         assertTrue(items.isNotEmpty(), "VOD list should not be empty")
 
         val api = items.first()
-        val dto = XtreamVodItem(
-            id = api.stream_id,
-            name = api.name,
-            streamIcon = api.stream_icon,
-            categoryId = api.category_id,
-            containerExtension = api.container_extension,
-            added = api.added?.toLongOrNull(),
-            rating = api.rating?.toDoubleOrNull(),
-            rating5Based = api.rating_5based?.toDoubleOrNull(),
-            tmdbId = api.tmdb_id?.toIntOrNull(),
-            year = api.year,
-            genre = api.genre,
-            plot = api.plot,
-            duration = api.duration,
-            isAdult = api.is_adult == "1",
-        )
+        val dto =
+            XtreamVodItem(
+                id = api.stream_id,
+                name = api.name,
+                streamIcon = api.stream_icon,
+                categoryId = api.category_id,
+                containerExtension = api.container_extension,
+                added = api.added?.toLongOrNull(),
+                rating = api.rating?.toDoubleOrNull(),
+                rating5Based = api.rating_5based?.toDoubleOrNull(),
+                tmdbId = api.tmdb_id?.toIntOrNull(),
+                year = api.year,
+                genre = api.genre,
+                plot = api.plot,
+                duration = api.duration,
+                isAdult = api.is_adult == "1",
+            )
 
         val raw = dto.toRawMetadata(accountLabel = accountLabel)
 
@@ -257,18 +261,20 @@ class XtreamGoldenFileTest {
         val vodInfo: XtreamVodInfo = json.decodeFromString(file.readText())
 
         // Create a minimal XtreamVodItem for the detail mapper
-        val vodItem = XtreamVodItem(
-            id = vodInfo.movieData?.streamId ?: 0,
-            name = vodInfo.movieData?.name ?: "",
-            containerExtension = vodInfo.movieData?.containerExtension,
-            added = vodInfo.movieData?.added?.toLongOrNull(),
-            categoryId = vodInfo.movieData?.categoryId,
-        )
+        val vodItem =
+            XtreamVodItem(
+                id = vodInfo.movieData?.streamId ?: 0,
+                name = vodInfo.movieData?.name ?: "",
+                containerExtension = vodInfo.movieData?.containerExtension,
+                added = vodInfo.movieData?.added?.toLongOrNull(),
+                categoryId = vodInfo.movieData?.categoryId,
+            )
 
-        val raw = vodInfo.toRawMediaMetadata(
-            vodItem = vodItem,
-            accountLabel = accountLabel,
-        )
+        val raw =
+            vodInfo.toRawMediaMetadata(
+                vodItem = vodItem,
+                accountLabel = accountLabel,
+            )
 
         // Sanity checks
         assertEquals(MediaType.MOVIE, raw.mediaType)
@@ -295,25 +301,26 @@ class XtreamGoldenFileTest {
         // Find the first item with a valid ID (>0)
         val api = items.first { it.series_id > 0 }
 
-        val dto = XtreamSeriesItem(
-            id = api.series_id,
-            name = api.name,
-            cover = api.cover,
-            backdrop = api.backdrop_path?.firstOrNull(),
-            categoryId = api.category_id,
-            year = api.year,
-            rating = api.rating?.toDoubleOrNull(),
-            plot = api.plot,
-            cast = api.cast,
-            director = api.director,
-            genre = api.genre,
-            releaseDate = api.releaseDate,
-            youtubeTrailer = api.youtube_trailer,
-            episodeRunTime = api.episode_run_time,
-            lastModified = api.last_modified?.toLongOrNull(),
-            tmdbId = api.tmdb_id?.toIntOrNull(),
-            isAdult = api.is_adult == "1",
-        )
+        val dto =
+            XtreamSeriesItem(
+                id = api.series_id,
+                name = api.name,
+                cover = api.cover,
+                backdrop = api.backdrop_path?.firstOrNull(),
+                categoryId = api.category_id,
+                year = api.year,
+                rating = api.rating?.toDoubleOrNull(),
+                plot = api.plot,
+                cast = api.cast,
+                director = api.director,
+                genre = api.genre,
+                releaseDate = api.releaseDate,
+                youtubeTrailer = api.youtube_trailer,
+                episodeRunTime = api.episode_run_time,
+                lastModified = api.last_modified?.toLongOrNull(),
+                tmdbId = api.tmdb_id?.toIntOrNull(),
+                isAdult = api.is_adult == "1",
+            )
 
         val raw = dto.toRawMetadata(accountLabel = accountLabel)
 
@@ -349,24 +356,25 @@ class XtreamGoldenFileTest {
         // Series ID is typically known from the list API; use placeholder matching series name
         val seriesId = 1899
 
-        val dto = XtreamEpisode(
-            id = api.id?.toIntOrNull() ?: 0,
-            seriesId = seriesId,
-            seriesName = seriesName,
-            seasonNumber = api.season,
-            episodeNumber = api.episode_num,
-            title = api.title,
-            containerExtension = api.container_extension,
-            plot = api.info?.plot,
-            duration = api.info?.duration,
-            durationSecs = api.info?.duration_secs,
-            releaseDate = api.info?.releasedate,
-            rating = api.info?.rating?.toDoubleOrNull(),
-            thumbnail = api.info?.movie_image,
-            added = api.added?.toLongOrNull(),
-            seriesTmdbId = seriesTmdbId,
-            episodeTmdbId = api.info?.tmdb_id?.toIntOrNull(),
-        )
+        val dto =
+            XtreamEpisode(
+                id = api.id?.toIntOrNull() ?: 0,
+                seriesId = seriesId,
+                seriesName = seriesName,
+                seasonNumber = api.season,
+                episodeNumber = api.episode_num,
+                title = api.title,
+                containerExtension = api.container_extension,
+                plot = api.info?.plot,
+                duration = api.info?.duration,
+                durationSecs = api.info?.duration_secs,
+                releaseDate = api.info?.releasedate,
+                rating = api.info?.rating?.toDoubleOrNull(),
+                thumbnail = api.info?.movie_image,
+                added = api.added?.toLongOrNull(),
+                seriesTmdbId = seriesTmdbId,
+                episodeTmdbId = api.info?.tmdb_id?.toIntOrNull(),
+            )
 
         val raw = dto.toRawMediaMetadata()
 
@@ -394,18 +402,19 @@ class XtreamGoldenFileTest {
 
         val api = items.first()
 
-        val dto = XtreamChannel(
-            id = api.stream_id,
-            name = api.name,
-            streamIcon = api.stream_icon,
-            epgChannelId = api.epg_channel_id,
-            tvArchive = api.tv_archive,
-            tvArchiveDuration = api.tv_archive_duration,
-            categoryId = api.category_id,
-            added = api.added?.toLongOrNull(),
-            isAdult = api.is_adult == "1",
-            directSource = api.direct_source,
-        )
+        val dto =
+            XtreamChannel(
+                id = api.stream_id,
+                name = api.name,
+                streamIcon = api.stream_icon,
+                epgChannelId = api.epg_channel_id,
+                tvArchive = api.tv_archive,
+                tvArchiveDuration = api.tv_archive_duration,
+                categoryId = api.category_id,
+                added = api.added?.toLongOrNull(),
+                isAdult = api.is_adult == "1",
+                directSource = api.direct_source,
+            )
 
         val raw = dto.toRawMediaMetadata(accountLabel = accountLabel)
 
@@ -430,12 +439,13 @@ class XtreamGoldenFileTest {
 
         for (idx in 0 until count) {
             val api = items[idx]
-            val dto = XtreamVodItem(
-                id = api.stream_id,
-                name = api.name,
-                streamIcon = api.stream_icon,
-                added = api.added?.toLongOrNull(),
-            )
+            val dto =
+                XtreamVodItem(
+                    id = api.stream_id,
+                    name = api.name,
+                    streamIcon = api.stream_icon,
+                    added = api.added?.toLongOrNull(),
+                )
             val raw = dto.toRawMetadata(accountLabel = accountLabel)
 
             assertTrue(raw.sourceId.startsWith("xtream:vod:"), "sourceId format for item $idx")

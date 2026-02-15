@@ -23,6 +23,7 @@ import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.SelectAll
 import androidx.compose.material.icons.filled.Tv
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
@@ -30,7 +31,6 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Button
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
@@ -99,9 +99,10 @@ fun CategorySelectionScreen(
                 viewModel.saveAndSync()
                 onBack()
             },
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
         ) {
             Icon(
                 imageVector = Icons.Default.Save,
@@ -121,9 +122,10 @@ private fun CategorySelectionTopBar(
     isLoading: Boolean,
 ) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 12.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
@@ -196,18 +198,20 @@ private fun CategoryTabs(
 }
 
 private val CategoryTab.icon
-    get() = when (this) {
-        CategoryTab.VOD -> Icons.Default.Movie
-        CategoryTab.SERIES -> Icons.Default.Tv
-        CategoryTab.LIVE -> Icons.Default.LiveTv
-    }
+    get() =
+        when (this) {
+            CategoryTab.VOD -> Icons.Default.Movie
+            CategoryTab.SERIES -> Icons.Default.Tv
+            CategoryTab.LIVE -> Icons.Default.LiveTv
+        }
 
 private val CategoryTab.displayName
-    get() = when (this) {
-        CategoryTab.VOD -> "Filme"
-        CategoryTab.SERIES -> "Serien"
-        CategoryTab.LIVE -> "Live TV"
-    }
+    get() =
+        when (this) {
+            CategoryTab.VOD -> "Filme"
+            CategoryTab.SERIES -> "Serien"
+            CategoryTab.LIVE -> "Live TV"
+        }
 
 @Composable
 private fun CategoryContent(
@@ -216,11 +220,12 @@ private fun CategoryContent(
     onSelectAll: (XtreamCategoryType) -> Unit,
     onDeselectAll: (XtreamCategoryType) -> Unit,
 ) {
-    val (categories, categoryType) = when (state.selectedTab) {
-        CategoryTab.VOD -> state.vodCategories to XtreamCategoryType.VOD
-        CategoryTab.SERIES -> state.seriesCategories to XtreamCategoryType.SERIES
-        CategoryTab.LIVE -> state.liveCategories to XtreamCategoryType.LIVE
-    }
+    val (categories, categoryType) =
+        when (state.selectedTab) {
+            CategoryTab.VOD -> state.vodCategories to XtreamCategoryType.VOD
+            CategoryTab.SERIES -> state.seriesCategories to XtreamCategoryType.SERIES
+            CategoryTab.LIVE -> state.liveCategories to XtreamCategoryType.LIVE
+        }
 
     when {
         state.isLoading && categories.isEmpty() -> {
@@ -300,17 +305,20 @@ private fun BulkActionRow(
     totalCount: Int,
 ) {
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-        ),
-    ) {
-        Row(
-            modifier = Modifier
+        modifier =
+            Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp, vertical = 8.dp),
+        colors =
+            CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+            ),
+    ) {
+        Row(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -343,26 +351,30 @@ private fun CategoryItem(
     onToggle: (Boolean) -> Unit,
 ) {
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = if (category.isSelected) {
-                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
-            } else {
-                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
-            },
-        ),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp),
+        colors =
+            CardDefaults.cardColors(
+                containerColor =
+                    if (category.isSelected) {
+                        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+                    } else {
+                        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+                    },
+            ),
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp)
-                .pointerInput(Unit) {
-                    detectTapGestures(
-                        onTap = { onToggle(!category.isSelected) }
-                    )
-                },
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 12.dp)
+                    .pointerInput(Unit) {
+                        detectTapGestures(
+                            onTap = { onToggle(!category.isSelected) },
+                        )
+                    },
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {

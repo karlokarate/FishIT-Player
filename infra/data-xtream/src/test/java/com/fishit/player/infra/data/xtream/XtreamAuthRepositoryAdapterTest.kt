@@ -1,5 +1,6 @@
 package com.fishit.player.infra.data.xtream
 
+import com.fishit.player.core.model.repository.NxSourceAccountRepository
 import com.fishit.player.core.onboarding.domain.XtreamConfig
 import com.fishit.player.core.sourceactivation.SourceActivationStore
 import com.fishit.player.core.sourceactivation.SourceErrorReason
@@ -30,6 +31,7 @@ class XtreamAuthRepositoryAdapterTest {
     private lateinit var apiClient: XtreamApiClient
     private lateinit var credentialsStore: XtreamCredentialsStore
     private lateinit var sourceActivationStore: SourceActivationStore
+    private lateinit var nxSourceAccountRepository: NxSourceAccountRepository
     private lateinit var testScope: TestScope
     private lateinit var adapter: XtreamAuthRepositoryAdapter
 
@@ -41,6 +43,7 @@ class XtreamAuthRepositoryAdapterTest {
         apiClient = mockk(relaxed = true)
         credentialsStore = mockk(relaxed = true)
         sourceActivationStore = mockk(relaxed = true)
+        nxSourceAccountRepository = mockk(relaxed = true)
         testScope = TestScope(StandardTestDispatcher())
 
         every { apiClient.connectionState } returns connectionStateFlow
@@ -54,6 +57,7 @@ class XtreamAuthRepositoryAdapterTest {
                 apiClient = apiClient,
                 credentialsStore = credentialsStore,
                 sourceActivationStore = sourceActivationStore,
+                nxSourceAccountRepository = nxSourceAccountRepository,
                 appScope = testScope,
             )
     }
@@ -133,17 +137,18 @@ class XtreamAuthRepositoryAdapterTest {
 
             // When: Transport layer changes authState to Authenticated
             // (simulating XtreamSessionBootstrap initializing XtreamApiClient directly)
-            val userInfo = XtreamUserInfo(
-                username = "testuser",
-                status = XtreamUserInfo.UserStatus.ACTIVE,
-                expDateEpoch = null,
-                maxConnections = 1,
-                activeConnections = 0,
-                isTrial = false,
-                allowedFormats = listOf("m3u8"),
-                createdAt = null,
-                message = null,
-            )
+            val userInfo =
+                XtreamUserInfo(
+                    username = "testuser",
+                    status = XtreamUserInfo.UserStatus.ACTIVE,
+                    expDateEpoch = null,
+                    maxConnections = 1,
+                    activeConnections = 0,
+                    isTrial = false,
+                    allowedFormats = listOf("m3u8"),
+                    createdAt = null,
+                    message = null,
+                )
             authStateFlow.value = XtreamAuthState.Authenticated(userInfo)
 
             // Advance coroutines to let the flow collection emit
@@ -166,10 +171,11 @@ class XtreamAuthRepositoryAdapterTest {
             // and transport connectionState is initially Disconnected
 
             // When: Transport layer changes connectionState to Connected
-            connectionStateFlow.value = XtreamConnectionState.Connected(
-                baseUrl = "http://test.com:8080",
-                latencyMs = 100,
-            )
+            connectionStateFlow.value =
+                XtreamConnectionState.Connected(
+                    baseUrl = "http://test.com:8080",
+                    latencyMs = 100,
+                )
 
             // Advance coroutines to let the flow collection emit
             testScope.testScheduler.advanceUntilIdle()
@@ -189,17 +195,18 @@ class XtreamAuthRepositoryAdapterTest {
 
             // Given: Adapter is constructed and observing
             // First verify observation is working
-            val userInfo = XtreamUserInfo(
-                username = "testuser",
-                status = XtreamUserInfo.UserStatus.ACTIVE,
-                expDateEpoch = null,
-                maxConnections = 1,
-                activeConnections = 0,
-                isTrial = false,
-                allowedFormats = listOf("m3u8"),
-                createdAt = null,
-                message = null,
-            )
+            val userInfo =
+                XtreamUserInfo(
+                    username = "testuser",
+                    status = XtreamUserInfo.UserStatus.ACTIVE,
+                    expDateEpoch = null,
+                    maxConnections = 1,
+                    activeConnections = 0,
+                    isTrial = false,
+                    allowedFormats = listOf("m3u8"),
+                    createdAt = null,
+                    message = null,
+                )
             authStateFlow.value = XtreamAuthState.Authenticated(userInfo)
             testScope.testScheduler.advanceUntilIdle()
 
@@ -223,20 +230,22 @@ class XtreamAuthRepositoryAdapterTest {
             testScope.testScheduler.advanceUntilIdle()
 
             // Setup for reinitialize
-            val capabilities = XtreamCapabilities(
-                cacheKey = "http://test.com:8080|user",
-                baseUrl = "http://test.com:8080",
-                username = "user",
-            )
+            val capabilities =
+                XtreamCapabilities(
+                    cacheKey = "http://test.com:8080|user",
+                    baseUrl = "http://test.com:8080",
+                    username = "user",
+                )
             coEvery { apiClient.initialize(any()) } returns Result.success(capabilities)
 
-            val config = XtreamConfig(
-                scheme = "http",
-                host = "test.com",
-                port = 8080,
-                username = "user",
-                password = "pass",
-            )
+            val config =
+                XtreamConfig(
+                    scheme = "http",
+                    host = "test.com",
+                    port = 8080,
+                    username = "user",
+                    password = "pass",
+                )
 
             // When: initialize() is called again (logout→login scenario)
             adapter.initialize(config)

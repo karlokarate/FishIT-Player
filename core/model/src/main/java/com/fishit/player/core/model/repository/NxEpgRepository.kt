@@ -20,7 +20,6 @@ import kotlinx.coroutines.flow.Flow
  * @see com.fishit.player.core.persistence.obx.NX_EpgEntry
  */
 interface NxEpgRepository {
-
     /**
      * EPG entry domain model.
      *
@@ -53,12 +52,10 @@ interface NxEpgRepository {
         val durationMs: Long get() = endMs - startMs
 
         /** Check if currently airing */
-        fun isCurrentlyAiring(nowMs: Long = System.currentTimeMillis()): Boolean =
-            nowMs in startMs until endMs
+        fun isCurrentlyAiring(nowMs: Long = System.currentTimeMillis()): Boolean = nowMs in startMs until endMs
 
         /** Check if upcoming */
-        fun isUpcoming(nowMs: Long = System.currentTimeMillis()): Boolean =
-            startMs > nowMs
+        fun isUpcoming(nowMs: Long = System.currentTimeMillis()): Boolean = startMs > nowMs
 
         /** Progress percentage (0.0 - 1.0) if currently airing */
         fun progressPercent(nowMs: Long = System.currentTimeMillis()): Float {

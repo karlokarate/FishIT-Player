@@ -17,7 +17,5 @@ import javax.inject.Singleton
 abstract class DeviceModule {
     @Binds
     @Singleton
-    abstract fun bindDeviceClassProvider(
-        impl: AndroidDeviceClassProvider,
-    ): DeviceClassProvider
+    abstract fun bindDeviceClassProvider(impl: AndroidDeviceClassProvider): DeviceClassProvider
 }

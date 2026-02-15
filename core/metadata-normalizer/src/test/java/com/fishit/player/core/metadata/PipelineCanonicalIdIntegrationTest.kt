@@ -174,7 +174,8 @@ class PipelineCanonicalIdIntegrationTest {
         assertEquals(1, normalized.size)
         val entry = normalized.first()
         assertNotNull(entry.canonicalId)
-        assertEquals("movie:the-matrix:1999", entry.canonicalId?.value)
+        // SlugGenerator (SSOT) strips leading articles: "The Matrix" → "matrix"
+        assertEquals("movie:matrix:1999", entry.canonicalId?.value)
     }
 
     @Test
@@ -252,7 +253,8 @@ class PipelineCanonicalIdIntegrationTest {
         assertEquals(1, normalized.size)
         val entry = normalized.first()
         assertNotNull(entry.canonicalId)
-        assertEquals("episode:the-one-where-everybody-finds-out:S05E14", entry.canonicalId?.value)
+        // SlugGenerator (SSOT) strips leading articles: "The One Where..." → "one-where-..."
+        assertEquals("episode:one-where-everybody-finds-out:S05E14", entry.canonicalId?.value)
     }
 
     @Test

@@ -38,13 +38,9 @@ import javax.inject.Singleton
 abstract class DebugSettingsModule {
     @Binds
     @Singleton
-    abstract fun bindDebugToolsSettingsRepository(
-        impl: DataStoreDebugToolsSettingsRepository
-    ): DebugToolsSettingsRepository
+    abstract fun bindDebugToolsSettingsRepository(impl: DataStoreDebugToolsSettingsRepository): DebugToolsSettingsRepository
 
     @Binds
     @Singleton
-    abstract fun bindNxMigrationSettingsRepository(
-        impl: DataStoreNxMigrationSettingsRepository
-    ): NxMigrationSettingsRepository
+    abstract fun bindNxMigrationSettingsRepository(impl: DataStoreNxMigrationSettingsRepository): NxMigrationSettingsRepository
 }

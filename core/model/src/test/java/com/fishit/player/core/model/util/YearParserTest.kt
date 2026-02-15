@@ -10,7 +10,6 @@ import org.junit.Test
  * Validates API year validation, date extraction, and title extraction patterns.
  */
 class YearParserTest {
-
     // ========== validate ==========
 
     @Test

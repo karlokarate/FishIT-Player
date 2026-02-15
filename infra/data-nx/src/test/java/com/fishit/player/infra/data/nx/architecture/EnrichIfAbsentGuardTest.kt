@@ -19,12 +19,11 @@
 package com.fishit.player.infra.data.nx.architecture
 
 import com.fishit.player.infra.data.nx.mapper.base.MappingUtils
+import org.junit.Test
 import java.io.File
 import kotlin.test.assertTrue
-import org.junit.Test
 
 class EnrichIfAbsentGuardTest {
-
     /**
      * Approved files that are allowed to write NX_Work entity fields directly.
      *
@@ -36,18 +35,19 @@ class EnrichIfAbsentGuardTest {
      * - NxWorkAuthorityRepositoryImpl: authority key management
      * - NxDetailMediaRepositoryImpl: updatedAt timestamp only
      */
-    private val approvedWriteFiles = setOf(
-        "WorkEntityBuilder.kt",
-        "NxWorkRepositoryImpl.kt",
-        "WorkMapper.kt",
-        "NxCanonicalMediaRepositoryImpl.kt",
-        "NxWorkAuthorityRepositoryImpl.kt",
-        "NxDetailMediaRepositoryImpl.kt",
-        // Test files
-        "EnrichIfAbsentGuardTest.kt",
-        "WorkEntityBuilderTest.kt",
-        "NxCatalogWriterE2ETest.kt",
-    )
+    private val approvedWriteFiles =
+        setOf(
+            "WorkEntityBuilder.kt",
+            "NxWorkRepositoryImpl.kt",
+            "WorkMapper.kt",
+            "NxCanonicalMediaRepositoryImpl.kt",
+            "NxWorkAuthorityRepositoryImpl.kt",
+            "NxDetailMediaRepositoryImpl.kt",
+            // Test files
+            "EnrichIfAbsentGuardTest.kt",
+            "WorkEntityBuilderTest.kt",
+            "NxCatalogWriterE2ETest.kt",
+        )
 
     /**
      * Enrichable NX_Work fields that MUST go through MappingUtils guards.
@@ -55,13 +55,24 @@ class EnrichIfAbsentGuardTest {
      * These fields are enriched via enrichIfAbsent and should not be
      * directly assigned (entity.field = value) in unapproved files.
      */
-    private val enrichableFields = listOf(
-        "rating", "plot", "genres", "director", "cast",
-        "trailer", "releaseDate", "durationMs",
-        "tmdbId", "imdbId", "tvdbId",
-        "poster", "backdrop", "thumbnail",
-        "recognitionState",
-    )
+    private val enrichableFields =
+        listOf(
+            "rating",
+            "plot",
+            "genres",
+            "director",
+            "cast",
+            "trailer",
+            "releaseDate",
+            "durationMs",
+            "tmdbId",
+            "imdbId",
+            "tvdbId",
+            "poster",
+            "backdrop",
+            "thumbnail",
+            "recognitionState",
+        )
 
     /**
      * No unapproved files directly write enrichable NX_Work fields.
@@ -75,10 +86,11 @@ class EnrichIfAbsentGuardTest {
         val fieldPattern = enrichableFields.joinToString("|") { Regex.escape(it) }
         val pattern = Regex("""\.\s*($fieldPattern)\s*=""")
 
-        val violations = scanSourceFiles(
-            pattern = pattern,
-            excludeFiles = approvedWriteFiles,
-        )
+        val violations =
+            scanSourceFiles(
+                pattern = pattern,
+                excludeFiles = approvedWriteFiles,
+            )
 
         assertTrue(
             violations.isEmpty(),
@@ -126,7 +138,8 @@ class EnrichIfAbsentGuardTest {
         val violations = mutableListOf<Violation>()
         val sourceDir = findSourceDir() ?: return emptyList()
 
-        sourceDir.walkTopDown()
+        sourceDir
+            .walkTopDown()
             .filter { it.isFile && it.extension == "kt" }
             .filter { it.name !in excludeFiles }
             .forEach { file ->
@@ -146,11 +159,12 @@ class EnrichIfAbsentGuardTest {
     }
 
     private fun findSourceDir(): File? {
-        val candidates = listOf(
-            File("src/main/java"),
-            File("infra/data-nx/src/main/java"),
-            File(System.getProperty("user.dir"), "src/main/java"),
-        )
+        val candidates =
+            listOf(
+                File("src/main/java"),
+                File("infra/data-nx/src/main/java"),
+                File(System.getProperty("user.dir"), "src/main/java"),
+            )
         return candidates.firstOrNull { it.exists() && it.isDirectory }
     }
 }

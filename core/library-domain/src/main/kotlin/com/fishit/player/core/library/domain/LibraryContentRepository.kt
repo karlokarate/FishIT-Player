@@ -23,9 +23,10 @@ data class LibraryQueryOptions(
 ) {
     companion object {
         val DEFAULT = LibraryQueryOptions()
-        val RECENTLY_ADDED = LibraryQueryOptions(
-            sort = SortOption.RECENTLY_ADDED,
-        )
+        val RECENTLY_ADDED =
+            LibraryQueryOptions(
+                sort = SortOption.RECENTLY_ADDED,
+            )
     }
 }
 
@@ -65,7 +66,7 @@ interface LibraryContentRepository {
     // ──────────────────────────────────────────────────────────────────────
     // Legacy Flow-based methods (limited results)
     // ──────────────────────────────────────────────────────────────────────
-    
+
     fun observeVod(categoryId: String? = null): Flow<List<LibraryMediaItem>>
 
     fun observeSeries(categoryId: String? = null): Flow<List<LibraryMediaItem>>
@@ -169,12 +170,12 @@ interface LibraryContentRepository {
      * @return Pair of (minYear, maxYear) or null if no content
      */
     suspend fun getYearRange(): Pair<Int, Int>?
-    
+
     /**
      * Get total count of VOD items (for UI indicators).
      */
     suspend fun getVodCount(options: LibraryQueryOptions = LibraryQueryOptions()): Int
-    
+
     /**
      * Get total count of Series items (for UI indicators).
      */

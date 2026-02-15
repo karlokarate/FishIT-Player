@@ -70,8 +70,8 @@ class DefaultApiPriorityDispatcher
             tag: String,
             timeoutMs: Long,
             block: suspend () -> T,
-        ): T? {
-            return withTimeoutOrNull(timeoutMs) {
+        ): T? =
+            withTimeoutOrNull(timeoutMs) {
                 // Critical operations are serialized via mutex
                 criticalMutex.withLock {
                     try {
@@ -91,7 +91,6 @@ class DefaultApiPriorityDispatcher
                     UnifiedLog.w(TAG) { "⏱️ CRITICAL_PRIORITY timeout: $tag after ${timeoutMs}ms" }
                 }
             }
-        }
 
         override suspend fun <T> withBackgroundPriority(
             tag: String,
@@ -107,9 +106,7 @@ class DefaultApiPriorityDispatcher
             }
         }
 
-        override fun shouldYield(): Boolean {
-            return _priorityState.value.hasActiveHighPriority
-        }
+        override fun shouldYield(): Boolean = _priorityState.value.hasActiveHighPriority
 
         override suspend fun awaitHighPriorityComplete() {
             if (!shouldYield()) return

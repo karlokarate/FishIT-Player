@@ -401,7 +401,6 @@ data class XtreamSeriesStream(
     /** Extract year from releaseDate if year field is empty */
     val resolvedYear: String?
         get() = year ?: releaseDate?.take(4)?.takeIf { it.toIntOrNull() != null }
-
 }
 
 // =============================================================================
@@ -471,8 +470,8 @@ data class XtreamVodInfoBlock(
     val audioInfo: XtreamAudioInfo?
         get() = audio?.let { parseAudioInfo(it) }
 
-    private fun parseVideoInfo(element: JsonElement): XtreamVideoInfo? {
-        return when (element) {
+    private fun parseVideoInfo(element: JsonElement): XtreamVideoInfo? =
+        when (element) {
             is JsonPrimitive -> {
                 // Simple string format: "h264" or "hevc"
                 element.contentOrNull?.takeIf { it.isNotBlank() }?.let {
@@ -491,10 +490,9 @@ data class XtreamVodInfoBlock(
             }
             else -> null
         }
-    }
 
-    private fun parseAudioInfo(element: JsonElement): XtreamAudioInfo? {
-        return when (element) {
+    private fun parseAudioInfo(element: JsonElement): XtreamAudioInfo? =
+        when (element) {
             is JsonPrimitive -> {
                 // Simple string format: "aac" or "ac3"
                 element.contentOrNull?.takeIf { it.isNotBlank() }?.let {
@@ -507,12 +505,16 @@ data class XtreamVodInfoBlock(
                 XtreamAudioInfo(
                     codec = obj["codec_name"]?.jsonPrimitive?.contentOrNull,
                     channels = obj["channels"]?.jsonPrimitive?.intOrNull,
-                    language = obj["tags"]?.jsonObject?.get("language")?.jsonPrimitive?.contentOrNull,
+                    language =
+                        obj["tags"]
+                            ?.jsonObject
+                            ?.get("language")
+                            ?.jsonPrimitive
+                            ?.contentOrNull,
                 )
             }
             else -> null
         }
-    }
     // =========================================================================
     // Resolver properties to handle alternative field names across panels
     // =========================================================================

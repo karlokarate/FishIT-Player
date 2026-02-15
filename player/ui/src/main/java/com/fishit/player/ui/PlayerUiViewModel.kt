@@ -165,14 +165,12 @@ class PlayerUiViewModel
         /**
          * Returns the audio selection state flow for observing available tracks.
          */
-        fun getAudioState(): StateFlow<AudioSelectionState>? =
-            playerEntryImpl.getCurrentSession()?.audioState
+        fun getAudioState(): StateFlow<AudioSelectionState>? = playerEntryImpl.getCurrentSession()?.audioState
 
         /**
          * Selects an audio track by ID.
          */
-        fun selectAudioTrack(trackId: AudioTrackId): Boolean =
-            playerEntryImpl.getCurrentSession()?.selectAudioTrack(trackId) ?: false
+        fun selectAudioTrack(trackId: AudioTrackId): Boolean = playerEntryImpl.getCurrentSession()?.selectAudioTrack(trackId) ?: false
 
         /**
          * Cycles to the next audio track (useful for remote control).
@@ -188,8 +186,7 @@ class PlayerUiViewModel
         /**
          * Returns the subtitle selection state flow for observing available tracks.
          */
-        fun getSubtitleState(): StateFlow<SubtitleSelectionState>? =
-            playerEntryImpl.getCurrentSession()?.subtitleState
+        fun getSubtitleState(): StateFlow<SubtitleSelectionState>? = playerEntryImpl.getCurrentSession()?.subtitleState
 
         /**
          * Selects a subtitle track by ID.
@@ -200,8 +197,7 @@ class PlayerUiViewModel
         /**
          * Disables all subtitles.
          */
-        fun disableSubtitles(): Boolean =
-            playerEntryImpl.getCurrentSession()?.disableSubtitles() ?: false
+        fun disableSubtitles(): Boolean = playerEntryImpl.getCurrentSession()?.disableSubtitles() ?: false
 
         // ══════════════════════════════════════════════════════════════════════════════
         // Playback Speed API

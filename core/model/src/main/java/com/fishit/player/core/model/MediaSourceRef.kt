@@ -122,7 +122,8 @@ data class MediaSourceRef(
     fun percentFromPosition(positionMs: Long): Float? = durationMs?.takeIf { it > 0 }?.let { positionMs.toFloat() / it }
 
     private fun formatFileSize(bytes: Long): String =
-        com.fishit.player.core.model.util.FileSizeFormatter.format(bytes)
+        com.fishit.player.core.model.util.FileSizeFormatter
+            .format(bytes)
 
     private fun formatDuration(ms: Long): String {
         val totalMinutes = ms / 60_000
@@ -140,8 +141,8 @@ data class MediaSourceRef(
         val minutes = (totalSeconds % 3600) / 60
         val seconds = totalSeconds % 60
         return when {
-            hours > 0 -> String.format("%d:%02d:%02d", hours, minutes, seconds)
-            else -> String.format("%d:%02d", minutes, seconds)
+            hours > 0 -> String.format(java.util.Locale.US, "%d:%02d:%02d", hours, minutes, seconds)
+            else -> String.format(java.util.Locale.US, "%d:%02d", minutes, seconds)
         }
     }
 }
@@ -165,7 +166,9 @@ data class MediaQuality(
     fun toDisplayLabel(): String =
         buildString {
             resolutionLabel?.let { append(it) }
-                ?: com.fishit.player.core.model.util.ResolutionLabel.fromHeight(resolution)?.let { append(it) }
+                ?: com.fishit.player.core.model.util.ResolutionLabel
+                    .fromHeight(resolution)
+                    ?.let { append(it) }
             hdr?.let {
                 if (isNotEmpty()) append(" ")
                 append(it)
@@ -187,7 +190,9 @@ data class MediaQuality(
             val resolution = height ?: return null
             return MediaQuality(
                 resolution = resolution,
-                resolutionLabel = com.fishit.player.core.model.util.ResolutionLabel.fromHeight(resolution),
+                resolutionLabel =
+                    com.fishit.player.core.model.util.ResolutionLabel
+                        .fromHeight(resolution),
             )
         }
 

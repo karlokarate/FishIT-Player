@@ -15,7 +15,6 @@ package com.fishit.player.core.model.util
  * - null/empty → null
  */
 object DurationParser {
-
     /**
      * Parse a duration string to milliseconds.
      *
@@ -75,7 +74,10 @@ object DurationParser {
      * @param durationStr Duration string from API (fallback)
      * @return Duration in milliseconds, or null if neither is available
      */
-    fun resolve(durationSecs: Long?, durationStr: String?): Long? =
+    fun resolve(
+        durationSecs: Long?,
+        durationStr: String?,
+    ): Long? =
         durationSecs?.takeIf { it > 0 }?.let { secondsToMs(it) }
             ?: parseToMs(durationStr)
 }

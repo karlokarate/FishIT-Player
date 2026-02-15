@@ -19,7 +19,6 @@ android {
     kotlinOptions {
         jvmTarget = "17"
     }
-
 }
 
 // NOTE: This module has NO dependencies except Kotlin stdlib.

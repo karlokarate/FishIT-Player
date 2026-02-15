@@ -280,7 +280,6 @@ class EnsureEpisodePlaybackReadyUseCase
         private val repository: XtreamSeriesIndexRepository,
         private val unifiedDetailLoader: UnifiedDetailLoader,
     ) {
-
         /**
          * Result of playback readiness check.
          */
@@ -331,35 +330,42 @@ class EnsureEpisodePlaybackReadyUseCase
             }
 
             // Step 2: Parse sourceKey to extract IDs — supports multiple formats
-            val episodeIds = parseEpisodeIds(sourceKey)
-                ?: return Result.Failed(sourceKey, "Invalid sourceKey format: $sourceKey")
+            val episodeIds =
+                parseEpisodeIds(sourceKey)
+                    ?: return Result.Failed(sourceKey, "Invalid sourceKey format: $sourceKey")
 
             val seriesId = episodeIds.seriesId
             val seasonNumber = episodeIds.season
             val episodeNumber = episodeIds.episode
 
             // Step 3: Fetch from API via UnifiedDetailLoader with timeout
-            UnifiedLog.d(TAG) { "Enriching episode $sourceKey via UnifiedDetailLoader (series=$seriesId, s=$seasonNumber, e=$episodeNumber)" }
+            UnifiedLog.d(
+                TAG,
+            ) { "Enriching episode $sourceKey via UnifiedDetailLoader (series=$seriesId, s=$seasonNumber, e=$episodeNumber)" }
 
             return try {
                 withTimeout(ENRICHMENT_TIMEOUT_MS) {
-                    val bundle = unifiedDetailLoader.loadSeriesDetailBySeriesId(seriesId)
-                        ?: return@withTimeout Result.Failed(sourceKey, "Failed to load series detail")
+                    val bundle =
+                        unifiedDetailLoader.loadSeriesDetailBySeriesId(seriesId)
+                            ?: return@withTimeout Result.Failed(sourceKey, "Failed to load series detail")
 
                     val episodes = bundle.getEpisodesForSeason(seasonNumber)
-                    val episode = episodes.find { it.episodeNumber == episodeNumber }
-                        ?: return@withTimeout Result.Failed(sourceKey, "Episode not found in bundle")
+                    val episode =
+                        episodes.find { it.episodeNumber == episodeNumber }
+                            ?: return@withTimeout Result.Failed(sourceKey, "Episode not found in bundle")
 
                     // Build hints from episode data
-                    val episodeId = episode.episodeId
-                        ?: return@withTimeout Result.Failed(sourceKey, "Episode has no episodeId")
+                    val episodeId =
+                        episode.episodeId
+                            ?: return@withTimeout Result.Failed(sourceKey, "Episode has no episodeId")
 
-                    val hints = EpisodePlaybackHints(
-                        episodeId = episodeId,
-                        streamId = episodeId,
-                        containerExtension = parseContainerExtension(episode.playbackHintsJson),
-                        directUrl = parseDirectUrl(episode.playbackHintsJson),
-                    )
+                    val hints =
+                        EpisodePlaybackHints(
+                            episodeId = episodeId,
+                            streamId = episodeId,
+                            containerExtension = parseContainerExtension(episode.playbackHintsJson),
+                            directUrl = parseDirectUrl(episode.playbackHintsJson),
+                        )
 
                     UnifiedLog.d(TAG) { "Episode $sourceKey enriched successfully: streamId=${hints.streamId}" }
                     Result.Ready(sourceKey, hints)
@@ -379,7 +385,11 @@ class EnsureEpisodePlaybackReadyUseCase
             if (hintsJson.isNullOrBlank()) return null
             return try {
                 val regex = """"xtream\.containerExtension"\s*:\s*"([^"]*)"""".toRegex()
-                regex.find(hintsJson)?.groupValues?.get(1)?.takeIf { it.isNotBlank() }
+                regex
+                    .find(hintsJson)
+                    ?.groupValues
+                    ?.get(1)
+                    ?.takeIf { it.isNotBlank() }
             } catch (e: Exception) {
                 null
             }
@@ -389,7 +399,11 @@ class EnsureEpisodePlaybackReadyUseCase
             if (hintsJson.isNullOrBlank()) return null
             return try {
                 val regex = """"xtream\.directSource"\s*:\s*"([^"]*)"""".toRegex()
-                regex.find(hintsJson)?.groupValues?.get(1)?.takeIf { it.isNotBlank() }
+                regex
+                    .find(hintsJson)
+                    ?.groupValues
+                    ?.get(1)
+                    ?.takeIf { it.isNotBlank() }
             } catch (e: Exception) {
                 null
             }

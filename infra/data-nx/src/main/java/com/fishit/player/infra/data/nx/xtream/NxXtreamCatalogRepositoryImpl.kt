@@ -43,19 +43,17 @@
 package com.fishit.player.infra.data.nx.xtream
 
 import com.fishit.player.core.model.ExternalIds
-import com.fishit.player.core.model.ImageRef
 import com.fishit.player.core.model.MediaType
 import com.fishit.player.core.model.PlaybackHintKeys
 import com.fishit.player.core.model.RawMediaMetadata
 import com.fishit.player.core.model.SourceType
 import com.fishit.player.core.model.TmdbMediaType
+import com.fishit.player.core.model.TmdbRef
 import com.fishit.player.core.model.ids.XtreamIdCodec
 import com.fishit.player.core.model.ids.XtreamParsedSourceId
-import com.fishit.player.core.model.TmdbRef
 import com.fishit.player.core.model.repository.NxWorkRepository
 import com.fishit.player.core.model.repository.NxWorkRepository.WorkType
 import com.fishit.player.core.model.repository.NxWorkSourceRefRepository
-import com.fishit.player.core.model.repository.NxWorkSourceRefRepository.SourceItemKind
 import com.fishit.player.core.model.repository.NxWorkVariantRepository
 import com.fishit.player.core.persistence.ObjectBoxFlow.asFlow
 import com.fishit.player.core.persistence.obx.NX_Work
@@ -69,8 +67,8 @@ import com.fishit.player.infra.data.xtream.XtreamCatalogRepository
 import com.fishit.player.infra.logging.UnifiedLog
 import io.objectbox.BoxStore
 import io.objectbox.kotlin.boxFor
-import io.objectbox.query.QueryCondition
 import io.objectbox.query.QueryBuilder.StringOrder
+import io.objectbox.query.QueryCondition
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
@@ -96,6 +94,7 @@ class NxXtreamCatalogRepositoryImpl
     ) : XtreamCatalogRepository {
         companion object {
             private const val TAG = "NxXtreamCatalogRepo"
+
             // FIX: Match DB storage format - toEntityString() writes lowercase
             // See WorkSourceRefMapper.toEntityString() and NxWorkSourceRefRepositoryImpl.toEntityString()
             private const val SOURCE_TYPE = "xtream"
@@ -110,56 +109,74 @@ class NxXtreamCatalogRepositoryImpl
 
         override fun observeVod(categoryId: String?): Flow<List<RawMediaMetadata>> {
             // Query NX_Work for MOVIE type with Xtream source
-            val workQuery = workBox.query(
-                NX_Work_.workType.equal(WorkTypeMapper.toEntityString(WorkType.MOVIE)),
-            ).order(NX_Work_.canonicalTitleLower).build()
+            val workQuery =
+                workBox
+                    .query(
+                        NX_Work_.workType.equal(WorkTypeMapper.toEntityString(WorkType.MOVIE)),
+                    ).order(NX_Work_.canonicalTitleLower)
+                    .build()
 
-            val sourceRefQuery = sourceRefBox.query(
-                NX_WorkSourceRef_.sourceType.equal(SOURCE_TYPE)
-                    .and(NX_WorkSourceRef_.sourceKey.contains(":vod:")),
-            ).build()
+            val sourceRefQuery =
+                sourceRefBox
+                    .query(
+                        NX_WorkSourceRef_.sourceType
+                            .equal(SOURCE_TYPE)
+                            .and(NX_WorkSourceRef_.sourceKey.contains(":vod:")),
+                    ).build()
 
             // Combine work and sourceRef data
             return combine(
                 workQuery.asFlow(),
                 sourceRefQuery.asFlow(),
             ) { works, sourceRefs ->
-                val sourceKeysByWorkKey = sourceRefs
-                    .groupBy { it.workKey }
-                    .mapValues { (_, refs) -> refs.firstOrNull() }
+                val sourceKeysByWorkKey =
+                    sourceRefs
+                        .groupBy { it.workKey }
+                        .mapValues { (_, refs) -> refs.firstOrNull() }
 
                 works.mapNotNull { work ->
                     val sourceRef = sourceKeysByWorkKey[work.workKey]
                     if (sourceRef != null) {
                         work.toRawMediaMetadataVod(sourceRef)
-                    } else null
+                    } else {
+                        null
+                    }
                 }
             }
         }
 
         override fun observeSeries(categoryId: String?): Flow<List<RawMediaMetadata>> {
-            val workQuery = workBox.query(
-                NX_Work_.workType.equal(WorkTypeMapper.toEntityString(WorkType.SERIES)),
-            ).order(NX_Work_.canonicalTitleLower).build()
+            val workQuery =
+                workBox
+                    .query(
+                        NX_Work_.workType.equal(WorkTypeMapper.toEntityString(WorkType.SERIES)),
+                    ).order(NX_Work_.canonicalTitleLower)
+                    .build()
 
-            val sourceRefQuery = sourceRefBox.query(
-                NX_WorkSourceRef_.sourceType.equal(SOURCE_TYPE)
-                    .and(NX_WorkSourceRef_.sourceKey.contains(":series:")),
-            ).build()
+            val sourceRefQuery =
+                sourceRefBox
+                    .query(
+                        NX_WorkSourceRef_.sourceType
+                            .equal(SOURCE_TYPE)
+                            .and(NX_WorkSourceRef_.sourceKey.contains(":series:")),
+                    ).build()
 
             return combine(
                 workQuery.asFlow(),
                 sourceRefQuery.asFlow(),
             ) { works, sourceRefs ->
-                val sourceKeysByWorkKey = sourceRefs
-                    .groupBy { it.workKey }
-                    .mapValues { (_, refs) -> refs.firstOrNull() }
+                val sourceKeysByWorkKey =
+                    sourceRefs
+                        .groupBy { it.workKey }
+                        .mapValues { (_, refs) -> refs.firstOrNull() }
 
                 works.mapNotNull { work ->
                     val sourceRef = sourceKeysByWorkKey[work.workKey]
                     if (sourceRef != null) {
                         work.toRawMediaMetadataSeries(sourceRef)
-                    } else null
+                    } else {
+                        null
+                    }
                 }
             }
         }
@@ -171,20 +188,24 @@ class NxXtreamCatalogRepositoryImpl
             // Episodes have sourceKey pattern: src:xtream:...:episode:{seriesId}:{season}:{episode}
             val episodePattern = ":episode:$seriesId:"
 
-            val sourceRefQuery = sourceRefBox.query(
-                NX_WorkSourceRef_.sourceType.equal(SOURCE_TYPE)
-                    .and(NX_WorkSourceRef_.sourceKey.contains(episodePattern)),
-            ).build()
+            val sourceRefQuery =
+                sourceRefBox
+                    .query(
+                        NX_WorkSourceRef_.sourceType
+                            .equal(SOURCE_TYPE)
+                            .and(NX_WorkSourceRef_.sourceKey.contains(episodePattern)),
+                    ).build()
 
             return sourceRefQuery.asFlow().map { sourceRefs ->
-                sourceRefs.mapNotNull { sourceRef ->
-                    val work = sourceRef.work.target ?: return@mapNotNull null
-                    // Filter by season if specified
-                    if (seasonNumber != null && work.season != seasonNumber) {
-                        return@mapNotNull null
-                    }
-                    work.toRawMediaMetadataEpisode(sourceRef)
-                }.sortedWith(compareBy({ it.season ?: 0 }, { it.episode ?: 0 }))
+                sourceRefs
+                    .mapNotNull { sourceRef ->
+                        val work = sourceRef.work.target ?: return@mapNotNull null
+                        // Filter by season if specified
+                        if (seasonNumber != null && work.season != seasonNumber) {
+                            return@mapNotNull null
+                        }
+                        work.toRawMediaMetadataEpisode(sourceRef)
+                    }.sortedWith(compareBy({ it.season ?: 0 }, { it.episode ?: 0 }))
             }
         }
 
@@ -196,48 +217,58 @@ class NxXtreamCatalogRepositoryImpl
             mediaType: MediaType?,
             limit: Int,
             offset: Int,
-        ): List<RawMediaMetadata> = withContext(Dispatchers.IO) {
-            val workType = mediaType?.let { WorkTypeMapper.toEntityString(MediaTypeMapper.toWorkType(it)) }
+        ): List<RawMediaMetadata> =
+            withContext(Dispatchers.IO) {
+                val workType = mediaType?.let { WorkTypeMapper.toEntityString(MediaTypeMapper.toWorkType(it)) }
 
-            val baseCondition: QueryCondition<NX_Work> = if (workType != null) {
-                NX_Work_.workType.equal(workType)
-            } else {
-                NX_Work_.workType.oneOf(
-                    arrayOf(
-                        WorkTypeMapper.toEntityString(WorkType.MOVIE),
-                        WorkTypeMapper.toEntityString(WorkType.SERIES),
-                        WorkTypeMapper.toEntityString(WorkType.EPISODE),
-                    ),
-                )
-            }
+                val baseCondition: QueryCondition<NX_Work> =
+                    if (workType != null) {
+                        NX_Work_.workType.equal(workType)
+                    } else {
+                        NX_Work_.workType.oneOf(
+                            arrayOf(
+                                WorkTypeMapper.toEntityString(WorkType.MOVIE),
+                                WorkTypeMapper.toEntityString(WorkType.SERIES),
+                                WorkTypeMapper.toEntityString(WorkType.EPISODE),
+                            ),
+                        )
+                    }
 
-            val works = workBox.query(baseCondition)
-                .order(NX_Work_.canonicalTitleLower)
-                .build()
-                .find(offset.toLong(), limit.toLong())
+                val works =
+                    workBox
+                        .query(baseCondition)
+                        .order(NX_Work_.canonicalTitleLower)
+                        .build()
+                        .find(offset.toLong(), limit.toLong())
 
-            // Get source refs for these works — indexed oneOf() query (no full scan)
-            val workKeys = works.map { it.workKey }
-            val workKeySet = workKeys.toSet()
-            val sourceRefs = if (workKeys.isNotEmpty()) {
-                sourceRefBox.query(
-                    NX_WorkSourceRef_.sourceType.equal(SOURCE_TYPE)
-                        .and(NX_WorkSourceRef_.workKey.oneOf(workKeys.toTypedArray(), StringOrder.CASE_SENSITIVE)),
-                ).build().find()
-            } else emptyList()
+                // Get source refs for these works — indexed oneOf() query (no full scan)
+                val workKeys = works.map { it.workKey }
+                val workKeySet = workKeys.toSet()
+                val sourceRefs =
+                    if (workKeys.isNotEmpty()) {
+                        sourceRefBox
+                            .query(
+                                NX_WorkSourceRef_.sourceType
+                                    .equal(SOURCE_TYPE)
+                                    .and(NX_WorkSourceRef_.workKey.oneOf(workKeys.toTypedArray(), StringOrder.CASE_SENSITIVE)),
+                            ).build()
+                            .find()
+                    } else {
+                        emptyList()
+                    }
 
-            val sourceRefMap = sourceRefs.associateBy { it.workKey }
+                val sourceRefMap = sourceRefs.associateBy { it.workKey }
 
-            works.mapNotNull { work ->
-                val sourceRef = sourceRefMap[work.workKey] ?: return@mapNotNull null
-                when (WorkTypeMapper.toWorkType(work.workType)) {
-                    WorkType.MOVIE -> work.toRawMediaMetadataVod(sourceRef)
-                    WorkType.SERIES -> work.toRawMediaMetadataSeries(sourceRef)
-                    WorkType.EPISODE -> work.toRawMediaMetadataEpisode(sourceRef)
-                    else -> null
+                works.mapNotNull { work ->
+                    val sourceRef = sourceRefMap[work.workKey] ?: return@mapNotNull null
+                    when (WorkTypeMapper.toWorkType(work.workType)) {
+                        WorkType.MOVIE -> work.toRawMediaMetadataVod(sourceRef)
+                        WorkType.SERIES -> work.toRawMediaMetadataSeries(sourceRef)
+                        WorkType.EPISODE -> work.toRawMediaMetadataEpisode(sourceRef)
+                        else -> null
+                    }
                 }
             }
-        }
 
         override suspend fun getBySourceId(sourceId: String): RawMediaMetadata? =
             withContext(Dispatchers.IO) {
@@ -247,35 +278,48 @@ class NxXtreamCatalogRepositoryImpl
 
                 when {
                     // NX format: src:xtream:<account>:vod:<id> or legacy: xtream:vod:<id>
-            sourceId.contains(":vod:") -> work.toRawMediaMetadataVod(sourceRef)
+                    sourceId.contains(":vod:") -> work.toRawMediaMetadataVod(sourceRef)
                     sourceId.contains(":series:") -> work.toRawMediaMetadataSeries(sourceRef)
                     sourceId.contains(":episode:") -> work.toRawMediaMetadataEpisode(sourceRef)
                     else -> null
                 }
             }
 
-        override suspend fun search(query: String, limit: Int): List<RawMediaMetadata> =
+        override suspend fun search(
+            query: String,
+            limit: Int,
+        ): List<RawMediaMetadata> =
             withContext(Dispatchers.IO) {
                 val lowerQuery = query.lowercase()
-                val works = workBox.query(
-                    NX_Work_.canonicalTitleLower.contains(lowerQuery)
-                        .and(
-                            NX_Work_.workType.oneOf(
-                                arrayOf(
-                                    WorkTypeMapper.toEntityString(WorkType.MOVIE),
-                                    WorkTypeMapper.toEntityString(WorkType.SERIES),
+                val works =
+                    workBox
+                        .query(
+                            NX_Work_.canonicalTitleLower
+                                .contains(lowerQuery)
+                                .and(
+                                    NX_Work_.workType.oneOf(
+                                        arrayOf(
+                                            WorkTypeMapper.toEntityString(WorkType.MOVIE),
+                                            WorkTypeMapper.toEntityString(WorkType.SERIES),
+                                        ),
+                                    ),
                                 ),
-                            ),
-                        ),
-                ).build().find(0, limit.toLong())
+                        ).build()
+                        .find(0, limit.toLong())
 
                 val workKeys = works.map { it.workKey }
-                val sourceRefs = if (workKeys.isNotEmpty()) {
-                    sourceRefBox.query(
-                        NX_WorkSourceRef_.sourceType.equal(SOURCE_TYPE)
-                            .and(NX_WorkSourceRef_.workKey.oneOf(workKeys.toTypedArray(), StringOrder.CASE_SENSITIVE)),
-                    ).build().find()
-                } else emptyList()
+                val sourceRefs =
+                    if (workKeys.isNotEmpty()) {
+                        sourceRefBox
+                            .query(
+                                NX_WorkSourceRef_.sourceType
+                                    .equal(SOURCE_TYPE)
+                                    .and(NX_WorkSourceRef_.workKey.oneOf(workKeys.toTypedArray(), StringOrder.CASE_SENSITIVE)),
+                            ).build()
+                            .find()
+                    } else {
+                        emptyList()
+                    }
 
                 val sourceRefMap = sourceRefs.associateBy { it.workKey }
 
@@ -303,40 +347,50 @@ class NxXtreamCatalogRepositoryImpl
             UnifiedLog.w(TAG) { "upsert() called - writes should go through NxCatalogWriter" }
         }
 
-        override suspend fun count(mediaType: MediaType?): Long = withContext(Dispatchers.IO) {
-            val workType = mediaType?.let { WorkTypeMapper.toEntityString(MediaTypeMapper.toWorkType(it)) }
+        override suspend fun count(mediaType: MediaType?): Long =
+            withContext(Dispatchers.IO) {
+                val workType = mediaType?.let { WorkTypeMapper.toEntityString(MediaTypeMapper.toWorkType(it)) }
 
-            if (workType != null) {
-                workBox.query(NX_Work_.workType.equal(workType)).build().count()
-            } else {
-                workBox.query(
-                    NX_Work_.workType.oneOf(
-                        arrayOf(
-                            WorkTypeMapper.toEntityString(WorkType.MOVIE),
-                            WorkTypeMapper.toEntityString(WorkType.SERIES),
-                            WorkTypeMapper.toEntityString(WorkType.EPISODE),
-                        ),
-                    ),
-                ).build().count()
+                if (workType != null) {
+                    workBox.query(NX_Work_.workType.equal(workType)).build().count()
+                } else {
+                    workBox
+                        .query(
+                            NX_Work_.workType.oneOf(
+                                arrayOf(
+                                    WorkTypeMapper.toEntityString(WorkType.MOVIE),
+                                    WorkTypeMapper.toEntityString(WorkType.SERIES),
+                                    WorkTypeMapper.toEntityString(WorkType.EPISODE),
+                                ),
+                            ),
+                        ).build()
+                        .count()
+                }
             }
-        }
 
-        override suspend fun deleteAll() = withContext(Dispatchers.IO) {
-            UnifiedLog.w(TAG) { "deleteAll() called - use NxCatalogWriter.clearSourceType() instead" }
-        }
+        override suspend fun deleteAll() =
+            withContext(Dispatchers.IO) {
+                UnifiedLog.w(TAG) { "deleteAll() called - use NxCatalogWriter.clearSourceType() instead" }
+            }
 
         // =========================================================================
         // Info Backfill Support (legacy - metadata now comes through normalizer)
         // =========================================================================
 
-        override suspend fun getVodIdsNeedingInfoBackfill(limit: Int, afterId: Int): List<Int> =
+        override suspend fun getVodIdsNeedingInfoBackfill(
+            limit: Int,
+            afterId: Int,
+        ): List<Int> =
             withContext(Dispatchers.IO) {
                 // NX stores already-normalized metadata. Backfill happens in normalizer.
                 // Return empty list to indicate no backfill needed at this layer.
                 emptyList()
             }
 
-        override suspend fun getSeriesIdsNeedingInfoBackfill(limit: Int, afterId: Int): List<Int> =
+        override suspend fun getSeriesIdsNeedingInfoBackfill(
+            limit: Int,
+            afterId: Int,
+        ): List<Int> =
             withContext(Dispatchers.IO) {
                 emptyList()
             }
@@ -390,19 +444,23 @@ class NxXtreamCatalogRepositoryImpl
             val parsed = XtreamIdCodec.parse(legacySourceId) ?: return null
 
             // Build search pattern from parsed result
-            val searchPattern = when (parsed) {
-                is XtreamParsedSourceId.Vod -> ":vod:${parsed.vodId}"
-                is XtreamParsedSourceId.Series -> ":series:${parsed.seriesId}"
-                is XtreamParsedSourceId.Episode -> ":episode:${parsed.episodeId}"
-                is XtreamParsedSourceId.EpisodeComposite ->
-                    ":episode:series:${parsed.seriesId}:s${parsed.season}:e${parsed.episode}"
-                is XtreamParsedSourceId.Live -> ":live:${parsed.channelId}"
-            }
+            val searchPattern =
+                when (parsed) {
+                    is XtreamParsedSourceId.Vod -> ":vod:${parsed.vodId}"
+                    is XtreamParsedSourceId.Series -> ":series:${parsed.seriesId}"
+                    is XtreamParsedSourceId.Episode -> ":episode:${parsed.episodeId}"
+                    is XtreamParsedSourceId.EpisodeComposite ->
+                        ":episode:series:${parsed.seriesId}:s${parsed.season}:e${parsed.episode}"
+                    is XtreamParsedSourceId.Live -> ":live:${parsed.channelId}"
+                }
 
-            return sourceRefBox.query(
-                NX_WorkSourceRef_.sourceType.equal(SOURCE_TYPE)
-                    .and(NX_WorkSourceRef_.sourceKey.contains(searchPattern)),
-            ).build().findFirst()
+            return sourceRefBox
+                .query(
+                    NX_WorkSourceRef_.sourceType
+                        .equal(SOURCE_TYPE)
+                        .and(NX_WorkSourceRef_.sourceKey.contains(searchPattern)),
+                ).build()
+                .findFirst()
         }
 
         // =========================================================================
@@ -430,10 +488,11 @@ class NxXtreamCatalogRepositoryImpl
             // Extract vodId from sourceKey for playback hints (SSOT: SourceKeyParser)
             val vodId = SourceKeyParser.extractItemKey(sourceRef.sourceKey)
 
-            val hints = buildMap {
-                put(PlaybackHintKeys.Xtream.CONTENT_TYPE, PlaybackHintKeys.Xtream.CONTENT_VOD)
-                vodId?.let { put(PlaybackHintKeys.Xtream.VOD_ID, it) }
-            }
+            val hints =
+                buildMap {
+                    put(PlaybackHintKeys.Xtream.CONTENT_TYPE, PlaybackHintKeys.Xtream.CONTENT_VOD)
+                    vodId?.let { put(PlaybackHintKeys.Xtream.VOD_ID, it) }
+                }
 
             return RawMediaMetadata(
                 originalTitle = canonicalTitle,
@@ -458,10 +517,11 @@ class NxXtreamCatalogRepositoryImpl
         private fun NX_Work.toRawMediaMetadataSeries(sourceRef: NX_WorkSourceRef): RawMediaMetadata {
             val seriesId = SourceKeyParser.extractItemKey(sourceRef.sourceKey)
 
-            val hints = buildMap {
-                put(PlaybackHintKeys.Xtream.CONTENT_TYPE, PlaybackHintKeys.Xtream.CONTENT_SERIES)
-                seriesId?.let { put(PlaybackHintKeys.Xtream.SERIES_ID, it) }
-            }
+            val hints =
+                buildMap {
+                    put(PlaybackHintKeys.Xtream.CONTENT_TYPE, PlaybackHintKeys.Xtream.CONTENT_SERIES)
+                    seriesId?.let { put(PlaybackHintKeys.Xtream.SERIES_ID, it) }
+                }
 
             return RawMediaMetadata(
                 originalTitle = canonicalTitle,
@@ -487,13 +547,14 @@ class NxXtreamCatalogRepositoryImpl
             val episodeInfo = SourceKeyParser.extractXtreamEpisodeInfo(sourceRef.sourceKey)
             val episodeId = SourceKeyParser.extractXtreamEpisodeId(sourceRef.sourceKey)
 
-            val hints = buildMap {
-                put(PlaybackHintKeys.Xtream.CONTENT_TYPE, PlaybackHintKeys.Xtream.CONTENT_SERIES)
-                episodeInfo?.seriesId?.let { put(PlaybackHintKeys.Xtream.SERIES_ID, it.toString()) }
-                season?.let { put(PlaybackHintKeys.Xtream.SEASON_NUMBER, it.toString()) }
-                episode?.let { put(PlaybackHintKeys.Xtream.EPISODE_NUMBER, it.toString()) }
-                episodeId?.let { put(PlaybackHintKeys.Xtream.EPISODE_ID, it.toString()) }
-            }
+            val hints =
+                buildMap {
+                    put(PlaybackHintKeys.Xtream.CONTENT_TYPE, PlaybackHintKeys.Xtream.CONTENT_SERIES)
+                    episodeInfo?.seriesId?.let { put(PlaybackHintKeys.Xtream.SERIES_ID, it.toString()) }
+                    season?.let { put(PlaybackHintKeys.Xtream.SEASON_NUMBER, it.toString()) }
+                    episode?.let { put(PlaybackHintKeys.Xtream.EPISODE_NUMBER, it.toString()) }
+                    episodeId?.let { put(PlaybackHintKeys.Xtream.EPISODE_ID, it.toString()) }
+                }
 
             return RawMediaMetadata(
                 originalTitle = canonicalTitle,
@@ -523,5 +584,4 @@ class NxXtreamCatalogRepositoryImpl
             val tmdbRef = tmdbId?.toIntOrNull()?.let { TmdbRef(tmdbType, it) }
             return ExternalIds(tmdb = tmdbRef, imdbId = imdbId)
         }
-
     }

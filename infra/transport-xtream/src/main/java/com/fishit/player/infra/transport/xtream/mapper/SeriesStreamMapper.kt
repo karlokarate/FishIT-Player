@@ -20,8 +20,8 @@ object SeriesStreamMapper {
     /**
      * Streaming mapper for Jackson parser (O(1) memory).
      */
-    fun fromStreaming(reader: JsonObjectReader): XtreamSeriesStream {
-        return XtreamSeriesStream(
+    fun fromStreaming(reader: JsonObjectReader): XtreamSeriesStream =
+        XtreamSeriesStream(
             num = reader.getIntOrNull("num"),
             name = reader.getStringOrNull("name"),
             seriesId = reader.getIntOrNull("series_id"),
@@ -41,13 +41,12 @@ object SeriesStreamMapper {
             categoryId = reader.getStringOrNull("category_id"),
             streamType = reader.getStringOrNull("stream_type"),
         )
-    }
 
     /**
      * Fallback mapper for kotlinx.serialization (DOM parsing).
      */
-    fun fromJsonObject(obj: JsonObject): XtreamSeriesStream {
-        return XtreamSeriesStream(
+    fun fromJsonObject(obj: JsonObject): XtreamSeriesStream =
+        XtreamSeriesStream(
             num = obj["num"]?.jsonPrimitive?.intOrNull,
             name = obj["name"]?.jsonPrimitive?.content,
             seriesId = obj["series_id"]?.jsonPrimitive?.intOrNull,
@@ -67,5 +66,4 @@ object SeriesStreamMapper {
             categoryId = obj["category_id"]?.jsonPrimitive?.content,
             streamType = obj["stream_type"]?.jsonPrimitive?.content,
         )
-    }
 }

@@ -20,7 +20,7 @@ class NxKeyGeneratorTest {
     @Test
     fun `workKey - heuristic movie generates correct format`() {
         val key = NxKeyGenerator.workKey(WorkType.MOVIE, "The Matrix", 1999)
-        assertEquals("movie:heuristic:the-matrix-1999", key)
+        assertEquals("movie:heuristic:matrix-1999", key)
     }
 
     @Test
@@ -50,14 +50,15 @@ class NxKeyGeneratorTest {
 
     @Test
     fun `workKey - tmdb episode uses tmdb id only`() {
-        val key = NxKeyGenerator.workKey(
-            workType = WorkType.EPISODE,
-            title = "Breaking Bad",
-            year = 2008,
-            tmdbId = 67890,
-            season = 1,
-            episode = 5,
-        )
+        val key =
+            NxKeyGenerator.workKey(
+                workType = WorkType.EPISODE,
+                title = "Breaking Bad",
+                year = 2008,
+                tmdbId = 67890,
+                season = 1,
+                episode = 5,
+            )
         assertEquals("episode:tmdb:67890", key)
     }
 
@@ -217,7 +218,7 @@ class NxKeyGeneratorTest {
 
     @Test
     fun `toSlug - basic title`() {
-        assertEquals("the-matrix", NxKeyGenerator.toSlug("The Matrix"))
+        assertEquals("matrix", NxKeyGenerator.toSlug("The Matrix"))
     }
 
     @Test
@@ -237,7 +238,7 @@ class NxKeyGeneratorTest {
 
     @Test
     fun `toSlug - multiple spaces collapsed`() {
-        assertEquals("the-matrix", NxKeyGenerator.toSlug("The   Matrix"))
+        assertEquals("matrix", NxKeyGenerator.toSlug("The   Matrix"))
     }
 
     @Test

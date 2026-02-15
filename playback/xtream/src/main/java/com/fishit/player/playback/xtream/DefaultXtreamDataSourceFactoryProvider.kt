@@ -23,20 +23,20 @@ class DefaultXtreamDataSourceFactoryProvider
     constructor(
         @XtreamHttpClient private val xtreamOkHttpClient: OkHttpClient,
     ) : XtreamDataSourceFactoryProvider {
-
         /**
          * Playback client derived from the shared Xtream client.
          * Overrides `followSslRedirects=true` because CDNs commonly redirect HTTP→HTTPS.
          * Shares the connection pool with the transport client.
          */
         private val playbackClient: OkHttpClient by lazy {
-            xtreamOkHttpClient.newBuilder()
+            xtreamOkHttpClient
+                .newBuilder()
                 .followSslRedirects(true)
                 .build()
         }
 
-        override fun create(
-            headers: Map<String, String>,
-        ): DataSource.Factory = OkHttpDataSource.Factory(playbackClient)
-            .setDefaultRequestProperties(headers)
+        override fun create(headers: Map<String, String>): DataSource.Factory =
+            OkHttpDataSource
+                .Factory(playbackClient)
+                .setDefaultRequestProperties(headers)
     }

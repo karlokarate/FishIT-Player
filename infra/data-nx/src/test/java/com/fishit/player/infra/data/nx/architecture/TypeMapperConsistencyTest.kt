@@ -16,13 +16,12 @@ import com.fishit.player.core.model.repository.NxWorkRepository.WorkType
 import com.fishit.player.infra.data.nx.mapper.MediaTypeMapper
 import com.fishit.player.infra.data.nx.mapper.SourceItemKindMapper
 import com.fishit.player.infra.data.nx.mapper.WorkTypeMapper
+import org.junit.Test
 import java.io.File
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
-import org.junit.Test
 
 class TypeMapperConsistencyTest {
-
     // =========================================================================
     // Source Scanning: Forbidden Patterns
     // =========================================================================
@@ -35,10 +34,11 @@ class TypeMapperConsistencyTest {
      */
     @Test
     fun `WorkType enum name is never used directly in source files`() {
-        val violations = scanSourceFiles(
-            pattern = Regex("""WorkType\.\w+\.name"""),
-            excludeFiles = setOf("TypeMappers.kt", "TypeMapperConsistencyTest.kt"),
-        )
+        val violations =
+            scanSourceFiles(
+                pattern = Regex("""WorkType\.\w+\.name"""),
+                excludeFiles = setOf("TypeMappers.kt", "TypeMapperConsistencyTest.kt"),
+            )
 
         assertTrue(
             violations.isEmpty(),
@@ -54,10 +54,11 @@ class TypeMapperConsistencyTest {
      */
     @Test
     fun `SourceType enum name is never used directly in source files`() {
-        val violations = scanSourceFiles(
-            pattern = Regex("""SourceType\.\w+\.name"""),
-            excludeFiles = setOf("TypeMappers.kt", "TypeMapperConsistencyTest.kt"),
-        )
+        val violations =
+            scanSourceFiles(
+                pattern = Regex("""SourceType\.\w+\.name"""),
+                excludeFiles = setOf("TypeMappers.kt", "TypeMapperConsistencyTest.kt"),
+            )
 
         assertTrue(
             violations.isEmpty(),
@@ -72,10 +73,11 @@ class TypeMapperConsistencyTest {
      */
     @Test
     fun `SourceItemKind enum name is never used directly in source files`() {
-        val violations = scanSourceFiles(
-            pattern = Regex("""SourceItemKind\.\w+\.name"""),
-            excludeFiles = setOf("TypeMappers.kt", "TypeMapperConsistencyTest.kt"),
-        )
+        val violations =
+            scanSourceFiles(
+                pattern = Regex("""SourceItemKind\.\w+\.name"""),
+                excludeFiles = setOf("TypeMappers.kt", "TypeMapperConsistencyTest.kt"),
+            )
 
         assertTrue(
             violations.isEmpty(),
@@ -113,16 +115,17 @@ class TypeMapperConsistencyTest {
      */
     @Test
     fun `WorkType entity strings match expected values`() {
-        val expected = mapOf(
-            WorkType.MOVIE to "MOVIE",
-            WorkType.SERIES to "SERIES",
-            WorkType.EPISODE to "EPISODE",
-            WorkType.CLIP to "CLIP",
-            WorkType.LIVE_CHANNEL to "LIVE",       // DIVERGENT: enum name = "LIVE_CHANNEL"
-            WorkType.AUDIOBOOK to "AUDIOBOOK",
-            WorkType.MUSIC_TRACK to "MUSIC",       // DIVERGENT: enum name = "MUSIC_TRACK"
-            WorkType.UNKNOWN to "UNKNOWN",
-        )
+        val expected =
+            mapOf(
+                WorkType.MOVIE to "MOVIE",
+                WorkType.SERIES to "SERIES",
+                WorkType.EPISODE to "EPISODE",
+                WorkType.CLIP to "CLIP",
+                WorkType.LIVE_CHANNEL to "LIVE", // DIVERGENT: enum name = "LIVE_CHANNEL"
+                WorkType.AUDIOBOOK to "AUDIOBOOK",
+                WorkType.MUSIC_TRACK to "MUSIC", // DIVERGENT: enum name = "MUSIC_TRACK"
+                WorkType.UNKNOWN to "UNKNOWN",
+            )
 
         for ((type, expectedString) in expected) {
             assertEquals(
@@ -211,7 +214,8 @@ class TypeMapperConsistencyTest {
         // Find the module root — tests run from the module directory
         val sourceDir = findSourceDir() ?: return emptyList()
 
-        sourceDir.walkTopDown()
+        sourceDir
+            .walkTopDown()
             .filter { it.isFile && it.extension == "kt" }
             .filter { it.name !in excludeFiles }
             .forEach { file ->
@@ -237,11 +241,12 @@ class TypeMapperConsistencyTest {
      * Tries multiple strategies since test working directory varies by runner.
      */
     private fun findSourceDir(): File? {
-        val candidates = listOf(
-            File("src/main/java"),
-            File("infra/data-nx/src/main/java"),
-            File(System.getProperty("user.dir"), "src/main/java"),
-        )
+        val candidates =
+            listOf(
+                File("src/main/java"),
+                File("infra/data-nx/src/main/java"),
+                File(System.getProperty("user.dir"), "src/main/java"),
+            )
         return candidates.firstOrNull { it.exists() && it.isDirectory }
     }
 }

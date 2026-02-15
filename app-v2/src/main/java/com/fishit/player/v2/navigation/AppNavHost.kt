@@ -1,6 +1,5 @@
 package com.fishit.player.v2.navigation
 
-import com.fishit.player.v2.BuildConfig
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -38,14 +37,15 @@ import com.fishit.player.feature.home.HomeScreen
 import com.fishit.player.feature.home.debug.DebugPlaybackScreen
 import com.fishit.player.feature.library.LibraryScreen
 import com.fishit.player.feature.onboarding.StartScreen
-import com.fishit.player.feature.settings.DebugScreen
 import com.fishit.player.feature.settings.CategorySelectionScreen
+import com.fishit.player.feature.settings.DebugScreen
 import com.fishit.player.feature.settings.SettingsScreen
 import com.fishit.player.feature.settings.dbinspector.DbInspectorDetailScreen
 import com.fishit.player.feature.settings.dbinspector.DbInspectorEntityTypesScreen
 import com.fishit.player.feature.settings.dbinspector.DbInspectorNavArgs
 import com.fishit.player.feature.settings.dbinspector.DbInspectorRowsScreen
 import com.fishit.player.ui.PlayerScreen
+import com.fishit.player.v2.BuildConfig
 import com.fishit.player.v2.ui.debug.DebugSkeletonScreen
 import kotlinx.coroutines.delay
 
@@ -81,19 +81,19 @@ fun AppNavHost(
 
     // Observe source activation state to determine start destination
     val activationSnapshot by sourceActivationStore.observeStates().collectAsState(
-        initial = sourceActivationStore.getCurrentSnapshot()
+        initial = sourceActivationStore.getCurrentSnapshot(),
     )
-    
+
     // Track if initial navigation has been determined
     var initialCheckComplete by remember { mutableStateOf(false) }
     var shouldStartAtHome by remember { mutableStateOf(false) }
-    
+
     // Determine start destination based on source activation
     // Wait a brief moment to allow XtreamSessionBootstrap to complete
     LaunchedEffect(Unit) {
         // Give bootstraps a moment to restore state (bootstrap has 2s delay)
         delay(200) // Small delay, bootstrap persists state immediately on success
-        
+
         // Check if user has active sources
         val snapshot = sourceActivationStore.getCurrentSnapshot()
         shouldStartAtHome = snapshot.hasActiveSources
@@ -105,7 +105,7 @@ fun AppNavHost(
         if (!initialCheckComplete) {
             Box(
                 modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
+                contentAlignment = Alignment.Center,
             ) {
                 CircularProgressIndicator()
             }

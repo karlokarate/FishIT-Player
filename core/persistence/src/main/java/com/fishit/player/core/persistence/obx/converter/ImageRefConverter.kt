@@ -58,7 +58,7 @@ class ImageRefConverter : PropertyConverter<ImageRef?, String?> {
     }
 }
 
-// NX_CONSOLIDATION_PLAN Phase 7 #14: Removed duplicate toUriString() — 
+// NX_CONSOLIDATION_PLAN Phase 7 #14: Removed duplicate toUriString() —
 // delegates to ImageRef.toUriString() in core:model (SSOT)
 
 // =============================================================================

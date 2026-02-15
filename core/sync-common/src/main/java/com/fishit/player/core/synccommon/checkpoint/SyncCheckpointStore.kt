@@ -59,156 +59,161 @@ import javax.inject.Singleton
  * @param context Application context for DataStore
  */
 @Singleton
-class SyncCheckpointStore @Inject constructor(
-    @ApplicationContext private val context: Context,
-) {
-    private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(
-        name = "sync_checkpoints",
-    )
-
-    companion object {
-        private const val TAG = "SyncCheckpointStore"
-
-        // Key prefixes
-        private const val PREFIX_PHASE = "phase_"
-        private const val PREFIX_CURSOR = "cursor_"
-        private const val PREFIX_TIMESTAMP = "timestamp_"
-        private const val PREFIX_ITEMS = "items_"
-        private const val PREFIX_PARTIAL = "partial_"
-        private const val PREFIX_VERSION = "version_"
-    }
-
-    /**
-     * Save checkpoint for a sync source.
-     *
-     * @param key Unique key identifying the source (e.g., "xtream_{accountKey}")
-     * @param checkpoint Checkpoint data to save
-     */
-    suspend fun saveCheckpoint(
-        key: String,
-        checkpoint: SyncCheckpoint,
+class SyncCheckpointStore
+    @Inject
+    constructor(
+        @ApplicationContext private val context: Context,
     ) {
-        try {
-            context.dataStore.edit { prefs ->
-                prefs[stringPreferencesKey("${PREFIX_PHASE}$key")] =
-                    checkpoint.lastCompletedPhase?.name ?: ""
-                prefs[stringPreferencesKey("${PREFIX_CURSOR}$key")] =
-                    checkpoint.lastCursor ?: ""
-                prefs[longPreferencesKey("${PREFIX_TIMESTAMP}$key")] =
-                    checkpoint.lastSyncTimestamp
-                prefs[longPreferencesKey("${PREFIX_ITEMS}$key")] =
-                    checkpoint.totalItemsSynced
-                prefs[booleanPreferencesKey("${PREFIX_PARTIAL}$key")] =
-                    checkpoint.isPartialSync
-                prefs[longPreferencesKey("${PREFIX_VERSION}$key")] =
-                    checkpoint.schemaVersion
-            }
-            UnifiedLog.d(TAG) { "Checkpoint saved for $key: phase=${checkpoint.lastCompletedPhase}, items=${checkpoint.totalItemsSynced}" }
-        } catch (e: Exception) {
-            UnifiedLog.e(TAG, e) { "Failed to save checkpoint for $key" }
+        private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(
+            name = "sync_checkpoints",
+        )
+
+        companion object {
+            private const val TAG = "SyncCheckpointStore"
+
+            // Key prefixes
+            private const val PREFIX_PHASE = "phase_"
+            private const val PREFIX_CURSOR = "cursor_"
+            private const val PREFIX_TIMESTAMP = "timestamp_"
+            private const val PREFIX_ITEMS = "items_"
+            private const val PREFIX_PARTIAL = "partial_"
+            private const val PREFIX_VERSION = "version_"
         }
-    }
 
-    /**
-     * Get checkpoint for a sync source.
-     *
-     * @param key Unique key identifying the source
-     * @return Checkpoint if exists and valid, null otherwise
-     */
-    suspend fun getCheckpoint(key: String): SyncCheckpoint? {
-        return try {
-            val prefs = context.dataStore.data.first()
-            val phaseName = prefs[stringPreferencesKey("${PREFIX_PHASE}$key")]
-            val cursor = prefs[stringPreferencesKey("${PREFIX_CURSOR}$key")]
-            val timestamp = prefs[longPreferencesKey("${PREFIX_TIMESTAMP}$key")] ?: 0L
-            val items = prefs[longPreferencesKey("${PREFIX_ITEMS}$key")] ?: 0L
-            val isPartial = prefs[booleanPreferencesKey("${PREFIX_PARTIAL}$key")] ?: false
-            val version = prefs[longPreferencesKey("${PREFIX_VERSION}$key")] ?: 1L
-
-            // No checkpoint if timestamp is 0
-            if (timestamp == 0L) return null
-
-            val phase = phaseName?.takeIf { it.isNotEmpty() }?.let {
-                try {
-                    SyncPhase.valueOf(it)
-                } catch (_: IllegalArgumentException) {
-                    null
+        /**
+         * Save checkpoint for a sync source.
+         *
+         * @param key Unique key identifying the source (e.g., "xtream_{accountKey}")
+         * @param checkpoint Checkpoint data to save
+         */
+        suspend fun saveCheckpoint(
+            key: String,
+            checkpoint: SyncCheckpoint,
+        ) {
+            try {
+                context.dataStore.edit { prefs ->
+                    prefs[stringPreferencesKey("${PREFIX_PHASE}$key")] =
+                        checkpoint.lastCompletedPhase?.name ?: ""
+                    prefs[stringPreferencesKey("${PREFIX_CURSOR}$key")] =
+                        checkpoint.lastCursor ?: ""
+                    prefs[longPreferencesKey("${PREFIX_TIMESTAMP}$key")] =
+                        checkpoint.lastSyncTimestamp
+                    prefs[longPreferencesKey("${PREFIX_ITEMS}$key")] =
+                        checkpoint.totalItemsSynced
+                    prefs[booleanPreferencesKey("${PREFIX_PARTIAL}$key")] =
+                        checkpoint.isPartialSync
+                    prefs[longPreferencesKey("${PREFIX_VERSION}$key")] =
+                        checkpoint.schemaVersion
                 }
+                UnifiedLog.d(
+                    TAG,
+                ) { "Checkpoint saved for $key: phase=${checkpoint.lastCompletedPhase}, items=${checkpoint.totalItemsSynced}" }
+            } catch (e: Exception) {
+                UnifiedLog.e(TAG, e) { "Failed to save checkpoint for $key" }
             }
+        }
 
-            SyncCheckpoint(
-                lastCompletedPhase = phase,
-                lastCursor = cursor?.takeIf { it.isNotEmpty() },
-                lastSyncTimestamp = timestamp,
-                totalItemsSynced = items,
-                isPartialSync = isPartial,
-                schemaVersion = version,
-            ).also {
-                UnifiedLog.d(TAG) { "Checkpoint loaded for $key: phase=${it.lastCompletedPhase}, items=${it.totalItemsSynced}" }
+        /**
+         * Get checkpoint for a sync source.
+         *
+         * @param key Unique key identifying the source
+         * @return Checkpoint if exists and valid, null otherwise
+         */
+        suspend fun getCheckpoint(key: String): SyncCheckpoint? {
+            return try {
+                val prefs = context.dataStore.data.first()
+                val phaseName = prefs[stringPreferencesKey("${PREFIX_PHASE}$key")]
+                val cursor = prefs[stringPreferencesKey("${PREFIX_CURSOR}$key")]
+                val timestamp = prefs[longPreferencesKey("${PREFIX_TIMESTAMP}$key")] ?: 0L
+                val items = prefs[longPreferencesKey("${PREFIX_ITEMS}$key")] ?: 0L
+                val isPartial = prefs[booleanPreferencesKey("${PREFIX_PARTIAL}$key")] ?: false
+                val version = prefs[longPreferencesKey("${PREFIX_VERSION}$key")] ?: 1L
+
+                // No checkpoint if timestamp is 0
+                if (timestamp == 0L) return null
+
+                val phase =
+                    phaseName?.takeIf { it.isNotEmpty() }?.let {
+                        try {
+                            SyncPhase.valueOf(it)
+                        } catch (_: IllegalArgumentException) {
+                            null
+                        }
+                    }
+
+                SyncCheckpoint(
+                    lastCompletedPhase = phase,
+                    lastCursor = cursor?.takeIf { it.isNotEmpty() },
+                    lastSyncTimestamp = timestamp,
+                    totalItemsSynced = items,
+                    isPartialSync = isPartial,
+                    schemaVersion = version,
+                ).also {
+                    UnifiedLog.d(TAG) { "Checkpoint loaded for $key: phase=${it.lastCompletedPhase}, items=${it.totalItemsSynced}" }
+                }
+            } catch (e: Exception) {
+                UnifiedLog.e(TAG, e) { "Failed to get checkpoint for $key" }
+                null
             }
-        } catch (e: Exception) {
-            UnifiedLog.e(TAG, e) { "Failed to get checkpoint for $key" }
-            null
+        }
+
+        /**
+         * Clear checkpoint for a sync source (after successful full sync).
+         *
+         * @param key Unique key identifying the source
+         */
+        suspend fun clearCheckpoint(key: String) {
+            try {
+                context.dataStore.edit { prefs ->
+                    prefs.remove(stringPreferencesKey("${PREFIX_PHASE}$key"))
+                    prefs.remove(stringPreferencesKey("${PREFIX_CURSOR}$key"))
+                    prefs.remove(longPreferencesKey("${PREFIX_TIMESTAMP}$key"))
+                    prefs.remove(longPreferencesKey("${PREFIX_ITEMS}$key"))
+                    prefs.remove(booleanPreferencesKey("${PREFIX_PARTIAL}$key"))
+                    prefs.remove(longPreferencesKey("${PREFIX_VERSION}$key"))
+                }
+                UnifiedLog.d(TAG) { "Checkpoint cleared for $key" }
+            } catch (e: Exception) {
+                UnifiedLog.e(TAG, e) { "Failed to clear checkpoint for $key" }
+            }
+        }
+
+        /**
+         * Check if a checkpoint exists and is valid for resumption.
+         *
+         * @param key Unique key identifying the source
+         * @param maxAgeMs Maximum age in milliseconds (default: 24 hours)
+         * @return true if valid checkpoint exists
+         */
+        suspend fun hasValidCheckpoint(
+            key: String,
+            maxAgeMs: Long = 24 * 60 * 60 * 1000L,
+        ): Boolean {
+            val checkpoint = getCheckpoint(key) ?: return false
+            val age = System.currentTimeMillis() - checkpoint.lastSyncTimestamp
+            return age < maxAgeMs && checkpoint.isPartialSync
+        }
+
+        /**
+         * Update cursor within current phase (for paginated APIs).
+         *
+         * @param key Unique key identifying the source
+         * @param cursor New cursor value
+         */
+        suspend fun updateCursor(
+            key: String,
+            cursor: String,
+        ) {
+            try {
+                context.dataStore.edit { prefs ->
+                    prefs[stringPreferencesKey("${PREFIX_CURSOR}$key")] = cursor
+                    prefs[longPreferencesKey("${PREFIX_TIMESTAMP}$key")] = System.currentTimeMillis()
+                }
+            } catch (e: Exception) {
+                UnifiedLog.e(TAG, e) { "Failed to update cursor for $key" }
+            }
         }
     }
-
-    /**
-     * Clear checkpoint for a sync source (after successful full sync).
-     *
-     * @param key Unique key identifying the source
-     */
-    suspend fun clearCheckpoint(key: String) {
-        try {
-            context.dataStore.edit { prefs ->
-                prefs.remove(stringPreferencesKey("${PREFIX_PHASE}$key"))
-                prefs.remove(stringPreferencesKey("${PREFIX_CURSOR}$key"))
-                prefs.remove(longPreferencesKey("${PREFIX_TIMESTAMP}$key"))
-                prefs.remove(longPreferencesKey("${PREFIX_ITEMS}$key"))
-                prefs.remove(booleanPreferencesKey("${PREFIX_PARTIAL}$key"))
-                prefs.remove(longPreferencesKey("${PREFIX_VERSION}$key"))
-            }
-            UnifiedLog.d(TAG) { "Checkpoint cleared for $key" }
-        } catch (e: Exception) {
-            UnifiedLog.e(TAG, e) { "Failed to clear checkpoint for $key" }
-        }
-    }
-
-    /**
-     * Check if a checkpoint exists and is valid for resumption.
-     *
-     * @param key Unique key identifying the source
-     * @param maxAgeMs Maximum age in milliseconds (default: 24 hours)
-     * @return true if valid checkpoint exists
-     */
-    suspend fun hasValidCheckpoint(
-        key: String,
-        maxAgeMs: Long = 24 * 60 * 60 * 1000L,
-    ): Boolean {
-        val checkpoint = getCheckpoint(key) ?: return false
-        val age = System.currentTimeMillis() - checkpoint.lastSyncTimestamp
-        return age < maxAgeMs && checkpoint.isPartialSync
-    }
-
-    /**
-     * Update cursor within current phase (for paginated APIs).
-     *
-     * @param key Unique key identifying the source
-     * @param cursor New cursor value
-     */
-    suspend fun updateCursor(
-        key: String,
-        cursor: String,
-    ) {
-        try {
-            context.dataStore.edit { prefs ->
-                prefs[stringPreferencesKey("${PREFIX_CURSOR}$key")] = cursor
-                prefs[longPreferencesKey("${PREFIX_TIMESTAMP}$key")] = System.currentTimeMillis()
-            }
-        } catch (e: Exception) {
-            UnifiedLog.e(TAG, e) { "Failed to update cursor for $key" }
-        }
-    }
-}
 
 /**
  * Checkpoint data for resumable sync.

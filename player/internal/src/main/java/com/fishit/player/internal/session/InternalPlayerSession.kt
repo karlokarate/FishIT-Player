@@ -17,7 +17,6 @@ import com.fishit.player.core.playermodel.PlaybackState
 import com.fishit.player.core.playermodel.SubtitleSelectionState
 import com.fishit.player.core.playermodel.SubtitleTrackId
 import com.fishit.player.infra.logging.UnifiedLog
-import com.fishit.player.internal.BuildConfig
 import com.fishit.player.internal.audio.AudioTrackManager
 import com.fishit.player.internal.source.PlaybackSourceResolver
 import com.fishit.player.internal.state.InternalPlayerState
@@ -33,7 +32,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
-import kotlinx.coroutines.withContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -41,6 +39,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /**
  * Manages an internal player session with ExoPlayer.
@@ -86,20 +85,20 @@ class InternalPlayerSession(
          * content-sniffing via DefaultExtractorsFactory regardless of the MIME type.
          * Setting them has zero effect and can cause confusion.
          */
-        private val ADAPTIVE_MIME_TYPES = setOf(
-            "application/x-mpegurl",       // HLS
-            "application/vnd.apple.mpegurl", // HLS alt
-            "application/dash+xml",         // DASH
-            "application/vnd.ms-sstr+xml",  // Smooth Streaming
-        )
+        private val ADAPTIVE_MIME_TYPES =
+            setOf(
+                "application/x-mpegurl", // HLS
+                "application/vnd.apple.mpegurl", // HLS alt
+                "application/dash+xml", // DASH
+                "application/vnd.ms-sstr+xml", // Smooth Streaming
+            )
 
         /**
          * Check if a MIME type requires explicit routing to a dedicated MediaSource.
          *
          * @return true for HLS, DASH, Smooth Streaming; false for all progressive formats
          */
-        private fun isAdaptiveStreamingMimeType(mimeType: String): Boolean =
-            mimeType.lowercase() in ADAPTIVE_MIME_TYPES
+        private fun isAdaptiveStreamingMimeType(mimeType: String): Boolean = mimeType.lowercase() in ADAPTIVE_MIME_TYPES
     }
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)

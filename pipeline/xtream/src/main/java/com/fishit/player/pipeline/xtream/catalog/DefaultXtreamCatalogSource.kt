@@ -3,7 +3,6 @@ package com.fishit.player.pipeline.xtream.catalog
 import com.fishit.player.infra.logging.UnifiedLog
 import com.fishit.player.pipeline.xtream.adapter.XtreamPipelineAdapter
 import com.fishit.player.pipeline.xtream.model.XtreamChannel
-import com.fishit.player.pipeline.xtream.model.XtreamEpisode
 import com.fishit.player.pipeline.xtream.model.XtreamSeriesItem
 import com.fishit.player.pipeline.xtream.model.XtreamVodItem
 import kotlinx.coroutines.async

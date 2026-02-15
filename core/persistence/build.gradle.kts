@@ -25,7 +25,6 @@ android {
         jvmTarget = "17"
     }
 
-
     // Include kapt-generated ObjectBox sources in Java compilation
     sourceSets {
         getByName("debug") {

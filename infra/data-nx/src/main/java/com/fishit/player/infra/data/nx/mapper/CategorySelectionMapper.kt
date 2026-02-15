@@ -1,6 +1,5 @@
 package com.fishit.player.infra.data.nx.mapper
 
-import com.fishit.player.core.model.repository.NxCategorySelectionRepository
 import com.fishit.player.core.model.repository.NxCategorySelectionRepository.CategorySelection
 import com.fishit.player.core.model.repository.NxCategorySelectionRepository.XtreamCategoryType
 import com.fishit.player.core.persistence.obx.NX_XtreamCategorySelection
@@ -14,12 +13,13 @@ import com.fishit.player.core.persistence.obx.NX_XtreamCategorySelection
 internal fun NX_XtreamCategorySelection.toDomain(): CategorySelection =
     CategorySelection(
         accountKey = accountKey,
-        categoryType = when (categoryType) {
-            "VOD" -> XtreamCategoryType.VOD
-            "SERIES" -> XtreamCategoryType.SERIES
-            "LIVE" -> XtreamCategoryType.LIVE
-            else -> XtreamCategoryType.VOD
-        },
+        categoryType =
+            when (categoryType) {
+                "VOD" -> XtreamCategoryType.VOD
+                "SERIES" -> XtreamCategoryType.SERIES
+                "LIVE" -> XtreamCategoryType.LIVE
+                else -> XtreamCategoryType.VOD
+            },
         sourceCategoryId = sourceCategoryId,
         categoryName = categoryName,
         isSelected = isSelected,
@@ -41,9 +41,7 @@ internal fun CategorySelection.toEntity(): NX_XtreamCategorySelection =
         updatedAt = System.currentTimeMillis(),
     )
 
-internal fun CategorySelection.updateEntity(
-    existing: NX_XtreamCategorySelection
-): NX_XtreamCategorySelection =
+internal fun CategorySelection.updateEntity(existing: NX_XtreamCategorySelection): NX_XtreamCategorySelection =
     existing.apply {
         this.categoryName = this@updateEntity.categoryName
         this.isSelected = this@updateEntity.isSelected

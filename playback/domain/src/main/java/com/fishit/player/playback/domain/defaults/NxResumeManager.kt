@@ -40,10 +40,11 @@ class NxResumeManager
         override suspend fun getResumePoint(contentId: String): ResumePoint? =
             try {
                 val workKey = normalizeToWorkKey(contentId)
-                val userState = userStateRepository.get(
-                    profileKey = DEFAULT_PROFILE_KEY,
-                    workKey = workKey,
-                )
+                val userState =
+                    userStateRepository.get(
+                        profileKey = DEFAULT_PROFILE_KEY,
+                        workKey = workKey,
+                    )
 
                 userState?.takeIf { it.resumePositionMs > 0 }?.let { state ->
                     ResumePoint(
@@ -98,10 +99,12 @@ class NxResumeManager
 
         override suspend fun getAllResumePoints(): List<ResumePoint> =
             try {
-                val continueWatching = userStateRepository.observeContinueWatching(
-                    profileKey = DEFAULT_PROFILE_KEY,
-                    limit = 50,
-                ).first()
+                val continueWatching =
+                    userStateRepository
+                        .observeContinueWatching(
+                            profileKey = DEFAULT_PROFILE_KEY,
+                            limit = 50,
+                        ).first()
 
                 continueWatching.map { state ->
                     ResumePoint(

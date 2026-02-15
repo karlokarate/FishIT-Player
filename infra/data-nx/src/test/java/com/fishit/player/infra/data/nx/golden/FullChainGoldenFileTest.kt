@@ -18,8 +18,8 @@ import com.fishit.player.infra.data.nx.mapper.SourceKeyParser
 import com.fishit.player.infra.data.nx.writer.builder.SourceRefBuilder
 import com.fishit.player.infra.data.nx.writer.builder.VariantBuilder
 import com.fishit.player.infra.data.nx.writer.builder.WorkEntityBuilder
-import java.io.File
 import kotlinx.coroutines.test.runTest
+import java.io.File
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -65,7 +65,6 @@ import kotlin.test.assertNotNull
  * 6. Minimal item — bare minimum fields, all defaults, heuristic recognition
  */
 class FullChainGoldenFileTest {
-
     // Production components — all zero-arg constructors, no DI needed
     private val normalizer = RegexMediaMetadataNormalizer()
     private val workBuilder = WorkEntityBuilder()
@@ -88,115 +87,128 @@ class FullChainGoldenFileTest {
      * Xtream API provides explicit year, mediaType, rating, etc.
      * Has playback hints → produces a Variant entity.
      */
-    private fun createXtreamVodMovieRaw() = RawMediaMetadata(
-        sourceId = "xtream:vod:87654",
-        sourceType = SourceType.XTREAM,
-        sourceLabel = "premium-iptv",
-        originalTitle = "Oppenheimer 2023",
-        mediaType = MediaType.MOVIE,
-        year = 2023,
-        poster = ImageRef.Http(
-            url = "https://image.tmdb.org/t/p/w500/8Gxv8gSFCU0XGDykEGv7zR1n2ua.jpg",
-            preferredWidth = 500,
-            preferredHeight = 750,
-        ),
-        backdrop = ImageRef.Http(
-            url = "https://image.tmdb.org/t/p/w1280/fm6KqXpk3M2HVveHwCrBSSBaO0V.jpg",
-            preferredWidth = 1280,
-            preferredHeight = 720,
-        ),
-        rating = 8.1,
-        genres = "Drama, History",
-        plot = "The story of J. Robert Oppenheimer and the Manhattan Project.",
-        director = "Christopher Nolan",
-        cast = "Cillian Murphy, Emily Blunt, Robert Downey Jr.",
-        trailer = "https://youtube.com/watch?v=uYPbbksJxIg",
-        releaseDate = "2023-07-19",
-        durationMs = 10_860_000L,
-        externalIds = ExternalIds(
-            tmdb = TmdbRef(TmdbMediaType.MOVIE, 872585),
-            imdbId = "tt15398776",
-        ),
-        playbackHints = mapOf(
-            "xtream.containerExtension" to "mp4",
-            "xtream.streamId" to "87654",
-        ),
-        addedTimestamp = 1690000000L,
-    )
+    private fun createXtreamVodMovieRaw() =
+        RawMediaMetadata(
+            sourceId = "xtream:vod:87654",
+            sourceType = SourceType.XTREAM,
+            sourceLabel = "premium-iptv",
+            originalTitle = "Oppenheimer 2023",
+            mediaType = MediaType.MOVIE,
+            year = 2023,
+            poster =
+                ImageRef.Http(
+                    url = "https://image.tmdb.org/t/p/w500/8Gxv8gSFCU0XGDykEGv7zR1n2ua.jpg",
+                    preferredWidth = 500,
+                    preferredHeight = 750,
+                ),
+            backdrop =
+                ImageRef.Http(
+                    url = "https://image.tmdb.org/t/p/w1280/fm6KqXpk3M2HVveHwCrBSSBaO0V.jpg",
+                    preferredWidth = 1280,
+                    preferredHeight = 720,
+                ),
+            rating = 8.1,
+            genres = "Drama, History",
+            plot = "The story of J. Robert Oppenheimer and the Manhattan Project.",
+            director = "Christopher Nolan",
+            cast = "Cillian Murphy, Emily Blunt, Robert Downey Jr.",
+            trailer = "https://youtube.com/watch?v=uYPbbksJxIg",
+            releaseDate = "2023-07-19",
+            durationMs = 10_860_000L,
+            externalIds =
+                ExternalIds(
+                    tmdb = TmdbRef(TmdbMediaType.MOVIE, 872585),
+                    imdbId = "tt15398776",
+                ),
+            playbackHints =
+                mapOf(
+                    "xtream.containerExtension" to "mp4",
+                    "xtream.streamId" to "87654",
+                ),
+            addedTimestamp = 1690000000L,
+        )
 
     /**
      * Xtream series episode with structured season/episode from API.
      * Has m3u8 container → should normalize to "hls".
      */
-    private fun createXtreamSeriesEpisodeRaw() = RawMediaMetadata(
-        sourceId = "xtream:episode:5001:2:7",
-        sourceType = SourceType.XTREAM,
-        sourceLabel = "premium-iptv",
-        originalTitle = "Breaking Bad S02E07",
-        mediaType = MediaType.SERIES_EPISODE,
-        year = 2009,
-        season = 2,
-        episode = 7,
-        poster = ImageRef.Http(
-            url = "https://image.tmdb.org/t/p/w500/ggFHVNu6YYI5L9pCfOacjizRGt.jpg",
-            preferredWidth = 500,
-            preferredHeight = 750,
-        ),
-        rating = 9.5,
-        genres = "Crime, Drama, Thriller",
-        plot = "Walt and Jesse try a new method of distribution.",
-        durationMs = 2_820_000L,
-        externalIds = ExternalIds(
-            tmdb = TmdbRef(TmdbMediaType.TV, 1396),
-            imdbId = "tt0903747",
-        ),
-        playbackHints = mapOf(
-            "xtream.containerExtension" to "m3u8",
-            "xtream.streamId" to "5001",
-        ),
-        addedTimestamp = 1680000000L,
-    )
+    private fun createXtreamSeriesEpisodeRaw() =
+        RawMediaMetadata(
+            sourceId = "xtream:episode:5001:2:7",
+            sourceType = SourceType.XTREAM,
+            sourceLabel = "premium-iptv",
+            originalTitle = "Breaking Bad S02E07",
+            mediaType = MediaType.SERIES_EPISODE,
+            year = 2009,
+            season = 2,
+            episode = 7,
+            poster =
+                ImageRef.Http(
+                    url = "https://image.tmdb.org/t/p/w500/ggFHVNu6YYI5L9pCfOacjizRGt.jpg",
+                    preferredWidth = 500,
+                    preferredHeight = 750,
+                ),
+            rating = 9.5,
+            genres = "Crime, Drama, Thriller",
+            plot = "Walt and Jesse try a new method of distribution.",
+            durationMs = 2_820_000L,
+            externalIds =
+                ExternalIds(
+                    tmdb = TmdbRef(TmdbMediaType.TV, 1396),
+                    imdbId = "tt0903747",
+                ),
+            playbackHints =
+                mapOf(
+                    "xtream.containerExtension" to "m3u8",
+                    "xtream.streamId" to "5001",
+                ),
+            addedTimestamp = 1680000000L,
+        )
 
     /**
      * Xtream live channel with EPG and catchup fields.
      * No playback hints → no Variant entity created.
      */
-    private fun createXtreamLiveChannelRaw() = RawMediaMetadata(
-        sourceId = "xtream:live:999",
-        sourceType = SourceType.XTREAM,
-        sourceLabel = "premium-iptv",
-        originalTitle = "BBC One HD",
-        mediaType = MediaType.LIVE,
-        poster = ImageRef.Http(
-            url = "https://cdn.example.com/logos/bbc_one_hd.png",
-            preferredWidth = 200,
-            preferredHeight = 200,
-        ),
-        genres = "Entertainment, News",
-        epgChannelId = "bbc.one.hd",
-        tvArchive = 1,
-        tvArchiveDuration = 7,
-        categoryId = "uk-entertainment",
-    )
+    private fun createXtreamLiveChannelRaw() =
+        RawMediaMetadata(
+            sourceId = "xtream:live:999",
+            sourceType = SourceType.XTREAM,
+            sourceLabel = "premium-iptv",
+            originalTitle = "BBC One HD",
+            mediaType = MediaType.LIVE,
+            poster =
+                ImageRef.Http(
+                    url = "https://cdn.example.com/logos/bbc_one_hd.png",
+                    preferredWidth = 200,
+                    preferredHeight = 200,
+                ),
+            genres = "Entertainment, News",
+            epgChannelId = "bbc.one.hd",
+            tvArchive = 1,
+            tvArchiveDuration = 7,
+            categoryId = "uk-entertainment",
+        )
 
     /**
      * Telegram video with scene-style filename (no structured metadata).
      * Normalizer must parse: "Oppenheimer.2023.1080p.BluRay.x264-YTS"
      * → title="Oppenheimer", year=2023, mediaType=MOVIE (refined from UNKNOWN)
      */
-    private fun createTelegramSceneMovieRaw() = RawMediaMetadata(
-        sourceId = "msg:-1001234567890:42001",
-        sourceType = SourceType.TELEGRAM,
-        sourceLabel = "movie-channel",
-        originalTitle = "Oppenheimer.2023.1080p.BluRay.x264-YTS",
-        mediaType = MediaType.UNKNOWN, // Telegram doesn't know media type
-        thumbnail = ImageRef.TelegramThumb(
-            remoteId = "AgACAgIAAxkBAAIBZ2XYabcdef",
-            preferredWidth = 320,
-            preferredHeight = 180,
-        ),
-        durationMs = 10_860_000L,
-    )
+    private fun createTelegramSceneMovieRaw() =
+        RawMediaMetadata(
+            sourceId = "msg:-1001234567890:42001",
+            sourceType = SourceType.TELEGRAM,
+            sourceLabel = "movie-channel",
+            originalTitle = "Oppenheimer.2023.1080p.BluRay.x264-YTS",
+            mediaType = MediaType.UNKNOWN, // Telegram doesn't know media type
+            thumbnail =
+                ImageRef.TelegramThumb(
+                    remoteId = "AgACAgIAAxkBAAIBZ2XYabcdef",
+                    preferredWidth = 320,
+                    preferredHeight = 180,
+                ),
+            durationMs = 10_860_000L,
+        )
 
     /**
      * Telegram series episode with scene naming convention.
@@ -204,26 +216,28 @@ class FullChainGoldenFileTest {
      * "Breaking Bad S05E16 Felina German DL 1080p BluRay x264.mkv"
      * → title="Breaking Bad", season=5, episode=16, mediaType=SERIES_EPISODE
      */
-    private fun createTelegramSeriesEpisodeRaw() = RawMediaMetadata(
-        sourceId = "msg:-1001234567890:42050",
-        sourceType = SourceType.TELEGRAM,
-        sourceLabel = "series-channel",
-        originalTitle = "Breaking Bad S05E16 Felina German DL 1080p BluRay x264.mkv",
-        mediaType = MediaType.UNKNOWN,
-        durationMs = 2_820_000L,
-    )
+    private fun createTelegramSeriesEpisodeRaw() =
+        RawMediaMetadata(
+            sourceId = "msg:-1001234567890:42050",
+            sourceType = SourceType.TELEGRAM,
+            sourceLabel = "series-channel",
+            originalTitle = "Breaking Bad S05E16 Felina German DL 1080p BluRay x264.mkv",
+            mediaType = MediaType.UNKNOWN,
+            durationMs = 2_820_000L,
+        )
 
     /**
      * Minimal item — only required fields set.
      * Tests default handling in normalizer and all builders.
      */
-    private fun createMinimalRaw() = RawMediaMetadata(
-        sourceId = "xtream:vod:1",
-        sourceType = SourceType.XTREAM,
-        sourceLabel = "basic-server",
-        originalTitle = "Unknown Video File",
-        mediaType = MediaType.UNKNOWN,
-    )
+    private fun createMinimalRaw() =
+        RawMediaMetadata(
+            sourceId = "xtream:vod:1",
+            sourceType = SourceType.XTREAM,
+            sourceLabel = "basic-server",
+            originalTitle = "Unknown Video File",
+            mediaType = MediaType.UNKNOWN,
+        )
 
     // =========================================================================
     // Key Building (mirrors NxCatalogWriter - uses canonical mappers)
@@ -245,7 +259,10 @@ class FullChainGoldenFileTest {
         )
     }
 
-    private fun buildSourceKey(raw: RawMediaMetadata, accountKey: String): String {
+    private fun buildSourceKey(
+        raw: RawMediaMetadata,
+        accountKey: String,
+    ): String {
         // Mirror NxCatalogWriter: strip sourceType prefix from accountKey
         val identifier = accountKey.removePrefix("${raw.sourceType.name.lowercase()}:")
         return SourceKeyParser.buildSourceKey(raw.sourceType, identifier, raw.sourceId)
@@ -266,7 +283,10 @@ class FullChainGoldenFileTest {
         val variant: NxWorkVariantRepository.Variant?,
     )
 
-    private suspend fun runChain(raw: RawMediaMetadata, accountKey: String): ChainOutput {
+    private suspend fun runChain(
+        raw: RawMediaMetadata,
+        accountKey: String,
+    ): ChainOutput {
         // Step 1: Normalize (title parsing, type refinement)
         val normalized = normalizer.normalize(raw)
 
@@ -282,11 +302,12 @@ class FullChainGoldenFileTest {
         val sourceRef = sourceRefBuilder.build(raw, workKey, accountKey, sourceKey, fixedNow)
 
         // Step 5: Build Variant entity (only if playback hints present)
-        val variant = if (raw.playbackHints.isNotEmpty()) {
-            variantBuilder.build(variantKey, workKey, sourceKey, raw.playbackHints, normalized.durationMs, fixedNow)
-        } else {
-            null
-        }
+        val variant =
+            if (raw.playbackHints.isNotEmpty()) {
+                variantBuilder.build(variantKey, workKey, sourceKey, raw.playbackHints, normalized.durationMs, fixedNow)
+            } else {
+                null
+            }
 
         return ChainOutput(work, sourceRef, variant)
     }
@@ -295,7 +316,10 @@ class FullChainGoldenFileTest {
     // Golden File Comparison
     // =========================================================================
 
-    private fun assertGoldenMatch(testName: String, output: ChainOutput) {
+    private fun assertGoldenMatch(
+        testName: String,
+        output: ChainOutput,
+    ) {
         val goldenFile = File(goldenDir, "$testName.json")
         val actualJson = ChainOutputJsonSerializer.toJsonString(output.work, output.sourceRef, output.variant)
 
@@ -320,7 +344,8 @@ class FullChainGoldenFileTest {
         val actual = ChainOutputJsonSerializer.parseGoldenFile(actualJson)
 
         assertEquals(
-            expected, actual,
+            expected,
+            actual,
             "Golden file mismatch for '$testName'.\n" +
                 "Expected (from golden file):\n$expectedJson\n\n" +
                 "Actual (from chain):\n$actualJson\n\n" +
@@ -334,94 +359,100 @@ class FullChainGoldenFileTest {
     // =========================================================================
 
     @Test
-    fun `xtream_vod_movie - full chain with structured metadata and TMDB`() = runTest {
-        val raw = createXtreamVodMovieRaw()
-        val output = runChain(raw, accountKey = "xtream:premium-iptv")
+    fun `xtream_vod_movie - full chain with structured metadata and TMDB`() =
+        runTest {
+            val raw = createXtreamVodMovieRaw()
+            val output = runChain(raw, accountKey = "xtream:premium-iptv")
 
-        // Verify key structural properties before golden comparison
-        assertEquals("movie:tmdb:872585", output.work.workKey)
-        assertEquals(NxWorkRepository.WorkType.MOVIE, output.work.type)
-        assertEquals(NxWorkRepository.RecognitionState.CONFIRMED, output.work.recognitionState)
-        assertEquals("872585", output.work.tmdbId)
-        assertNotNull(output.variant, "VOD with playback hints should produce a Variant")
-        assertEquals("mp4", output.variant?.container)
-        assertEquals("87654", output.sourceRef.sourceItemKey)
+            // Verify key structural properties before golden comparison
+            assertEquals("movie:tmdb:872585", output.work.workKey)
+            assertEquals(NxWorkRepository.WorkType.MOVIE, output.work.type)
+            assertEquals(NxWorkRepository.RecognitionState.CONFIRMED, output.work.recognitionState)
+            assertEquals("872585", output.work.tmdbId)
+            assertNotNull(output.variant, "VOD with playback hints should produce a Variant")
+            assertEquals("mp4", output.variant?.container)
+            assertEquals("87654", output.sourceRef.sourceItemKey)
 
-        assertGoldenMatch("xtream_vod_movie", output)
-    }
-
-    @Test
-    fun `xtream_series_episode - season_episode with m3u8 to hls normalization`() = runTest {
-        val raw = createXtreamSeriesEpisodeRaw()
-        val output = runChain(raw, accountKey = "xtream:premium-iptv")
-
-        // Verify episode-specific behavior
-        assertEquals(2, output.work.season)
-        assertEquals(7, output.work.episode)
-        assertNotNull(output.variant)
-        assertEquals("hls", output.variant?.container, "m3u8 should normalize to hls")
-        assertEquals(NxWorkSourceRefRepository.SourceItemKind.EPISODE, output.sourceRef.sourceItemKind)
-
-        assertGoldenMatch("xtream_series_episode", output)
-    }
+            assertGoldenMatch("xtream_vod_movie", output)
+        }
 
     @Test
-    fun `xtream_live_channel - EPG fields and no variant`() = runTest {
-        val raw = createXtreamLiveChannelRaw()
-        val output = runChain(raw, accountKey = "xtream:premium-iptv")
+    fun `xtream_series_episode - season_episode with m3u8 to hls normalization`() =
+        runTest {
+            val raw = createXtreamSeriesEpisodeRaw()
+            val output = runChain(raw, accountKey = "xtream:premium-iptv")
 
-        // Verify live-specific behavior
-        assertEquals(NxWorkRepository.WorkType.LIVE_CHANNEL, output.work.type)
-        assertEquals("bbc.one.hd", output.sourceRef.epgChannelId)
-        assertEquals(1, output.sourceRef.tvArchive)
-        assertEquals(7, output.sourceRef.tvArchiveDuration)
-        assertEquals(null, output.variant, "Live channel without hints should have no Variant")
+            // Verify episode-specific behavior
+            assertEquals(2, output.work.season)
+            assertEquals(7, output.work.episode)
+            assertNotNull(output.variant)
+            assertEquals("hls", output.variant?.container, "m3u8 should normalize to hls")
+            assertEquals(NxWorkSourceRefRepository.SourceItemKind.EPISODE, output.sourceRef.sourceItemKind)
 
-        assertGoldenMatch("xtream_live_channel", output)
-    }
-
-    @Test
-    fun `telegram_scene_movie - title parsing and type refinement`() = runTest {
-        val raw = createTelegramSceneMovieRaw()
-        val output = runChain(raw, accountKey = "telegram:movie-channel")
-
-        // Verify normalizer parsed the scene name correctly
-        assertEquals("Oppenheimer", output.work.displayTitle, "Scene name should be cleaned")
-        assertEquals(2023, output.work.year, "Year should be extracted from scene name")
-        assertEquals(NxWorkRepository.WorkType.MOVIE, output.work.type, "UNKNOWN → MOVIE with year")
-        assertEquals(NxWorkRepository.RecognitionState.HEURISTIC, output.work.recognitionState)
-        // Telegram preserves full msg:chatId:messageId format
-        assertEquals("msg:-1001234567890:42001", output.sourceRef.sourceItemKey)
-
-        assertGoldenMatch("telegram_scene_movie", output)
-    }
+            assertGoldenMatch("xtream_series_episode", output)
+        }
 
     @Test
-    fun `telegram_series_episode - scene name S05E16 parsing`() = runTest {
-        val raw = createTelegramSeriesEpisodeRaw()
-        val output = runChain(raw, accountKey = "telegram:series-channel")
+    fun `xtream_live_channel - EPG fields and no variant`() =
+        runTest {
+            val raw = createXtreamLiveChannelRaw()
+            val output = runChain(raw, accountKey = "xtream:premium-iptv")
 
-        // The golden file captures the actual normalizer output for this scene name.
-        // Pre-assertions verify only fields that are INPUT-determined (not parser-dependent):
-        assertEquals("msg:-1001234567890:42050", output.sourceRef.sourceItemKey)
-        assertEquals(NxWorkSourceRefRepository.SourceType.TELEGRAM, output.sourceRef.sourceType)
+            // Verify live-specific behavior
+            assertEquals(NxWorkRepository.WorkType.LIVE_CHANNEL, output.work.type)
+            assertEquals("bbc.one.hd", output.sourceRef.epgChannelId)
+            assertEquals(1, output.sourceRef.tvArchive)
+            assertEquals(7, output.sourceRef.tvArchiveDuration)
+            assertEquals(null, output.variant, "Live channel without hints should have no Variant")
 
-        assertGoldenMatch("telegram_series_episode", output)
-    }
+            assertGoldenMatch("xtream_live_channel", output)
+        }
 
     @Test
-    fun `minimal_item - defaults and heuristic recognition`() = runTest {
-        val raw = createMinimalRaw()
-        val output = runChain(raw, accountKey = "xtream:basic-server")
+    fun `telegram_scene_movie - title parsing and type refinement`() =
+        runTest {
+            val raw = createTelegramSceneMovieRaw()
+            val output = runChain(raw, accountKey = "telegram:movie-channel")
 
-        // Verify minimal defaults
-        assertEquals(NxWorkRepository.RecognitionState.HEURISTIC, output.work.recognitionState)
-        assertEquals(null, output.work.tmdbId)
-        assertEquals(null, output.work.year)
-        assertEquals(null, output.variant, "No playback hints → no Variant")
-        assertEquals(false, output.work.isAdult)
-        assertEquals(false, output.work.isDeleted)
+            // Verify normalizer parsed the scene name correctly
+            assertEquals("Oppenheimer", output.work.displayTitle, "Scene name should be cleaned")
+            assertEquals(2023, output.work.year, "Year should be extracted from scene name")
+            assertEquals(NxWorkRepository.WorkType.MOVIE, output.work.type, "UNKNOWN → MOVIE with year")
+            assertEquals(NxWorkRepository.RecognitionState.HEURISTIC, output.work.recognitionState)
+            // Telegram preserves full msg:chatId:messageId format
+            assertEquals("msg:-1001234567890:42001", output.sourceRef.sourceItemKey)
 
-        assertGoldenMatch("minimal_item", output)
-    }
+            assertGoldenMatch("telegram_scene_movie", output)
+        }
+
+    @Test
+    fun `telegram_series_episode - scene name S05E16 parsing`() =
+        runTest {
+            val raw = createTelegramSeriesEpisodeRaw()
+            val output = runChain(raw, accountKey = "telegram:series-channel")
+
+            // The golden file captures the actual normalizer output for this scene name.
+            // Pre-assertions verify only fields that are INPUT-determined (not parser-dependent):
+            assertEquals("msg:-1001234567890:42050", output.sourceRef.sourceItemKey)
+            assertEquals(NxWorkSourceRefRepository.SourceType.TELEGRAM, output.sourceRef.sourceType)
+
+            assertGoldenMatch("telegram_series_episode", output)
+        }
+
+    @Test
+    fun `minimal_item - defaults and heuristic recognition`() =
+        runTest {
+            val raw = createMinimalRaw()
+            val output = runChain(raw, accountKey = "xtream:basic-server")
+
+            // Verify minimal defaults
+            assertEquals(NxWorkRepository.RecognitionState.HEURISTIC, output.work.recognitionState)
+            assertEquals(null, output.work.tmdbId)
+            assertEquals(null, output.work.year)
+            assertEquals(null, output.variant, "No playback hints → no Variant")
+            assertEquals(false, output.work.isAdult)
+            assertEquals(false, output.work.isDeleted)
+
+            assertGoldenMatch("minimal_item", output)
+        }
 }

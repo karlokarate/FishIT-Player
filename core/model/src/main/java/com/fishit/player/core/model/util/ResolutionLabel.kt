@@ -10,21 +10,21 @@ package com.fishit.player.core.model.util
  * - [badgeLabel]: Compact badge labels ("4K", "FHD", "HD") — for UI overlays
  */
 object ResolutionLabel {
-
     /**
      * Standard resolution label from pixel height.
      *
      * @param height Video height in pixels (e.g., 2160, 1080, 720)
      * @return Label string, or null if height is null/zero
      */
-    fun fromHeight(height: Int?): String? = when {
-        height == null || height <= 0 -> null
-        height >= 2160 -> "4K"
-        height >= 1080 -> "1080p"
-        height >= 720 -> "720p"
-        height >= 480 -> "480p"
-        else -> "SD"
-    }
+    fun fromHeight(height: Int?): String? =
+        when {
+            height == null || height <= 0 -> null
+            height >= 2160 -> "4K"
+            height >= 1080 -> "1080p"
+            height >= 720 -> "720p"
+            height >= 480 -> "480p"
+            else -> "SD"
+        }
 
     /**
      * Compact badge label for UI thumbnail overlays.
@@ -35,11 +35,12 @@ object ResolutionLabel {
      * @param height Video height in pixels
      * @return Badge label, or null if not badge-worthy
      */
-    fun badgeLabel(height: Int?): String? = when {
-        height == null || height <= 0 -> null
-        height >= 2160 -> "4K"
-        height >= 1080 -> "FHD"
-        height >= 720 -> "HD"
-        else -> null
-    }
+    fun badgeLabel(height: Int?): String? =
+        when {
+            height == null || height <= 0 -> null
+            height >= 2160 -> "4K"
+            height >= 1080 -> "FHD"
+            height >= 720 -> "HD"
+            else -> null
+        }
 }

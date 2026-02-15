@@ -38,19 +38,16 @@ enum class DeviceProfile(
      * Higher values = more memory but smoother processing.
      */
     val bufferCapacity: Int,
-
     /**
      * Number of concurrent consumer coroutines.
      * Higher values = faster processing but more CPU/memory pressure.
      */
     val consumerCount: Int,
-
     /**
      * Maximum items to batch for DB writes.
      * Tuned for ObjectBox performance on each device class.
      */
     val dbBatchSize: Int,
-
     /**
      * Memory budget in MB for sync operation.
      * Used for adaptive throttling when approaching limit.
@@ -154,9 +151,7 @@ enum class DeviceProfile(
     /**
      * Returns the effective values, resolving AUTO to the provided detected profile.
      */
-    fun resolveOrDefault(detectedProfile: DeviceProfile = PHONE_HIGH_RAM): DeviceProfile {
-        return if (this == AUTO) detectedProfile else this
-    }
+    fun resolveOrDefault(detectedProfile: DeviceProfile = PHONE_HIGH_RAM): DeviceProfile = if (this == AUTO) detectedProfile else this
 
     companion object {
         /**

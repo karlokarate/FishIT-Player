@@ -179,34 +179,36 @@ fun DetailSeriesSectionEpisodeRow(
 
     Surface(
         shape = RoundedCornerShape(8.dp),
-        color = if (isFocused) {
-            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f)
-        } else {
-            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
-        },
-        modifier = modifier
-            .fillMaxWidth()
-            .border(
-                width = if (isFocused) 2.dp else 0.dp,
-                color = focusBorderColor,
-                shape = RoundedCornerShape(8.dp),
-            )
-            .focusable()
-            .onFocusChanged { focusState -> isFocused = focusState.isFocused }
-            .combinedClickable(
-                onClick = onPlay,
-                onLongClick = { plotExpanded = !plotExpanded },
-            ),
+        color =
+            if (isFocused) {
+                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f)
+            } else {
+                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+            },
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .border(
+                    width = if (isFocused) 2.dp else 0.dp,
+                    color = focusBorderColor,
+                    shape = RoundedCornerShape(8.dp),
+                ).focusable()
+                .onFocusChanged { focusState -> isFocused = focusState.isFocused }
+                .combinedClickable(
+                    onClick = onPlay,
+                    onLongClick = { plotExpanded = !plotExpanded },
+                ),
     ) {
         Column(modifier = Modifier.padding(8.dp)) {
             // ── Main row: thumbnail + info ──
             Row(verticalAlignment = Alignment.CenterVertically) {
                 // Thumbnail (left) — standardized 120×68dp
                 Box(
-                    modifier = Modifier
-                        .size(width = 120.dp, height = 68.dp)
-                        .clip(RoundedCornerShape(6.dp))
-                        .background(MaterialTheme.colorScheme.surfaceVariant),
+                    modifier =
+                        Modifier
+                            .size(width = 120.dp, height = 68.dp)
+                            .clip(RoundedCornerShape(6.dp))
+                            .background(MaterialTheme.colorScheme.surfaceVariant),
                 ) {
                     if (episode.thumbnail != null) {
                         FishImage(
@@ -219,9 +221,10 @@ fun DetailSeriesSectionEpisodeRow(
 
                     // Play icon (center)
                     Box(
-                        modifier = Modifier
-                            .matchParentSize()
-                            .background(Color.Black.copy(alpha = 0.25f)),
+                        modifier =
+                            Modifier
+                                .matchParentSize()
+                                .background(Color.Black.copy(alpha = 0.25f)),
                         contentAlignment = Alignment.Center,
                     ) {
                         Icon(
@@ -241,17 +244,19 @@ fun DetailSeriesSectionEpisodeRow(
                     // Resume progress bar (bottom)
                     if (episode.hasResume && episode.resumePercent > 0) {
                         Box(
-                            modifier = Modifier
-                                .align(Alignment.BottomStart)
-                                .fillMaxWidth()
-                                .height(3.dp)
-                                .background(Color.Gray.copy(alpha = 0.5f)),
+                            modifier =
+                                Modifier
+                                    .align(Alignment.BottomStart)
+                                    .fillMaxWidth()
+                                    .height(3.dp)
+                                    .background(Color.Gray.copy(alpha = 0.5f)),
                         ) {
                             Box(
-                                modifier = Modifier
-                                    .fillMaxWidth(episode.resumePercent / 100f)
-                                    .height(3.dp)
-                                    .background(FishColors.Primary),
+                                modifier =
+                                    Modifier
+                                        .fillMaxWidth(episode.resumePercent / 100f)
+                                        .height(3.dp)
+                                        .background(FishColors.Primary),
                             )
                         }
                     }
@@ -275,13 +280,14 @@ fun DetailSeriesSectionEpisodeRow(
 
                     // Episode number + duration
                     Text(
-                        text = buildString {
-                            append("S${episode.season} • E${episode.episode}")
-                            episode.durationMs?.let { ms ->
-                                val minutes = (ms / 60_000).toInt()
-                                if (minutes > 0) append(" • ${minutes} min")
-                            }
-                        },
+                        text =
+                            buildString {
+                                append("S${episode.season} • E${episode.episode}")
+                                episode.durationMs?.let { ms ->
+                                    val minutes = (ms / 60_000).toInt()
+                                    if (minutes > 0) append(" • $minutes min")
+                                }
+                            },
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -294,19 +300,22 @@ fun DetailSeriesSectionEpisodeRow(
             // ── Expandable plot section (animated) ──
             AnimatedVisibility(
                 visible = plotExpanded && !episode.plot.isNullOrBlank(),
-                enter = expandVertically(
-                    expandFrom = Alignment.Top,
-                ) + fadeIn(),
-                exit = shrinkVertically(
-                    shrinkTowards = Alignment.Top,
-                ) + fadeOut(),
+                enter =
+                    expandVertically(
+                        expandFrom = Alignment.Top,
+                    ) + fadeIn(),
+                exit =
+                    shrinkVertically(
+                        shrinkTowards = Alignment.Top,
+                    ) + fadeOut(),
             ) {
                 Column(modifier = Modifier.padding(top = 8.dp)) {
                     Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .heightIn(max = 120.dp)
-                            .verticalScroll(rememberScrollState()),
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .heightIn(max = 120.dp)
+                                .verticalScroll(rememberScrollState()),
                     ) {
                         Text(
                             text = episode.plot ?: "",
@@ -326,16 +335,19 @@ private fun EpisodeQualityBadge(
     qualityHeight: Int?,
     modifier: Modifier = Modifier,
 ) {
-    val label = qualityHeight?.let { h ->
-        com.fishit.player.core.model.util.ResolutionLabel.badgeLabel(h)
-    }
+    val label =
+        qualityHeight?.let { h ->
+            com.fishit.player.core.model.util.ResolutionLabel
+                .badgeLabel(h)
+        }
     if (label != null) {
         Box(
-            modifier = modifier
-                .padding(4.dp)
-                .clip(RoundedCornerShape(4.dp))
-                .background(FishColors.Primary.copy(alpha = 0.85f))
-                .padding(horizontal = 6.dp, vertical = 2.dp),
+            modifier =
+                modifier
+                    .padding(4.dp)
+                    .clip(RoundedCornerShape(4.dp))
+                    .background(FishColors.Primary.copy(alpha = 0.85f))
+                    .padding(horizontal = 6.dp, vertical = 2.dp),
         ) {
             Text(
                 text = label,
@@ -353,22 +365,24 @@ private fun EpisodeMetadataBadges(
     episode: DetailEpisodeItem,
     modifier: Modifier = Modifier,
 ) {
-    val badges = buildList {
-        episode.rating?.let { add("★ ${"%.1f".format(it)}") }
-        episode.airDate?.takeIf { it.isNotBlank() }?.let { add(it) }
-        episode.videoCodec?.uppercase()?.let { add(it) }
-        episode.audioCodec?.uppercase()?.let { add(it) }
-        episode.audioChannels?.let { ch ->
-            val label = when (ch) {
-                1 -> "Mono"
-                2 -> "Stereo"
-                6 -> "5.1"
-                8 -> "7.1"
-                else -> "${ch}ch"
+    val badges =
+        buildList {
+            episode.rating?.let { add("★ ${"%.1f".format(it)}") }
+            episode.airDate?.takeIf { it.isNotBlank() }?.let { add(it) }
+            episode.videoCodec?.uppercase()?.let { add(it) }
+            episode.audioCodec?.uppercase()?.let { add(it) }
+            episode.audioChannels?.let { ch ->
+                val label =
+                    when (ch) {
+                        1 -> "Mono"
+                        2 -> "Stereo"
+                        6 -> "5.1"
+                        8 -> "7.1"
+                        else -> "${ch}ch"
+                    }
+                add(label)
             }
-            add(label)
         }
-    }
     if (badges.isNotEmpty()) {
         Spacer(modifier = Modifier.height(4.dp))
         Row(

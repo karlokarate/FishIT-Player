@@ -30,19 +30,19 @@ class CategoryFallbackStrategy
             private val FALLBACK_SEQUENCE = listOf("*", "0", null)
         }
 
-    /**
-     * Fetch with category fallback.
-     *
-     * Tries fetching with the specified categoryId first. If empty result, falls back
-     * through the standard sequence until a non-empty result is found.
-     *
-     * @param categoryId Original category ID to try, or null for unfiltered
-     * @param fetcher Suspend function that performs the fetch with a category parameter
-     * @return List of results, or empty list if all attempts fail
-     *
-     * **CC: 2** (forEach + isNotEmpty)
-     */
-    suspend fun <T> fetchWithFallback(
+        /**
+         * Fetch with category fallback.
+         *
+         * Tries fetching with the specified categoryId first. If empty result, falls back
+         * through the standard sequence until a non-empty result is found.
+         *
+         * @param categoryId Original category ID to try, or null for unfiltered
+         * @param fetcher Suspend function that performs the fetch with a category parameter
+         * @return List of results, or empty list if all attempts fail
+         *
+         * **CC: 2** (forEach + isNotEmpty)
+         */
+        suspend fun <T> fetchWithFallback(
             categoryId: String?,
             fetcher: suspend (categoryId: String?) -> List<T>,
         ): List<T> {
@@ -76,22 +76,22 @@ class CategoryFallbackStrategy
                 "fetchWithFallback: All fallback attempts exhausted for categoryId=$categoryId"
             }
             return emptyList()
-    }
+        }
 
-    /**
-     * Fetch with category fallback for scalar results (e.g., counts).
-     *
-     * Similar to [fetchWithFallback], but designed for scalar results like counts.
-     * Returns the first non-null/non-zero value from the fallback sequence.
-     *
-     * @param categoryId Original category ID to try, or null for unfiltered
-     * @param fetcher Suspend function that performs the fetch with a category parameter
-     * @param isValidResult Predicate to determine if a result is valid (defaults to non-null and > 0 for numbers)
-     * @return First valid result, or null if all attempts fail
-     *
-     * **CC: 2** (forEach + isValidResult check)
-     */
-    suspend fun <T> fetchScalarWithFallback(
+        /**
+         * Fetch with category fallback for scalar results (e.g., counts).
+         *
+         * Similar to [fetchWithFallback], but designed for scalar results like counts.
+         * Returns the first non-null/non-zero value from the fallback sequence.
+         *
+         * @param categoryId Original category ID to try, or null for unfiltered
+         * @param fetcher Suspend function that performs the fetch with a category parameter
+         * @param isValidResult Predicate to determine if a result is valid (defaults to non-null and > 0 for numbers)
+         * @return First valid result, or null if all attempts fail
+         *
+         * **CC: 2** (forEach + isValidResult check)
+         */
+        suspend fun <T> fetchScalarWithFallback(
             categoryId: String?,
             isValidResult: (T?) -> Boolean = { it != null && (it as? Number)?.toInt() ?: 0 > 0 },
             fetcher: suspend (categoryId: String?) -> T?,
@@ -126,13 +126,12 @@ class CategoryFallbackStrategy
                 "fetchScalarWithFallback: All fallback attempts exhausted for categoryId=$categoryId"
             }
             return null
-    }
+        }
 
-    /**
-     * Check if a categoryId would trigger fallback behavior.
-     *
-     * @return true if the categoryId is in the fallback sequence or null
-     */
-    fun isFallbackCategory(categoryId: String?): Boolean =
-        categoryId == null || categoryId in FALLBACK_SEQUENCE
-}
+        /**
+         * Check if a categoryId would trigger fallback behavior.
+         *
+         * @return true if the categoryId is in the fallback sequence or null
+         */
+        fun isFallbackCategory(categoryId: String?): Boolean = categoryId == null || categoryId in FALLBACK_SEQUENCE
+    }

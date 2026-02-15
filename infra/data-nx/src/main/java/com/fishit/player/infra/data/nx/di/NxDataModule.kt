@@ -6,13 +6,13 @@ import com.fishit.player.core.home.domain.HomeContentRepository
 import com.fishit.player.core.library.domain.LibraryContentRepository
 import com.fishit.player.core.live.domain.LiveContentRepository
 import com.fishit.player.core.model.repository.CanonicalMediaRepository
+import com.fishit.player.core.model.repository.NxCategorySelectionRepository
 import com.fishit.player.core.model.repository.NxCloudOutboxRepository
 import com.fishit.player.core.model.repository.NxEpgRepository
 import com.fishit.player.core.model.repository.NxIngestLedgerRepository
 import com.fishit.player.core.model.repository.NxProfileRepository
 import com.fishit.player.core.model.repository.NxProfileRuleRepository
 import com.fishit.player.core.model.repository.NxProfileUsageRepository
-import com.fishit.player.core.model.repository.NxCategorySelectionRepository
 import com.fishit.player.core.model.repository.NxSourceAccountRepository
 import com.fishit.player.core.model.repository.NxWorkAuthorityRepository
 import com.fishit.player.core.model.repository.NxWorkDiagnostics
@@ -28,22 +28,22 @@ import com.fishit.player.core.model.repository.NxWorkUserStateRepository
 import com.fishit.player.core.model.repository.NxWorkVariantDiagnostics
 import com.fishit.player.core.model.repository.NxWorkVariantRepository
 import com.fishit.player.core.telegrammedia.domain.TelegramMediaRepository
+import com.fishit.player.infra.data.nx.canonical.NxCanonicalMediaRepositoryImpl
+import com.fishit.player.infra.data.nx.detail.repository.NxDetailMediaRepositoryImpl
 import com.fishit.player.infra.data.nx.home.NxHomeContentRepositoryImpl
 import com.fishit.player.infra.data.nx.library.NxLibraryContentRepositoryImpl
 import com.fishit.player.infra.data.nx.live.NxLiveContentRepositoryImpl
+import com.fishit.player.infra.data.nx.repository.NxCategorySelectionRepositoryImpl
 import com.fishit.player.infra.data.nx.repository.NxCloudOutboxRepositoryImpl
+import com.fishit.player.infra.data.nx.repository.NxEpgRepositoryImpl
 import com.fishit.player.infra.data.nx.repository.NxIngestLedgerRepositoryImpl
 import com.fishit.player.infra.data.nx.repository.NxProfileRepositoryImpl
 import com.fishit.player.infra.data.nx.repository.NxProfileRuleRepositoryImpl
 import com.fishit.player.infra.data.nx.repository.NxProfileUsageRepositoryImpl
-import com.fishit.player.infra.data.nx.repository.NxCategorySelectionRepositoryImpl
 import com.fishit.player.infra.data.nx.repository.NxSourceAccountRepositoryImpl
 import com.fishit.player.infra.data.nx.repository.NxWorkAuthorityRepositoryImpl
 import com.fishit.player.infra.data.nx.repository.NxWorkDiagnosticsImpl
 import com.fishit.player.infra.data.nx.repository.NxWorkEmbeddingRepositoryImpl
-import com.fishit.player.infra.data.nx.detail.repository.NxDetailMediaRepositoryImpl
-import com.fishit.player.infra.data.nx.canonical.NxCanonicalMediaRepositoryImpl
-import com.fishit.player.infra.data.nx.repository.NxEpgRepositoryImpl
 import com.fishit.player.infra.data.nx.repository.NxWorkRedirectRepositoryImpl
 import com.fishit.player.infra.data.nx.repository.NxWorkRelationRepositoryImpl
 import com.fishit.player.infra.data.nx.repository.NxWorkRepositoryImpl
@@ -103,22 +103,17 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 abstract class NxDataModule {
-
     // ────────────────────────────────────────────────────────────────────
     // Priority 1: UI SSOT (Works)
     // ────────────────────────────────────────────────────────────────────
 
     @Binds
     @Singleton
-    abstract fun bindNxWorkRepository(
-        impl: NxWorkRepositoryImpl,
-    ): NxWorkRepository
+    abstract fun bindNxWorkRepository(impl: NxWorkRepositoryImpl): NxWorkRepository
 
     @Binds
     @Singleton
-    abstract fun bindNxWorkDiagnostics(
-        impl: NxWorkDiagnosticsImpl,
-    ): NxWorkDiagnostics
+    abstract fun bindNxWorkDiagnostics(impl: NxWorkDiagnosticsImpl): NxWorkDiagnostics
 
     // ────────────────────────────────────────────────────────────────────
     // Priority 1: UI SSOT (User State)
@@ -126,15 +121,11 @@ abstract class NxDataModule {
 
     @Binds
     @Singleton
-    abstract fun bindNxWorkUserStateRepository(
-        impl: NxWorkUserStateRepositoryImpl,
-    ): NxWorkUserStateRepository
+    abstract fun bindNxWorkUserStateRepository(impl: NxWorkUserStateRepositoryImpl): NxWorkUserStateRepository
 
     @Binds
     @Singleton
-    abstract fun bindNxWorkUserStateDiagnostics(
-        impl: NxWorkUserStateDiagnosticsImpl,
-    ): NxWorkUserStateDiagnostics
+    abstract fun bindNxWorkUserStateDiagnostics(impl: NxWorkUserStateDiagnosticsImpl): NxWorkUserStateDiagnostics
 
     // ────────────────────────────────────────────────────────────────────
     // Priority 2: Multi-source identity
@@ -142,15 +133,11 @@ abstract class NxDataModule {
 
     @Binds
     @Singleton
-    abstract fun bindNxWorkSourceRefRepository(
-        impl: NxWorkSourceRefRepositoryImpl,
-    ): NxWorkSourceRefRepository
+    abstract fun bindNxWorkSourceRefRepository(impl: NxWorkSourceRefRepositoryImpl): NxWorkSourceRefRepository
 
     @Binds
     @Singleton
-    abstract fun bindNxWorkSourceRefDiagnostics(
-        impl: NxWorkSourceRefDiagnosticsImpl,
-    ): NxWorkSourceRefDiagnostics
+    abstract fun bindNxWorkSourceRefDiagnostics(impl: NxWorkSourceRefDiagnosticsImpl): NxWorkSourceRefDiagnostics
 
     // ────────────────────────────────────────────────────────────────────
     // Priority 2: Playback variants
@@ -158,15 +145,11 @@ abstract class NxDataModule {
 
     @Binds
     @Singleton
-    abstract fun bindNxWorkVariantRepository(
-        impl: NxWorkVariantRepositoryImpl,
-    ): NxWorkVariantRepository
+    abstract fun bindNxWorkVariantRepository(impl: NxWorkVariantRepositoryImpl): NxWorkVariantRepository
 
     @Binds
     @Singleton
-    abstract fun bindNxWorkVariantDiagnostics(
-        impl: NxWorkVariantDiagnosticsImpl,
-    ): NxWorkVariantDiagnostics
+    abstract fun bindNxWorkVariantDiagnostics(impl: NxWorkVariantDiagnosticsImpl): NxWorkVariantDiagnostics
 
     // ────────────────────────────────────────────────────────────────────
     // Priority 3: Relationships and Navigation
@@ -174,15 +157,11 @@ abstract class NxDataModule {
 
     @Binds
     @Singleton
-    abstract fun bindNxWorkRelationRepository(
-        impl: NxWorkRelationRepositoryImpl,
-    ): NxWorkRelationRepository
+    abstract fun bindNxWorkRelationRepository(impl: NxWorkRelationRepositoryImpl): NxWorkRelationRepository
 
     @Binds
     @Singleton
-    abstract fun bindNxWorkRuntimeStateRepository(
-        impl: NxWorkRuntimeStateRepositoryImpl,
-    ): NxWorkRuntimeStateRepository
+    abstract fun bindNxWorkRuntimeStateRepository(impl: NxWorkRuntimeStateRepositoryImpl): NxWorkRuntimeStateRepository
 
     // ────────────────────────────────────────────────────────────────────
     // Priority 3: Audit & Ingest
@@ -190,9 +169,7 @@ abstract class NxDataModule {
 
     @Binds
     @Singleton
-    abstract fun bindNxIngestLedgerRepository(
-        impl: NxIngestLedgerRepositoryImpl,
-    ): NxIngestLedgerRepository
+    abstract fun bindNxIngestLedgerRepository(impl: NxIngestLedgerRepositoryImpl): NxIngestLedgerRepository
 
     // ────────────────────────────────────────────────────────────────────
     // Priority 3: Profile System
@@ -200,21 +177,15 @@ abstract class NxDataModule {
 
     @Binds
     @Singleton
-    abstract fun bindNxProfileRepository(
-        impl: NxProfileRepositoryImpl,
-    ): NxProfileRepository
+    abstract fun bindNxProfileRepository(impl: NxProfileRepositoryImpl): NxProfileRepository
 
     @Binds
     @Singleton
-    abstract fun bindNxProfileRuleRepository(
-        impl: NxProfileRuleRepositoryImpl,
-    ): NxProfileRuleRepository
+    abstract fun bindNxProfileRuleRepository(impl: NxProfileRuleRepositoryImpl): NxProfileRuleRepository
 
     @Binds
     @Singleton
-    abstract fun bindNxProfileUsageRepository(
-        impl: NxProfileUsageRepositoryImpl,
-    ): NxProfileUsageRepository
+    abstract fun bindNxProfileUsageRepository(impl: NxProfileUsageRepositoryImpl): NxProfileUsageRepository
 
     // ────────────────────────────────────────────────────────────────────
     // Priority 3: Source Management
@@ -222,15 +193,11 @@ abstract class NxDataModule {
 
     @Binds
     @Singleton
-    abstract fun bindNxSourceAccountRepository(
-        impl: NxSourceAccountRepositoryImpl,
-    ): NxSourceAccountRepository
+    abstract fun bindNxSourceAccountRepository(impl: NxSourceAccountRepositoryImpl): NxSourceAccountRepository
 
     @Binds
     @Singleton
-    abstract fun bindNxCategorySelectionRepository(
-        impl: NxCategorySelectionRepositoryImpl,
-    ): NxCategorySelectionRepository
+    abstract fun bindNxCategorySelectionRepository(impl: NxCategorySelectionRepositoryImpl): NxCategorySelectionRepository
 
     // ────────────────────────────────────────────────────────────────────
     // Priority 3: Cloud & Sync
@@ -238,9 +205,7 @@ abstract class NxDataModule {
 
     @Binds
     @Singleton
-    abstract fun bindNxCloudOutboxRepository(
-        impl: NxCloudOutboxRepositoryImpl,
-    ): NxCloudOutboxRepository
+    abstract fun bindNxCloudOutboxRepository(impl: NxCloudOutboxRepositoryImpl): NxCloudOutboxRepository
 
     // ────────────────────────────────────────────────────────────────────
     // Priority 3: Advanced Features
@@ -248,21 +213,15 @@ abstract class NxDataModule {
 
     @Binds
     @Singleton
-    abstract fun bindNxWorkEmbeddingRepository(
-        impl: NxWorkEmbeddingRepositoryImpl,
-    ): NxWorkEmbeddingRepository
+    abstract fun bindNxWorkEmbeddingRepository(impl: NxWorkEmbeddingRepositoryImpl): NxWorkEmbeddingRepository
 
     @Binds
     @Singleton
-    abstract fun bindNxWorkRedirectRepository(
-        impl: NxWorkRedirectRepositoryImpl,
-    ): NxWorkRedirectRepository
+    abstract fun bindNxWorkRedirectRepository(impl: NxWorkRedirectRepositoryImpl): NxWorkRedirectRepository
 
     @Binds
     @Singleton
-    abstract fun bindNxWorkAuthorityRepository(
-        impl: NxWorkAuthorityRepositoryImpl,
-    ): NxWorkAuthorityRepository
+    abstract fun bindNxWorkAuthorityRepository(impl: NxWorkAuthorityRepositoryImpl): NxWorkAuthorityRepository
 
     // ────────────────────────────────────────────────────────────────────
     // Priority 3: EPG (Live TV Program Guide)
@@ -276,9 +235,7 @@ abstract class NxDataModule {
      */
     @Binds
     @Singleton
-    abstract fun bindNxEpgRepository(
-        impl: NxEpgRepositoryImpl,
-    ): NxEpgRepository
+    abstract fun bindNxEpgRepository(impl: NxEpgRepositoryImpl): NxEpgRepository
 
     // ────────────────────────────────────────────────────────────────────
     // Feature Repositories (NX-based implementations)
@@ -292,9 +249,7 @@ abstract class NxDataModule {
      */
     @Binds
     @Singleton
-    abstract fun bindHomeContentRepository(
-        impl: NxHomeContentRepositoryImpl,
-    ): HomeContentRepository
+    abstract fun bindHomeContentRepository(impl: NxHomeContentRepositoryImpl): HomeContentRepository
 
     /**
      * Binds the NX-based LibraryContentRepository implementation.
@@ -304,9 +259,7 @@ abstract class NxDataModule {
      */
     @Binds
     @Singleton
-    abstract fun bindLibraryContentRepository(
-        impl: NxLibraryContentRepositoryImpl,
-    ): LibraryContentRepository
+    abstract fun bindLibraryContentRepository(impl: NxLibraryContentRepositoryImpl): LibraryContentRepository
 
     /**
      * Binds the NX-based LiveContentRepository implementation.
@@ -316,9 +269,7 @@ abstract class NxDataModule {
      */
     @Binds
     @Singleton
-    abstract fun bindLiveContentRepository(
-        impl: NxLiveContentRepositoryImpl,
-    ): LiveContentRepository
+    abstract fun bindLiveContentRepository(impl: NxLiveContentRepositoryImpl): LiveContentRepository
 
     /**
      * Binds the NX-based TelegramMediaRepository implementation.
@@ -328,9 +279,7 @@ abstract class NxDataModule {
      */
     @Binds
     @Singleton
-    abstract fun bindTelegramMediaRepository(
-        impl: NxTelegramMediaRepositoryImpl,
-    ): TelegramMediaRepository
+    abstract fun bindTelegramMediaRepository(impl: NxTelegramMediaRepositoryImpl): TelegramMediaRepository
 
     // ────────────────────────────────────────────────────────────────────
     // Xtream Repositories (NX-based implementations)
@@ -354,9 +303,7 @@ abstract class NxDataModule {
      */
     @Binds
     @Singleton
-    abstract fun bindXtreamSeriesIndexRepository(
-        impl: NxXtreamSeriesIndexRepository,
-    ): XtreamSeriesIndexRepository
+    abstract fun bindXtreamSeriesIndexRepository(impl: NxXtreamSeriesIndexRepository): XtreamSeriesIndexRepository
 
     /**
      * Binds the NX-based XtreamCatalogRepository implementation.
@@ -373,9 +320,7 @@ abstract class NxDataModule {
      */
     @Binds
     @Singleton
-    abstract fun bindXtreamCatalogRepository(
-        impl: NxXtreamCatalogRepositoryImpl,
-    ): XtreamCatalogRepository
+    abstract fun bindXtreamCatalogRepository(impl: NxXtreamCatalogRepositoryImpl): XtreamCatalogRepository
 
     /**
      * Binds the NX-based XtreamLiveRepository implementation.
@@ -392,9 +337,7 @@ abstract class NxDataModule {
      */
     @Binds
     @Singleton
-    abstract fun bindXtreamLiveRepository(
-        impl: NxXtreamLiveRepositoryImpl,
-    ): XtreamLiveRepository
+    abstract fun bindXtreamLiveRepository(impl: NxXtreamLiveRepositoryImpl): XtreamLiveRepository
 
     // ────────────────────────────────────────────────────────────────────
     // Canonical Media Repository (NX-based implementation)
@@ -419,9 +362,7 @@ abstract class NxDataModule {
      */
     @Binds
     @Singleton
-    abstract fun bindCanonicalMediaRepository(
-        impl: NxCanonicalMediaRepositoryImpl,
-    ): CanonicalMediaRepository
+    abstract fun bindCanonicalMediaRepository(impl: NxCanonicalMediaRepositoryImpl): CanonicalMediaRepository
 
     // ────────────────────────────────────────────────────────────────────
     // Detail Repository (NX-based implementation)
@@ -441,7 +382,5 @@ abstract class NxDataModule {
      */
     @Binds
     @Singleton
-    abstract fun bindNxDetailMediaRepository(
-        impl: NxDetailMediaRepositoryImpl,
-    ): NxDetailMediaRepository
+    abstract fun bindNxDetailMediaRepository(impl: NxDetailMediaRepositoryImpl): NxDetailMediaRepository
 }

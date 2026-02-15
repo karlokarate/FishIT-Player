@@ -12,12 +12,11 @@
  */
 package com.fishit.player.infra.data.nx.architecture
 
+import org.junit.Test
 import java.io.File
 import kotlin.test.assertTrue
-import org.junit.Test
 
 class PlaybackHintKeysConsistencyTest {
-
     /**
      * No raw "xtream.*" playback hint key strings in source files.
      *
@@ -26,13 +25,15 @@ class PlaybackHintKeysConsistencyTest {
      */
     @Test
     fun `no raw xtream hint key strings in main source files`() {
-        val violations = scanSourceFiles(
-            pattern = Regex(""""xtream\.\w+""""),
-            excludeFiles = setOf(
-                "PlaybackHintKeys.kt",
-                "PlaybackHintKeysConsistencyTest.kt",
-            ),
-        )
+        val violations =
+            scanSourceFiles(
+                pattern = Regex(""""xtream\.\w+""""),
+                excludeFiles =
+                    setOf(
+                        "PlaybackHintKeys.kt",
+                        "PlaybackHintKeysConsistencyTest.kt",
+                    ),
+            )
 
         assertTrue(
             violations.isEmpty(),
@@ -49,13 +50,15 @@ class PlaybackHintKeysConsistencyTest {
      */
     @Test
     fun `no raw telegram hint key strings in main source files`() {
-        val violations = scanSourceFiles(
-            pattern = Regex(""""telegram\.\w+""""),
-            excludeFiles = setOf(
-                "PlaybackHintKeys.kt",
-                "PlaybackHintKeysConsistencyTest.kt",
-            ),
-        )
+        val violations =
+            scanSourceFiles(
+                pattern = Regex(""""telegram\.\w+""""),
+                excludeFiles =
+                    setOf(
+                        "PlaybackHintKeys.kt",
+                        "PlaybackHintKeysConsistencyTest.kt",
+                    ),
+            )
 
         assertTrue(
             violations.isEmpty(),
@@ -72,23 +75,26 @@ class PlaybackHintKeysConsistencyTest {
      */
     @Test
     fun `no raw codec hint key strings in main source files`() {
-        val codecPatterns = listOf(
-            Regex(""""video\.codec""""),
-            Regex(""""video\.width""""),
-            Regex(""""video\.height""""),
-            Regex(""""audio\.codec""""),
-            Regex(""""audio\.channels""""),
-        )
+        val codecPatterns =
+            listOf(
+                Regex(""""video\.codec""""),
+                Regex(""""video\.width""""),
+                Regex(""""video\.height""""),
+                Regex(""""audio\.codec""""),
+                Regex(""""audio\.channels""""),
+            )
 
         val violations = mutableListOf<Violation>()
         for (pattern in codecPatterns) {
-            violations += scanSourceFiles(
-                pattern = pattern,
-                excludeFiles = setOf(
-                    "PlaybackHintKeys.kt",
-                    "PlaybackHintKeysConsistencyTest.kt",
-                ),
-            )
+            violations +=
+                scanSourceFiles(
+                    pattern = pattern,
+                    excludeFiles =
+                        setOf(
+                            "PlaybackHintKeys.kt",
+                            "PlaybackHintKeysConsistencyTest.kt",
+                        ),
+                )
         }
 
         assertTrue(
@@ -122,7 +128,8 @@ class PlaybackHintKeysConsistencyTest {
         val violations = mutableListOf<Violation>()
 
         for (sourceDir in findSourceDirs()) {
-            sourceDir.walkTopDown()
+            sourceDir
+                .walkTopDown()
                 .filter { it.isFile && it.extension == "kt" }
                 .filter { it.name !in excludeFiles }
                 .forEach { file ->
@@ -149,27 +156,31 @@ class PlaybackHintKeysConsistencyTest {
      */
     private fun findSourceDirs(): List<File> {
         // Try to find the project root
-        val projectRoot = listOf(
-            File(System.getProperty("user.dir")),
-            File(System.getProperty("user.dir")).parentFile,
-        ).firstOrNull { root ->
-            File(root, "settings.gradle.kts").exists() ||
-                File(root, "infra/data-nx/src/main/java").exists()
+        val projectRoot =
+            listOf(
+                File(System.getProperty("user.dir")),
+                File(System.getProperty("user.dir")).parentFile,
+            ).firstOrNull { root ->
+                File(root, "settings.gradle.kts").exists() ||
+                    File(root, "infra/data-nx/src/main/java").exists()
+            }
+
+        if (projectRoot == null) {
+            return listOfNotNull(
+                File("src/main/java").takeIf { it.exists() },
+            )
         }
 
-        if (projectRoot == null) return listOfNotNull(
-            File("src/main/java").takeIf { it.exists() },
-        )
-
         // Scan all module source directories where PlaybackHintKeys might be used
-        val modulePaths = listOf(
-            "infra/data-nx/src/main/java",
-            "pipeline/xtream/src/main/java",
-            "pipeline/telegram/src/main/java",
-            "playback/src/main/java",
-            "player/src/main/java",
-            "core/model/src/main/java",
-        )
+        val modulePaths =
+            listOf(
+                "infra/data-nx/src/main/java",
+                "pipeline/xtream/src/main/java",
+                "pipeline/telegram/src/main/java",
+                "playback/src/main/java",
+                "player/src/main/java",
+                "core/model/src/main/java",
+            )
 
         return modulePaths
             .map { File(projectRoot, it) }

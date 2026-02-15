@@ -27,7 +27,6 @@ import kotlin.test.assertTrue
  * 6. Cross-module: Data layer produces → Feature layer parses
  */
 class SsotRoundtripVerificationTest {
-
     // =========================================================================
     // 1. XtreamIdCodec: Standard Format ↔ Parse Roundtrips
     // =========================================================================
@@ -287,9 +286,9 @@ class SsotRoundtripVerificationTest {
         // Composite format
         val result = SourceIdParser.parseXtreamEpisodeId("xtream:episode:series:100:s2:e5")
         assertNotNull(result)
-        assertEquals(100, result.first)    // seriesId
-        assertEquals(2, result.second)     // season
-        assertEquals(5, result.third)      // episode
+        assertEquals(100, result.first) // seriesId
+        assertEquals(2, result.second) // season
+        assertEquals(5, result.third) // episode
     }
 
     @Test

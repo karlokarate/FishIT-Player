@@ -37,9 +37,6 @@ import com.fishit.player.core.persistence.obx.NX_WorkUserState
 import com.fishit.player.core.persistence.obx.NX_WorkVariant
 import com.fishit.player.infra.data.nx.mapper.toDomain
 import com.fishit.player.infra.data.nx.mapper.toEntity
-import kotlin.reflect.KClass
-import kotlin.reflect.KProperty1
-import kotlin.reflect.full.declaredMemberProperties
 import kotlin.reflect.full.memberProperties
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -50,7 +47,6 @@ import kotlin.test.assertTrue
  * Schema consistency tests for NX_Work ↔ NxWorkRepository.Work mapping.
  */
 class NxWorkSchemaConsistencyTest {
-
     /**
      * Verifies all critical Work DTO fields are stored in NX_Work entity.
      *
@@ -59,40 +55,42 @@ class NxWorkSchemaConsistencyTest {
      */
     @Test
     fun `Work DTO critical fields have entity storage`() {
-        val criticalDtoFields = listOf(
-            "workKey",
-            "type", // maps to workType
-            "displayTitle", // maps to canonicalTitle
-            "year",
-            "runtimeMs", // maps to durationMs
-            "rating",
-            "genres",
-            "plot",
-            "createdAtMs", // maps to createdAt
-            "updatedAtMs", // maps to updatedAt
-        )
+        val criticalDtoFields =
+            listOf(
+                "workKey",
+                "type", // maps to workType
+                "displayTitle", // maps to canonicalTitle
+                "year",
+                "runtimeMs", // maps to durationMs
+                "rating",
+                "genres",
+                "plot",
+                "createdAtMs", // maps to createdAt
+                "updatedAtMs", // maps to updatedAt
+            )
 
         val entityFieldNames = NX_Work::class.memberProperties.map { it.name }.toSet()
 
-        val expectedMappings = mapOf(
-            "workKey" to "workKey",
-            "type" to "workType",
-            "displayTitle" to "canonicalTitle",
-            "year" to "year",
-            "runtimeMs" to "durationMs",
-            "rating" to "rating",
-            "genres" to "genres",
-            "plot" to "plot",
-            "createdAtMs" to "createdAt",
-            "updatedAtMs" to "updatedAt",
-        )
+        val expectedMappings =
+            mapOf(
+                "workKey" to "workKey",
+                "type" to "workType",
+                "displayTitle" to "canonicalTitle",
+                "year" to "year",
+                "runtimeMs" to "durationMs",
+                "rating" to "rating",
+                "genres" to "genres",
+                "plot" to "plot",
+                "createdAtMs" to "createdAt",
+                "updatedAtMs" to "updatedAt",
+            )
 
         for (dtoField in criticalDtoFields) {
             val entityField = expectedMappings[dtoField]
             assertNotNull(entityField, "No mapping defined for DTO field '$dtoField'")
             assertTrue(
                 entityFieldNames.contains(entityField),
-                "Entity NX_Work missing field '$entityField' (mapped from DTO field '$dtoField')"
+                "Entity NX_Work missing field '$entityField' (mapped from DTO field '$dtoField')",
             )
         }
     }
@@ -103,22 +101,26 @@ class NxWorkSchemaConsistencyTest {
     @Test
     fun `WorkType enum covers all contract-defined work types`() {
         // From NX_SSOT_CONTRACT.md Section 5.1
-        val contractWorkTypes = setOf(
-            "MOVIE",
-            "SERIES",
-            "EPISODE",
-            "CLIP",
-            "LIVE", // LIVE_CHANNEL in DTO
-            "AUDIOBOOK",
-            "UNKNOWN",
-        )
+        val contractWorkTypes =
+            setOf(
+                "MOVIE",
+                "SERIES",
+                "EPISODE",
+                "CLIP",
+                "LIVE", // LIVE_CHANNEL in DTO
+                "AUDIOBOOK",
+                "UNKNOWN",
+            )
 
-        val dtoWorkTypes = NxWorkRepository.WorkType.entries.map { it.name }.toSet()
+        val dtoWorkTypes =
+            NxWorkRepository.WorkType.entries
+                .map { it.name }
+                .toSet()
 
         // DTO should cover all contract types (allowing for naming differences)
         assertTrue(
             dtoWorkTypes.containsAll(setOf("MOVIE", "SERIES", "EPISODE", "CLIP", "LIVE_CHANNEL", "AUDIOBOOK", "UNKNOWN")),
-            "WorkType enum missing contract-defined types. Has: $dtoWorkTypes"
+            "WorkType enum missing contract-defined types. Has: $dtoWorkTypes",
         )
     }
 
@@ -127,21 +129,22 @@ class NxWorkSchemaConsistencyTest {
      */
     @Test
     fun `Work to Entity to Work round-trip preserves key fields`() {
-        val original = NxWorkRepository.Work(
-            workKey = "movie:tmdb:12345",
-            type = NxWorkRepository.WorkType.MOVIE,
-            displayTitle = "Test Movie",
-            sortTitle = "Test Movie",
-            titleNormalized = "test movie",
-            year = 2024,
-            runtimeMs = 7200000L,
-            rating = 8.5,
-            genres = "Action, Thriller",
-            plot = "A test movie plot",
-            recognitionState = NxWorkRepository.RecognitionState.HEURISTIC,
-            createdAtMs = 1000L,
-            updatedAtMs = 2000L,
-        )
+        val original =
+            NxWorkRepository.Work(
+                workKey = "movie:tmdb:12345",
+                type = NxWorkRepository.WorkType.MOVIE,
+                displayTitle = "Test Movie",
+                sortTitle = "Test Movie",
+                titleNormalized = "test movie",
+                year = 2024,
+                runtimeMs = 7200000L,
+                rating = 8.5,
+                genres = "Action, Thriller",
+                plot = "A test movie plot",
+                recognitionState = NxWorkRepository.RecognitionState.HEURISTIC,
+                createdAtMs = 1000L,
+                updatedAtMs = 2000L,
+            )
 
         val entity = original.toEntity()
         val roundTrip = entity.toDomain()
@@ -161,28 +164,28 @@ class NxWorkSchemaConsistencyTest {
  * Schema consistency tests for NX_WorkSourceRef ↔ NxWorkSourceRefRepository.SourceRef mapping.
  */
 class NxWorkSourceRefSchemaConsistencyTest {
-
     /**
      * Verifies SourceRef DTO critical fields have entity storage.
      */
     @Test
     fun `SourceRef DTO critical fields have entity storage`() {
-        val expectedMappings = mapOf(
-            "sourceKey" to "sourceKey",
-            "sourceType" to "sourceType",
-            "accountKey" to "accountKey",
-            "sourceItemKey" to "sourceId",
-            "sourceTitle" to "rawTitle",
-            "firstSeenAtMs" to "discoveredAt",
-            "lastSeenAtMs" to "lastSeenAt",
-        )
+        val expectedMappings =
+            mapOf(
+                "sourceKey" to "sourceKey",
+                "sourceType" to "sourceType",
+                "accountKey" to "accountKey",
+                "sourceItemKey" to "sourceId",
+                "sourceTitle" to "rawTitle",
+                "firstSeenAtMs" to "discoveredAt",
+                "lastSeenAtMs" to "lastSeenAt",
+            )
 
         val entityFieldNames = NX_WorkSourceRef::class.memberProperties.map { it.name }.toSet()
 
         for ((dtoField, entityField) in expectedMappings) {
             assertTrue(
                 entityFieldNames.contains(entityField),
-                "Entity NX_WorkSourceRef missing field '$entityField' (mapped from DTO field '$dtoField')"
+                "Entity NX_WorkSourceRef missing field '$entityField' (mapped from DTO field '$dtoField')",
             )
         }
     }
@@ -195,12 +198,15 @@ class NxWorkSourceRefSchemaConsistencyTest {
         // From NX_SSOT_CONTRACT.md Section 3.3
         val contractSourceTypes = setOf("xtream", "telegram", "local", "plex")
 
-        val dtoSourceTypes = NxWorkSourceRefRepository.SourceType.entries.map { it.name.lowercase() }.toSet()
+        val dtoSourceTypes =
+            NxWorkSourceRefRepository.SourceType.entries
+                .map { it.name.lowercase() }
+                .toSet()
 
         for (contractType in contractSourceTypes) {
             assertTrue(
                 dtoSourceTypes.contains(contractType),
-                "SourceType enum missing contract-defined type: $contractType"
+                "SourceType enum missing contract-defined type: $contractType",
             )
         }
     }
@@ -223,17 +229,18 @@ class NxWorkSourceRefSchemaConsistencyTest {
      */
     @Test
     fun `SourceRef to Entity to SourceRef round-trip preserves key fields`() {
-        val original = NxWorkSourceRefRepository.SourceRef(
-            sourceKey = "xtream:user@server:vod:12345",
-            workKey = "movie:tmdb:12345",
-            sourceType = NxWorkSourceRefRepository.SourceType.XTREAM,
-            accountKey = "user@server",
-            sourceItemKind = NxWorkSourceRefRepository.SourceItemKind.VOD,
-            sourceItemKey = "12345",
-            sourceTitle = "Test VOD",
-            firstSeenAtMs = 1000L,
-            lastSeenAtMs = 2000L,
-        )
+        val original =
+            NxWorkSourceRefRepository.SourceRef(
+                sourceKey = "xtream:user@server:vod:12345",
+                workKey = "movie:tmdb:12345",
+                sourceType = NxWorkSourceRefRepository.SourceType.XTREAM,
+                accountKey = "user@server",
+                sourceItemKind = NxWorkSourceRefRepository.SourceItemKind.VOD,
+                sourceItemKey = "12345",
+                sourceTitle = "Test VOD",
+                firstSeenAtMs = 1000L,
+                lastSeenAtMs = 2000L,
+            )
 
         val entity = original.toEntity()
 
@@ -249,28 +256,28 @@ class NxWorkSourceRefSchemaConsistencyTest {
  * Schema consistency tests for NX_WorkVariant ↔ NxWorkVariantRepository.Variant mapping.
  */
 class NxWorkVariantSchemaConsistencyTest {
-
     /**
      * Verifies Variant DTO critical fields have entity storage.
      */
     @Test
     fun `Variant DTO critical fields have entity storage`() {
-        val expectedMappings = mapOf(
-            "variantKey" to "variantKey",
-            "sourceKey" to "sourceKey",
-            "qualityHeight" to "height",
-            "container" to "containerFormat",
-            "videoCodec" to "videoCodec",
-            "audioCodec" to "audioCodec",
-            "createdAtMs" to "createdAt",
-        )
+        val expectedMappings =
+            mapOf(
+                "variantKey" to "variantKey",
+                "sourceKey" to "sourceKey",
+                "qualityHeight" to "height",
+                "container" to "containerFormat",
+                "videoCodec" to "videoCodec",
+                "audioCodec" to "audioCodec",
+                "createdAtMs" to "createdAt",
+            )
 
         val entityFieldNames = NX_WorkVariant::class.memberProperties.map { it.name }.toSet()
 
         for ((dtoField, entityField) in expectedMappings) {
             assertTrue(
                 entityFieldNames.contains(entityField),
-                "Entity NX_WorkVariant missing field '$entityField' (mapped from DTO field '$dtoField')"
+                "Entity NX_WorkVariant missing field '$entityField' (mapped from DTO field '$dtoField')",
             )
         }
     }
@@ -280,26 +287,29 @@ class NxWorkVariantSchemaConsistencyTest {
      */
     @Test
     fun `Variant playbackHints are preserved in round-trip`() {
-        val original = NxWorkVariantRepository.Variant(
-            variantKey = "v:xtream:user@server:vod:123:1080p",
-            workKey = "movie:tmdb:12345",
-            sourceKey = "xtream:user@server:vod:123",
-            qualityHeight = 1080,
-            container = "mp4",
-            videoCodec = "h264",
-            audioCodec = "aac",
-            playbackHints = mapOf(
-                "url" to "http://example.com/stream.m3u8",
-                "method" to "STREAMING",
-            ),
-            createdAtMs = 1000L,
-        )
+        val original =
+            NxWorkVariantRepository.Variant(
+                variantKey = "v:xtream:user@server:vod:123:1080p",
+                workKey = "movie:tmdb:12345",
+                sourceKey = "xtream:user@server:vod:123",
+                qualityHeight = 1080,
+                container = "mp4",
+                videoCodec = "h264",
+                audioCodec = "aac",
+                playbackHints =
+                    mapOf(
+                        "xtream.directSource" to "http://example.com/stream.m3u8",
+                        "xtream.containerExt" to "m3u8",
+                    ),
+                createdAtMs = 1000L,
+            )
 
         val entity = original.toEntity()
 
-        // Verify playback hints are stored
+        // Verify playback hints are stored — playbackUrl is denormalized from DIRECT_SOURCE hint
         assertEquals("http://example.com/stream.m3u8", entity.playbackUrl, "playbackUrl not stored")
-        assertEquals("STREAMING", entity.playbackMethod, "playbackMethod not stored")
+        // playbackMethod is hardcoded to "DIRECT" in toEntity(), not read from hints
+        assertEquals("DIRECT", entity.playbackMethod, "playbackMethod not stored")
     }
 }
 
@@ -307,26 +317,26 @@ class NxWorkVariantSchemaConsistencyTest {
  * Schema consistency tests for NX_WorkRelation ↔ NxWorkRelationRepository.Relation mapping.
  */
 class NxWorkRelationSchemaConsistencyTest {
-
     /**
      * Verifies Relation DTO critical fields have entity storage.
      */
     @Test
     fun `Relation DTO critical fields have entity storage`() {
-        val expectedMappings = mapOf(
-            "relationType" to "relationType",
-            "orderIndex" to "sortOrder",
-            "seasonNumber" to "season",
-            "episodeNumber" to "episode",
-            "createdAtMs" to "createdAt",
-        )
+        val expectedMappings =
+            mapOf(
+                "relationType" to "relationType",
+                "orderIndex" to "sortOrder",
+                "seasonNumber" to "season",
+                "episodeNumber" to "episode",
+                "createdAtMs" to "createdAt",
+            )
 
         val entityFieldNames = NX_WorkRelation::class.memberProperties.map { it.name }.toSet()
 
         for ((dtoField, entityField) in expectedMappings) {
             assertTrue(
                 entityFieldNames.contains(entityField),
-                "Entity NX_WorkRelation missing field '$entityField' (mapped from DTO field '$dtoField')"
+                "Entity NX_WorkRelation missing field '$entityField' (mapped from DTO field '$dtoField')",
             )
         }
     }
@@ -336,11 +346,14 @@ class NxWorkRelationSchemaConsistencyTest {
      */
     @Test
     fun `RelationType enum covers SERIES_EPISODE - the critical relation type`() {
-        val dtoRelationTypes = NxWorkRelationRepository.RelationType.entries.map { it.name }.toSet()
+        val dtoRelationTypes =
+            NxWorkRelationRepository.RelationType.entries
+                .map { it.name }
+                .toSet()
 
         assertTrue(
             "SERIES_EPISODE" in dtoRelationTypes,
-            "RelationType enum must contain SERIES_EPISODE for series navigation"
+            "RelationType enum must contain SERIES_EPISODE for series navigation",
         )
     }
 
@@ -349,15 +362,16 @@ class NxWorkRelationSchemaConsistencyTest {
      */
     @Test
     fun `Relation to Entity to Relation round-trip preserves key fields`() {
-        val original = NxWorkRelationRepository.Relation(
-            parentWorkKey = "series:tmdb:456",
-            childWorkKey = "episode:tmdb:456:s1e1",
-            relationType = NxWorkRelationRepository.RelationType.SERIES_EPISODE,
-            orderIndex = 1,
-            seasonNumber = 1,
-            episodeNumber = 1,
-            createdAtMs = 1000L,
-        )
+        val original =
+            NxWorkRelationRepository.Relation(
+                parentWorkKey = "series:tmdb:456",
+                childWorkKey = "episode:tmdb:456:s1e1",
+                relationType = NxWorkRelationRepository.RelationType.SERIES_EPISODE,
+                orderIndex = 1,
+                seasonNumber = 1,
+                episodeNumber = 1,
+                createdAtMs = 1000L,
+            )
 
         val entity = original.toEntity()
 
@@ -372,18 +386,18 @@ class NxWorkRelationSchemaConsistencyTest {
  * Cross-entity schema consistency tests.
  */
 class NxCrossEntitySchemaConsistencyTest {
-
     /**
      * Verifies workKey format consistency across all entities.
      */
     @Test
     fun `workKey field exists in all work-related entities`() {
-        val entitiesWithWorkKey = listOf(
-            NX_Work::class to "workKey",
-            NX_WorkSourceRef::class to null, // Uses ToOne relation instead
-            NX_WorkVariant::class to null,   // Uses ToOne relation instead
-            NX_WorkRelation::class to null,  // Uses ToOne relations for parent/child
-        )
+        val entitiesWithWorkKey =
+            listOf(
+                NX_Work::class to "workKey",
+                NX_WorkSourceRef::class to null, // Uses ToOne relation instead
+                NX_WorkVariant::class to null, // Uses ToOne relation instead
+                NX_WorkRelation::class to null, // Uses ToOne relations for parent/child
+            )
 
         // NX_Work must have workKey
         val workFields = NX_Work::class.memberProperties.map { it.name }
@@ -431,17 +445,17 @@ class NxCrossEntitySchemaConsistencyTest {
  * Key format validation tests per NX_SSOT_CONTRACT.md Section 3.
  */
 class NxKeyFormatValidationTest {
-
     /**
      * Validates workKey format: {workType}:{authority}:{id} or {workType}:{source}:{account}:{id}
      */
     @Test
     fun `workKey format validation - authority based`() {
-        val validAuthorityKeys = listOf(
-            "movie:tmdb:12345",
-            "series:imdb:tt1234567",
-            "episode:tmdb:tv:456:s:1:e:3",
-        )
+        val validAuthorityKeys =
+            listOf(
+                "movie:tmdb:12345",
+                "series:imdb:tt1234567",
+                "episode:tmdb:tv:456:s:1:e:3",
+            )
 
         for (key in validAuthorityKeys) {
             assertTrue(key.contains(":"), "workKey must contain colons: $key")
@@ -454,14 +468,16 @@ class NxKeyFormatValidationTest {
      */
     @Test
     fun `sourceKey format validation - requires accountKey`() {
-        val validSourceKeys = listOf(
-            "xtream:user@server.com:vod:12345",
-            "telegram:+491234567890:chat:100:msg:42",
-        )
+        val validSourceKeys =
+            listOf(
+                "xtream:user@server.com:vod:12345",
+                "telegram:+491234567890:chat:100:msg:42",
+            )
 
-        val invalidSourceKeys = listOf(
-            "xtream:vod:12345", // Missing accountKey - FORBIDDEN per INV-04
-        )
+        val invalidSourceKeys =
+            listOf(
+                "xtream:vod:12345", // Missing accountKey - FORBIDDEN per INV-04
+            )
 
         for (key in validSourceKeys) {
             val parts = key.split(":")
@@ -480,10 +496,11 @@ class NxKeyFormatValidationTest {
      */
     @Test
     fun `variantKey format validation`() {
-        val validVariantKeys = listOf(
-            "v:xtream:user@server:vod:123:1080p:h264",
-            "xtream:user@server:vod:123#1080p:original",
-        )
+        val validVariantKeys =
+            listOf(
+                "v:xtream:user@server:vod:123:1080p:h264",
+                "xtream:user@server:vod:123#1080p:original",
+            )
 
         for (key in validVariantKeys) {
             assertTrue(key.contains(":"), "variantKey must contain colons: $key")
@@ -495,7 +512,6 @@ class NxKeyFormatValidationTest {
  * Schema consistency tests for NX_WorkUserState entity.
  */
 class NxWorkUserStateSchemaConsistencyTest {
-
     /**
      * Verifies UserState entity has all fields required by NX_SSOT_CONTRACT INV-5.
      */
@@ -527,7 +543,6 @@ class NxWorkUserStateSchemaConsistencyTest {
  * Schema consistency tests for NX_IngestLedger entity.
  */
 class NxIngestLedgerSchemaConsistencyTest {
-
     /**
      * Verifies IngestLedger entity enforces INV-01: No silent drops.
      */
@@ -547,7 +562,10 @@ class NxIngestLedgerSchemaConsistencyTest {
      */
     @Test
     fun `LedgerState enum covers all contract-defined states`() {
-        val dtoStates = NxIngestLedgerRepository.LedgerState.entries.map { it.name }.toSet()
+        val dtoStates =
+            NxIngestLedgerRepository.LedgerState.entries
+                .map { it.name }
+                .toSet()
 
         assertTrue("ACCEPTED" in dtoStates, "Must have ACCEPTED state")
         assertTrue("REJECTED" in dtoStates, "Must have REJECTED state")
@@ -559,7 +577,6 @@ class NxIngestLedgerSchemaConsistencyTest {
  * Schema consistency tests for NX_SourceAccount entity (multi-account support).
  */
 class NxSourceAccountSchemaConsistencyTest {
-
     /**
      * Verifies SourceAccount entity supports multi-account per INV-04.
      */
@@ -600,7 +617,6 @@ class NxSourceAccountSchemaConsistencyTest {
  * Schema consistency tests for NX_Profile entity (profile system).
  */
 class NxProfileSchemaConsistencyTest {
-
     /**
      * Verifies Profile entity has required fields.
      */

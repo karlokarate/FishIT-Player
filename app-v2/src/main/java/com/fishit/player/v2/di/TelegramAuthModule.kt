@@ -46,8 +46,9 @@ object TelegramAuthModule {
         val hasTelegramCredentials = BuildConfig.TG_API_ID != 0 && BuildConfig.TG_API_HASH.isNotBlank()
 
         if (!hasTelegramCredentials) {
-            val message = "Telegram API credentials are missing. Set TG_API_ID and TG_API_HASH " +
-                "environment variables before building. Telegram features will be disabled."
+            val message =
+                "Telegram API credentials are missing. Set TG_API_ID and TG_API_HASH " +
+                    "environment variables before building. Telegram features will be disabled."
             UnifiedLog.w(TAG) { message }
             // Return config with dummy values - Telegram features won't work but app will start
         }

@@ -36,7 +36,6 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Error
-import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.LiveTv
 import androidx.compose.material.icons.filled.Movie
@@ -52,9 +51,6 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
-import androidx.paging.LoadState
-import androidx.paging.compose.LazyPagingItems
-import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -72,6 +68,9 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.paging.LoadState
+import androidx.paging.compose.LazyPagingItems
+import androidx.paging.compose.collectAsLazyPagingItems
 import com.fishit.player.core.catalogsync.SyncUiState
 import com.fishit.player.core.home.domain.HomeMediaItem
 import com.fishit.player.core.model.SourceType
@@ -106,7 +105,7 @@ fun HomeScreen(
     // Use filteredState for search/filter support
     val state by viewModel.filteredState.collectAsState()
     val dimens = LocalFishDimens.current
-    
+
     // Paging items (always collected - Compose hooks must be unconditional)
     val moviesPagingItems = viewModel.moviesPagingFlow.collectAsLazyPagingItems()
     val seriesPagingItems = viewModel.seriesPagingFlow.collectAsLazyPagingItems()
@@ -503,7 +502,7 @@ private fun HomeContent(
     recentlyAddedPagingItems: LazyPagingItems<HomeMediaItem>? = null,
 ) {
     val listState = rememberLazyListState()
-    
+
     // When search is active with query, show search results instead of normal rows
     if (state.searchQuery.isNotBlank()) {
         SearchResultsContent(
@@ -626,17 +625,20 @@ private fun HomeContent(
         }
 
         // Check if there's any content (paging or special rows)
-        val hasPagingContent = usePaging && listOfNotNull(
-            moviesPagingItems?.takeIf { it.itemCount > 0 },
-            seriesPagingItems?.takeIf { it.itemCount > 0 },
-            clipsPagingItems?.takeIf { it.itemCount > 0 },
-            livePagingItems?.takeIf { it.itemCount > 0 },
-            recentlyAddedPagingItems?.takeIf { it.itemCount > 0 },
-        ).isNotEmpty()
-        
-        val hasAnyContent = hasPagingContent || 
-            state.continueWatchingItems.isNotEmpty() ||
-            state.recentlyAddedItems.isNotEmpty()
+        val hasPagingContent =
+            usePaging &&
+                listOfNotNull(
+                    moviesPagingItems?.takeIf { it.itemCount > 0 },
+                    seriesPagingItems?.takeIf { it.itemCount > 0 },
+                    clipsPagingItems?.takeIf { it.itemCount > 0 },
+                    livePagingItems?.takeIf { it.itemCount > 0 },
+                    recentlyAddedPagingItems?.takeIf { it.itemCount > 0 },
+                ).isNotEmpty()
+
+        val hasAnyContent =
+            hasPagingContent ||
+                state.continueWatchingItems.isNotEmpty() ||
+                state.recentlyAddedItems.isNotEmpty()
 
         // Empty state if no content at all
         // Contract: STARTUP_TRIGGER_CONTRACT (U-1)
@@ -831,13 +833,14 @@ private fun PagingMediaRow(
                     )
                 }
             }
-            
+
             // Loading indicator at end
             if (pagingItems.loadState.append is LoadState.Loading) {
                 item {
                     Box(
-                        modifier = Modifier
-                            .size(dimens.tileWidth, dimens.tileHeight),
+                        modifier =
+                            Modifier
+                                .size(dimens.tileWidth, dimens.tileHeight),
                         contentAlignment = Alignment.Center,
                     ) {
                         CircularProgressIndicator(
@@ -1197,7 +1200,7 @@ private fun SearchResultsContent(
 ) {
     val dimens = LocalFishDimens.current
     val minSearchLength = 2
-    
+
     when {
         // Show hint when query is too short
         state.searchQuery.length < minSearchLength -> {
@@ -1224,7 +1227,7 @@ private fun SearchResultsContent(
                 }
             }
         }
-        
+
         state.isSearchLoading -> {
             Box(
                 modifier = Modifier.fillMaxSize(),
@@ -1244,7 +1247,7 @@ private fun SearchResultsContent(
                 }
             }
         }
-        
+
         state.searchResults.isEmpty() -> {
             Box(
                 modifier = Modifier.fillMaxSize(),
@@ -1275,18 +1278,20 @@ private fun SearchResultsContent(
                 }
             }
         }
-        
+
         else -> {
             Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(horizontal = dimens.contentPaddingHorizontal),
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = dimens.contentPaddingHorizontal),
             ) {
                 // Header with result count
                 Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 12.dp),
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 12.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Icon(
@@ -1302,7 +1307,7 @@ private fun SearchResultsContent(
                         color = MaterialTheme.colorScheme.onSurface,
                     )
                 }
-                
+
                 // Results grid
                 LazyVerticalGrid(
                     columns = GridCells.Adaptive(minSize = dimens.tileWidth),

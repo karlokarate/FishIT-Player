@@ -21,70 +21,80 @@ import javax.inject.Singleton
  * MVP: storage and retrieval only - KNN search comes later.
  */
 @Singleton
-class NxWorkEmbeddingRepositoryImpl @Inject constructor(
-    boxStore: BoxStore,
-) : NxWorkEmbeddingRepository {
+class NxWorkEmbeddingRepositoryImpl
+    @Inject
+    constructor(
+        boxStore: BoxStore,
+    ) : NxWorkEmbeddingRepository {
+        private val box: Box<NX_WorkEmbedding> = boxStore.boxFor(NX_WorkEmbedding::class.java)
 
-    private val box: Box<NX_WorkEmbedding> = boxStore.boxFor(NX_WorkEmbedding::class.java)
+        // ──────────────────────────────────────────────────────────────────────────
+        // Reads
+        // ──────────────────────────────────────────────────────────────────────────
 
-    // ──────────────────────────────────────────────────────────────────────────
-    // Reads
-    // ──────────────────────────────────────────────────────────────────────────
-
-    override suspend fun get(
-        workKey: String,
-        embeddingModel: String,
-        embeddingVersion: Int,
-    ): WorkEmbedding? = withContext(Dispatchers.IO) {
-        // Query by workKey and embeddingType, filter by dimension in memory
-        box.query(NX_WorkEmbedding_.workKey.equal(workKey, StringOrder.CASE_SENSITIVE))
-            .build()
-            .find()
-            .filter { it.embeddingType == embeddingModel && it.dimension == embeddingVersion }
-            .firstOrNull()
-            ?.toDomain()
-    }
-
-    // ──────────────────────────────────────────────────────────────────────────
-    // Writes
-    // ──────────────────────────────────────────────────────────────────────────
-
-    override suspend fun upsert(embedding: WorkEmbedding): WorkEmbedding = withContext(Dispatchers.IO) {
-        val existing = box.query(NX_WorkEmbedding_.workKey.equal(embedding.workKey, StringOrder.CASE_SENSITIVE))
-            .build()
-            .find()
-            .filter { it.embeddingType == embedding.embeddingModel && it.dimension == embedding.embeddingVersion }
-            .firstOrNull()
-
-        val entity = if (existing != null) {
-            existing.apply {
-                embeddingVector = embedding.embedding.joinToString(",")
-                generatedAt = System.currentTimeMillis()
+        override suspend fun get(
+            workKey: String,
+            embeddingModel: String,
+            embeddingVersion: Int,
+        ): WorkEmbedding? =
+            withContext(Dispatchers.IO) {
+                // Query by workKey and embeddingType, filter by dimension in memory
+                box
+                    .query(NX_WorkEmbedding_.workKey.equal(workKey, StringOrder.CASE_SENSITIVE))
+                    .build()
+                    .find()
+                    .filter { it.embeddingType == embeddingModel && it.dimension == embeddingVersion }
+                    .firstOrNull()
+                    ?.toDomain()
             }
-        } else {
-            embedding.toEntity()
-        }
 
-        box.put(entity)
-        entity.toDomain()
+        // ──────────────────────────────────────────────────────────────────────────
+        // Writes
+        // ──────────────────────────────────────────────────────────────────────────
+
+        override suspend fun upsert(embedding: WorkEmbedding): WorkEmbedding =
+            withContext(Dispatchers.IO) {
+                val existing =
+                    box
+                        .query(NX_WorkEmbedding_.workKey.equal(embedding.workKey, StringOrder.CASE_SENSITIVE))
+                        .build()
+                        .find()
+                        .filter { it.embeddingType == embedding.embeddingModel && it.dimension == embedding.embeddingVersion }
+                        .firstOrNull()
+
+                val entity =
+                    if (existing != null) {
+                        existing.apply {
+                            embeddingVector = embedding.embedding.joinToString(",")
+                            generatedAt = System.currentTimeMillis()
+                        }
+                    } else {
+                        embedding.toEntity()
+                    }
+
+                box.put(entity)
+                entity.toDomain()
+            }
+
+        override suspend fun delete(
+            workKey: String,
+            embeddingModel: String,
+            embeddingVersion: Int,
+        ): Boolean =
+            withContext(Dispatchers.IO) {
+                val toDelete =
+                    box
+                        .query(NX_WorkEmbedding_.workKey.equal(workKey, StringOrder.CASE_SENSITIVE))
+                        .build()
+                        .find()
+                        .filter { it.embeddingType == embeddingModel && it.dimension == embeddingVersion }
+                        .firstOrNull()
+
+                if (toDelete != null) {
+                    box.remove(toDelete.id)
+                    true
+                } else {
+                    false
+                }
+            }
     }
-
-    override suspend fun delete(
-        workKey: String,
-        embeddingModel: String,
-        embeddingVersion: Int,
-    ): Boolean = withContext(Dispatchers.IO) {
-        val toDelete = box.query(NX_WorkEmbedding_.workKey.equal(workKey, StringOrder.CASE_SENSITIVE))
-            .build()
-            .find()
-            .filter { it.embeddingType == embeddingModel && it.dimension == embeddingVersion }
-            .firstOrNull()
-
-        if (toDelete != null) {
-            box.remove(toDelete.id)
-            true
-        } else {
-            false
-        }
-    }
-}

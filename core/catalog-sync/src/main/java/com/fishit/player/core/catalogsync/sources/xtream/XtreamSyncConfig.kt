@@ -43,33 +43,27 @@ import com.fishit.player.core.model.sync.DeviceProfile
 data class XtreamSyncConfig(
     // === Required ===
     override val accountKey: String,
-
     // === Device Optimization ===
     override val deviceProfile: DeviceProfile = DeviceProfile.AUTO,
     override val forceFullSync: Boolean = false,
-
     // === Content Selection (TiviMate-style) ===
     val syncVod: Boolean = true,
     val syncSeries: Boolean = true,
     val syncLive: Boolean = true,
     val syncEpisodes: Boolean = false, // Expensive, off by default
-
     // === Category Filtering (Premium feature) ===
     val vodCategoryIds: Set<String> = emptySet(),
     val seriesCategoryIds: Set<String> = emptySet(),
     val liveCategoryIds: Set<String> = emptySet(),
-
     // === Advanced Options ===
     val enableCheckpoints: Boolean = true,
     val enableTelemetry: Boolean = true,
     val bufferSize: Int? = null, // null = auto from DeviceProfile
     val consumerCount: Int? = null, // null = auto from DeviceProfile
-
     // === Episode Options ===
     val episodeParallelism: Int = 3,
     val excludeSeriesIds: Set<Int> = emptySet(), // For resumable episode sync
 ) : BaseSyncConfig {
-
     companion object {
         /**
          * Full catalog sync - everything enabled.
@@ -200,19 +194,18 @@ data class XtreamSyncConfig(
      * Check if category filtering is active for any content type.
      */
     val hasCategoryFilters: Boolean
-        get() = vodCategoryIds.isNotEmpty() ||
-            seriesCategoryIds.isNotEmpty() ||
-            liveCategoryIds.isNotEmpty()
+        get() =
+            vodCategoryIds.isNotEmpty() ||
+                seriesCategoryIds.isNotEmpty() ||
+                liveCategoryIds.isNotEmpty()
 
     /**
      * Get effective buffer size (from config or profile).
      */
-    fun getEffectiveBufferSize(profile: DeviceProfile): Int =
-        bufferSize ?: profile.bufferCapacity
+    fun getEffectiveBufferSize(profile: DeviceProfile): Int = bufferSize ?: profile.bufferCapacity
 
     /**
      * Get effective consumer count (from config or profile).
      */
-    fun getEffectiveConsumerCount(profile: DeviceProfile): Int =
-        consumerCount ?: profile.consumerCount
+    fun getEffectiveConsumerCount(profile: DeviceProfile): Int = consumerCount ?: profile.consumerCount
 }

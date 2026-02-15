@@ -70,47 +70,48 @@ object StreamingJsonParser {
     fun <T> parseArrayAsSequence(
         input: InputStream,
         mapper: (JsonObjectReader) -> T?,
-    ): Sequence<T> = sequence {
-        jsonFactory.createParser(input).use { parser ->
-            // Expect array start
-            val firstToken = parser.nextToken()
-            if (firstToken != JsonToken.START_ARRAY) {
-                // Handle object wrapper case (some panels return {"vod_streams": [...]})
-                if (firstToken == JsonToken.START_OBJECT) {
-                    yieldAll(parseWrappedArray(parser, mapper))
+    ): Sequence<T> =
+        sequence {
+            jsonFactory.createParser(input).use { parser ->
+                // Expect array start
+                val firstToken = parser.nextToken()
+                if (firstToken != JsonToken.START_ARRAY) {
+                    // Handle object wrapper case (some panels return {"vod_streams": [...]})
+                    if (firstToken == JsonToken.START_OBJECT) {
+                        yieldAll(parseWrappedArray(parser, mapper))
+                        return@sequence
+                    }
+                    UnifiedLog.w(TAG) { "Expected JSON array, got: $firstToken" }
                     return@sequence
                 }
-                UnifiedLog.w(TAG) { "Expected JSON array, got: $firstToken" }
-                return@sequence
-            }
 
-            // Process each object in the array
-            var count = 0
-            var errors = 0
-            while (parser.nextToken() != JsonToken.END_ARRAY) {
-                if (parser.currentToken == JsonToken.START_OBJECT) {
-                    try {
-                        val reader = JsonObjectReader(parser)
-                        val item = mapper(reader)
-                        reader.skipRemainingFields()
-                        if (item != null) {
-                            yield(item)
-                            count++
-                        }
-                    } catch (e: Exception) {
-                        errors++
-                        if (errors <= 3) {
-                            UnifiedLog.w(TAG) { "Mapper error #$errors: ${e.message}" }
+                // Process each object in the array
+                var count = 0
+                var errors = 0
+                while (parser.nextToken() != JsonToken.END_ARRAY) {
+                    if (parser.currentToken == JsonToken.START_OBJECT) {
+                        try {
+                            val reader = JsonObjectReader(parser)
+                            val item = mapper(reader)
+                            reader.skipRemainingFields()
+                            if (item != null) {
+                                yield(item)
+                                count++
+                            }
+                        } catch (e: Exception) {
+                            errors++
+                            if (errors <= 3) {
+                                UnifiedLog.w(TAG) { "Mapper error #$errors: ${e.message}" }
+                            }
                         }
                     }
                 }
-            }
 
-            if (errors > 0) {
-                UnifiedLog.w(TAG) { "Completed with $errors errors, $count items parsed" }
+                if (errors > 0) {
+                    UnifiedLog.w(TAG) { "Completed with $errors errors, $count items parsed" }
+                }
             }
         }
-    }
 
     /**
      * Stream JSON array in batches with constant memory usage.
@@ -215,10 +216,22 @@ object StreamingJsonParser {
         mapper: (JsonObjectReader) -> T?,
         onBatch: suspend (List<T>) -> Unit,
     ): StreamingStats {
-        val arrayFieldCandidates = setOf(
-            "vod_streams", "live_streams", "series", "channels",
-            "vod", "live", "movies", "streams", "data", "items", "list", "result", "results",
-        )
+        val arrayFieldCandidates =
+            setOf(
+                "vod_streams",
+                "live_streams",
+                "series",
+                "channels",
+                "vod",
+                "live",
+                "movies",
+                "streams",
+                "data",
+                "items",
+                "list",
+                "result",
+                "results",
+            )
 
         var totalCount = 0
         var batchCount = 0
@@ -304,9 +317,10 @@ object StreamingJsonParser {
     fun <T> parseArrayFromString(
         body: String,
         mapper: (JsonObjectReader) -> T?,
-    ): List<T> = body.byteInputStream().use { input ->
-        parseArrayAsSequence(input, mapper).toList()
-    }
+    ): List<T> =
+        body.byteInputStream().use { input ->
+            parseArrayAsSequence(input, mapper).toList()
+        }
 
     /**
      * Handle wrapped array response: {"items": [...], "vod_streams": [...], etc.}
@@ -317,46 +331,59 @@ object StreamingJsonParser {
     private fun <T> parseWrappedArray(
         parser: JsonParser,
         mapper: (JsonObjectReader) -> T?,
-    ): Sequence<T> = sequence {
-        // Known array field names from various Xtream panels
-        val arrayFieldCandidates = setOf(
-            "vod_streams", "live_streams", "series", "channels",
-            "vod", "live", "movies", "streams", "data", "items", "list", "result", "results",
-        )
+    ): Sequence<T> =
+        sequence {
+            // Known array field names from various Xtream panels
+            val arrayFieldCandidates =
+                setOf(
+                    "vod_streams",
+                    "live_streams",
+                    "series",
+                    "channels",
+                    "vod",
+                    "live",
+                    "movies",
+                    "streams",
+                    "data",
+                    "items",
+                    "list",
+                    "result",
+                    "results",
+                )
 
-        while (parser.nextToken() != JsonToken.END_OBJECT) {
-            val fieldName = parser.currentName
-            parser.nextToken()
+            while (parser.nextToken() != JsonToken.END_OBJECT) {
+                val fieldName = parser.currentName
+                parser.nextToken()
 
-            if (parser.currentToken == JsonToken.START_ARRAY &&
-                (fieldName in arrayFieldCandidates || arrayFieldCandidates.isEmpty())
-            ) {
-                UnifiedLog.d(TAG) { "Found array in wrapper field: $fieldName" }
+                if (parser.currentToken == JsonToken.START_ARRAY &&
+                    (fieldName in arrayFieldCandidates || arrayFieldCandidates.isEmpty())
+                ) {
+                    UnifiedLog.d(TAG) { "Found array in wrapper field: $fieldName" }
 
-                // Parse the array
-                while (parser.nextToken() != JsonToken.END_ARRAY) {
-                    if (parser.currentToken == JsonToken.START_OBJECT) {
-                        try {
-                            val reader = JsonObjectReader(parser)
-                            val item = mapper(reader)
-                            reader.skipRemainingFields()
-                            if (item != null) {
-                                yield(item)
+                    // Parse the array
+                    while (parser.nextToken() != JsonToken.END_ARRAY) {
+                        if (parser.currentToken == JsonToken.START_OBJECT) {
+                            try {
+                                val reader = JsonObjectReader(parser)
+                                val item = mapper(reader)
+                                reader.skipRemainingFields()
+                                if (item != null) {
+                                    yield(item)
+                                }
+                            } catch (e: Exception) {
+                                UnifiedLog.w(TAG) { "Mapper error in wrapped array: ${e.message}" }
                             }
-                        } catch (e: Exception) {
-                            UnifiedLog.w(TAG) { "Mapper error in wrapped array: ${e.message}" }
                         }
                     }
+                    return@sequence
+                } else {
+                    // Skip non-array fields
+                    parser.skipChildren()
                 }
-                return@sequence
-            } else {
-                // Skip non-array fields
-                parser.skipChildren()
             }
-        }
 
-        UnifiedLog.w(TAG) { "No recognized array field found in wrapper object" }
-    }
+            UnifiedLog.w(TAG) { "No recognized array field found in wrapper object" }
+        }
 }
 
 /**
@@ -376,7 +403,9 @@ object StreamingJsonParser {
  * **Note:** Fields must be consumed in JSON order or skipped.
  * After reading needed fields, call `skipRemainingFields()`.
  */
-class JsonObjectReader(private val parser: JsonParser) {
+class JsonObjectReader(
+    private val parser: JsonParser,
+) {
     private val fields = mutableMapOf<String, Any?>()
     private var fullyParsed = false
 
@@ -392,17 +421,18 @@ class JsonObjectReader(private val parser: JsonParser) {
             val fieldName = parser.currentName ?: continue
             parser.nextToken()
 
-            val value: Any? = when (parser.currentToken) {
-                JsonToken.VALUE_STRING -> parser.text
-                JsonToken.VALUE_NUMBER_INT -> parser.longValue
-                JsonToken.VALUE_NUMBER_FLOAT -> parser.doubleValue
-                JsonToken.VALUE_TRUE -> true
-                JsonToken.VALUE_FALSE -> false
-                JsonToken.VALUE_NULL -> null
-                JsonToken.START_ARRAY -> parseArray()
-                JsonToken.START_OBJECT -> parseNestedObject()
-                else -> null
-            }
+            val value: Any? =
+                when (parser.currentToken) {
+                    JsonToken.VALUE_STRING -> parser.text
+                    JsonToken.VALUE_NUMBER_INT -> parser.longValue
+                    JsonToken.VALUE_NUMBER_FLOAT -> parser.doubleValue
+                    JsonToken.VALUE_TRUE -> true
+                    JsonToken.VALUE_FALSE -> false
+                    JsonToken.VALUE_NULL -> null
+                    JsonToken.START_ARRAY -> parseArray()
+                    JsonToken.START_OBJECT -> parseNestedObject()
+                    else -> null
+                }
 
             fields[fieldName] = value
         }
@@ -412,17 +442,18 @@ class JsonObjectReader(private val parser: JsonParser) {
     private fun parseArray(): List<Any?> {
         val list = mutableListOf<Any?>()
         while (parser.nextToken() != JsonToken.END_ARRAY) {
-            val value: Any? = when (parser.currentToken) {
-                JsonToken.VALUE_STRING -> parser.text
-                JsonToken.VALUE_NUMBER_INT -> parser.longValue
-                JsonToken.VALUE_NUMBER_FLOAT -> parser.doubleValue
-                JsonToken.VALUE_TRUE -> true
-                JsonToken.VALUE_FALSE -> false
-                JsonToken.VALUE_NULL -> null
-                JsonToken.START_OBJECT -> parseNestedObject()
-                JsonToken.START_ARRAY -> parseArray()
-                else -> null
-            }
+            val value: Any? =
+                when (parser.currentToken) {
+                    JsonToken.VALUE_STRING -> parser.text
+                    JsonToken.VALUE_NUMBER_INT -> parser.longValue
+                    JsonToken.VALUE_NUMBER_FLOAT -> parser.doubleValue
+                    JsonToken.VALUE_TRUE -> true
+                    JsonToken.VALUE_FALSE -> false
+                    JsonToken.VALUE_NULL -> null
+                    JsonToken.START_OBJECT -> parseNestedObject()
+                    JsonToken.START_ARRAY -> parseArray()
+                    else -> null
+                }
             list.add(value)
         }
         return list
@@ -433,17 +464,18 @@ class JsonObjectReader(private val parser: JsonParser) {
         while (parser.nextToken() != JsonToken.END_OBJECT) {
             val fieldName = parser.currentName ?: continue
             parser.nextToken()
-            val value: Any? = when (parser.currentToken) {
-                JsonToken.VALUE_STRING -> parser.text
-                JsonToken.VALUE_NUMBER_INT -> parser.longValue
-                JsonToken.VALUE_NUMBER_FLOAT -> parser.doubleValue
-                JsonToken.VALUE_TRUE -> true
-                JsonToken.VALUE_FALSE -> false
-                JsonToken.VALUE_NULL -> null
-                JsonToken.START_ARRAY -> parseArray()
-                JsonToken.START_OBJECT -> parseNestedObject()
-                else -> null
-            }
+            val value: Any? =
+                when (parser.currentToken) {
+                    JsonToken.VALUE_STRING -> parser.text
+                    JsonToken.VALUE_NUMBER_INT -> parser.longValue
+                    JsonToken.VALUE_NUMBER_FLOAT -> parser.doubleValue
+                    JsonToken.VALUE_TRUE -> true
+                    JsonToken.VALUE_FALSE -> false
+                    JsonToken.VALUE_NULL -> null
+                    JsonToken.START_ARRAY -> parseArray()
+                    JsonToken.START_OBJECT -> parseNestedObject()
+                    else -> null
+                }
             map[fieldName] = value
         }
         return map
@@ -461,67 +493,68 @@ class JsonObjectReader(private val parser: JsonParser) {
      * - List → return first non-blank string element
      * - Other → null
      */
-    fun getFlexibleStringOrNull(name: String): String? {
-        return when (val v = fields[name]) {
+    fun getFlexibleStringOrNull(name: String): String? =
+        when (val v = fields[name]) {
             is String -> v.takeIf { it.isNotBlank() }
             is List<*> -> v.firstOrNull()?.toString()?.takeIf { it.isNotBlank() }
             else -> null
         }
-    }
 
     /** Get string field value or empty string. */
     fun getString(name: String): String = getStringOrNull(name) ?: ""
 
     /** Get integer field value or null. */
-    fun getIntOrNull(name: String): Int? = when (val v = fields[name]) {
-        is Number -> v.toInt()
-        is String -> v.toIntOrNull()
-        else -> null
-    }
+    fun getIntOrNull(name: String): Int? =
+        when (val v = fields[name]) {
+            is Number -> v.toInt()
+            is String -> v.toIntOrNull()
+            else -> null
+        }
 
     /** Get integer field value or 0. */
     fun getInt(name: String): Int = getIntOrNull(name) ?: 0
 
     /** Get long field value or null. */
-    fun getLongOrNull(name: String): Long? = when (val v = fields[name]) {
-        is Number -> v.toLong()
-        is String -> v.toLongOrNull()
-        else -> null
-    }
+    fun getLongOrNull(name: String): Long? =
+        when (val v = fields[name]) {
+            is Number -> v.toLong()
+            is String -> v.toLongOrNull()
+            else -> null
+        }
 
     /** Get long field value or 0. */
     fun getLong(name: String): Long = getLongOrNull(name) ?: 0L
 
     /** Get double field value or null. */
-    fun getDoubleOrNull(name: String): Double? = when (val v = fields[name]) {
-        is Number -> v.toDouble()
-        is String -> v.toDoubleOrNull()
-        else -> null
-    }
+    fun getDoubleOrNull(name: String): Double? =
+        when (val v = fields[name]) {
+            is Number -> v.toDouble()
+            is String -> v.toDoubleOrNull()
+            else -> null
+        }
 
     /** Get double field value or 0.0. */
     fun getDouble(name: String): Double = getDoubleOrNull(name) ?: 0.0
 
     /** Get boolean field value or null. */
-    fun getBooleanOrNull(name: String): Boolean? = when (val v = fields[name]) {
-        is Boolean -> v
-        is Number -> v.toInt() != 0
-        is String -> v.lowercase() in listOf("true", "1", "yes")
-        else -> null
-    }
+    fun getBooleanOrNull(name: String): Boolean? =
+        when (val v = fields[name]) {
+            is Boolean -> v
+            is Number -> v.toInt() != 0
+            is String -> v.lowercase() in listOf("true", "1", "yes")
+            else -> null
+        }
 
     /** Get boolean field value or false. */
     fun getBoolean(name: String): Boolean = getBooleanOrNull(name) ?: false
 
     /** Get nested object as Map or null. */
     @Suppress("UNCHECKED_CAST")
-    fun getObjectOrNull(name: String): Map<String, Any?>? =
-        fields[name] as? Map<String, Any?>
+    fun getObjectOrNull(name: String): Map<String, Any?>? = fields[name] as? Map<String, Any?>
 
     /** Get array field as List or null. */
     @Suppress("UNCHECKED_CAST")
-    fun getArrayOrNull(name: String): List<Any?>? =
-        fields[name] as? List<Any?>
+    fun getArrayOrNull(name: String): List<Any?>? = fields[name] as? List<Any?>
 
     /** Check if field exists. */
     fun hasField(name: String): Boolean = name in fields

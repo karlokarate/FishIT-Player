@@ -115,12 +115,13 @@ class XtreamCatalogMapperImpl
             accountLabel: String,
         ): XtreamCatalogItem =
             XtreamCatalogItem(
-                raw = episode.toRawMediaMetadata(
-                    seriesNameOverride = seriesName,
-                    seriesKind = "series", // Xtream API does not return stream_type for series, default to "series"
-                    authHeaders = imageAuthHeaders,
-                    accountLabel = accountLabel,
-                ),
+                raw =
+                    episode.toRawMediaMetadata(
+                        seriesNameOverride = seriesName,
+                        seriesKind = "series", // Xtream API does not return stream_type for series, default to "series"
+                        authHeaders = imageAuthHeaders,
+                        accountLabel = accountLabel,
+                    ),
                 kind = XtreamItemKind.EPISODE,
                 seriesId = episode.seriesId,
                 episodeId = episode.id,

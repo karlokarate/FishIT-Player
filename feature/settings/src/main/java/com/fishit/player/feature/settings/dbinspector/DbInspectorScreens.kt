@@ -83,9 +83,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 import javax.inject.Inject
 
 // =============================================================================
@@ -107,9 +104,16 @@ class DbInspectorEntityTypesViewModel
 
         sealed class ExportState {
             object Idle : ExportState()
+
             object Exporting : ExportState()
-            data class Success(val filePath: String) : ExportState()
-            data class Error(val message: String) : ExportState()
+
+            data class Success(
+                val filePath: String,
+            ) : ExportState()
+
+            data class Error(
+                val message: String,
+            ) : ExportState()
         }
 
         private val _state = MutableStateFlow(State())
@@ -128,7 +132,10 @@ class DbInspectorEntityTypesViewModel
             }
         }
 
-        fun exportSchema(context: android.content.Context, toLogcat: Boolean = false) {
+        fun exportSchema(
+            context: android.content.Context,
+            toLogcat: Boolean = false,
+        ) {
             viewModelScope.launch {
                 _state.update { it.copy(exportState = ExportState.Exporting) }
                 runCatching {
@@ -141,7 +148,10 @@ class DbInspectorEntityTypesViewModel
             }
         }
 
-        fun exportSchemaToUri(context: android.content.Context, uri: Uri) {
+        fun exportSchemaToUri(
+            context: android.content.Context,
+            uri: Uri,
+        ) {
             viewModelScope.launch {
                 _state.update { it.copy(exportState = ExportState.Exporting) }
                 runCatching {
@@ -231,10 +241,20 @@ class DbInspectorDetailViewModel
 
         sealed class WorkGraphExportState {
             object Idle : WorkGraphExportState()
+
             object Exporting : WorkGraphExportState()
-            data class Success(val message: String) : WorkGraphExportState()
-            data class Error(val message: String) : WorkGraphExportState()
-            data class JsonReady(val json: String) : WorkGraphExportState()
+
+            data class Success(
+                val message: String,
+            ) : WorkGraphExportState()
+
+            data class Error(
+                val message: String,
+            ) : WorkGraphExportState()
+
+            data class JsonReady(
+                val json: String,
+            ) : WorkGraphExportState()
         }
 
         private val _state = MutableStateFlow(State())
@@ -304,11 +324,15 @@ class DbInspectorDetailViewModel
         /**
          * Export Work Graph to a user-selected URI via SAF.
          */
-        fun exportWorkGraphToUri(context: android.content.Context, uri: Uri) {
-            val workKey = getWorkKey() ?: run {
-                _state.update { it.copy(workGraphExportState = WorkGraphExportState.Error("No workKey found")) }
-                return
-            }
+        fun exportWorkGraphToUri(
+            context: android.content.Context,
+            uri: Uri,
+        ) {
+            val workKey =
+                getWorkKey() ?: run {
+                    _state.update { it.copy(workGraphExportState = WorkGraphExportState.Error("No workKey found")) }
+                    return
+                }
             viewModelScope.launch {
                 _state.update { it.copy(workGraphExportState = WorkGraphExportState.Exporting) }
                 runCatching {
@@ -327,10 +351,11 @@ class DbInspectorDetailViewModel
          * Export Work Graph to JSON string (for clipboard).
          */
         fun exportWorkGraphToClipboard() {
-            val workKey = getWorkKey() ?: run {
-                _state.update { it.copy(workGraphExportState = WorkGraphExportState.Error("No workKey found")) }
-                return
-            }
+            val workKey =
+                getWorkKey() ?: run {
+                    _state.update { it.copy(workGraphExportState = WorkGraphExportState.Error("No workKey found")) }
+                    return
+                }
             viewModelScope.launch {
                 _state.update { it.copy(workGraphExportState = WorkGraphExportState.Exporting) }
                 runCatching {
@@ -363,13 +388,14 @@ fun DbInspectorEntityTypesScreen(
     val context = androidx.compose.ui.platform.LocalContext.current
     var showExportDialog by remember { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
-    
+
     // SAF launcher for user-selected export location
-    val schemaExportLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.CreateDocument("application/json")
-    ) { uri: Uri? ->
-        uri?.let { viewModel.exportSchemaToUri(context, it) }
-    }
+    val schemaExportLauncher =
+        rememberLauncherForActivityResult(
+            contract = ActivityResultContracts.CreateDocument("application/json"),
+        ) { uri: Uri? ->
+            uri?.let { viewModel.exportSchemaToUri(context, it) }
+        }
 
     // Handle export state snackbar
     LaunchedEffect(state.exportState) {
@@ -377,14 +403,14 @@ fun DbInspectorEntityTypesScreen(
             is DbInspectorEntityTypesViewModel.ExportState.Success -> {
                 snackbarHostState.showSnackbar(
                     message = "Schema exported to:\n${exportState.filePath}",
-                    duration = SnackbarDuration.Long
+                    duration = SnackbarDuration.Long,
                 )
                 viewModel.clearExportState()
             }
             is DbInspectorEntityTypesViewModel.ExportState.Error -> {
                 snackbarHostState.showSnackbar(
                     message = "Export failed: ${exportState.message}",
-                    duration = SnackbarDuration.Long
+                    duration = SnackbarDuration.Long,
                 )
                 viewModel.clearExportState()
             }
@@ -420,16 +446,18 @@ fun DbInspectorEntityTypesScreen(
                     Column(modifier = Modifier.fillMaxSize()) {
                         // Export schema button
                         Card(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 16.dp, vertical = 8.dp),
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp, vertical = 8.dp),
                             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
                         ) {
                             Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clickable { showExportDialog = true }
-                                    .padding(16.dp),
+                                modifier =
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .clickable { showExportDialog = true }
+                                        .padding(16.dp),
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
                                 Icon(
@@ -452,7 +480,7 @@ fun DbInspectorEntityTypesScreen(
                                 }
                             }
                         }
-                        
+
                         LazyColumn(
                             contentPadding = PaddingValues(16.dp),
                             verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -467,15 +495,17 @@ fun DbInspectorEntityTypesScreen(
             }
         }
     }
-    
+
     // Export dialog
     if (showExportDialog) {
-        val timestamp = remember {
-            java.time.LocalDateTime.now().format(
-                java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss")
-            )
-        }
-        
+        val timestamp =
+            remember {
+                java.time.LocalDateTime.now().format(
+                    java.time.format.DateTimeFormatter
+                        .ofPattern("yyyyMMdd_HHmmss"),
+                )
+            }
+
         AlertDialog(
             onDismissRequest = { showExportDialog = false },
             title = { Text("Export ObjectBox Schema") },
@@ -619,14 +649,15 @@ fun DbInspectorDetailScreen(
     var editMode by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
     var showWorkGraphExportDialog by remember { mutableStateOf(false) }
-    
+
     // SAF launcher for Work Graph export
-    val workGraphExportLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.CreateDocument("application/json")
-    ) { uri: Uri? ->
-        uri?.let { viewModel.exportWorkGraphToUri(context, it) }
-    }
-    
+    val workGraphExportLauncher =
+        rememberLauncherForActivityResult(
+            contract = ActivityResultContracts.CreateDocument("application/json"),
+        ) { uri: Uri? ->
+            uri?.let { viewModel.exportWorkGraphToUri(context, it) }
+        }
+
     // Handle Work Graph export state
     LaunchedEffect(state.workGraphExportState) {
         when (val exportState = state.workGraphExportState) {
@@ -693,18 +724,21 @@ fun DbInspectorDetailScreen(
                         // Work Graph Export Card (only for NX_Work entities)
                         if (viewModel.canExportWorkGraph()) {
                             Card(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(bottom = 16.dp),
-                                colors = CardDefaults.cardColors(
-                                    containerColor = MaterialTheme.colorScheme.secondaryContainer
-                                ),
+                                modifier =
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .padding(bottom = 16.dp),
+                                colors =
+                                    CardDefaults.cardColors(
+                                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                                    ),
                             ) {
                                 Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clickable { showWorkGraphExportDialog = true }
-                                        .padding(16.dp),
+                                    modifier =
+                                        Modifier
+                                            .fillMaxWidth()
+                                            .clickable { showWorkGraphExportDialog = true }
+                                            .padding(16.dp),
                                     verticalAlignment = Alignment.CenterVertically,
                                 ) {
                                     Icon(
@@ -734,7 +768,7 @@ fun DbInspectorDetailScreen(
                                 }
                             }
                         }
-                        
+
                         // Action buttons
                         Row(
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -834,17 +868,19 @@ fun DbInspectorDetailScreen(
             },
         )
     }
-    
+
     // Work Graph Export dialog
     if (showWorkGraphExportDialog) {
         // Remember both workKey and timestamp to ensure consistency
         val workKey = remember { viewModel.getWorkKey() }
-        val timestamp = remember {
-            java.time.LocalDateTime.now().format(
-                java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss")
-            )
-        }
-        
+        val timestamp =
+            remember {
+                java.time.LocalDateTime.now().format(
+                    java.time.format.DateTimeFormatter
+                        .ofPattern("yyyyMMdd_HHmmss"),
+                )
+            }
+
         // If workKey is null, close dialog and show error
         if (workKey == null) {
             LaunchedEffect(Unit) {
@@ -856,51 +892,51 @@ fun DbInspectorDetailScreen(
                 onDismissRequest = { showWorkGraphExportDialog = false },
                 title = { Text("Export Work Graph") },
                 text = {
-                Column {
-                    Text("Export all related entities for this work as JSON.")
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = "Work Key: $workKey",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        "Includes: SourceRefs, Variants, Relations, UserState, Categories, Embeddings, RuntimeState",
-                        style = MaterialTheme.typography.bodySmall,
-                    )
-                }
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        showWorkGraphExportDialog = false
-                        workGraphExportLauncher.launch("work_${workKey}_$timestamp.json")
-                    },
-                ) {
-                    Icon(Icons.Default.FileDownload, contentDescription = null, modifier = Modifier.size(18.dp))
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text("Save to...")
-                }
-            },
-            dismissButton = {
-                Row {
+                    Column {
+                        Text("Export all related entities for this work as JSON.")
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "Work Key: $workKey",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            "Includes: SourceRefs, Variants, Relations, UserState, Categories, Embeddings, RuntimeState",
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                    }
+                },
+                confirmButton = {
                     TextButton(
                         onClick = {
                             showWorkGraphExportDialog = false
-                            viewModel.exportWorkGraphToClipboard()
+                            workGraphExportLauncher.launch("work_${workKey}_$timestamp.json")
                         },
                     ) {
-                        Icon(Icons.Default.ContentCopy, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Icon(Icons.Default.FileDownload, contentDescription = null, modifier = Modifier.size(18.dp))
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Copy")
+                        Text("Save to...")
                     }
-                    TextButton(onClick = { showWorkGraphExportDialog = false }) {
-                        Text("Cancel")
+                },
+                dismissButton = {
+                    Row {
+                        TextButton(
+                            onClick = {
+                                showWorkGraphExportDialog = false
+                                viewModel.exportWorkGraphToClipboard()
+                            },
+                        ) {
+                            Icon(Icons.Default.ContentCopy, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("Copy")
+                        }
+                        TextButton(onClick = { showWorkGraphExportDialog = false }) {
+                            Text("Cancel")
+                        }
                     }
-                }
-            },
-        )
+                },
+            )
         } // End of else block for workKey != null
     }
 }

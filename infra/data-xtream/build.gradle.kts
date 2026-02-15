@@ -22,7 +22,6 @@ android {
     kotlinOptions {
         jvmTarget = "17"
     }
-
 }
 
 // Ensure ObjectBox cursor classes are generated before this module compiles

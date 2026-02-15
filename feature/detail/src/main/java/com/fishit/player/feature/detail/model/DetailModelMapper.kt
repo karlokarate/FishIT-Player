@@ -19,7 +19,6 @@ import com.fishit.player.core.detail.domain.DomainSourceInfo
  * - Decouples UI evolution from domain evolution
  */
 object DetailModelMapper {
-
     /**
      * Maps domain detail media to UI model.
      */

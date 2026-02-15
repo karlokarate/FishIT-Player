@@ -260,7 +260,7 @@ object ObjectBoxIntrospectionDump {
         return PropertyDump(
             name = field.name,
             type = field.type.simpleName,
-            fullType = field.genericType.typeName,
+            fullType = field.genericType.toString(),
             isIndexed = annotations.contains("Index"),
             isUnique = annotations.contains("Unique"),
             isId = annotations.contains("Id"),

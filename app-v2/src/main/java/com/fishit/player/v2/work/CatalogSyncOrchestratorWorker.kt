@@ -89,7 +89,7 @@ class CatalogSyncOrchestratorWorker
 
         override suspend fun doWork(): Result {
             val input = WorkerInputData.from(inputData)
-         val startTimeMs = System.currentTimeMillis()
+            val startTimeMs = System.currentTimeMillis()
 
             UnifiedLog.i(TAG) {
                 "START sync_run_id=${input.syncRunId} mode=${input.syncMode}"
@@ -124,22 +124,32 @@ class CatalogSyncOrchestratorWorker
 
             // Step 3: Execute parallel syncs
             try {
-                val results = coroutineScope {
-                    val xtreamJob = if (SourceId.XTREAM in activeSources) {
-                        async { syncXtream(input, startTimeMs) }
-                    } else null
+                val results =
+                    coroutineScope {
+                        val xtreamJob =
+                            if (SourceId.XTREAM in activeSources) {
+                                async { syncXtream(input, startTimeMs) }
+                            } else {
+                                null
+                            }
 
-                    val telegramJob = if (SourceId.TELEGRAM in activeSources) {
-                        async { syncTelegram(input, startTimeMs) }
-                    } else null
+                        val telegramJob =
+                            if (SourceId.TELEGRAM in activeSources) {
+                                async { syncTelegram(input, startTimeMs) }
+                            } else {
+                                null
+                            }
 
-                    val ioJob = if (SourceId.IO in activeSources) {
-                        async { syncIo(input, startTimeMs) }
-                    } else null
+                        val ioJob =
+                            if (SourceId.IO in activeSources) {
+                                async { syncIo(input, startTimeMs) }
+                            } else {
+                                null
+                            }
 
-                    // Await all
-                    listOfNotNull(xtreamJob, telegramJob, ioJob).awaitAll()
-                }
+                        // Await all
+                        listOfNotNull(xtreamJob, telegramJob, ioJob).awaitAll()
+                    }
 
                 // Aggregate results
                 val totalItems = results.sumOf { it.itemsPersisted }
@@ -309,38 +319,43 @@ class CatalogSyncOrchestratorWorker
             input: WorkerInputData,
             accountKey: String,
         ): XtreamSyncConfig {
-            val deviceProfile = when {
-                input.isFireTvLowRam -> DeviceProfile.FIRETV_STICK
-                input.deviceClass.contains("FIRETV", ignoreCase = true) -> DeviceProfile.FIRETV_CUBE
-                input.deviceClass.contains("SHIELD", ignoreCase = true) -> DeviceProfile.SHIELD_TV
-                input.deviceClass.contains("CHROMECAST", ignoreCase = true) -> DeviceProfile.CHROMECAST_GTV
-                input.deviceClass.contains("TV", ignoreCase = true) -> DeviceProfile.ANDROID_TV_GENERIC
-                else -> DeviceProfile.PHONE_HIGH_RAM
-            }
+            val deviceProfile =
+                when {
+                    input.isFireTvLowRam -> DeviceProfile.FIRETV_STICK
+                    input.deviceClass.contains("FIRETV", ignoreCase = true) -> DeviceProfile.FIRETV_CUBE
+                    input.deviceClass.contains("SHIELD", ignoreCase = true) -> DeviceProfile.SHIELD_TV
+                    input.deviceClass.contains("CHROMECAST", ignoreCase = true) -> DeviceProfile.CHROMECAST_GTV
+                    input.deviceClass.contains("TV", ignoreCase = true) -> DeviceProfile.ANDROID_TV_GENERIC
+                    else -> DeviceProfile.PHONE_HIGH_RAM
+                }
 
             val capabilities = xtreamApiClient.capabilities
 
-            val (vodCategoryIds, seriesCategoryIds, liveCategoryIds) = if (capabilities != null) {
-                Triple(
-                    categorySelectionRepository.getSelectedCategoryIds(
-                        accountKey,
-                        NxCategorySelectionRepository.XtreamCategoryType.VOD,
-                    ).toSet(),
-                    categorySelectionRepository.getSelectedCategoryIds(
-                        accountKey,
-                        NxCategorySelectionRepository.XtreamCategoryType.SERIES,
-                    ).toSet(),
-                    categorySelectionRepository.getSelectedCategoryIds(
-                        accountKey,
-                        NxCategorySelectionRepository.XtreamCategoryType.LIVE,
-                    ).toSet(),
-                )
-            } else {
-                // capabilities == null should not happen after gate check (XOC-3),
-                // but if it does, use empty sets → all content types will be disabled.
-                UnifiedLog.w(TAG) { "XtreamApiClient.capabilities is null during config build — no categories will be synced" }
-                Triple(emptySet(), emptySet(), emptySet())
-            }
+            val (vodCategoryIds, seriesCategoryIds, liveCategoryIds) =
+                if (capabilities != null) {
+                    Triple(
+                        categorySelectionRepository
+                            .getSelectedCategoryIds(
+                                accountKey,
+                                NxCategorySelectionRepository.XtreamCategoryType.VOD,
+                            ).toSet(),
+                        categorySelectionRepository
+                            .getSelectedCategoryIds(
+                                accountKey,
+                                NxCategorySelectionRepository.XtreamCategoryType.SERIES,
+                            ).toSet(),
+                        categorySelectionRepository
+                            .getSelectedCategoryIds(
+                                accountKey,
+                                NxCategorySelectionRepository.XtreamCategoryType.LIVE,
+                            ).toSet(),
+                    )
+                } else {
+                    // capabilities == null should not happen after gate check (XOC-3),
+                    // but if it does, use empty sets → all content types will be disabled.
+                    UnifiedLog.w(TAG) { "XtreamApiClient.capabilities is null during config build — no categories will be synced" }
+                    Triple(emptySet(), emptySet(), emptySet())
+                }
 
             // XOC-10/XOC-11: Derive syncVod/syncSeries/syncLive from selected categories.
             // After category selection gate (XOC-2), empty selected IDs means the user

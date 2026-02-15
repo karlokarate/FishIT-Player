@@ -68,33 +68,37 @@ object LeakCanaryConfig {
 
             // Get default reference matchers
             val appDefaultsMethod = androidReferenceMatchersClass.getMethod("appDefaults")
+
             @Suppress("UNCHECKED_CAST")
             val appDefaults = appDefaultsMethod.invoke(null) as List<Any>
 
             // Configure LeakCanary via reflection
-            val copyMethod = leakCanaryConfigClass.methods.firstOrNull { 
-                it.name == "copy" && it.parameterCount > 5 
-            }
-            
+            val copyMethod =
+                leakCanaryConfigClass.methods.firstOrNull {
+                    it.name == "copy" && it.parameterCount > 5
+                }
+
             if (copyMethod != null) {
                 // Use default parameter values where possible
-                val newConfig = leakCanaryConfigClass.getMethod(
-                    "copy",
-                    Int::class.java,           // retainedVisibleThreshold
-                    Boolean::class.java,       // dumpHeapWhenDebugging
-                    List::class.java,          // referenceMatchers
-                    Boolean::class.java,       // computeRetainedHeapSize
-                    Int::class.java,           // maxStoredHeapDumps
-                    Boolean::class.java        // requestWriteExternalStoragePermission
-                ).invoke(
-                    currentLeakCanaryConfig,
-                    5,                         // retainedVisibleThreshold
-                    false,                     // dumpHeapWhenDebugging
-                    appDefaults,               // referenceMatchers
-                    true,                      // computeRetainedHeapSize
-                    7,                         // maxStoredHeapDumps
-                    false                      // requestWriteExternalStoragePermission
-                )
+                val newConfig =
+                    leakCanaryConfigClass
+                        .getMethod(
+                            "copy",
+                            Int::class.java, // retainedVisibleThreshold
+                            Boolean::class.java, // dumpHeapWhenDebugging
+                            List::class.java, // referenceMatchers
+                            Boolean::class.java, // computeRetainedHeapSize
+                            Int::class.java, // maxStoredHeapDumps
+                            Boolean::class.java, // requestWriteExternalStoragePermission
+                        ).invoke(
+                            currentLeakCanaryConfig,
+                            5, // retainedVisibleThreshold
+                            false, // dumpHeapWhenDebugging
+                            appDefaults, // referenceMatchers
+                            true, // computeRetainedHeapSize
+                            7, // maxStoredHeapDumps
+                            false, // requestWriteExternalStoragePermission
+                        )
                 leakCanaryConfigField.set(null, newConfig)
             }
 
@@ -104,23 +108,25 @@ object LeakCanaryConfig {
             val appWatcherConfigClass = currentAppWatcherConfig.javaClass
 
             // Configure AppWatcher via reflection
-            val appWatcherCopyMethod = appWatcherConfigClass.getMethod(
-                "copy",
-                Boolean::class.java,    // watchActivities
-                Boolean::class.java,    // watchFragments
-                Boolean::class.java,    // watchFragmentViews
-                Boolean::class.java,    // watchViewModels
-                Long::class.java        // watchDurationMillis
-            )
-            
-            val newAppWatcherConfig = appWatcherCopyMethod.invoke(
-                currentAppWatcherConfig,
-                true,                   // watchActivities
-                true,                   // watchFragments
-                true,                   // watchFragmentViews
-                true,                   // watchViewModels
-                10_000L                 // watchDurationMillis (10s for player)
-            )
+            val appWatcherCopyMethod =
+                appWatcherConfigClass.getMethod(
+                    "copy",
+                    Boolean::class.java, // watchActivities
+                    Boolean::class.java, // watchFragments
+                    Boolean::class.java, // watchFragmentViews
+                    Boolean::class.java, // watchViewModels
+                    Long::class.java, // watchDurationMillis
+                )
+
+            val newAppWatcherConfig =
+                appWatcherCopyMethod.invoke(
+                    currentAppWatcherConfig,
+                    true, // watchActivities
+                    true, // watchFragments
+                    true, // watchFragmentViews
+                    true, // watchViewModels
+                    10_000L, // watchDurationMillis (10s for player)
+                )
             appWatcherConfigField.set(null, newAppWatcherConfig)
 
             android.util.Log.i(TAG, "LeakCanary configured for FishIT Player v2")
@@ -182,18 +188,22 @@ object LeakCanaryConfig {
     /**
      * Internal helper to watch objects via reflection.
      */
-    private fun watchObject(watchedObject: Any, description: String) {
+    private fun watchObject(
+        watchedObject: Any,
+        description: String,
+    ) {
         if (!isAvailable) return
-        
+
         try {
             val appWatcherClass = Class.forName("leakcanary.AppWatcher")
             val objectWatcherField = appWatcherClass.getField("objectWatcher")
             val objectWatcher = objectWatcherField.get(null)
-            val expectWeaklyReachableMethod = objectWatcher.javaClass.getMethod(
-                "expectWeaklyReachable",
-                Any::class.java,
-                String::class.java
-            )
+            val expectWeaklyReachableMethod =
+                objectWatcher.javaClass.getMethod(
+                    "expectWeaklyReachable",
+                    Any::class.java,
+                    String::class.java,
+                )
             expectWeaklyReachableMethod.invoke(objectWatcher, watchedObject, description)
         } catch (e: Exception) {
             // Silently ignore - LeakCanary might not be fully initialized
@@ -210,7 +220,7 @@ object LeakCanaryConfig {
      */
     fun getRetainedObjectCount(): Int {
         if (!isAvailable) return 0
-        
+
         return try {
             val appWatcherClass = Class.forName("leakcanary.AppWatcher")
             val objectWatcherField = appWatcherClass.getField("objectWatcher")
@@ -229,7 +239,7 @@ object LeakCanaryConfig {
      */
     fun hasRetainedObjects(): Boolean {
         if (!isAvailable) return false
-        
+
         return try {
             val appWatcherClass = Class.forName("leakcanary.AppWatcher")
             val objectWatcherField = appWatcherClass.getField("objectWatcher")
@@ -249,7 +259,7 @@ object LeakCanaryConfig {
      */
     fun dumpHeapNow() {
         if (!isAvailable) return
-        
+
         try {
             val leakCanaryClass = Class.forName("leakcanary.LeakCanary")
             val dumpHeapMethod = leakCanaryClass.getMethod("dumpHeap")

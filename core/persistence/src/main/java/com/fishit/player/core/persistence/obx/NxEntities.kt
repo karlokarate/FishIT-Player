@@ -808,16 +808,14 @@ data class NX_EpgEntry(
      * @param nowMs Current time in milliseconds
      * @return True if program is currently airing
      */
-    fun isCurrentlyAiring(nowMs: Long = System.currentTimeMillis()): Boolean =
-        nowMs in startMs until endMs
+    fun isCurrentlyAiring(nowMs: Long = System.currentTimeMillis()): Boolean = nowMs in startMs until endMs
 
     /**
      * Check if this is the next upcoming program.
      * @param nowMs Current time in milliseconds
      * @return True if program starts after now
      */
-    fun isUpcoming(nowMs: Long = System.currentTimeMillis()): Boolean =
-        startMs > nowMs
+    fun isUpcoming(nowMs: Long = System.currentTimeMillis()): Boolean = startMs > nowMs
 
     /**
      * Calculate program duration in milliseconds.
@@ -891,8 +889,10 @@ data class NX_XtreamCategorySelection(
         /**
          * Generate selection key from components.
          */
-        fun generateKey(accountKey: String, categoryType: String, sourceCategoryId: String): String =
-            "xtream:$accountKey:$categoryType:$sourceCategoryId"
+        fun generateKey(
+            accountKey: String,
+            categoryType: String,
+            sourceCategoryId: String,
+        ): String = "xtream:$accountKey:$categoryType:$sourceCategoryId"
     }
 }
-

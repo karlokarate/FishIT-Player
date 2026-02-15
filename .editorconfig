@@ -1,0 +1,57 @@
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+indent_size = 4
+indent_style = space
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+[*.{kt,kts}]
+# Ktlint rule configuration
+# See https://pinterest.github.io/ktlint/latest/rules/standard/
+
+# Disable function-naming: Our codebase uses factory methods, companion object
+# functions, and test names with backticks/underscores that don't follow
+# standard camelCase.
+ktlint_standard_function-naming = disabled
+
+# Disable class-naming: Intentional naming conventions like NX_Work, NX_WorkSourceRef,
+# Obx* entity names per GLOSSARY contract.
+ktlint_standard_class-naming = disabled
+
+# Disable backing-property-naming: Standard Kotlin _backingProperty pattern
+# is used throughout the codebase (e.g., _uiState, _isLoading).
+ktlint_standard_backing-property-naming = disabled
+
+# Disable no-consecutive-comments: Our KDoc style sometimes uses consecutive
+# doc comments for structured documentation sections.
+ktlint_standard_no-consecutive-comments = disabled
+
+# Disable filename: Some files intentionally contain multiple top-level
+# declarations or have names that differ from the primary class.
+ktlint_standard_filename = disabled
+
+# Disable property-naming: Intentional naming patterns for constants,
+# entity properties (NX_*, Obx*), and playback hint keys.
+ktlint_standard_property-naming = disabled
+
+# Disable function-literal: Lambda formatting is handled by our code style.
+ktlint_standard_function-literal = disabled
+
+# Disable no-empty-file: Placeholder module files exist intentionally
+# during v2 bootstrap phase. Tracked separately for cleanup.
+ktlint_standard_no-empty-file = disabled
+
+[*.md]
+trim_trailing_whitespace = false
+
+[*.{yml,yaml}]
+indent_size = 2
+
+[*.{json,json5}]
+indent_size = 2
+
+[*.xml]
+indent_size = 4

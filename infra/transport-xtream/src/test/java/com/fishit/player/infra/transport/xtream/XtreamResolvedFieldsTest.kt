@@ -22,7 +22,6 @@ import org.junit.Test
  * - XtreamSeriesStream.resolvedCover: cover → posterPath → logo
  */
 class XtreamResolvedFieldsTest {
-
     // =========================================================================
     // XtreamVodStream.resolvedId
     // Priority: streamId → vodId → movieId → id → 0
@@ -65,56 +64,61 @@ class XtreamResolvedFieldsTest {
 
     @Test
     fun `vodStream resolvedPoster prefers streamIcon`() {
-        val stream = XtreamVodStream(
-            streamIcon = "https://icon.jpg",
-            posterPath = "https://tmdb.org/poster.jpg",
-            cover = "https://cover.jpg",
-            logo = "https://logo.jpg"
-        )
+        val stream =
+            XtreamVodStream(
+                streamIcon = "https://icon.jpg",
+                posterPath = "https://tmdb.org/poster.jpg",
+                cover = "https://cover.jpg",
+                logo = "https://logo.jpg",
+            )
         assertEquals("https://icon.jpg", stream.resolvedPoster)
     }
 
     @Test
     fun `vodStream resolvedPoster falls back to posterPath`() {
-        val stream = XtreamVodStream(
-            streamIcon = null,
-            posterPath = "https://tmdb.org/poster.jpg",
-            cover = "https://cover.jpg",
-            logo = "https://logo.jpg"
-        )
+        val stream =
+            XtreamVodStream(
+                streamIcon = null,
+                posterPath = "https://tmdb.org/poster.jpg",
+                cover = "https://cover.jpg",
+                logo = "https://logo.jpg",
+            )
         assertEquals("https://tmdb.org/poster.jpg", stream.resolvedPoster)
     }
 
     @Test
     fun `vodStream resolvedPoster falls back to cover`() {
-        val stream = XtreamVodStream(
-            streamIcon = null,
-            posterPath = null,
-            cover = "https://cover.jpg",
-            logo = "https://logo.jpg"
-        )
+        val stream =
+            XtreamVodStream(
+                streamIcon = null,
+                posterPath = null,
+                cover = "https://cover.jpg",
+                logo = "https://logo.jpg",
+            )
         assertEquals("https://cover.jpg", stream.resolvedPoster)
     }
 
     @Test
     fun `vodStream resolvedPoster falls back to logo`() {
-        val stream = XtreamVodStream(
-            streamIcon = null,
-            posterPath = null,
-            cover = null,
-            logo = "https://logo.jpg"
-        )
+        val stream =
+            XtreamVodStream(
+                streamIcon = null,
+                posterPath = null,
+                cover = null,
+                logo = "https://logo.jpg",
+            )
         assertEquals("https://logo.jpg", stream.resolvedPoster)
     }
 
     @Test
     fun `vodStream resolvedPoster handles all nulls`() {
-        val stream = XtreamVodStream(
-            streamIcon = null,
-            posterPath = null,
-            cover = null,
-            logo = null
-        )
+        val stream =
+            XtreamVodStream(
+                streamIcon = null,
+                posterPath = null,
+                cover = null,
+                logo = null,
+            )
         assertNull(stream.resolvedPoster)
     }
 
@@ -173,31 +177,34 @@ class XtreamResolvedFieldsTest {
 
     @Test
     fun `seriesStream resolvedCover prefers cover`() {
-        val stream = XtreamSeriesStream(
-            cover = "https://cover.jpg",
-            posterPath = "https://poster.jpg",
-            logo = "https://logo.jpg"
-        )
+        val stream =
+            XtreamSeriesStream(
+                cover = "https://cover.jpg",
+                posterPath = "https://poster.jpg",
+                logo = "https://logo.jpg",
+            )
         assertEquals("https://cover.jpg", stream.resolvedCover)
     }
 
     @Test
     fun `seriesStream resolvedCover falls back to posterPath`() {
-        val stream = XtreamSeriesStream(
-            cover = null,
-            posterPath = "https://poster.jpg",
-            logo = "https://logo.jpg"
-        )
+        val stream =
+            XtreamSeriesStream(
+                cover = null,
+                posterPath = "https://poster.jpg",
+                logo = "https://logo.jpg",
+            )
         assertEquals("https://poster.jpg", stream.resolvedCover)
     }
 
     @Test
     fun `seriesStream resolvedCover falls back to logo`() {
-        val stream = XtreamSeriesStream(
-            cover = null,
-            posterPath = null,
-            logo = "https://logo.jpg"
-        )
+        val stream =
+            XtreamSeriesStream(
+                cover = null,
+                posterPath = null,
+                logo = "https://logo.jpg",
+            )
         assertEquals("https://logo.jpg", stream.resolvedCover)
     }
 
@@ -230,28 +237,31 @@ class XtreamResolvedFieldsTest {
 
     @Test
     fun `seriesInfoBlock resolvedReleaseDate prefers lowercase releasedate`() {
-        val block = XtreamSeriesInfoBlock(
-            releaseDate = "2008-01-20",
-            releaseDateCamel = "2010-06-15",
-        )
+        val block =
+            XtreamSeriesInfoBlock(
+                releaseDate = "2008-01-20",
+                releaseDateCamel = "2010-06-15",
+            )
         assertEquals("2008-01-20", block.resolvedReleaseDate)
     }
 
     @Test
     fun `seriesInfoBlock resolvedReleaseDate falls back to camelCase`() {
-        val block = XtreamSeriesInfoBlock(
-            releaseDate = null,
-            releaseDateCamel = "2008-01-20",
-        )
+        val block =
+            XtreamSeriesInfoBlock(
+                releaseDate = null,
+                releaseDateCamel = "2008-01-20",
+            )
         assertEquals("2008-01-20", block.resolvedReleaseDate)
     }
 
     @Test
     fun `seriesInfoBlock resolvedReleaseDate ignores blank lowercase`() {
-        val block = XtreamSeriesInfoBlock(
-            releaseDate = "",
-            releaseDateCamel = "2008-01-20",
-        )
+        val block =
+            XtreamSeriesInfoBlock(
+                releaseDate = "",
+                releaseDateCamel = "2008-01-20",
+            )
         assertEquals("2008-01-20", block.resolvedReleaseDate)
     }
 

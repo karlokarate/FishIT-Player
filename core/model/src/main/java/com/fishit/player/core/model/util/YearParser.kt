@@ -12,7 +12,6 @@ package com.fishit.player.core.model.util
  * Title-based extraction is normalizer territory per MEDIA_NORMALIZATION_CONTRACT.
  */
 object YearParser {
-
     private val VALID_RANGE = 1900..2100
 
     /**
@@ -40,8 +39,7 @@ object YearParser {
      * @param dateStr Date string (first 4 chars extracted)
      * @return Year as Int, or null if not extractable
      */
-    fun fromDate(dateStr: String?): Int? =
-        dateStr?.take(4)?.toIntOrNull()?.takeIf { it in VALID_RANGE }
+    fun fromDate(dateStr: String?): Int? = dateStr?.take(4)?.toIntOrNull()?.takeIf { it in VALID_RANGE }
 
     // =========================================================================
     // Title-based extraction — for :core:metadata-normalizer use ONLY.

@@ -1,7 +1,10 @@
 package com.fishit.player.playback.xtream
 
-import com.fishit.player.infra.transport.xtream.*
-import org.junit.Assert.*
+import com.fishit.player.infra.transport.xtream.XtreamApiConfig
+import com.fishit.player.infra.transport.xtream.XtreamUrlBuilder
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
+import org.junit.Assert.fail
 import org.junit.Test
 
 /**

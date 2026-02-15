@@ -123,34 +123,38 @@ class AppStartupImpl(
             val categoryFallback = CategoryFallbackStrategy()
 
             // Create handlers — all use the same OkHttpClient (SSOT)
-            val connectionManager = XtreamConnectionManager(
-                okHttpClient = okHttpClient,
-                json = json,
-                urlBuilder = urlBuilder,
-                discovery = discovery,
-                io = Dispatchers.IO,
-            )
-            val categoryFetcher = XtreamCategoryFetcher(
-                okHttpClient = okHttpClient,
-                json = json,
-                urlBuilder = urlBuilder,
-                io = Dispatchers.IO,
-            )
-            val streamFetcher = XtreamStreamFetcher(
-                okHttpClient = okHttpClient,
-                json = json,
-                urlBuilder = urlBuilder,
-                categoryFallbackStrategy = categoryFallback,
-                io = Dispatchers.IO,
-            )
+            val connectionManager =
+                XtreamConnectionManager(
+                    okHttpClient = okHttpClient,
+                    json = json,
+                    urlBuilder = urlBuilder,
+                    discovery = discovery,
+                    io = Dispatchers.IO,
+                )
+            val categoryFetcher =
+                XtreamCategoryFetcher(
+                    okHttpClient = okHttpClient,
+                    json = json,
+                    urlBuilder = urlBuilder,
+                    io = Dispatchers.IO,
+                )
+            val streamFetcher =
+                XtreamStreamFetcher(
+                    okHttpClient = okHttpClient,
+                    json = json,
+                    urlBuilder = urlBuilder,
+                    categoryFallbackStrategy = categoryFallback,
+                    io = Dispatchers.IO,
+                )
 
             // Create API client with handler injection
             val apiConfig = config.toApiConfig()
-            val apiClient = DefaultXtreamApiClient(
-                connectionManager = connectionManager,
-                categoryFetcher = categoryFetcher,
-                streamFetcher = streamFetcher,
-            )
+            val apiClient =
+                DefaultXtreamApiClient(
+                    connectionManager = connectionManager,
+                    categoryFetcher = categoryFetcher,
+                    streamFetcher = streamFetcher,
+                )
             xtreamClient = apiClient
 
             // Initialize and authenticate

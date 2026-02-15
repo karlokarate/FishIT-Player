@@ -99,19 +99,20 @@ data class DetailResumeInfo(
 
     companion object {
         /** Empty resume info for items never watched */
-        val EMPTY = DetailResumeInfo(
-            workKey = "",
-            profileId = 0,
-            positionMs = 0,
-            durationMs = 0,
-            progressPercent = 0f,
-            isCompleted = false,
-            watchCount = 0,
-            lastSourceKey = null,
-            lastSourceType = null,
-            lastWatchedAt = null,
-            isFavorite = false,
-            inWatchlist = false,
-        )
+        val EMPTY =
+            DetailResumeInfo(
+                workKey = "",
+                profileId = 0,
+                positionMs = 0,
+                durationMs = 0,
+                progressPercent = 0f,
+                isCompleted = false,
+                watchCount = 0,
+                lastSourceKey = null,
+                lastSourceType = null,
+                lastWatchedAt = null,
+                isFavorite = false,
+                inWatchlist = false,
+            )
     }
 }

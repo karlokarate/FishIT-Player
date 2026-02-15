@@ -10,9 +10,6 @@ import com.fishit.player.core.library.domain.LibraryMediaItem
 import com.fishit.player.core.library.domain.LibraryPagingConfig
 import com.fishit.player.core.library.domain.LibraryQueryOptions
 import com.fishit.player.core.model.filter.FilterConfig
-import com.fishit.player.core.model.filter.FilterCriterion
-import com.fishit.player.core.model.sort.SortDirection
-import com.fishit.player.core.model.sort.SortField
 import com.fishit.player.core.model.sort.SortOption
 import com.fishit.player.infra.logging.UnifiedLog
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -110,8 +107,10 @@ class LibraryViewModel
     ) : ViewModel() {
         companion object {
             private const val TAG = "LibraryViewModel"
+
             /** Debounce delay for search input (ms) - wait for user to stop typing */
             private const val SEARCH_DEBOUNCE_MS = 500L
+
             /** Minimum characters required before search is triggered */
             private const val MIN_SEARCH_LENGTH = 2
         }
@@ -393,8 +392,7 @@ class LibraryViewModel
                             _searchResults.value = emptyList()
                         }
                     }
-                }
-                .launchIn(viewModelScope)
+                }.launchIn(viewModelScope)
         }
     }
 

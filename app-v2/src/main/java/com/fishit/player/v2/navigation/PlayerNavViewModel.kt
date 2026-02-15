@@ -153,7 +153,8 @@ class PlayerNavViewModel
                                     }
                                     else -> {
                                         // Fallback: try extractSimpleId for non-standard formats
-                                        XtreamIdCodec.extractSimpleId(sourceIdValue, XtreamIdCodec.ContentType.EPISODE)?.let { episodePart ->
+                                        XtreamIdCodec.extractSimpleId(sourceIdValue, XtreamIdCodec.ContentType.EPISODE)?.let {
+                                            episodePart ->
                                             putIfAbsent(XtreamPlaybackSourceFactoryImpl.EXTRA_EPISODE_ID, episodePart)
                                         }
                                     }
@@ -187,7 +188,8 @@ class PlayerNavViewModel
                     }
                     com.fishit.player.core.model.SourceType.TELEGRAM -> {
                         // Parse via SourceIdParser SSOT (handles msg:, telegram:, tg: formats)
-                        com.fishit.player.core.model.SourceIdParser.parseTelegramSourceId(sourceIdValue)
+                        com.fishit.player.core.model.SourceIdParser
+                            .parseTelegramSourceId(sourceIdValue)
                             ?.let { (chatId, messageId) ->
                                 putIfAbsent("chatId", chatId.toString())
                                 putIfAbsent("messageId", messageId.toString())
@@ -215,8 +217,7 @@ class PlayerNavViewModel
                 -> SourceType.UNKNOWN
             }
 
-        private fun isLiveContent(source: MediaSourceRef): Boolean =
-            source.sourceId.value.contains(":live:")
+        private fun isLiveContent(source: MediaSourceRef): Boolean = source.sourceId.value.contains(":live:")
 
         private suspend fun loadTelegramContext(sourceId: String) {
             // TODO: Implement Telegram context loading from repository
@@ -225,32 +226,33 @@ class PlayerNavViewModel
 
         /**
          * Load Xtream playback context.
-         * 
+         *
          * **Smart ID Detection:**
          * Supports both workKey format (from HomeScreen tiles) and sourceId format (from DetailScreen).
          * - workKey format: `live:channel-name:...` or `movie:title:year` (from NxHomeContentRepository)
          * - sourceId format: `xtream:live:123` or `xtream:vod:456` (from pipeline)
-         * 
+         *
          * For workKey format, resolves sourceId via NxWorkSourceRefRepository.
          */
         private suspend fun loadXtreamContext(sourceId: String) {
             // Detect workKey format (from HomeScreen) vs sourceId format (from DetailScreen)
             val isWorkKey = isWorkKeyFormat(sourceId)
-            
-            val resolvedSourceId = if (isWorkKey) {
-                // Resolve workKey → sourceId via NxWorkSourceRefRepository
-                val resolved = resolveWorkKeyToSourceId(sourceId)
-                if (resolved == null) {
-                    UnifiedLog.w(TAG) { "Could not resolve workKey to sourceId: $sourceId" }
-                    _state.value = PlayerNavState(error = "Item unavailable")
-                    return
+
+            val resolvedSourceId =
+                if (isWorkKey) {
+                    // Resolve workKey → sourceId via NxWorkSourceRefRepository
+                    val resolved = resolveWorkKeyToSourceId(sourceId)
+                    if (resolved == null) {
+                        UnifiedLog.w(TAG) { "Could not resolve workKey to sourceId: $sourceId" }
+                        _state.value = PlayerNavState(error = "Item unavailable")
+                        return
+                    }
+                    UnifiedLog.d(TAG) { "Resolved workKey '$sourceId' → sourceId '$resolved'" }
+                    resolved
+                } else {
+                    sourceId
                 }
-                UnifiedLog.d(TAG) { "Resolved workKey '$sourceId' → sourceId '$resolved'" }
-                resolved
-            } else {
-                sourceId
-            }
-            
+
             val raw =
                 when {
                     resolvedSourceId.contains(":live:") ->
@@ -282,43 +284,45 @@ class PlayerNavViewModel
 
         /**
          * Detect if the ID is a workKey (from HomeScreen) vs a sourceId (from DetailScreen).
-         * 
+         *
          * workKey formats: `live:...`, `movie:...`, `series:...`, `episode:...`
          * sourceId formats: `xtream:...`, `msg:...`, `io:...`, `audiobook:...`
          */
         private fun isWorkKeyFormat(id: String): Boolean {
             // sourceId formats start with source-specific prefixes
-            if (id.startsWith("xtream:") || 
-                id.startsWith("msg:") || 
-                id.startsWith("io:") || 
+            if (id.startsWith("xtream:") ||
+                id.startsWith("msg:") ||
+                id.startsWith("io:") ||
                 id.startsWith("audiobook:") ||
-                id.startsWith("src:")) {
+                id.startsWith("src:")
+            ) {
                 return false
             }
             // workKey formats start with content-type prefixes
-            return id.startsWith("live:") || 
-                   id.startsWith("movie:") || 
-                   id.startsWith("series:") || 
-                   id.startsWith("episode:") ||
-                   id.startsWith("clip:") ||
-                   id.startsWith("tmdb:")
+            return id.startsWith("live:") ||
+                id.startsWith("movie:") ||
+                id.startsWith("series:") ||
+                id.startsWith("episode:") ||
+                id.startsWith("clip:") ||
+                id.startsWith("tmdb:")
         }
 
         /**
          * Resolve a workKey to its Xtream sourceId via NxWorkSourceRefRepository.
-         * 
+         *
          * Looks up the work by workKey, then finds its Xtream source reference.
          * Returns the sourceItemKey (which contains the sourceId like "xtream:live:123").
          */
         private suspend fun resolveWorkKeyToSourceId(workKey: String): String? {
             // Find all source refs for this workKey
             val sourceRefs = sourceRefRepository.findByWorkKey(workKey)
-            
+
             // Find the Xtream source ref
-            val xtreamRef = sourceRefs.find { 
-                it.sourceType == NxWorkSourceRefRepository.SourceType.XTREAM 
-            }
-            
+            val xtreamRef =
+                sourceRefs.find {
+                    it.sourceType == NxWorkSourceRefRepository.SourceType.XTREAM
+                }
+
             // sourceItemKey contains the sourceId format: "xtream:live:123", "xtream:vod:456"
             return xtreamRef?.sourceItemKey
         }
@@ -383,10 +387,11 @@ class PlayerNavViewModel
             title: String,
         ): PlaybackContext? {
             val parsed = XtreamIdCodec.parse(sourceId) ?: return null
-            val extras = mutableMapOf(
-                XtreamPlaybackSourceFactoryImpl.EXTRA_CONTENT_TYPE to
-                    XtreamPlaybackSourceFactoryImpl.CONTENT_TYPE_SERIES,
-            )
+            val extras =
+                mutableMapOf(
+                    XtreamPlaybackSourceFactoryImpl.EXTRA_CONTENT_TYPE to
+                        XtreamPlaybackSourceFactoryImpl.CONTENT_TYPE_SERIES,
+                )
 
             when (parsed) {
                 is com.fishit.player.core.model.ids.XtreamParsedSourceId.Series -> {

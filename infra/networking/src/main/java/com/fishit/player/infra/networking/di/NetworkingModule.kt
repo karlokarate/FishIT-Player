@@ -61,9 +61,7 @@ object NetworkingModule {
     @Provides
     @Singleton
     @PlatformHttpClient
-    fun providePlatformHttpClient(
-        chuckerInterceptor: Interceptor,
-    ): OkHttpClient =
+    fun providePlatformHttpClient(chuckerInterceptor: Interceptor): OkHttpClient =
         OkHttpClient
             .Builder()
             .connectTimeout(PlatformHttpConfig.CONNECT_TIMEOUT_SECONDS, TimeUnit.SECONDS)

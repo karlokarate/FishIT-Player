@@ -20,7 +20,6 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 abstract class XtreamSyncModule {
-
     /**
      * Bind the unified Xtream sync service implementation.
      *
@@ -31,7 +30,5 @@ abstract class XtreamSyncModule {
      */
     @Binds
     @Singleton
-    abstract fun bindXtreamSyncService(
-        impl: XtreamCatalogSync,
-    ): XtreamSyncService
+    abstract fun bindXtreamSyncService(impl: XtreamCatalogSync): XtreamSyncService
 }

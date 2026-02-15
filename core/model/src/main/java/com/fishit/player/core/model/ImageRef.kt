@@ -239,9 +239,19 @@ sealed interface ImageRef {
             val remoteIdMatch = Regex("""remoteId=([^,)]+)""").find(s)
             val remoteId = remoteIdMatch?.groupValues?.get(1)?.trim() ?: return null
             val chatIdMatch = Regex("""chatId=([^,)]+)""").find(s)
-            val chatId = chatIdMatch?.groupValues?.get(1)?.trim()?.toLongOrNull()
+            val chatId =
+                chatIdMatch
+                    ?.groupValues
+                    ?.get(1)
+                    ?.trim()
+                    ?.toLongOrNull()
             val messageIdMatch = Regex("""messageId=([^,)]+)""").find(s)
-            val messageId = messageIdMatch?.groupValues?.get(1)?.trim()?.toLongOrNull()
+            val messageId =
+                messageIdMatch
+                    ?.groupValues
+                    ?.get(1)
+                    ?.trim()
+                    ?.toLongOrNull()
             return TelegramThumb(
                 remoteId = remoteId,
                 chatId = chatId,

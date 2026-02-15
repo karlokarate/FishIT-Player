@@ -29,53 +29,64 @@ import javax.inject.Singleton
  * All methods run on IO dispatcher.
  */
 @Singleton
-class NxWorkDiagnosticsImpl @Inject constructor(
-    private val boxStore: BoxStore,
-) : NxWorkDiagnostics {
-    private val workBox by lazy { boxStore.boxFor<NX_Work>() }
-    private val sourceRefBox by lazy { boxStore.boxFor<NX_WorkSourceRef>() }
-    private val variantBox by lazy { boxStore.boxFor<NX_WorkVariant>() }
+class NxWorkDiagnosticsImpl
+    @Inject
+    constructor(
+        private val boxStore: BoxStore,
+    ) : NxWorkDiagnostics {
+        private val workBox by lazy { boxStore.boxFor<NX_Work>() }
+        private val sourceRefBox by lazy { boxStore.boxFor<NX_WorkSourceRef>() }
+        private val variantBox by lazy { boxStore.boxFor<NX_WorkVariant>() }
 
-    override suspend fun countAll(): Long = withContext(Dispatchers.IO) {
-        workBox.count()
+        override suspend fun countAll(): Long =
+            withContext(Dispatchers.IO) {
+                workBox.count()
+            }
+
+        override suspend fun countByType(type: WorkType): Long =
+            withContext(Dispatchers.IO) {
+                val typeString = WorkTypeMapper.toEntityString(type)
+                workBox
+                    .query(NX_Work_.workType.equal(typeString, StringOrder.CASE_SENSITIVE))
+                    .build()
+                    .count()
+            }
+
+        override suspend fun findWorksMissingSources(limit: Int): List<Work> =
+            withContext(Dispatchers.IO) {
+                // Find all work IDs that have at least one source ref
+                val workIdsWithSources =
+                    sourceRefBox.all
+                        .mapNotNull { it.work?.target?.id }
+                        .toSet()
+
+                // Return works that don't have any source refs
+                workBox.all
+                    .filter { it.id !in workIdsWithSources }
+                    .take(limit)
+                    .map { it.toDomain() }
+            }
+
+        override suspend fun findWorksMissingVariants(limit: Int): List<Work> =
+            withContext(Dispatchers.IO) {
+                // Find all work IDs that have at least one variant
+                val workIdsWithVariants =
+                    variantBox.all
+                        .mapNotNull { it.work?.target?.id }
+                        .toSet()
+
+                // Return works that don't have any variants
+                workBox.all
+                    .filter { it.id !in workIdsWithVariants }
+                    .take(limit)
+                    .map { it.toDomain() }
+            }
+
+        override suspend fun countNeedsReview(): Long =
+            withContext(Dispatchers.IO) {
+                workBox
+                    .query(NX_Work_.needsReview.equal(true))
+                    .build()
+                    .count()
+            }
     }
-
-    override suspend fun countByType(type: WorkType): Long = withContext(Dispatchers.IO) {
-        val typeString = WorkTypeMapper.toEntityString(type)
-        workBox.query(NX_Work_.workType.equal(typeString, StringOrder.CASE_SENSITIVE))
-            .build()
-            .count()
-    }
-
-    override suspend fun findWorksMissingSources(limit: Int): List<Work> = withContext(Dispatchers.IO) {
-        // Find all work IDs that have at least one source ref
-        val workIdsWithSources = sourceRefBox.all
-            .mapNotNull { it.work?.target?.id }
-            .toSet()
-
-        // Return works that don't have any source refs
-        workBox.all
-            .filter { it.id !in workIdsWithSources }
-            .take(limit)
-            .map { it.toDomain() }
-    }
-
-    override suspend fun findWorksMissingVariants(limit: Int): List<Work> = withContext(Dispatchers.IO) {
-        // Find all work IDs that have at least one variant
-        val workIdsWithVariants = variantBox.all
-            .mapNotNull { it.work?.target?.id }
-            .toSet()
-
-        // Return works that don't have any variants
-        workBox.all
-            .filter { it.id !in workIdsWithVariants }
-            .take(limit)
-            .map { it.toDomain() }
-    }
-
-    override suspend fun countNeedsReview(): Long = withContext(Dispatchers.IO) {
-        workBox.query(NX_Work_.needsReview.equal(true))
-            .build()
-            .count()
-    }
-}

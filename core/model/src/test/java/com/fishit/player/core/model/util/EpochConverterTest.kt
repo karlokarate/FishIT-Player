@@ -10,7 +10,6 @@ import org.junit.Test
  * Validates both String? and Long overloads.
  */
 class EpochConverterTest {
-
     // ========== secondsToMs(String?) ==========
 
     @Test

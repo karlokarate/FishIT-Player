@@ -154,14 +154,21 @@ data class WorkSourceInfo(
 
     /** Quality label for UI (prefers explicit tag over resolution) */
     val displayQuality: String
-        get() = when {
-            qualityTag != "source" -> qualityTag
-            else -> com.fishit.player.core.model.util.ResolutionLabel.fromHeight(height) ?: "Unknown"
-        }
+        get() =
+            when {
+                qualityTag != "source" -> qualityTag
+                else ->
+                    com.fishit.player.core.model.util.ResolutionLabel
+                        .fromHeight(height) ?: "Unknown"
+            }
 
     /** File size as human-readable string */
     val fileSizeLabel: String?
-        get() = fileSizeBytes?.let { com.fishit.player.core.model.util.FileSizeFormatter.format(it) }
+        get() =
+            fileSizeBytes?.let {
+                com.fishit.player.core.model.util.FileSizeFormatter
+                    .format(it)
+            }
 }
 
 /**

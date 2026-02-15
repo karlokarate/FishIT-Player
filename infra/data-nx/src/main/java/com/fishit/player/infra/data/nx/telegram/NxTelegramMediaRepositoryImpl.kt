@@ -17,10 +17,8 @@
 package com.fishit.player.infra.data.nx.telegram
 
 import com.fishit.player.core.model.ImageRef
-import com.fishit.player.core.model.MediaType
 import com.fishit.player.core.model.repository.NxWorkRepository
 import com.fishit.player.core.model.repository.NxWorkRepository.Work
-import com.fishit.player.core.model.repository.NxWorkRepository.WorkType
 import com.fishit.player.core.model.repository.NxWorkSourceRefRepository
 import com.fishit.player.core.telegrammedia.domain.TelegramMediaItem
 import com.fishit.player.core.telegrammedia.domain.TelegramMediaRepository
@@ -34,132 +32,140 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class NxTelegramMediaRepositoryImpl @Inject constructor(
-    private val workRepository: NxWorkRepository,
-    private val sourceRefRepository: NxWorkSourceRefRepository,
-) : TelegramMediaRepository {
+class NxTelegramMediaRepositoryImpl
+    @Inject
+    constructor(
+        private val workRepository: NxWorkRepository,
+        private val sourceRefRepository: NxWorkSourceRefRepository,
+    ) : TelegramMediaRepository {
+        companion object {
+            private const val TAG = "NxTelegramMediaRepo"
+            private const val ALL_LIMIT = 500
+            private const val SEARCH_LIMIT = 100
+        }
 
-    companion object {
-        private const val TAG = "NxTelegramMediaRepo"
-        private const val ALL_LIMIT = 500
-        private const val SEARCH_LIMIT = 100
-    }
+        // ==================== Observe All ====================
 
-    // ==================== Observe All ====================
-
-    override fun observeAll(): Flow<List<TelegramMediaItem>> {
-        // Get all content and filter for Telegram source
-        return workRepository.observeRecentlyUpdated(limit = ALL_LIMIT)
-            .map { works ->
-                works.filter { work ->
-                    // Check if this work has a Telegram source
-                    hasTelegramSource(work.workKey)
-                }.mapNotNull { work ->
-                    work.toTelegramMediaItem()
+        override fun observeAll(): Flow<List<TelegramMediaItem>> {
+            // Get all content and filter for Telegram source
+            return workRepository
+                .observeRecentlyUpdated(limit = ALL_LIMIT)
+                .map { works ->
+                    works
+                        .filter { work ->
+                            // Check if this work has a Telegram source
+                            hasTelegramSource(work.workKey)
+                        }.mapNotNull { work ->
+                            work.toTelegramMediaItem()
+                        }
+                }.catch { e ->
+                    UnifiedLog.e(TAG, e) { "Failed to observe all Telegram media" }
+                    emit(emptyList())
                 }
-            }
-            .catch { e ->
-                UnifiedLog.e(TAG, e) { "Failed to observe all Telegram media" }
-                emit(emptyList())
-            }
-    }
+        }
 
-    // ==================== Observe By Chat ====================
+        // ==================== Observe By Chat ====================
 
-    override fun observeByChat(chatId: Long): Flow<List<TelegramMediaItem>> {
-        // Filter by chat ID embedded in sourceKey
-        return workRepository.observeRecentlyUpdated(limit = ALL_LIMIT)
-            .map { works ->
-                works.filter { work ->
-                    // Check if this work has a Telegram source from this specific chat
-                    hasTelegramSourceForChat(work.workKey, chatId)
-                }.mapNotNull { work ->
-                    work.toTelegramMediaItem(chatId = chatId)
+        override fun observeByChat(chatId: Long): Flow<List<TelegramMediaItem>> {
+            // Filter by chat ID embedded in sourceKey
+            return workRepository
+                .observeRecentlyUpdated(limit = ALL_LIMIT)
+                .map { works ->
+                    works
+                        .filter { work ->
+                            // Check if this work has a Telegram source from this specific chat
+                            hasTelegramSourceForChat(work.workKey, chatId)
+                        }.mapNotNull { work ->
+                            work.toTelegramMediaItem(chatId = chatId)
+                        }
+                }.catch { e ->
+                    UnifiedLog.e(TAG, e) { "Failed to observe Telegram media for chat $chatId" }
+                    emit(emptyList())
                 }
+        }
+
+        // ==================== Get By ID ====================
+
+        override suspend fun getById(mediaId: String): TelegramMediaItem? =
+            try {
+                // The mediaId could be a workKey or a sourceKey
+                val work = workRepository.get(mediaId)
+                work?.toTelegramMediaItem()
+            } catch (e: Exception) {
+                UnifiedLog.e(TAG, e) { "Failed to get Telegram media by id: $mediaId" }
+                null
             }
-            .catch { e ->
-                UnifiedLog.e(TAG, e) { "Failed to observe Telegram media for chat $chatId" }
-                emit(emptyList())
+
+        // ==================== Search ====================
+
+        override suspend fun search(
+            query: String,
+            limit: Int,
+        ): List<TelegramMediaItem> {
+            return try {
+                val normalizedQuery = query.trim().lowercase()
+                if (normalizedQuery.isBlank()) return emptyList()
+
+                workRepository
+                    .searchByTitle(normalizedQuery, limit.coerceAtMost(SEARCH_LIMIT))
+                    .filter { work -> hasTelegramSource(work.workKey) }
+                    .mapNotNull { work -> work.toTelegramMediaItem() }
+            } catch (e: Exception) {
+                UnifiedLog.e(TAG, e) { "Search failed for query: $query" }
+                emptyList()
             }
-    }
-
-    // ==================== Get By ID ====================
-
-    override suspend fun getById(mediaId: String): TelegramMediaItem? {
-        return try {
-            // The mediaId could be a workKey or a sourceKey
-            val work = workRepository.get(mediaId)
-            work?.toTelegramMediaItem()
-        } catch (e: Exception) {
-            UnifiedLog.e(TAG, e) { "Failed to get Telegram media by id: $mediaId" }
-            null
         }
-    }
 
-    // ==================== Search ====================
+        // ==================== Helpers ====================
 
-    override suspend fun search(query: String, limit: Int): List<TelegramMediaItem> {
-        return try {
-            val normalizedQuery = query.trim().lowercase()
-            if (normalizedQuery.isBlank()) return emptyList()
-
-            workRepository.searchByTitle(normalizedQuery, limit.coerceAtMost(SEARCH_LIMIT))
-                .filter { work -> hasTelegramSource(work.workKey) }
-                .mapNotNull { work -> work.toTelegramMediaItem() }
-        } catch (e: Exception) {
-            UnifiedLog.e(TAG, e) { "Search failed for query: $query" }
-            emptyList()
+        private suspend fun hasTelegramSource(workKey: String): Boolean {
+            val sourceRefs = sourceRefRepository.findByWorkKey(workKey)
+            return sourceRefs.any { it.sourceType == NxWorkSourceRefRepository.SourceType.TELEGRAM }
         }
-    }
 
-    // ==================== Helpers ====================
-
-    private suspend fun hasTelegramSource(workKey: String): Boolean {
-        val sourceRefs = sourceRefRepository.findByWorkKey(workKey)
-        return sourceRefs.any { it.sourceType == NxWorkSourceRefRepository.SourceType.TELEGRAM }
-    }
-
-    private suspend fun hasTelegramSourceForChat(workKey: String, chatId: Long): Boolean {
-        val sourceRefs = sourceRefRepository.findByWorkKey(workKey)
-        return sourceRefs.any { ref ->
-            ref.sourceType == NxWorkSourceRefRepository.SourceType.TELEGRAM &&
-                ref.sourceKey.contains(":$chatId:")
+        private suspend fun hasTelegramSourceForChat(
+            workKey: String,
+            chatId: Long,
+        ): Boolean {
+            val sourceRefs = sourceRefRepository.findByWorkKey(workKey)
+            return sourceRefs.any { ref ->
+                ref.sourceType == NxWorkSourceRefRepository.SourceType.TELEGRAM &&
+                    ref.sourceKey.contains(":$chatId:")
+            }
         }
+
+        private suspend fun Work.toTelegramMediaItem(chatId: Long? = null): TelegramMediaItem {
+            // Extract Telegram-specific data from source refs
+            val telegramSourceRef =
+                sourceRefRepository
+                    .findByWorkKey(workKey)
+                    .firstOrNull { it.sourceType == NxWorkSourceRefRepository.SourceType.TELEGRAM }
+
+            // Parse chatId and messageId from sourceKey (format: src:TELEGRAM:account:kind:chatId:messageId)
+            val extractedChatId = chatId ?: extractChatIdFromSourceKey(telegramSourceRef?.sourceKey)
+            val messageId = extractMessageIdFromSourceKey(telegramSourceRef?.sourceKey)
+
+            return TelegramMediaItem(
+                mediaId = workKey,
+                title = displayTitle,
+                sourceLabel = telegramSourceRef?.sourceTitle ?: "Telegram",
+                mediaType = MediaTypeMapper.toMediaType(type),
+                durationMs = runtimeMs,
+                posterUrl =
+                    (poster as? com.fishit.player.core.model.ImageRef.Http)?.url
+                        ?: (poster as? com.fishit.player.core.model.ImageRef.TelegramThumb)?.let { "tg:${it.remoteId}" },
+                chatId = extractedChatId,
+                messageId = messageId,
+                remoteId = null, // TODO: Store in NX metadata if needed
+                mimeType = null, // TODO: Store in NX metadata if needed
+            )
+        }
+
+        private fun extractChatIdFromSourceKey(sourceKey: String?): Long? = SourceKeyParser.extractTelegramChatId(sourceKey)
+
+        private fun extractMessageIdFromSourceKey(sourceKey: String?): Long? = SourceKeyParser.extractTelegramMessageId(sourceKey)
+
+        // Note: mapWorkTypeToMediaType removed - use MediaTypeMapper.toMediaType() instead
+
+        // NX_CONSOLIDATION_PLAN Phase 4: serializeImageRefToUrl() removed — ImageRef accessed directly
     }
-
-    private suspend fun Work.toTelegramMediaItem(chatId: Long? = null): TelegramMediaItem {
-        // Extract Telegram-specific data from source refs
-        val telegramSourceRef = sourceRefRepository.findByWorkKey(workKey)
-            .firstOrNull { it.sourceType == NxWorkSourceRefRepository.SourceType.TELEGRAM }
-
-        // Parse chatId and messageId from sourceKey (format: src:TELEGRAM:account:kind:chatId:messageId)
-        val extractedChatId = chatId ?: extractChatIdFromSourceKey(telegramSourceRef?.sourceKey)
-        val messageId = extractMessageIdFromSourceKey(telegramSourceRef?.sourceKey)
-
-        return TelegramMediaItem(
-            mediaId = workKey,
-            title = displayTitle,
-            sourceLabel = telegramSourceRef?.sourceTitle ?: "Telegram",
-            mediaType = MediaTypeMapper.toMediaType(type),
-            durationMs = runtimeMs,
-            posterUrl = (poster as? com.fishit.player.core.model.ImageRef.Http)?.url
-                ?: (poster as? com.fishit.player.core.model.ImageRef.TelegramThumb)?.let { "tg:${it.remoteId}" },
-            chatId = extractedChatId,
-            messageId = messageId,
-            remoteId = null, // TODO: Store in NX metadata if needed
-            mimeType = null, // TODO: Store in NX metadata if needed
-        )
-    }
-
-    private fun extractChatIdFromSourceKey(sourceKey: String?): Long? {
-        return SourceKeyParser.extractTelegramChatId(sourceKey)
-    }
-
-    private fun extractMessageIdFromSourceKey(sourceKey: String?): Long? {
-        return SourceKeyParser.extractTelegramMessageId(sourceKey)
-    }
-
-    // Note: mapWorkTypeToMediaType removed - use MediaTypeMapper.toMediaType() instead
-
-    // NX_CONSOLIDATION_PLAN Phase 4: serializeImageRefToUrl() removed — ImageRef accessed directly
-}

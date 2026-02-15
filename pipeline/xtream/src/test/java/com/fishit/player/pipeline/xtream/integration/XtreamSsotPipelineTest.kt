@@ -5,7 +5,6 @@ import com.fishit.player.core.model.PlaybackHintKeys
 import com.fishit.player.core.model.SourceType
 import com.fishit.player.core.model.util.DurationParser
 import com.fishit.player.core.model.util.EpochConverter
-import com.fishit.player.core.model.util.RatingNormalizer
 import com.fishit.player.infra.transport.xtream.XtreamEpisodeInfo
 import com.fishit.player.infra.transport.xtream.XtreamEpisodeInfoBlock
 import com.fishit.player.infra.transport.xtream.XtreamLiveStream
@@ -15,8 +14,8 @@ import com.fishit.player.infra.transport.xtream.XtreamSeriesStream
 import com.fishit.player.infra.transport.xtream.XtreamVodInfo
 import com.fishit.player.infra.transport.xtream.XtreamVodInfoBlock
 import com.fishit.player.infra.transport.xtream.XtreamVodStream
-import com.fishit.player.pipeline.xtream.adapter.toPipelineItem
 import com.fishit.player.pipeline.xtream.adapter.toEpisodes
+import com.fishit.player.pipeline.xtream.adapter.toPipelineItem
 import com.fishit.player.pipeline.xtream.mapper.toRawMediaMetadata
 import com.fishit.player.pipeline.xtream.mapper.toRawMetadata
 import org.junit.Test
@@ -37,18 +36,18 @@ import kotlin.test.assertTrue
  * these tests start from actual transport DTOs to validate realistic data flow.
  */
 class XtreamSsotPipelineTest {
-
     // =========================================================================
     // VOD: Transport → Pipeline → RawMediaMetadata
     // =========================================================================
 
     @Test
     fun `VOD - epoch seconds converted to milliseconds through full chain`() {
-        val transportDto = XtreamVodStream(
-            streamId = 12345,
-            name = "The Matrix",
-            added = "1706745600", // 2024-02-01 00:00:00 UTC in seconds
-        )
+        val transportDto =
+            XtreamVodStream(
+                streamId = 12345,
+                name = "The Matrix",
+                added = "1706745600", // 2024-02-01 00:00:00 UTC in seconds
+            )
 
         val pipelineDto = transportDto.toPipelineItem()
         assertEquals(1706745600_000L, pipelineDto.added, "Adapter must convert seconds to ms")
@@ -60,12 +59,13 @@ class XtreamSsotPipelineTest {
 
     @Test
     fun `VOD - rating5Based fallback when rating is null`() {
-        val transportDto = XtreamVodStream(
-            streamId = 100,
-            name = "Low-Budget Movie",
-            rating = null,
-            rating5Based = 3.75,
-        )
+        val transportDto =
+            XtreamVodStream(
+                streamId = 100,
+                name = "Low-Budget Movie",
+                rating = null,
+                rating5Based = 3.75,
+            )
 
         val pipelineDto = transportDto.toPipelineItem()
         assertNull(pipelineDto.rating, "Adapter passes null rating through")
@@ -77,12 +77,13 @@ class XtreamSsotPipelineTest {
 
     @Test
     fun `VOD - raw rating preferred over rating5Based`() {
-        val transportDto = XtreamVodStream(
-            streamId = 101,
-            name = "Top Movie",
-            rating = "8.2",
-            rating5Based = 4.1,
-        )
+        val transportDto =
+            XtreamVodStream(
+                streamId = 101,
+                name = "Top Movie",
+                rating = "8.2",
+                rating5Based = 4.1,
+            )
 
         val pipelineDto = transportDto.toPipelineItem()
         assertEquals(8.2, pipelineDto.rating, "Adapter converts rating string to Double")
@@ -94,11 +95,12 @@ class XtreamSsotPipelineTest {
 
     @Test
     fun `VOD - invalid year filtered by YearParser`() {
-        val transportDto = XtreamVodStream(
-            streamId = 102,
-            name = "Some Movie",
-            year = "0",
-        )
+        val transportDto =
+            XtreamVodStream(
+                streamId = 102,
+                name = "Some Movie",
+                year = "0",
+            )
 
         val pipelineDto = transportDto.toPipelineItem()
         assertEquals("0", pipelineDto.year, "Adapter passes year through unchanged")
@@ -109,11 +111,12 @@ class XtreamSsotPipelineTest {
 
     @Test
     fun `VOD - valid year passes through`() {
-        val transportDto = XtreamVodStream(
-            streamId = 103,
-            name = "New Movie",
-            year = "2023",
-        )
+        val transportDto =
+            XtreamVodStream(
+                streamId = 103,
+                name = "New Movie",
+                year = "2023",
+            )
 
         val raw = transportDto.toPipelineItem().toRawMetadata()
         assertEquals(2023, raw.year)
@@ -121,11 +124,12 @@ class XtreamSsotPipelineTest {
 
     @Test
     fun `VOD - duration parsed via DurationParser`() {
-        val transportDto = XtreamVodStream(
-            streamId = 104,
-            name = "Long Movie",
-            duration = "01:30:00",
-        )
+        val transportDto =
+            XtreamVodStream(
+                streamId = 104,
+                name = "Long Movie",
+                duration = "01:30:00",
+            )
 
         val pipelineDto = transportDto.toPipelineItem()
         assertEquals("01:30:00", pipelineDto.duration, "Adapter passes duration string through")
@@ -136,37 +140,41 @@ class XtreamSsotPipelineTest {
 
     @Test
     fun `VOD - duration in minutes format`() {
-        val transportDto = XtreamVodStream(
-            streamId = 105,
-            name = "Short Film",
-            duration = "90",
-        )
+        val transportDto =
+            XtreamVodStream(
+                streamId = 105,
+                name = "Short Film",
+                duration = "90",
+            )
 
         val raw = transportDto.toPipelineItem().toRawMetadata()
         assertEquals(
             DurationParser.parseToMs("90"),
             raw.durationMs,
-            "Plain number → minutes → ms"
+            "Plain number → minutes → ms",
         )
     }
 
     @Test
     fun `VOD - isAdult flag converted from string`() {
-        val adultDto = XtreamVodStream(
-            streamId = 200,
-            name = "Adult Content",
-            isAdult = "1",
-        )
-        val normalDto = XtreamVodStream(
-            streamId = 201,
-            name = "Normal Content",
-            isAdult = "0",
-        )
-        val nullDto = XtreamVodStream(
-            streamId = 202,
-            name = "Unknown Content",
-            isAdult = null,
-        )
+        val adultDto =
+            XtreamVodStream(
+                streamId = 200,
+                name = "Adult Content",
+                isAdult = "1",
+            )
+        val normalDto =
+            XtreamVodStream(
+                streamId = 201,
+                name = "Normal Content",
+                isAdult = "0",
+            )
+        val nullDto =
+            XtreamVodStream(
+                streamId = 202,
+                name = "Unknown Content",
+                isAdult = null,
+            )
 
         assertTrue(adultDto.toPipelineItem().isAdult, "'1' → true")
         assertEquals(false, normalDto.toPipelineItem().isAdult, "'0' → false")
@@ -178,11 +186,12 @@ class XtreamSsotPipelineTest {
 
     @Test
     fun `VOD - null added timestamp handled gracefully`() {
-        val transportDto = XtreamVodStream(
-            streamId = 300,
-            name = "No Timestamp",
-            added = null,
-        )
+        val transportDto =
+            XtreamVodStream(
+                streamId = 300,
+                name = "No Timestamp",
+                added = null,
+            )
 
         val pipelineDto = transportDto.toPipelineItem()
         assertNull(pipelineDto.added)
@@ -194,13 +203,14 @@ class XtreamSsotPipelineTest {
 
     @Test
     fun `VOD - playbackHints include all expected fields`() {
-        val transportDto = XtreamVodStream(
-            streamId = 400,
-            name = "Full VOD",
-            containerExtension = "mkv",
-            categoryId = "5",
-            streamType = "movie",
-        )
+        val transportDto =
+            XtreamVodStream(
+                streamId = 400,
+                name = "Full VOD",
+                containerExtension = "mkv",
+                categoryId = "5",
+                streamType = "movie",
+            )
 
         val raw = transportDto.toPipelineItem().toRawMetadata()
         val hints = raw.playbackHints
@@ -213,10 +223,11 @@ class XtreamSsotPipelineTest {
 
     @Test
     fun `VOD - sourceId uses XtreamIdCodec format`() {
-        val transportDto = XtreamVodStream(
-            streamId = 500,
-            name = "Codec Test",
-        )
+        val transportDto =
+            XtreamVodStream(
+                streamId = 500,
+                name = "Codec Test",
+            )
 
         val raw = transportDto.toPipelineItem().toRawMetadata()
         assertEquals("xtream:vod:500", raw.sourceId)
@@ -228,12 +239,13 @@ class XtreamSsotPipelineTest {
     fun `VOD - both rating paths produce same result when identical`() {
         // When rating = "7.5" and rating5Based = 3.75, both represent the same value.
         // The mapper should use the raw rating (7.5), not re-normalize.
-        val transportDto = XtreamVodStream(
-            streamId = 600,
-            name = "Consistent Rating",
-            rating = "7.5",
-            rating5Based = 3.75,
-        )
+        val transportDto =
+            XtreamVodStream(
+                streamId = 600,
+                name = "Consistent Rating",
+                rating = "7.5",
+                rating5Based = 3.75,
+            )
 
         val raw = transportDto.toPipelineItem().toRawMetadata()
         assertEquals(7.5, raw.rating, "Should use raw rating, not normalize 3.75 again")
@@ -245,11 +257,12 @@ class XtreamSsotPipelineTest {
 
     @Test
     fun `Series - epoch lastModified converted to ms`() {
-        val transportDto = XtreamSeriesStream(
-            seriesId = 1000,
-            name = "Breaking Bad",
-            lastModified = "1706745600",
-        )
+        val transportDto =
+            XtreamSeriesStream(
+                seriesId = 1000,
+                name = "Breaking Bad",
+                lastModified = "1706745600",
+            )
 
         val pipelineDto = transportDto.toPipelineItem()
         assertEquals(1706745600_000L, pipelineDto.lastModified, "Adapter converts lastModified seconds → ms")
@@ -261,12 +274,13 @@ class XtreamSsotPipelineTest {
 
     @Test
     fun `Series - rating resolved in adapter via RatingNormalizer`() {
-        val withRawRating = XtreamSeriesStream(
-            seriesId = 1001,
-            name = "Series A",
-            rating = "8.5",
-            rating5Based = 4.25,
-        )
+        val withRawRating =
+            XtreamSeriesStream(
+                seriesId = 1001,
+                name = "Series A",
+                rating = "8.5",
+                rating5Based = 4.25,
+            )
 
         val pipelineDto = withRawRating.toPipelineItem()
         assertEquals(8.5, pipelineDto.rating, "Adapter resolves: prefer raw rating")
@@ -277,12 +291,13 @@ class XtreamSsotPipelineTest {
 
     @Test
     fun `Series - rating5Based fallback in adapter`() {
-        val with5Based = XtreamSeriesStream(
-            seriesId = 1002,
-            name = "Series B",
-            rating = null,
-            rating5Based = 3.5,
-        )
+        val with5Based =
+            XtreamSeriesStream(
+                seriesId = 1002,
+                name = "Series B",
+                rating = null,
+                rating5Based = 3.5,
+            )
 
         val pipelineDto = with5Based.toPipelineItem()
         assertEquals(7.0, pipelineDto.rating, "Adapter normalizes: 3.5 * 2 = 7.0")
@@ -293,12 +308,13 @@ class XtreamSsotPipelineTest {
 
     @Test
     fun `Series - year from releaseDate when year field missing`() {
-        val transportDto = XtreamSeriesStream(
-            seriesId = 1003,
-            name = "Gotham",
-            year = null,
-            releaseDate = "2014-09-21",
-        )
+        val transportDto =
+            XtreamSeriesStream(
+                seriesId = 1003,
+                name = "Gotham",
+                year = null,
+                releaseDate = "2014-09-21",
+            )
 
         val pipelineDto = transportDto.toPipelineItem()
         // resolvedYear on transport DTO extracts "2014" from releaseDate
@@ -310,12 +326,13 @@ class XtreamSsotPipelineTest {
 
     @Test
     fun `Series - year field preferred over releaseDate`() {
-        val transportDto = XtreamSeriesStream(
-            seriesId = 1004,
-            name = "Show X",
-            year = "2020",
-            releaseDate = "2019-06-15",
-        )
+        val transportDto =
+            XtreamSeriesStream(
+                seriesId = 1004,
+                name = "Show X",
+                year = "2020",
+                releaseDate = "2019-06-15",
+            )
 
         val pipelineDto = transportDto.toPipelineItem()
         assertEquals("2020", pipelineDto.year, "Year field takes priority over releaseDate")
@@ -326,11 +343,12 @@ class XtreamSsotPipelineTest {
 
     @Test
     fun `Series - invalid year filtered`() {
-        val transportDto = XtreamSeriesStream(
-            seriesId = 1005,
-            name = "Bad Year Series",
-            year = "N/A",
-        )
+        val transportDto =
+            XtreamSeriesStream(
+                seriesId = 1005,
+                name = "Bad Year Series",
+                year = "N/A",
+            )
 
         val raw = transportDto.toPipelineItem().toRawMetadata()
         assertNull(raw.year, "YearParser.validate('N/A') → null")
@@ -338,27 +356,29 @@ class XtreamSsotPipelineTest {
 
     @Test
     fun `Series - episodeRunTime converted to ms via DurationParser`() {
-        val transportDto = XtreamSeriesStream(
-            seriesId = 1006,
-            name = "Hour-Long Show",
-            episodeRunTime = "45",
-        )
+        val transportDto =
+            XtreamSeriesStream(
+                seriesId = 1006,
+                name = "Hour-Long Show",
+                episodeRunTime = "45",
+            )
 
         val raw = transportDto.toPipelineItem().toRawMetadata()
         assertEquals(
             DurationParser.minutesToMs(45),
             raw.durationMs,
-            "episodeRunTime in minutes → minutesToMs"
+            "episodeRunTime in minutes → minutesToMs",
         )
         assertEquals(2_700_000L, raw.durationMs)
     }
 
     @Test
     fun `Series - sourceId and mediaType correct`() {
-        val transportDto = XtreamSeriesStream(
-            seriesId = 1007,
-            name = "Test Series",
-        )
+        val transportDto =
+            XtreamSeriesStream(
+                seriesId = 1007,
+                name = "Test Series",
+            )
 
         val raw = transportDto.toPipelineItem().toRawMetadata()
         assertEquals("xtream:series:1007", raw.sourceId)
@@ -368,11 +388,12 @@ class XtreamSsotPipelineTest {
 
     @Test
     fun `Series - isAdult from string`() {
-        val adultSeries = XtreamSeriesStream(
-            seriesId = 1008,
-            name = "Adult Series",
-            isAdult = "1",
-        )
+        val adultSeries =
+            XtreamSeriesStream(
+                seriesId = 1008,
+                name = "Adult Series",
+                isAdult = "1",
+            )
 
         assertTrue(adultSeries.toPipelineItem().isAdult)
         assertTrue(adultSeries.toPipelineItem().toRawMetadata().isAdult)
@@ -380,15 +401,16 @@ class XtreamSsotPipelineTest {
 
     @Test
     fun `Series - rich metadata passes through`() {
-        val transportDto = XtreamSeriesStream(
-            seriesId = 1009,
-            name = "Rich Series",
-            plot = "A great series about testing.",
-            cast = "Actor A, Actor B",
-            director = "Director X",
-            genre = "Drama, Thriller",
-            youtubeTrailer = "dQw4w9WgXcQ",
-        )
+        val transportDto =
+            XtreamSeriesStream(
+                seriesId = 1009,
+                name = "Rich Series",
+                plot = "A great series about testing.",
+                cast = "Actor A, Actor B",
+                director = "Director X",
+                genre = "Drama, Thriller",
+                youtubeTrailer = "dQw4w9WgXcQ",
+            )
 
         val raw = transportDto.toPipelineItem().toRawMetadata()
         assertEquals("A great series about testing.", raw.plot)
@@ -404,23 +426,27 @@ class XtreamSsotPipelineTest {
 
     @Test
     fun `Episode - durationSecs preferred over duration string`() {
-        val seriesInfo = XtreamSeriesInfo(
-            episodes = mapOf(
-                "1" to listOf(
-                    XtreamEpisodeInfo(
-                        id = 5001,
-                        episodeNum = 1,
-                        title = "Pilot",
-                        containerExtension = "mp4",
-                        added = "1706745600",
-                        info = XtreamEpisodeInfoBlock(
-                            durationSecs = 2700, // 45 minutes in seconds
-                            duration = "45:00",  // 45 minutes as string (should be ignored)
-                        ),
+        val seriesInfo =
+            XtreamSeriesInfo(
+                episodes =
+                    mapOf(
+                        "1" to
+                            listOf(
+                                XtreamEpisodeInfo(
+                                    id = 5001,
+                                    episodeNum = 1,
+                                    title = "Pilot",
+                                    containerExtension = "mp4",
+                                    added = "1706745600",
+                                    info =
+                                        XtreamEpisodeInfoBlock(
+                                            durationSecs = 2700, // 45 minutes in seconds
+                                            duration = "45:00", // 45 minutes as string (should be ignored)
+                                        ),
+                                ),
+                            ),
                     ),
-                ),
-            ),
-        )
+            )
 
         val episodes = seriesInfo.toEpisodes(seriesId = 500, seriesName = "Test Series")
         assertEquals(1, episodes.size)
@@ -436,21 +462,25 @@ class XtreamSsotPipelineTest {
 
     @Test
     fun `Episode - falls back to duration string when durationSecs is null`() {
-        val seriesInfo = XtreamSeriesInfo(
-            episodes = mapOf(
-                "1" to listOf(
-                    XtreamEpisodeInfo(
-                        id = 5002,
-                        episodeNum = 2,
-                        title = "Episode 2",
-                        info = XtreamEpisodeInfoBlock(
-                            durationSecs = null,
-                            duration = "01:15:00", // 75 minutes
-                        ),
+        val seriesInfo =
+            XtreamSeriesInfo(
+                episodes =
+                    mapOf(
+                        "1" to
+                            listOf(
+                                XtreamEpisodeInfo(
+                                    id = 5002,
+                                    episodeNum = 2,
+                                    title = "Episode 2",
+                                    info =
+                                        XtreamEpisodeInfoBlock(
+                                            durationSecs = null,
+                                            duration = "01:15:00", // 75 minutes
+                                        ),
+                                ),
+                            ),
                     ),
-                ),
-            ),
-        )
+            )
 
         val episodes = seriesInfo.toEpisodes(seriesId = 500, seriesName = "Test")
         val raw = episodes[0].toRawMediaMetadata()
@@ -459,18 +489,21 @@ class XtreamSsotPipelineTest {
 
     @Test
     fun `Episode - epoch added converted to ms in adapter`() {
-        val seriesInfo = XtreamSeriesInfo(
-            episodes = mapOf(
-                "1" to listOf(
-                    XtreamEpisodeInfo(
-                        id = 5003,
-                        episodeNum = 3,
-                        title = "Episode 3",
-                        added = "1706745600",
+        val seriesInfo =
+            XtreamSeriesInfo(
+                episodes =
+                    mapOf(
+                        "1" to
+                            listOf(
+                                XtreamEpisodeInfo(
+                                    id = 5003,
+                                    episodeNum = 3,
+                                    title = "Episode 3",
+                                    added = "1706745600",
+                                ),
+                            ),
                     ),
-                ),
-            ),
-        )
+            )
 
         val episodes = seriesInfo.toEpisodes(seriesId = 500, seriesName = "Test")
         val episode = episodes[0]
@@ -483,17 +516,20 @@ class XtreamSsotPipelineTest {
 
     @Test
     fun `Episode - season and episode numbers from API structure`() {
-        val seriesInfo = XtreamSeriesInfo(
-            episodes = mapOf(
-                "3" to listOf(
-                    XtreamEpisodeInfo(
-                        id = 5010,
-                        episodeNum = 7,
-                        title = "The Fly",
+        val seriesInfo =
+            XtreamSeriesInfo(
+                episodes =
+                    mapOf(
+                        "3" to
+                            listOf(
+                                XtreamEpisodeInfo(
+                                    id = 5010,
+                                    episodeNum = 7,
+                                    title = "The Fly",
+                                ),
+                            ),
                     ),
-                ),
-            ),
-        )
+            )
 
         val episodes = seriesInfo.toEpisodes(seriesId = 500, seriesName = "Breaking Bad")
         val raw = episodes[0].toRawMediaMetadata()
@@ -505,17 +541,20 @@ class XtreamSsotPipelineTest {
 
     @Test
     fun `Episode - seriesName falls back when title is blank`() {
-        val seriesInfo = XtreamSeriesInfo(
-            episodes = mapOf(
-                "1" to listOf(
-                    XtreamEpisodeInfo(
-                        id = 5011,
-                        episodeNum = 1,
-                        title = "",
+        val seriesInfo =
+            XtreamSeriesInfo(
+                episodes =
+                    mapOf(
+                        "1" to
+                            listOf(
+                                XtreamEpisodeInfo(
+                                    id = 5011,
+                                    episodeNum = 1,
+                                    title = "",
+                                ),
+                            ),
                     ),
-                ),
-            ),
-        )
+            )
 
         val episodes = seriesInfo.toEpisodes(seriesId = 500, seriesName = "My Series")
         val raw = episodes[0].toRawMediaMetadata()
@@ -524,18 +563,21 @@ class XtreamSsotPipelineTest {
 
     @Test
     fun `Episode - playbackHints include all critical fields`() {
-        val seriesInfo = XtreamSeriesInfo(
-            episodes = mapOf(
-                "2" to listOf(
-                    XtreamEpisodeInfo(
-                        id = 5020,
-                        episodeNum = 5,
-                        title = "Test Episode",
-                        containerExtension = "mkv",
+        val seriesInfo =
+            XtreamSeriesInfo(
+                episodes =
+                    mapOf(
+                        "2" to
+                            listOf(
+                                XtreamEpisodeInfo(
+                                    id = 5020,
+                                    episodeNum = 5,
+                                    title = "Test Episode",
+                                    containerExtension = "mkv",
+                                ),
+                            ),
                     ),
-                ),
-            ),
-        )
+            )
 
         val episodes = seriesInfo.toEpisodes(seriesId = 600, seriesName = "Series X")
         val raw = episodes[0].toRawMediaMetadata(seriesKind = "series")
@@ -552,29 +594,35 @@ class XtreamSsotPipelineTest {
 
     @Test
     fun `Episode - video and audio codec info propagated`() {
-        val seriesInfo = XtreamSeriesInfo(
-            episodes = mapOf(
-                "1" to listOf(
-                    XtreamEpisodeInfo(
-                        id = 5030,
-                        episodeNum = 1,
-                        title = "HD Episode",
-                        info = XtreamEpisodeInfoBlock(
-                            video = com.fishit.player.infra.transport.xtream.XtreamVideoInfo(
-                                codec = "hevc",
-                                width = 1920,
-                                height = 1080,
+        val seriesInfo =
+            XtreamSeriesInfo(
+                episodes =
+                    mapOf(
+                        "1" to
+                            listOf(
+                                XtreamEpisodeInfo(
+                                    id = 5030,
+                                    episodeNum = 1,
+                                    title = "HD Episode",
+                                    info =
+                                        XtreamEpisodeInfoBlock(
+                                            video =
+                                                com.fishit.player.infra.transport.xtream.XtreamVideoInfo(
+                                                    codec = "hevc",
+                                                    width = 1920,
+                                                    height = 1080,
+                                                ),
+                                            audio =
+                                                com.fishit.player.infra.transport.xtream.XtreamAudioInfo(
+                                                    codec = "aac",
+                                                    channels = 6,
+                                                ),
+                                            bitrate = 5000,
+                                        ),
+                                ),
                             ),
-                            audio = com.fishit.player.infra.transport.xtream.XtreamAudioInfo(
-                                codec = "aac",
-                                channels = 6,
-                            ),
-                            bitrate = 5000,
-                        ),
                     ),
-                ),
-            ),
-        )
+            )
 
         val episodes = seriesInfo.toEpisodes(seriesId = 700, seriesName = "Codec Series")
         val episode = episodes[0]
@@ -598,18 +646,21 @@ class XtreamSsotPipelineTest {
     @Test
     fun `Episode - resolvedEpisodeId prefers episodeId over id`() {
         // XtreamEpisodeInfo has both id and episodeId fields. resolvedEpisodeId prefers episodeId.
-        val seriesInfo = XtreamSeriesInfo(
-            episodes = mapOf(
-                "1" to listOf(
-                    XtreamEpisodeInfo(
-                        id = 100,
-                        episodeId = 999, // KönigTV/XUI format
-                        episodeNum = 1,
-                        title = "Pilot",
+        val seriesInfo =
+            XtreamSeriesInfo(
+                episodes =
+                    mapOf(
+                        "1" to
+                            listOf(
+                                XtreamEpisodeInfo(
+                                    id = 100,
+                                    episodeId = 999, // KönigTV/XUI format
+                                    episodeNum = 1,
+                                    title = "Pilot",
+                                ),
+                            ),
                     ),
-                ),
-            ),
-        )
+            )
 
         val episodes = seriesInfo.toEpisodes(seriesId = 800, seriesName = "Test")
         assertEquals(999, episodes[0].id, "resolvedEpisodeId should prefer episodeId")
@@ -621,11 +672,12 @@ class XtreamSsotPipelineTest {
 
     @Test
     fun `Live - epoch added converted to ms`() {
-        val transportDto = XtreamLiveStream(
-            streamId = 2000,
-            name = "BBC One",
-            added = "1706745600",
-        )
+        val transportDto =
+            XtreamLiveStream(
+                streamId = 2000,
+                name = "BBC One",
+                added = "1706745600",
+            )
 
         val pipelineDto = transportDto.toPipelineItem()
         assertEquals(1706745600_000L, pipelineDto.added)
@@ -637,12 +689,13 @@ class XtreamSsotPipelineTest {
 
     @Test
     fun `Live - isAdult flag and directSource`() {
-        val transportDto = XtreamLiveStream(
-            streamId = 2001,
-            name = "Adult Channel",
-            isAdult = "1",
-            directSource = "http://example.com/live/stream.m3u8",
-        )
+        val transportDto =
+            XtreamLiveStream(
+                streamId = 2001,
+                name = "Adult Channel",
+                isAdult = "1",
+                directSource = "http://example.com/live/stream.m3u8",
+            )
 
         val pipelineDto = transportDto.toPipelineItem()
         assertTrue(pipelineDto.isAdult)
@@ -658,10 +711,11 @@ class XtreamSsotPipelineTest {
 
     @Test
     fun `Live - Unicode decorators cleaned from channel name`() {
-        val transportDto = XtreamLiveStream(
-            streamId = 2002,
-            name = "▃ ▅ ▆ █ DE HEVC █ ▆ ▅ ▃",
-        )
+        val transportDto =
+            XtreamLiveStream(
+                streamId = 2002,
+                name = "▃ ▅ ▆ █ DE HEVC █ ▆ ▅ ▃",
+            )
 
         val raw = transportDto.toPipelineItem().toRawMediaMetadata()
         assertEquals("DE HEVC", raw.originalTitle, "Unicode block decorators must be stripped")
@@ -669,14 +723,15 @@ class XtreamSsotPipelineTest {
 
     @Test
     fun `Live - EPG and catchup fields propagated`() {
-        val transportDto = XtreamLiveStream(
-            streamId = 2003,
-            name = "RTL HD",
-            epgChannelId = "rtl.hd.de",
-            tvArchive = 3,
-            tvArchiveDuration = 7,
-            categoryId = "10",
-        )
+        val transportDto =
+            XtreamLiveStream(
+                streamId = 2003,
+                name = "RTL HD",
+                epgChannelId = "rtl.hd.de",
+                tvArchive = 3,
+                tvArchiveDuration = 7,
+                categoryId = "10",
+            )
 
         val pipelineDto = transportDto.toPipelineItem()
         assertEquals("rtl.hd.de", pipelineDto.epgChannelId)
@@ -693,11 +748,12 @@ class XtreamSsotPipelineTest {
 
     @Test
     fun `Live - playbackHints include streamType as liveKind`() {
-        val transportDto = XtreamLiveStream(
-            streamId = 2004,
-            name = "Channel X",
-            streamType = "live",
-        )
+        val transportDto =
+            XtreamLiveStream(
+                streamId = 2004,
+                name = "Channel X",
+                streamType = "live",
+            )
 
         val raw = transportDto.toPipelineItem().toRawMediaMetadata()
         val hints = raw.playbackHints
@@ -709,16 +765,18 @@ class XtreamSsotPipelineTest {
 
     @Test
     fun `Live - resolvedId prefers streamId over id`() {
-        val withStreamId = XtreamLiveStream(
-            streamId = 3000,
-            id = 9999,
-            name = "Both IDs",
-        )
-        val withIdOnly = XtreamLiveStream(
-            streamId = null,
-            id = 5555,
-            name = "ID Only",
-        )
+        val withStreamId =
+            XtreamLiveStream(
+                streamId = 3000,
+                id = 9999,
+                name = "Both IDs",
+            )
+        val withIdOnly =
+            XtreamLiveStream(
+                streamId = null,
+                id = 5555,
+                name = "ID Only",
+            )
 
         assertEquals(3000, withStreamId.toPipelineItem().id)
         assertEquals(5555, withIdOnly.toPipelineItem().id)
@@ -730,21 +788,25 @@ class XtreamSsotPipelineTest {
 
     @Test
     fun `VodInfo - durationSecs converted via DurationParser SSOT`() {
-        val vodItem = XtreamVodStream(
-            streamId = 4000,
-            name = "Detail Movie",
-            added = "1706745600",
-        ).toPipelineItem()
-
-        val vodInfo = XtreamVodInfo(
-            info = XtreamVodInfoBlock(
-                name = "Detail Movie - Extended",
-                durationSecs = 7200, // 2 hours in seconds
-            ),
-            movieData = XtreamMovieData(
+        val vodItem =
+            XtreamVodStream(
                 streamId = 4000,
-            ),
-        )
+                name = "Detail Movie",
+                added = "1706745600",
+            ).toPipelineItem()
+
+        val vodInfo =
+            XtreamVodInfo(
+                info =
+                    XtreamVodInfoBlock(
+                        name = "Detail Movie - Extended",
+                        durationSecs = 7200, // 2 hours in seconds
+                    ),
+                movieData =
+                    XtreamMovieData(
+                        streamId = 4000,
+                    ),
+            )
 
         val raw = vodInfo.toRawMediaMetadata(vodItem)
         assertEquals(7_200_000L, raw.durationMs, "DurationParser.secondsToMs(7200)")
@@ -753,18 +815,21 @@ class XtreamSsotPipelineTest {
 
     @Test
     fun `VodInfo - rating resolved via RatingNormalizer SSOT`() {
-        val vodItem = XtreamVodStream(
-            streamId = 4001,
-            name = "Rated Movie",
-            rating = "6.0",
-        ).toPipelineItem()
+        val vodItem =
+            XtreamVodStream(
+                streamId = 4001,
+                name = "Rated Movie",
+                rating = "6.0",
+            ).toPipelineItem()
 
-        val vodInfo = XtreamVodInfo(
-            info = XtreamVodInfoBlock(
-                rating = "8.5", // Detail API has better rating
-                rating5Based = 4.25,
-            ),
-        )
+        val vodInfo =
+            XtreamVodInfo(
+                info =
+                    XtreamVodInfoBlock(
+                        rating = "8.5", // Detail API has better rating
+                        rating5Based = 4.25,
+                    ),
+            )
 
         val raw = vodInfo.toRawMediaMetadata(vodItem)
         assertEquals(8.5, raw.rating, "RatingNormalizer.resolve prefers raw rating over 5-based")
@@ -772,17 +837,20 @@ class XtreamSsotPipelineTest {
 
     @Test
     fun `VodInfo - rating5Based fallback when rating null`() {
-        val vodItem = XtreamVodStream(
-            streamId = 4002,
-            name = "Fallback Rating Movie",
-        ).toPipelineItem()
+        val vodItem =
+            XtreamVodStream(
+                streamId = 4002,
+                name = "Fallback Rating Movie",
+            ).toPipelineItem()
 
-        val vodInfo = XtreamVodInfo(
-            info = XtreamVodInfoBlock(
-                rating = null,
-                rating5Based = 3.0,
-            ),
-        )
+        val vodInfo =
+            XtreamVodInfo(
+                info =
+                    XtreamVodInfoBlock(
+                        rating = null,
+                        rating5Based = 3.0,
+                    ),
+            )
 
         val raw = vodInfo.toRawMediaMetadata(vodItem)
         assertEquals(6.0, raw.rating, "RatingNormalizer: null raw → normalize5to10(3.0) = 6.0")
@@ -790,18 +858,21 @@ class XtreamSsotPipelineTest {
 
     @Test
     fun `VodInfo - falls back to vodItem rating when info block has no rating`() {
-        val vodItem = XtreamVodStream(
-            streamId = 4003,
-            name = "VodItem Rating Movie",
-            rating = "7.0",
-        ).toPipelineItem()
+        val vodItem =
+            XtreamVodStream(
+                streamId = 4003,
+                name = "VodItem Rating Movie",
+                rating = "7.0",
+            ).toPipelineItem()
 
-        val vodInfo = XtreamVodInfo(
-            info = XtreamVodInfoBlock(
-                rating = null,
-                rating5Based = null,
-            ),
-        )
+        val vodInfo =
+            XtreamVodInfo(
+                info =
+                    XtreamVodInfoBlock(
+                        rating = null,
+                        rating5Based = null,
+                    ),
+            )
 
         val raw = vodInfo.toRawMediaMetadata(vodItem)
         assertEquals(7.0, raw.rating, "Falls back to vodItem.rating when info block has nothing")
@@ -809,42 +880,48 @@ class XtreamSsotPipelineTest {
 
     @Test
     fun `VodInfo - movieData added as epoch seconds converted to ms`() {
-        val vodItem = XtreamVodStream(
-            streamId = 4004,
-            name = "Timestamp Movie",
-            added = "1706745600", // → 1706745600000 in pipeline DTO
-        ).toPipelineItem()
-
-        val vodInfo = XtreamVodInfo(
-            movieData = XtreamMovieData(
+        val vodItem =
+            XtreamVodStream(
                 streamId = 4004,
-                added = "1706832000", // Different timestamp than vodItem
-            ),
-        )
+                name = "Timestamp Movie",
+                added = "1706745600", // → 1706745600000 in pipeline DTO
+            ).toPipelineItem()
+
+        val vodInfo =
+            XtreamVodInfo(
+                movieData =
+                    XtreamMovieData(
+                        streamId = 4004,
+                        added = "1706832000", // Different timestamp than vodItem
+                    ),
+            )
 
         val raw = vodInfo.toRawMediaMetadata(vodItem)
         assertEquals(
             EpochConverter.secondsToMs("1706832000"),
             raw.addedTimestamp,
-            "movieData.added is epoch seconds → EpochConverter.secondsToMs"
+            "movieData.added is epoch seconds → EpochConverter.secondsToMs",
         )
         assertEquals(1706832000_000L, raw.addedTimestamp)
     }
 
     @Test
     fun `VodInfo - falls back to vodItem added when movieData added is null`() {
-        val vodItem = XtreamVodStream(
-            streamId = 4005,
-            name = "Fallback Timestamp",
-            added = "1706745600",
-        ).toPipelineItem()
-
-        val vodInfo = XtreamVodInfo(
-            movieData = XtreamMovieData(
+        val vodItem =
+            XtreamVodStream(
                 streamId = 4005,
-                added = null,
-            ),
-        )
+                name = "Fallback Timestamp",
+                added = "1706745600",
+            ).toPipelineItem()
+
+        val vodInfo =
+            XtreamVodInfo(
+                movieData =
+                    XtreamMovieData(
+                        streamId = 4005,
+                        added = null,
+                    ),
+            )
 
         val raw = vodInfo.toRawMediaMetadata(vodItem)
         assertEquals(1706745600_000L, raw.addedTimestamp, "Falls back to vodItem.added (already ms)")
@@ -854,18 +931,20 @@ class XtreamSsotPipelineTest {
     fun `VodInfo - rich metadata from info block`() {
         val vodItem = XtreamVodStream(streamId = 4006, name = "Rich").toPipelineItem()
 
-        val vodInfo = XtreamVodInfo(
-            info = XtreamVodInfoBlock(
-                name = "Rich Movie",
-                plot = "An amazing story about SSOT.",
-                genre = "Sci-Fi, Action",
-                director = "James Cameron",
-                cast = "Arnold Schwarzenegger",
-                releaseDate = "1984-10-26",
-                tmdbId = "218",
-                youtubeTrailer = "k64P4l2Wmeg",
-            ),
-        )
+        val vodInfo =
+            XtreamVodInfo(
+                info =
+                    XtreamVodInfoBlock(
+                        name = "Rich Movie",
+                        plot = "An amazing story about SSOT.",
+                        genre = "Sci-Fi, Action",
+                        director = "James Cameron",
+                        cast = "Arnold Schwarzenegger",
+                        releaseDate = "1984-10-26",
+                        tmdbId = "218",
+                        youtubeTrailer = "k64P4l2Wmeg",
+                    ),
+            )
 
         val raw = vodInfo.toRawMediaMetadata(vodItem)
         assertEquals("Rich Movie", raw.originalTitle)
@@ -888,28 +967,37 @@ class XtreamSsotPipelineTest {
         val expectedMs = 1706745600_000L
 
         // VOD
-        val vod = XtreamVodStream(streamId = 9001, name = "V", added = epochSeconds)
-            .toPipelineItem().toRawMetadata()
+        val vod =
+            XtreamVodStream(streamId = 9001, name = "V", added = epochSeconds)
+                .toPipelineItem()
+                .toRawMetadata()
         assertEquals(expectedMs, vod.addedTimestamp, "VOD timestamp")
 
         // Series
-        val series = XtreamSeriesStream(seriesId = 9002, name = "S", lastModified = epochSeconds)
-            .toPipelineItem().toRawMetadata()
+        val series =
+            XtreamSeriesStream(seriesId = 9002, name = "S", lastModified = epochSeconds)
+                .toPipelineItem()
+                .toRawMetadata()
         assertEquals(expectedMs, series.addedTimestamp, "Series timestamp")
 
         // Live
-        val live = XtreamLiveStream(streamId = 9003, name = "L", added = epochSeconds)
-            .toPipelineItem().toRawMediaMetadata()
+        val live =
+            XtreamLiveStream(streamId = 9003, name = "L", added = epochSeconds)
+                .toPipelineItem()
+                .toRawMediaMetadata()
         assertEquals(expectedMs, live.addedTimestamp, "Live timestamp")
 
         // Episode
-        val episodeInfo = XtreamSeriesInfo(
-            episodes = mapOf(
-                "1" to listOf(
-                    XtreamEpisodeInfo(id = 9004, episodeNum = 1, title = "E", added = epochSeconds),
-                ),
-            ),
-        )
+        val episodeInfo =
+            XtreamSeriesInfo(
+                episodes =
+                    mapOf(
+                        "1" to
+                            listOf(
+                                XtreamEpisodeInfo(id = 9004, episodeNum = 1, title = "E", added = epochSeconds),
+                            ),
+                    ),
+            )
         val ep = episodeInfo.toEpisodes(9000, "S")[0].toRawMediaMetadata()
         assertEquals(expectedMs, ep.addedTimestamp, "Episode timestamp")
     }
@@ -919,12 +1007,16 @@ class XtreamSsotPipelineTest {
         val vod = XtreamVodStream(streamId = 9010, name = "V").toPipelineItem().toRawMetadata()
         assertNull(vod.addedTimestamp, "VOD null timestamp")
 
-        val series = XtreamSeriesStream(seriesId = 9011, name = "S")
-            .toPipelineItem().toRawMetadata()
+        val series =
+            XtreamSeriesStream(seriesId = 9011, name = "S")
+                .toPipelineItem()
+                .toRawMetadata()
         assertNull(series.addedTimestamp, "Series null timestamp")
 
-        val live = XtreamLiveStream(streamId = 9012, name = "L")
-            .toPipelineItem().toRawMediaMetadata()
+        val live =
+            XtreamLiveStream(streamId = 9012, name = "L")
+                .toPipelineItem()
+                .toRawMediaMetadata()
         assertNull(live.addedTimestamp, "Live null timestamp")
     }
 
@@ -957,11 +1049,12 @@ class XtreamSsotPipelineTest {
 
     @Test
     fun `Edge case - non-numeric added string handled gracefully`() {
-        val transportDto = XtreamVodStream(
-            streamId = 8001,
-            name = "Bad Timestamp",
-            added = "not-a-number",
-        )
+        val transportDto =
+            XtreamVodStream(
+                streamId = 8001,
+                name = "Bad Timestamp",
+                added = "not-a-number",
+            )
 
         val pipelineDto = transportDto.toPipelineItem()
         assertNull(pipelineDto.added, "EpochConverter returns null for non-numeric")
@@ -972,12 +1065,13 @@ class XtreamSsotPipelineTest {
 
     @Test
     fun `Edge case - empty string rating treated as null`() {
-        val transportDto = XtreamVodStream(
-            streamId = 8002,
-            name = "Empty Rating",
-            rating = "",
-            rating5Based = 4.0,
-        )
+        val transportDto =
+            XtreamVodStream(
+                streamId = 8002,
+                name = "Empty Rating",
+                rating = "",
+                rating5Based = 4.0,
+            )
 
         val pipelineDto = transportDto.toPipelineItem()
         assertNull(pipelineDto.rating, "Empty string toDoubleOrNull() → null")
@@ -989,10 +1083,11 @@ class XtreamSsotPipelineTest {
     @Test
     fun `Edge case - negative seriesId handled`() {
         // Some panels return negative series IDs
-        val transportDto = XtreamSeriesStream(
-            seriesId = -42,
-            name = "Negative ID Series",
-        )
+        val transportDto =
+            XtreamSeriesStream(
+                seriesId = -42,
+                name = "Negative ID Series",
+            )
 
         val pipelineDto = transportDto.toPipelineItem()
         assertEquals(-42, pipelineDto.id)
@@ -1005,19 +1100,20 @@ class XtreamSsotPipelineTest {
     @Test
     fun `Edge case - VOD with all SSOT fields populated`() {
         // Comprehensive test: all SSOT utilities exercised in one flow
-        val transportDto = XtreamVodStream(
-            streamId = 9999,
-            name = "The Complete Movie (2023)",
-            added = "1672531200",       // 2023-01-01 00:00:00 UTC
-            rating = null,
-            rating5Based = 4.5,         // → 9.0
-            year = "2023",
-            duration = "02:15:30",      // 2h 15m 30s → 8130000 ms
-            isAdult = "0",
-            containerExtension = "mkv",
-            categoryId = "3",
-            streamType = "movie",
-        )
+        val transportDto =
+            XtreamVodStream(
+                streamId = 9999,
+                name = "The Complete Movie (2023)",
+                added = "1672531200", // 2023-01-01 00:00:00 UTC
+                rating = null,
+                rating5Based = 4.5, // → 9.0
+                year = "2023",
+                duration = "02:15:30", // 2h 15m 30s → 8130000 ms
+                isAdult = "0",
+                containerExtension = "mkv",
+                categoryId = "3",
+                streamType = "movie",
+            )
 
         val raw = transportDto.toPipelineItem().toRawMetadata()
 

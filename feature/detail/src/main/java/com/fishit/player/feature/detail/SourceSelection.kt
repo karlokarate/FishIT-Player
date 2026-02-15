@@ -102,7 +102,7 @@ object SourceSelection {
         return if (correctedType != null && correctedType != SourceType.UNKNOWN) {
             // Create new MediaSourceRef with corrected sourceType
             MediaSourceRef(
-                sourceType = correctedType,  // ← FIXED!
+                sourceType = correctedType, // ← FIXED!
                 sourceId = source.sourceId,
                 sourceLabel = source.sourceLabel,
                 quality = source.quality,
@@ -123,8 +123,7 @@ object SourceSelection {
     /**
      * Delegates to [SourceKeyBridge] — the SSOT for sourceType extraction in feature/detail.
      */
-    private fun extractSourceTypeFromKey(sourceKey: String): SourceType? =
-        SourceKeyBridge.extractSourceType(sourceKey)
+    private fun extractSourceTypeFromKey(sourceKey: String): SourceType? = SourceKeyBridge.extractSourceType(sourceKey)
 
     /**
      * Check if the active source has all required playbackHints for playback.
@@ -203,5 +202,4 @@ object SourceSelection {
      * Check if a source is ready for immediate playback (all required hints present).
      */
     fun isPlaybackReady(source: MediaSourceRef?): Boolean = getMissingPlaybackHints(source).isEmpty()
-
 }

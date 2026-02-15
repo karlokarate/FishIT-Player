@@ -10,7 +10,6 @@ import org.junit.Test
  * Validates all Xtream API duration formats and edge cases.
  */
 class DurationParserTest {
-
     // ========== parseToMs: HH:MM:SS format ==========
 
     @Test

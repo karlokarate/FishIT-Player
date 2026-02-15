@@ -1,6 +1,5 @@
 package com.fishit.player.core.catalogsync
 
-import com.fishit.player.core.persistence.obx.NX_SyncCheckpoint
 import com.fishit.player.core.persistence.repository.FingerprintRepository
 import com.fishit.player.core.persistence.repository.SyncCheckpointRepository
 import com.fishit.player.infra.logging.UnifiedLog
@@ -131,7 +130,7 @@ class IncrementalSyncDecider
             // Tier 3: Timestamp filtering available
             UnifiedLog.i(
                 TAG,
-                "[$contentType] Using incremental sync (lastSync=${lastSyncMs}, " +
+                "[$contentType] Using incremental sync (lastSync=$lastSyncMs, " +
                     "generation=${checkpoint.syncGeneration})",
             )
 
@@ -154,9 +153,7 @@ class IncrementalSyncDecider
             sourceType: String,
             accountId: String,
             contentType: String,
-        ): Map<String, Int> {
-            return fingerprintRepository.getFingerprintsAsMap(sourceType, accountId, contentType)
-        }
+        ): Map<String, Int> = fingerprintRepository.getFingerprintsAsMap(sourceType, accountId, contentType)
 
         /**
          * Analyze sync results for metrics.
@@ -171,9 +168,12 @@ class IncrementalSyncDecider
         ): SyncAnalysis {
             val processedItems = newItems + updatedItems
             val skippedItems = unchangedItems
-            val savingsPercent = if (totalItems > 0) {
-                (skippedItems.toDouble() / totalItems * 100).toInt()
-            } else 0
+            val savingsPercent =
+                if (totalItems > 0) {
+                    (skippedItems.toDouble() / totalItems * 100).toInt()
+                } else {
+                    0
+                }
 
             return SyncAnalysis(
                 totalItems = totalItems,

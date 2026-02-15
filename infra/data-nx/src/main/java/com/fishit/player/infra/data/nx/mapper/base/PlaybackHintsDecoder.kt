@@ -28,10 +28,11 @@ import kotlinx.serialization.json.Json
  * `ignoreUnknownKeys = true` prevents crashes when stored JSON contains keys
  * from a newer app version or from pipelines that add extra hints.
  */
-private val hintsJson = Json {
-    ignoreUnknownKeys = true
-    encodeDefaults = false
-}
+private val hintsJson =
+    Json {
+        ignoreUnknownKeys = true
+        encodeDefaults = false
+    }
 
 /**
  * Central utility for all PlaybackHints operations.
@@ -39,7 +40,6 @@ private val hintsJson = Json {
  * All callers MUST use this instead of implementing their own decode/encode/legacy logic.
  */
 object PlaybackHintsDecoder {
-
     // =========================================================================
     // DECODE: JSON → Map<String, String>
     // =========================================================================
@@ -69,22 +69,19 @@ object PlaybackHintsDecoder {
      * stored IN the playbackHintsJson at write time. No need to reconstruct from
      * entity fields.
      */
-    fun decodeFromVariantAndSource(
-        variant: NX_WorkVariant?,
-    ): Map<String, String> {
-        return decodeFromVariant(variant)
-    }
+    fun decodeFromVariantAndSource(variant: NX_WorkVariant?): Map<String, String> = decodeFromVariant(variant)
 
     /**
      * Decodes a raw JSON string to a hints map.
      *
      * @return decoded map, or null on parse error
      */
-    fun decodeJson(json: String): Map<String, String>? = try {
-        hintsJson.decodeFromString<Map<String, String>>(json)
-    } catch (_: Exception) {
-        null
-    }
+    fun decodeJson(json: String): Map<String, String>? =
+        try {
+            hintsJson.decodeFromString<Map<String, String>>(json)
+        } catch (_: Exception) {
+            null
+        }
 
     // =========================================================================
     // ENCODE: Map<String, String> → JSON
@@ -103,5 +100,4 @@ object PlaybackHintsDecoder {
             null
         }
     }
-
 }

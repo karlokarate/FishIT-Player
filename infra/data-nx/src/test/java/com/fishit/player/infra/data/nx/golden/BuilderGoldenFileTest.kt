@@ -46,7 +46,6 @@ import kotlin.test.assertTrue
  * via direct assertions in the existing [WorkEntityBuilderTest].
  */
 class BuilderGoldenFileTest {
-
     private val builder = WorkEntityBuilder()
     private val shouldUpdate: Boolean
         get() = System.getProperty("golden.update")?.toBoolean() == true
@@ -63,116 +62,129 @@ class BuilderGoldenFileTest {
      * Full movie with TMDB, all rich metadata, ImageRef.Http for poster/backdrop.
      * Recognition: CONFIRMED (tmdb != null).
      */
-    private fun createFullMovieMetadata() = NormalizedMediaMetadata(
-        canonicalTitle = "Oppenheimer",
-        mediaType = MediaType.MOVIE,
-        year = 2023,
-        durationMs = 10_860_000L, // 181 minutes
-        tmdb = TmdbRef(TmdbMediaType.MOVIE, 872585),
-        externalIds = ExternalIds(
+    private fun createFullMovieMetadata() =
+        NormalizedMediaMetadata(
+            canonicalTitle = "Oppenheimer",
+            mediaType = MediaType.MOVIE,
+            year = 2023,
+            durationMs = 10_860_000L, // 181 minutes
             tmdb = TmdbRef(TmdbMediaType.MOVIE, 872585),
-            imdbId = "tt15398776",
-            tvdbId = null,
-        ),
-        poster = ImageRef.Http(
-            url = "https://image.tmdb.org/t/p/w500/8Gxv8gSFCU0XGDykEGv7zR1n2ua.jpg",
-            preferredWidth = 500,
-            preferredHeight = 750,
-        ),
-        backdrop = ImageRef.Http(
-            url = "https://image.tmdb.org/t/p/w1280/fm6KqXpk3M2HVveHwCrBSSBaO0V.jpg",
-            preferredWidth = 1280,
-            preferredHeight = 720,
-        ),
-        thumbnail = null,
-        rating = 8.1,
-        genres = "Drama, History",
-        plot = "The story of J. Robert Oppenheimer and the Manhattan Project.",
-        director = "Christopher Nolan",
-        cast = "Cillian Murphy, Emily Blunt, Robert Downey Jr.",
-        trailer = "https://youtube.com/watch?v=uYPbbksJxIg",
-        releaseDate = "2023-07-19",
-        isAdult = false,
-        addedTimestamp = 1690000000L, // 2023-07-22
-    )
+            externalIds =
+                ExternalIds(
+                    tmdb = TmdbRef(TmdbMediaType.MOVIE, 872585),
+                    imdbId = "tt15398776",
+                    tvdbId = null,
+                ),
+            poster =
+                ImageRef.Http(
+                    url = "https://image.tmdb.org/t/p/w500/8Gxv8gSFCU0XGDykEGv7zR1n2ua.jpg",
+                    preferredWidth = 500,
+                    preferredHeight = 750,
+                ),
+            backdrop =
+                ImageRef.Http(
+                    url = "https://image.tmdb.org/t/p/w1280/fm6KqXpk3M2HVveHwCrBSSBaO0V.jpg",
+                    preferredWidth = 1280,
+                    preferredHeight = 720,
+                ),
+            thumbnail = null,
+            rating = 8.1,
+            genres = "Drama, History",
+            plot = "The story of J. Robert Oppenheimer and the Manhattan Project.",
+            director = "Christopher Nolan",
+            cast = "Cillian Murphy, Emily Blunt, Robert Downey Jr.",
+            trailer = "https://youtube.com/watch?v=uYPbbksJxIg",
+            releaseDate = "2023-07-19",
+            isAdult = false,
+            addedTimestamp = 1690000000L, // 2023-07-22
+        )
 
     /**
      * Series episode with season/episode, TV TMDB ref.
      * Recognition: CONFIRMED.
      */
-    private fun createSeriesEpisodeMetadata() = NormalizedMediaMetadata(
-        canonicalTitle = "Breaking Bad",
-        mediaType = MediaType.SERIES_EPISODE,
-        year = 2008,
-        season = 1,
-        episode = 5,
-        durationMs = 2_820_000L, // 47 minutes
-        tmdb = TmdbRef(TmdbMediaType.TV, 1396),
-        externalIds = ExternalIds(
+    private fun createSeriesEpisodeMetadata() =
+        NormalizedMediaMetadata(
+            canonicalTitle = "Breaking Bad",
+            mediaType = MediaType.SERIES_EPISODE,
+            year = 2008,
+            season = 1,
+            episode = 5,
+            durationMs = 2_820_000L, // 47 minutes
             tmdb = TmdbRef(TmdbMediaType.TV, 1396),
-            imdbId = "tt0903747",
-            tvdbId = "81189",
-        ),
-        poster = ImageRef.Http(
-            url = "https://image.tmdb.org/t/p/w500/ggFHVNu6YYI5L9pCfOacjizRGt.jpg",
-        ),
-        rating = 9.5,
-        genres = "Drama, Crime, Thriller",
-        plot = "A chemistry teacher diagnosed with inoperable lung cancer...",
-        director = "Vince Gilligan",
-        cast = "Bryan Cranston, Aaron Paul, Anna Gunn",
-    )
+            externalIds =
+                ExternalIds(
+                    tmdb = TmdbRef(TmdbMediaType.TV, 1396),
+                    imdbId = "tt0903747",
+                    tvdbId = "81189",
+                ),
+            poster =
+                ImageRef.Http(
+                    url = "https://image.tmdb.org/t/p/w500/ggFHVNu6YYI5L9pCfOacjizRGt.jpg",
+                ),
+            rating = 9.5,
+            genres = "Drama, Crime, Thriller",
+            plot = "A chemistry teacher diagnosed with inoperable lung cancer...",
+            director = "Vince Gilligan",
+            cast = "Bryan Cranston, Aaron Paul, Anna Gunn",
+        )
 
     /**
      * Minimal item with just title — all other fields default.
      * Recognition: HEURISTIC (no tmdb).
      */
-    private fun createMinimalMetadata() = NormalizedMediaMetadata(
-        canonicalTitle = "Unknown Movie",
-        mediaType = MediaType.UNKNOWN,
-    )
+    private fun createMinimalMetadata() =
+        NormalizedMediaMetadata(
+            canonicalTitle = "Unknown Movie",
+            mediaType = MediaType.UNKNOWN,
+        )
 
     /**
      * Telegram item with TelegramThumb (poster) and InlineBytes (placeholder).
      * Tests ImageRef.toSerializedString() behavior for non-Http types.
      */
-    private fun createTelegramItemMetadata() = NormalizedMediaMetadata(
-        canonicalTitle = "Avatar",
-        mediaType = MediaType.MOVIE,
-        year = 2009,
-        durationMs = 9_720_000L, // 162 minutes
-        thumbnail = ImageRef.TelegramThumb(
-            remoteId = "AAMCAgADGQEAAj_avatar_thumb",
-            chatId = -1001234567890L,
-            messageId = 500L,
-            preferredWidth = 320,
-            preferredHeight = 180,
-        ),
-        placeholderThumbnail = ImageRef.InlineBytes(
-            bytes = byteArrayOf(0xFF.toByte(), 0xD8.toByte(), 0xFF.toByte(), 0xE0.toByte()),
-            mimeType = "image/jpeg",
-            preferredWidth = 40,
-            preferredHeight = 22,
-        ),
-        addedTimestamp = 1690000000L,
-    )
+    private fun createTelegramItemMetadata() =
+        NormalizedMediaMetadata(
+            canonicalTitle = "Avatar",
+            mediaType = MediaType.MOVIE,
+            year = 2009,
+            durationMs = 9_720_000L, // 162 minutes
+            thumbnail =
+                ImageRef.TelegramThumb(
+                    remoteId = "AAMCAgADGQEAAj_avatar_thumb",
+                    chatId = -1001234567890L,
+                    messageId = 500L,
+                    preferredWidth = 320,
+                    preferredHeight = 180,
+                ),
+            placeholderThumbnail =
+                ImageRef.InlineBytes(
+                    bytes = byteArrayOf(0xFF.toByte(), 0xD8.toByte(), 0xFF.toByte(), 0xE0.toByte()),
+                    mimeType = "image/jpeg",
+                    preferredWidth = 40,
+                    preferredHeight = 22,
+                ),
+            addedTimestamp = 1690000000L,
+        )
 
     /**
      * Adult item with externalIds fallback (no typed tmdb, only externalIds.tmdb).
      * Tests: isAdult=true, externalIds.tmdb fallback for tmdbId.
      */
-    private fun createAdultWithExternalIdsFallback() = NormalizedMediaMetadata(
-        canonicalTitle = "Some Adult Movie",
-        mediaType = MediaType.MOVIE,
-        year = 2020,
-        tmdb = null, // No typed tmdb
-        externalIds = ExternalIds(
-            tmdb = TmdbRef(TmdbMediaType.MOVIE, 99999),
-            imdbId = "tt9999999",
-        ),
-        isAdult = true,
-        rating = 3.2,
-    )
+    private fun createAdultWithExternalIdsFallback() =
+        NormalizedMediaMetadata(
+            canonicalTitle = "Some Adult Movie",
+            mediaType = MediaType.MOVIE,
+            year = 2020,
+            tmdb = null, // No typed tmdb
+            externalIds =
+                ExternalIds(
+                    tmdb = TmdbRef(TmdbMediaType.MOVIE, 99999),
+                    imdbId = "tt9999999",
+                ),
+            isAdult = true,
+            rating = 3.2,
+        )
 
     // =========================================================================
     // Golden File Tests
@@ -271,7 +283,10 @@ class BuilderGoldenFileTest {
     // Golden file assertion helper
     // =========================================================================
 
-    private fun assertGolden(fileName: String, work: NxWorkRepository.Work) {
+    private fun assertGolden(
+        fileName: String,
+        work: NxWorkRepository.Work,
+    ) {
         val actualJson = WorkJsonSerializer.toJsonString(work)
         val goldenFile = File(goldenDir, fileName)
 

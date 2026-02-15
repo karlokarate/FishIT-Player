@@ -18,8 +18,8 @@ object LiveStreamMapper {
     /**
      * Streaming mapper for Jackson parser (O(1) memory).
      */
-    fun fromStreaming(reader: JsonObjectReader): XtreamLiveStream {
-        return XtreamLiveStream(
+    fun fromStreaming(reader: JsonObjectReader): XtreamLiveStream =
+        XtreamLiveStream(
             num = reader.getIntOrNull("num"),
             name = reader.getStringOrNull("name"),
             streamId = reader.getIntOrNull("stream_id"),
@@ -34,13 +34,12 @@ object LiveStreamMapper {
             added = reader.getStringOrNull("added"),
             isAdult = reader.getStringOrNull("is_adult"),
         )
-    }
 
     /**
      * Fallback mapper for kotlinx.serialization (DOM parsing).
      */
-    fun fromJsonObject(obj: JsonObject): XtreamLiveStream {
-        return XtreamLiveStream(
+    fun fromJsonObject(obj: JsonObject): XtreamLiveStream =
+        XtreamLiveStream(
             num = obj["num"]?.jsonPrimitive?.intOrNull,
             name = obj["name"]?.jsonPrimitive?.content,
             streamId = obj["stream_id"]?.jsonPrimitive?.intOrNull,
@@ -55,5 +54,4 @@ object LiveStreamMapper {
             added = obj["added"]?.jsonPrimitive?.content,
             isAdult = obj["is_adult"]?.jsonPrimitive?.content,
         )
-    }
 }

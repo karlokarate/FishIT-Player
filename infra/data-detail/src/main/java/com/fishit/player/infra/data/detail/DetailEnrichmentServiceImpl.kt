@@ -3,14 +3,8 @@ package com.fishit.player.infra.data.detail
 import com.fishit.player.core.detail.domain.DetailEnrichmentService
 import com.fishit.player.core.detail.domain.UnifiedDetailLoader
 import com.fishit.player.core.model.CanonicalMediaId
-import com.fishit.player.core.model.ExternalIds
-import com.fishit.player.core.model.ImageRef
-import com.fishit.player.core.model.MediaType
-import com.fishit.player.core.model.NormalizedMediaMetadata
 import com.fishit.player.core.model.PlaybackHintKeys
 import com.fishit.player.core.model.SourceType
-import com.fishit.player.core.model.TmdbMediaType
-import com.fishit.player.core.model.TmdbRef
 import com.fishit.player.core.model.ids.PipelineItemId
 import com.fishit.player.core.model.ids.XtreamIdCodec
 import com.fishit.player.core.model.repository.CanonicalMediaRepository
@@ -18,8 +12,6 @@ import com.fishit.player.core.model.repository.CanonicalMediaWithSources
 import com.fishit.player.infra.logging.UnifiedLog
 import com.fishit.player.infra.priority.ApiPriorityDispatcher
 import com.fishit.player.infra.transport.xtream.XtreamApiClient
-import com.fishit.player.pipeline.xtream.mapper.toRawMediaMetadata
-import com.fishit.player.pipeline.xtream.model.XtreamVodItem
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import javax.inject.Inject
@@ -94,32 +86,35 @@ class DetailEnrichmentServiceImpl
             }
 
             // CRITICAL priority - pauses all other operations
-            val enriched = priorityDispatcher.withCriticalPriority(
-                tag = "EnsureEnriched:${canonicalId.key.value}",
-                timeoutMs = timeoutMs,
-            ) {
-                val mutex = getMutexForCanonicalId(canonicalId.key.value)
-                mutex.withLock {
-                    val currentMedia = canonicalMediaRepository.findByCanonicalId(canonicalId)
-                        ?: return@withCriticalPriority null
+            val enriched =
+                priorityDispatcher.withCriticalPriority(
+                    tag = "EnsureEnriched:${canonicalId.key.value}",
+                    timeoutMs = timeoutMs,
+                ) {
+                    val mutex = getMutexForCanonicalId(canonicalId.key.value)
+                    mutex.withLock {
+                        val currentMedia =
+                            canonicalMediaRepository.findByCanonicalId(canonicalId)
+                                ?: return@withCriticalPriority null
 
-                    val currentSource =
-                        sourceKey?.let { key -> currentMedia.sources.find { it.sourceId == key } }
-                    if (currentSource != null && requiredHints.isNotEmpty()) {
-                        val stillMissing = requiredHints.filter {
-                            currentSource.playbackHints[it].isNullOrBlank()
-                        }
-                        if (stillMissing.isEmpty()) {
-                            UnifiedLog.d(TAG) {
-                                "ensureEnriched: post-lock fast path canonicalId=${canonicalId.key.value}"
+                        val currentSource =
+                            sourceKey?.let { key -> currentMedia.sources.find { it.sourceId == key } }
+                        if (currentSource != null && requiredHints.isNotEmpty()) {
+                            val stillMissing =
+                                requiredHints.filter {
+                                    currentSource.playbackHints[it].isNullOrBlank()
+                                }
+                            if (stillMissing.isEmpty()) {
+                                UnifiedLog.d(TAG) {
+                                    "ensureEnriched: post-lock fast path canonicalId=${canonicalId.key.value}"
+                                }
+                                return@withLock currentMedia
                             }
-                            return@withLock currentMedia
                         }
-                    }
 
-                    enrichIfNeededInternal(currentMedia)
+                        enrichIfNeededInternal(currentMedia)
+                    }
                 }
-            }
 
             val durationMs = System.currentTimeMillis() - startMs
             UnifiedLog.d(TAG) {
@@ -141,22 +136,24 @@ class DetailEnrichmentServiceImpl
             }
 
             // HIGH priority - pauses background sync
-            val result = priorityDispatcher.withHighPriority(
-                tag = "DetailEnrich:${media.canonicalId.key.value}",
-            ) {
-                val mutex = getMutexForCanonicalId(media.canonicalId.key.value)
-                mutex.withLock {
-                    // Re-check after acquiring lock
-                    val currentMedia = canonicalMediaRepository.findByCanonicalId(media.canonicalId)
-                        ?: return@withHighPriority media
+            val result =
+                priorityDispatcher.withHighPriority(
+                    tag = "DetailEnrich:${media.canonicalId.key.value}",
+                ) {
+                    val mutex = getMutexForCanonicalId(media.canonicalId.key.value)
+                    mutex.withLock {
+                        // Re-check after acquiring lock
+                        val currentMedia =
+                            canonicalMediaRepository.findByCanonicalId(media.canonicalId)
+                                ?: return@withHighPriority media
 
-                    if (isFullyEnriched(currentMedia)) {
-                        return@withHighPriority currentMedia
+                        if (isFullyEnriched(currentMedia)) {
+                            return@withHighPriority currentMedia
+                        }
+
+                        enrichIfNeededInternal(currentMedia)
                     }
-
-                    enrichIfNeededInternal(currentMedia)
                 }
-            }
 
             val durationMs = System.currentTimeMillis() - startMs
             UnifiedLog.i(TAG) {
@@ -188,16 +185,17 @@ class DetailEnrichmentServiceImpl
 
             val hasXtreamSource = media.sources.any { it.sourceType == SourceType.XTREAM }
 
-            val result = when {
-                hasXtreamSource -> enrichFromXtream(media)
-                // TODO: TMDB enrichment when TmdbMetadataResolver supports resolveByTmdbId
-                else -> {
-                    UnifiedLog.d(TAG) {
-                        "enrichIfNeededInternal: skipped (no enrichment path) canonicalId=${media.canonicalId.key.value} hasXtream=$hasXtreamSource"
+            val result =
+                when {
+                    hasXtreamSource -> enrichFromXtream(media)
+                    // TODO: TMDB enrichment when TmdbMetadataResolver supports resolveByTmdbId
+                    else -> {
+                        UnifiedLog.d(TAG) {
+                            "enrichIfNeededInternal: skipped (no enrichment path) canonicalId=${media.canonicalId.key.value} hasXtream=$hasXtreamSource"
+                        }
+                        media
                     }
-                    media
                 }
-            }
 
             val durationMs = System.currentTimeMillis() - startMs
             if (result !== media) {
@@ -263,7 +261,9 @@ class DetailEnrichmentServiceImpl
             // Legacy format: xtream:vod:{id}
             if (XtreamIdCodec.isVod(sourceId)) return true
             // NX format: src:xtream:{accountKey}:vod:{id}
-            val parsed = com.fishit.player.infra.data.nx.mapper.SourceKeyParser.parse(sourceId)
+            val parsed =
+                com.fishit.player.infra.data.nx.mapper.SourceKeyParser
+                    .parse(sourceId)
             return parsed?.itemKind == "vod"
         }
 
@@ -277,7 +277,9 @@ class DetailEnrichmentServiceImpl
             // Legacy format: xtream:series:{id}
             if (XtreamIdCodec.isSeries(sourceId)) return true
             // NX format: src:xtream:{accountKey}:series:{id}
-            val parsed = com.fishit.player.infra.data.nx.mapper.SourceKeyParser.parse(sourceId)
+            val parsed =
+                com.fishit.player.infra.data.nx.mapper.SourceKeyParser
+                    .parse(sourceId)
             return parsed?.itemKind == "series"
         }
 

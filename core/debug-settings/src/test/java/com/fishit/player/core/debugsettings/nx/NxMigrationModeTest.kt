@@ -9,7 +9,6 @@ import org.junit.Test
  * **Reference:** docs/v2/NX_SSOT_CONTRACT.md, docs/v2/OBX_PLATIN_REFACTOR_ROADMAP.md
  */
 class NxMigrationModeTest {
-
     @Test
     fun `CatalogReadMode has exactly 3 values`() {
         val values = CatalogReadMode.entries
@@ -18,9 +17,9 @@ class NxMigrationModeTest {
             listOf(
                 CatalogReadMode.LEGACY_ONLY,
                 CatalogReadMode.NX_ONLY,
-                CatalogReadMode.SHADOW
+                CatalogReadMode.SHADOW,
             ),
-            values
+            values,
         )
     }
 
@@ -32,9 +31,9 @@ class NxMigrationModeTest {
             listOf(
                 CatalogWriteMode.LEGACY_ONLY,
                 CatalogWriteMode.NX_ONLY,
-                CatalogWriteMode.DUAL
+                CatalogWriteMode.DUAL,
             ),
-            values
+            values,
         )
     }
 
@@ -46,9 +45,9 @@ class NxMigrationModeTest {
             listOf(
                 MigrationMode.OFF,
                 MigrationMode.INCREMENTAL,
-                MigrationMode.FULL_REBUILD
+                MigrationMode.FULL_REBUILD,
             ),
-            values
+            values,
         )
     }
 
@@ -60,9 +59,9 @@ class NxMigrationModeTest {
             listOf(
                 NxUiVisibility.HIDDEN,
                 NxUiVisibility.DEBUG_ONLY,
-                NxUiVisibility.FULL
+                NxUiVisibility.FULL,
             ),
-            values
+            values,
         )
     }
 

@@ -139,16 +139,26 @@ object XtreamFormatRules {
      * @return XtreamPipeResult with extracted fields
      */
     fun parsePipeFormat(input: String): XtreamPipeResult {
-        val unmatched = XtreamPipeResult(
-            title = input, year = null, rating = null,
-            quality = null, extraTags = emptyList(), matched = false,
-        )
+        val unmatched =
+            XtreamPipeResult(
+                title = input,
+                year = null,
+                rating = null,
+                quality = null,
+                extraTags = emptyList(),
+                matched = false,
+            )
 
         if (!input.contains('|')) return unmatched
 
         // Combined map + filter: single allocation instead of map().filter()
-        val parts = input.split('|', limit = 5)
-            .mapNotNull { val t = it.trim(); if (t.isNotEmpty()) t else null }
+        val parts =
+            input
+                .split('|', limit = 5)
+                .mapNotNull {
+                    val t = it.trim()
+                    if (t.isNotEmpty()) t else null
+                }
 
         if (parts.size < 2) return unmatched
 
@@ -230,11 +240,12 @@ object XtreamFormatRules {
         }
 
         // Title: title segment + any unclassified segments joined by " | "
-        val title = if (titleParts.size == 1) {
-            titleParts[0]
-        } else {
-            titleParts.joinToString(" | ")
-        }
+        val title =
+            if (titleParts.size == 1) {
+                titleParts[0]
+            } else {
+                titleParts.joinToString(" | ")
+            }
 
         return XtreamPipeResult(
             title = title,
@@ -252,8 +263,7 @@ object XtreamFormatRules {
      * A prefix is a 2–3 character uppercase alphabetic string.
      * Real data shows only "NL" (2,013 items), but the rule is generic for other providers.
      */
-    private fun isCountryPrefix(segment: String): Boolean =
-        segment.length in 2..3 && segment.all { it.isUpperCase() && it.isLetter() }
+    private fun isCountryPrefix(segment: String): Boolean = segment.length in 2..3 && segment.all { it.isUpperCase() && it.isLetter() }
 
     // Known quality/tag markers in Xtream pipe format (from real data analysis)
     private val QUALITY_TAGS =

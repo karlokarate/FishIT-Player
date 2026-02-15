@@ -7,10 +7,10 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
-import kotlinx.serialization.json.intOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import java.io.IOException
@@ -26,95 +26,94 @@ import javax.inject.Inject
  *
  * CC Target: ≤ 6 per function
  */
-class XtreamCategoryFetcher @Inject constructor(
-    private val okHttpClient: OkHttpClient,
-    private val json: Json,
-    private val urlBuilder: XtreamUrlBuilder,
-    private val io: CoroutineDispatcher = Dispatchers.IO,
-) {
-    companion object {
-        private const val TAG = "XtreamCategoryFetcher"
-        private val VOD_ALIAS_CANDIDATES = listOf("movie", "vod", "movies") // "movie" first - most common
-    }
+class XtreamCategoryFetcher
+    @Inject
+    constructor(
+        private val okHttpClient: OkHttpClient,
+        private val json: Json,
+        private val urlBuilder: XtreamUrlBuilder,
+        private val io: CoroutineDispatcher = Dispatchers.IO,
+    ) {
+        companion object {
+            private const val TAG = "XtreamCategoryFetcher"
+            private val VOD_ALIAS_CANDIDATES = listOf("movie", "vod", "movies") // "movie" first - most common
+        }
 
-    /**
-     * Get live stream categories.
-     * CC: 2
-     */
-    suspend fun getLiveCategories(): List<XtreamCategory> =
-        fetchCategories("get_live_categories")
+        /**
+         * Get live stream categories.
+         * CC: 2
+         */
+        suspend fun getLiveCategories(): List<XtreamCategory> = fetchCategories("get_live_categories")
 
-    /**
-     * Get VOD categories with alias resolution.
-     * CC: 4 (alias loop)
-     */
-    suspend fun getVodCategories(
-        currentVodKind: String,
-    ): Pair<List<XtreamCategory>, String> {
-        // Try aliases in order
-        val candidates = listOf(currentVodKind) + VOD_ALIAS_CANDIDATES.filter { it != currentVodKind }
-        for (alias in candidates) {
-            val result = fetchCategories("get_${alias}_categories")
-            if (result.isNotEmpty()) {
-                return Pair(result, alias)
+        /**
+         * Get VOD categories with alias resolution.
+         * CC: 4 (alias loop)
+         */
+        suspend fun getVodCategories(currentVodKind: String): Pair<List<XtreamCategory>, String> {
+            // Try aliases in order
+            val candidates = listOf(currentVodKind) + VOD_ALIAS_CANDIDATES.filter { it != currentVodKind }
+            for (alias in candidates) {
+                val result = fetchCategories("get_${alias}_categories")
+                if (result.isNotEmpty()) {
+                    return Pair(result, alias)
+                }
             }
-        }
-        return Pair(emptyList(), currentVodKind)
-    }
-
-    /**
-     * Get series categories.
-     * CC: 2
-     */
-    suspend fun getSeriesCategories(): List<XtreamCategory> =
-        fetchCategories("get_series_categories")
-
-    /**
-     * Fetch categories for a given action.
-     * CC: 4 (parsing)
-     */
-    private suspend fun fetchCategories(action: String): List<XtreamCategory> =
-        withContext(io) {
-            val url = urlBuilder.playerApiUrl(action)
-            val body = fetchRaw(url) ?: return@withContext emptyList()
-            parseCategories(body, action)
+            return Pair(emptyList(), currentVodKind)
         }
 
-    /**
-     * Parse category JSON array.
-     * CC: 3
-     */
-    private fun parseCategories(body: String, action: String): List<XtreamCategory> {
-        return try {
-            val jsonElement = json.parseToJsonElement(body)
-            jsonElement.jsonArray.mapNotNull { element ->
-                val obj = element.jsonObject
-                XtreamCategory(
-                    categoryId = obj["category_id"]?.jsonPrimitive?.content,
-                    categoryName = obj["category_name"]?.jsonPrimitive?.content,
-                    parentId = obj["parent_id"]?.jsonPrimitive?.intOrNull,
-                )
+        /**
+         * Get series categories.
+         * CC: 2
+         */
+        suspend fun getSeriesCategories(): List<XtreamCategory> = fetchCategories("get_series_categories")
+
+        /**
+         * Fetch categories for a given action.
+         * CC: 4 (parsing)
+         */
+        private suspend fun fetchCategories(action: String): List<XtreamCategory> =
+            withContext(io) {
+                val url = urlBuilder.playerApiUrl(action)
+                val body = fetchRaw(url) ?: return@withContext emptyList()
+                parseCategories(body, action)
             }
-        } catch (e: Exception) {
-            UnifiedLog.w(TAG, e) { "Failed to parse categories for $action" }
-            emptyList()
-        }
-    }
 
-    /**
-     * Internal helper to fetch HTTP response using OkHttp directly.
-     *
-     * @param url The URL to fetch
-     * @return Response body as string, or null if request failed
-     */
-    private suspend fun fetchRaw(url: String): String? {
-        return try {
-            val request = Request.Builder().url(url).build()
-            okHttpClient.newCall(request).execute().use { response ->
-                if (!response.isSuccessful) null else response.body?.string()
+        /**
+         * Parse category JSON array.
+         * CC: 3
+         */
+        private fun parseCategories(
+            body: String,
+            action: String,
+        ): List<XtreamCategory> =
+            try {
+                val jsonElement = json.parseToJsonElement(body)
+                jsonElement.jsonArray.mapNotNull { element ->
+                    val obj = element.jsonObject
+                    XtreamCategory(
+                        categoryId = obj["category_id"]?.jsonPrimitive?.content,
+                        categoryName = obj["category_name"]?.jsonPrimitive?.content,
+                        parentId = obj["parent_id"]?.jsonPrimitive?.intOrNull,
+                    )
+                }
+            } catch (e: Exception) {
+                UnifiedLog.w(TAG, e) { "Failed to parse categories for $action" }
+                emptyList()
             }
-        } catch (_: IOException) {
-            null
-        }
+
+        /**
+         * Internal helper to fetch HTTP response using OkHttp directly.
+         *
+         * @param url The URL to fetch
+         * @return Response body as string, or null if request failed
+         */
+        private suspend fun fetchRaw(url: String): String? =
+            try {
+                val request = Request.Builder().url(url).build()
+                okHttpClient.newCall(request).execute().use { response ->
+                    if (!response.isSuccessful) null else response.body?.string()
+                }
+            } catch (_: IOException) {
+                null
+            }
     }
-}

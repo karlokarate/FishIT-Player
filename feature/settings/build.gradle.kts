@@ -23,10 +23,10 @@ android {
         val tgApiHashEnv = System.getenv("TG_API_HASH")
         val tgApiIdValue = tgApiIdEnv?.toIntOrNull() ?: 0
         val tgApiHashValue = tgApiHashEnv ?: ""
-        
+
         buildConfigField("int", "TG_API_ID", tgApiIdValue.toString())
         buildConfigField("String", "TG_API_HASH", "\"$tgApiHashValue\"")
-        
+
         // TMDB API key (from environment or gradle.properties)
         val tmdbApiKey =
             System.getenv("TMDB_API_KEY")
@@ -51,7 +51,6 @@ android {
         jvmTarget = "17"
     }
 
-
     buildFeatures {
         compose = true
         buildConfig = true
@@ -65,13 +64,13 @@ dependencies {
     implementation(project(":core:source-activation-api"))
     implementation(project(":core:catalog-sync"))
     implementation(project(":core:metadata-normalizer"))
-    implementation(project(":core:feature-api"))  // For TelegramAuthRepository
+    implementation(project(":core:feature-api")) // For TelegramAuthRepository
     implementation(project(":playback:domain"))
     implementation(project(":infra:logging"))
     implementation(project(":infra:cache"))
-    implementation(project(":infra:data-telegram"))  // For TelegramContentRepository
-    implementation(project(":infra:data-xtream"))  // For XtreamCatalogRepository, XtreamLiveRepository
-    implementation(project(":infra:transport-xtream"))  // For XtreamCredentialsStore
+    implementation(project(":infra:data-telegram")) // For TelegramContentRepository
+    implementation(project(":infra:data-xtream")) // For XtreamCatalogRepository, XtreamLiveRepository
+    implementation(project(":infra:transport-xtream")) // For XtreamCredentialsStore
 
     // Debug settings (for runtime toggles in DebugToolsControllerImpl - debug only)
     // This module is always included in debug builds for the runtime toggle infrastructure.

@@ -23,7 +23,6 @@ android {
         jvmTarget = "17"
     }
 
-
     buildFeatures {
         compose = true
         buildConfig = true
@@ -36,7 +35,7 @@ dependencies {
     implementation(project(":core:player-model"))
     implementation(project(":core:source-activation-api"))
     implementation(project(":core:catalog-sync"))
-    implementation(project(":core:persistence"))  // For HomeContentCache invalidation
+    implementation(project(":core:persistence")) // For HomeContentCache invalidation
     implementation(project(":core:ui-theme"))
     implementation(project(":core:ui-layout"))
     implementation(project(":core:ui-imaging"))
@@ -56,7 +55,7 @@ dependencies {
     implementation("androidx.compose.material:material-icons-extended")
     implementation("androidx.compose.ui:ui-tooling-preview")
     debugImplementation("androidx.compose.ui:ui-tooling")
-    
+
     // Paging 3 - horizontal row infinite scroll
     implementation("androidx.paging:paging-runtime-ktx:3.3.6")
     implementation("androidx.paging:paging-compose:3.3.6")

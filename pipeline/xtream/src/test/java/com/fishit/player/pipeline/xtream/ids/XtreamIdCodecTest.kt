@@ -15,7 +15,6 @@ import org.junit.Test
  * - Round-trip stability (format → parse → format = identical)
  */
 class XtreamIdCodecTest {
-
     // =========================================================================
     // VOD Format Tests
     // =========================================================================

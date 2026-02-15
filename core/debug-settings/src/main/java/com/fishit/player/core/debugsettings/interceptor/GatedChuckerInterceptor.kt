@@ -55,7 +55,7 @@ class GatedChuckerInterceptor
                 val appClass = Class.forName("android.app.ActivityThread")
                 val currentAppMethod = appClass.getMethod("currentApplication")
                 val context = currentAppMethod.invoke(null) as android.content.Context
-                
+
                 // Create ChuckerInterceptor via reflection
                 val builderClass = Class.forName("com.chuckerteam.chucker.api.ChuckerInterceptor\$Builder")
                 val constructor = builderClass.getConstructor(android.content.Context::class.java)

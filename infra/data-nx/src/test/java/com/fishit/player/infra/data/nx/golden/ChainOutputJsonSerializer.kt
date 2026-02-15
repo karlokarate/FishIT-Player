@@ -25,11 +25,11 @@ import kotlinx.serialization.json.put
  */
 @OptIn(kotlinx.serialization.ExperimentalSerializationApi::class)
 object ChainOutputJsonSerializer {
-
-    private val json = Json {
-        prettyPrint = true
-        prettyPrintIndent = "  "
-    }
+    private val json =
+        Json {
+            prettyPrint = true
+            prettyPrintIndent = "  "
+        }
 
     /**
      * Serialize the full chain output to a composite JSON object.
@@ -38,13 +38,14 @@ object ChainOutputJsonSerializer {
         work: NxWorkRepository.Work,
         sourceRef: NxWorkSourceRefRepository.SourceRef,
         variant: NxWorkVariantRepository.Variant?,
-    ): JsonElement = buildJsonObject {
-        put("work", workToJson(work))
-        put("sourceRef", sourceRefToJson(sourceRef))
-        if (variant != null) {
-            put("variant", variantToJson(variant))
+    ): JsonElement =
+        buildJsonObject {
+            put("work", workToJson(work))
+            put("sourceRef", sourceRefToJson(sourceRef))
+            if (variant != null) {
+                put("variant", variantToJson(variant))
+            }
         }
-    }
 
     fun toJsonString(
         work: NxWorkRepository.Work,
@@ -58,130 +59,149 @@ object ChainOutputJsonSerializer {
     // Work serialization (same fields as WorkJsonSerializer, timestamps excluded)
     // =========================================================================
 
-    private fun workToJson(work: NxWorkRepository.Work): JsonElement = buildJsonObject {
-        // Identity
-        put("workKey", work.workKey)
-        put("type", work.type.name)
-        put("displayTitle", work.displayTitle)
-        put("sortTitle", work.sortTitle)
-        put("titleNormalized", work.titleNormalized)
+    private fun workToJson(work: NxWorkRepository.Work): JsonElement =
+        buildJsonObject {
+            // Identity
+            put("workKey", work.workKey)
+            put("type", work.type.name)
+            put("displayTitle", work.displayTitle)
+            put("sortTitle", work.sortTitle)
+            put("titleNormalized", work.titleNormalized)
 
-        // Content
-        putNullableInt("year", work.year)
-        putNullableInt("season", work.season)
-        putNullableInt("episode", work.episode)
-        putNullableLong("runtimeMs", work.runtimeMs)
+            // Content
+            putNullableInt("year", work.year)
+            putNullableInt("season", work.season)
+            putNullableInt("episode", work.episode)
+            putNullableLong("runtimeMs", work.runtimeMs)
 
-        // Imaging
-        putNullableString("poster", work.poster.toSerializedString())
-        putNullableString("backdrop", work.backdrop.toSerializedString())
-        putNullableString("thumbnail", work.thumbnail.toSerializedString())
+            // Imaging
+            putNullableString("poster", work.poster.toSerializedString())
+            putNullableString("backdrop", work.backdrop.toSerializedString())
+            putNullableString("thumbnail", work.thumbnail.toSerializedString())
 
-        // Rich metadata
-        putNullableDouble("rating", work.rating)
-        putNullableString("genres", work.genres)
-        putNullableString("plot", work.plot)
-        putNullableString("director", work.director)
-        putNullableString("cast", work.cast)
-        putNullableString("trailer", work.trailer)
-        putNullableString("releaseDate", work.releaseDate)
+            // Rich metadata
+            putNullableDouble("rating", work.rating)
+            putNullableString("genres", work.genres)
+            putNullableString("plot", work.plot)
+            putNullableString("director", work.director)
+            putNullableString("cast", work.cast)
+            putNullableString("trailer", work.trailer)
+            putNullableString("releaseDate", work.releaseDate)
 
-        // External IDs
-        putNullableString("tmdbId", work.tmdbId)
-        putNullableString("imdbId", work.imdbId)
-        putNullableString("tvdbId", work.tvdbId)
+            // External IDs
+            putNullableString("tmdbId", work.tmdbId)
+            putNullableString("imdbId", work.imdbId)
+            putNullableString("tvdbId", work.tvdbId)
 
-        // Classification
-        put("isAdult", work.isAdult)
-        put("recognitionState", work.recognitionState.name)
-        put("isDeleted", work.isDeleted)
-    }
+            // Classification
+            put("isAdult", work.isAdult)
+            put("recognitionState", work.recognitionState.name)
+            put("isDeleted", work.isDeleted)
+        }
 
     // =========================================================================
     // SourceRef serialization (timestamps excluded)
     // =========================================================================
 
-    private fun sourceRefToJson(ref: NxWorkSourceRefRepository.SourceRef): JsonElement = buildJsonObject {
-        // Keys
-        put("sourceKey", ref.sourceKey)
-        put("workKey", ref.workKey)
+    private fun sourceRefToJson(ref: NxWorkSourceRefRepository.SourceRef): JsonElement =
+        buildJsonObject {
+            // Keys
+            put("sourceKey", ref.sourceKey)
+            put("workKey", ref.workKey)
 
-        // Source identity
-        put("sourceType", ref.sourceType.name)
-        put("accountKey", ref.accountKey)
-        put("sourceItemKind", ref.sourceItemKind.name)
-        put("sourceItemKey", ref.sourceItemKey)
-        putNullableString("sourceTitle", ref.sourceTitle)
+            // Source identity
+            put("sourceType", ref.sourceType.name)
+            put("accountKey", ref.accountKey)
+            put("sourceItemKind", ref.sourceItemKind.name)
+            put("sourceItemKey", ref.sourceItemKey)
+            putNullableString("sourceTitle", ref.sourceTitle)
 
-        // Availability
-        put("availability", ref.availability.name)
-        putNullableString("note", ref.note)
+            // Availability
+            put("availability", ref.availability.name)
+            putNullableString("note", ref.note)
 
-        // Source timing
-        putNullableLong("sourceLastModifiedMs", ref.sourceLastModifiedMs)
+            // Source timing
+            putNullableLong("sourceLastModifiedMs", ref.sourceLastModifiedMs)
 
-        // Live-specific fields
-        putNullableString("epgChannelId", ref.epgChannelId)
-        put("tvArchive", ref.tvArchive)
-        put("tvArchiveDuration", ref.tvArchiveDuration)
-    }
+            // Live-specific fields
+            putNullableString("epgChannelId", ref.epgChannelId)
+            put("tvArchive", ref.tvArchive)
+            put("tvArchiveDuration", ref.tvArchiveDuration)
+        }
 
     // =========================================================================
     // Variant serialization (timestamps excluded)
     // =========================================================================
 
-    private fun variantToJson(v: NxWorkVariantRepository.Variant): JsonElement = buildJsonObject {
-        // Keys
-        put("variantKey", v.variantKey)
-        put("workKey", v.workKey)
-        put("sourceKey", v.sourceKey)
+    private fun variantToJson(v: NxWorkVariantRepository.Variant): JsonElement =
+        buildJsonObject {
+            // Keys
+            put("variantKey", v.variantKey)
+            put("workKey", v.workKey)
+            put("sourceKey", v.sourceKey)
 
-        // Properties
-        putNullableString("label", v.label)
-        put("isDefault", v.isDefault)
-        putNullableString("container", v.container)
-        putNullableLong("durationMs", v.durationMs)
+            // Properties
+            putNullableString("label", v.label)
+            put("isDefault", v.isDefault)
+            putNullableString("container", v.container)
+            putNullableLong("durationMs", v.durationMs)
 
-        // Quality info
-        putNullableInt("qualityHeight", v.qualityHeight)
-        putNullableInt("bitrateKbps", v.bitrateKbps)
-        putNullableString("videoCodec", v.videoCodec)
-        putNullableString("audioCodec", v.audioCodec)
-        putNullableString("audioLang", v.audioLang)
+            // Quality info
+            putNullableInt("qualityHeight", v.qualityHeight)
+            putNullableInt("bitrateKbps", v.bitrateKbps)
+            putNullableString("videoCodec", v.videoCodec)
+            putNullableString("audioCodec", v.audioCodec)
+            putNullableString("audioLang", v.audioLang)
 
-        // Playback hints (sorted alphabetically for determinism)
-        put("playbackHints", buildJsonObject {
-            v.playbackHints.toSortedMap().forEach { (k, value) ->
-                put(k, value)
-            }
-        })
-    }
+            // Playback hints (sorted alphabetically for determinism)
+            put(
+                "playbackHints",
+                buildJsonObject {
+                    v.playbackHints.toSortedMap().forEach { (k, value) ->
+                        put(k, value)
+                    }
+                },
+            )
+        }
 
     // =========================================================================
     // Nullable helpers
     // =========================================================================
 
-    private fun kotlinx.serialization.json.JsonObjectBuilder.putNullableString(key: String, value: String?) {
+    private fun kotlinx.serialization.json.JsonObjectBuilder.putNullableString(
+        key: String,
+        value: String?,
+    ) {
         if (value != null) put(key, value) else put(key, JsonNull)
     }
 
-    private fun kotlinx.serialization.json.JsonObjectBuilder.putNullableInt(key: String, value: Int?) {
+    private fun kotlinx.serialization.json.JsonObjectBuilder.putNullableInt(
+        key: String,
+        value: Int?,
+    ) {
         if (value != null) put(key, value) else put(key, JsonNull)
     }
 
-    private fun kotlinx.serialization.json.JsonObjectBuilder.putNullableLong(key: String, value: Long?) {
+    private fun kotlinx.serialization.json.JsonObjectBuilder.putNullableLong(
+        key: String,
+        value: Long?,
+    ) {
         if (value != null) put(key, value) else put(key, JsonNull)
     }
 
-    private fun kotlinx.serialization.json.JsonObjectBuilder.putNullableDouble(key: String, value: Double?) {
+    private fun kotlinx.serialization.json.JsonObjectBuilder.putNullableDouble(
+        key: String,
+        value: Double?,
+    ) {
         if (value != null) put(key, JsonPrimitive(value)) else put(key, JsonNull)
     }
 
-    private fun ImageRef?.toSerializedString(): String? = when (this) {
-        is ImageRef.Http -> url
-        is ImageRef.TelegramThumb -> "tg:${remoteId}"
-        is ImageRef.LocalFile -> "file:${path}"
-        is ImageRef.InlineBytes -> "inline:${bytes.size}bytes"
-        null -> null
-    }
+    private fun ImageRef?.toSerializedString(): String? =
+        when (this) {
+            is ImageRef.Http -> url
+            is ImageRef.TelegramThumb -> "tg:$remoteId"
+            is ImageRef.LocalFile -> "file:$path"
+            is ImageRef.InlineBytes -> "inline:${bytes.size}bytes"
+            null -> null
+        }
 }

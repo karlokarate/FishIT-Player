@@ -2,6 +2,7 @@ package com.fishit.player.core.persistence.paging
 
 import androidx.paging.PagingSource
 import androidx.paging.PagingState
+import com.fishit.player.infra.logging.UnifiedLog
 import io.objectbox.query.Query
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -34,25 +35,29 @@ class ObjectBoxPagingSource<T, R : Any>(
     private val queryFactory: () -> Query<T>,
     private val mapper: (T) -> R?,
 ) : PagingSource<Int, R>() {
-
-    override suspend fun load(params: LoadParams<Int>): LoadResult<Int, R> {
-        return try {
+    override suspend fun load(params: LoadParams<Int>): LoadResult<Int, R> =
+        try {
             // Use offset-based pagination (key = offset, not page number)
             // This correctly handles initialLoadSize != pageSize
             val offset = params.key ?: 0
             val loadSize = params.loadSize
 
-            val items = withContext(Dispatchers.IO) {
-                val query = queryFactory()
-                val results = query.find(offset.toLong(), loadSize.toLong())
-                    .mapNotNull(mapper)
+            val items =
+                withContext(Dispatchers.IO) {
+                    val query = queryFactory()
+                    val results =
+                        query
+                            .find(offset.toLong(), loadSize.toLong())
+                            .mapNotNull(mapper)
 
-                // DEBUG: Log query execution
-                android.util.Log.d("ObjectBoxPagingSource",
-                    "🔍 DB Query: offset=$offset loadSize=$loadSize → results=${results.size}")
+                    // DEBUG: Log query execution
+                    UnifiedLog.d(
+                        "ObjectBoxPagingSource",
+                        "🔍 DB Query: offset=$offset loadSize=$loadSize → results=${results.size}",
+                    )
 
-                results
-            }
+                    results
+                }
 
             // Calculate prev/next keys as offsets
             val prevKey = if (offset > 0) maxOf(0, offset - loadSize) else null
@@ -67,10 +72,9 @@ class ObjectBoxPagingSource<T, R : Any>(
                 itemsAfter = LoadResult.Page.COUNT_UNDEFINED,
             )
         } catch (e: Exception) {
-            android.util.Log.e("ObjectBoxPagingSource", "❌ DB Query ERROR: ${e.message}", e)
+            UnifiedLog.e("ObjectBoxPagingSource", "❌ DB Query ERROR: ${e.message}", e)
             LoadResult.Error(e)
         }
-    }
 
     override fun getRefreshKey(state: PagingState<Int, R>): Int? {
         // Return the offset closest to the anchor position for refresh
@@ -100,19 +104,21 @@ data class ObjectBoxPagingConfig(
     companion object {
         /** Default config for library browsing (50 items/page) */
         val DEFAULT = ObjectBoxPagingConfig()
-        
+
         /** Config for grids with larger tiles (30 items/page) */
-        val GRID = ObjectBoxPagingConfig(
-            pageSize = 30,
-            prefetchDistance = 30,
-            initialLoadSize = 90,
-        )
-        
+        val GRID =
+            ObjectBoxPagingConfig(
+                pageSize = 30,
+                prefetchDistance = 30,
+                initialLoadSize = 90,
+            )
+
         /** Config for lists with smaller items (100 items/page) */
-        val LIST = ObjectBoxPagingConfig(
-            pageSize = 100,
-            prefetchDistance = 50,
-            initialLoadSize = 200,
-        )
+        val LIST =
+            ObjectBoxPagingConfig(
+                pageSize = 100,
+                prefetchDistance = 50,
+                initialLoadSize = 200,
+            )
     }
 }

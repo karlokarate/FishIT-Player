@@ -338,7 +338,7 @@ class DebugViewModel
         }
 
         /** Observe real logs from LogBufferProvider.
-         * 
+         *
          * **Performance:** Limited to 50 entries to reduce UI rendering load.
          * Debouncing is handled by LogBufferProvider.
          */

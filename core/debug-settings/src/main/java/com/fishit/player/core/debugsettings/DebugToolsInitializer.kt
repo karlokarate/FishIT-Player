@@ -86,26 +86,28 @@ class DebugToolsInitializer
             try {
                 val appWatcherClass = Class.forName("leakcanary.AppWatcher")
                 val leakCanaryClass = Class.forName("leakcanary.LeakCanary")
-                
+
                 // Get current configs
                 val appWatcherConfigField = appWatcherClass.getField("config")
                 val leakCanaryConfigField = leakCanaryClass.getField("config")
-                
+
                 val currentAppWatcherConfig = appWatcherConfigField.get(null)
                 val currentLeakCanaryConfig = leakCanaryConfigField.get(null)
-                
+
                 val appWatcherConfigClass = currentAppWatcherConfig.javaClass
                 val leakCanaryConfigClass = currentLeakCanaryConfig.javaClass
 
                 if (enabled) {
                     // Enable watchers
-                    val copyMethod = appWatcherConfigClass.getMethod("copy", 
-                        Boolean::class.java, // watchActivities
-                        Boolean::class.java, // watchFragments
-                        Boolean::class.java, // watchFragmentViews
-                        Boolean::class.java, // watchViewModels
-                        Boolean::class.java  // enabled
-                    )
+                    val copyMethod =
+                        appWatcherConfigClass.getMethod(
+                            "copy",
+                            Boolean::class.java, // watchActivities
+                            Boolean::class.java, // watchFragments
+                            Boolean::class.java, // watchFragmentViews
+                            Boolean::class.java, // watchViewModels
+                            Boolean::class.java, // enabled
+                        )
                     val newConfig = copyMethod.invoke(currentAppWatcherConfig, true, true, true, true, true)
                     appWatcherConfigField.set(null, newConfig)
 
@@ -116,13 +118,15 @@ class DebugToolsInitializer
                     UnifiedLog.i(TAG) { "LeakCanary ENABLED (watchers active, heap dumps allowed)" }
                 } else {
                     // Disable watchers
-                    val copyMethod = appWatcherConfigClass.getMethod("copy", 
-                        Boolean::class.java, // watchActivities
-                        Boolean::class.java, // watchFragments
-                        Boolean::class.java, // watchFragmentViews
-                        Boolean::class.java, // watchViewModels
-                        Boolean::class.java  // enabled
-                    )
+                    val copyMethod =
+                        appWatcherConfigClass.getMethod(
+                            "copy",
+                            Boolean::class.java, // watchActivities
+                            Boolean::class.java, // watchFragments
+                            Boolean::class.java, // watchFragmentViews
+                            Boolean::class.java, // watchViewModels
+                            Boolean::class.java, // enabled
+                        )
                     val newConfig = copyMethod.invoke(currentAppWatcherConfig, false, false, false, false, false)
                     appWatcherConfigField.set(null, newConfig)
 

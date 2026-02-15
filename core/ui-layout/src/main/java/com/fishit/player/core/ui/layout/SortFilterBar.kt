@@ -53,9 +53,10 @@ fun SortFilterBar(
     var showFilterSheet by remember { mutableStateOf(false) }
 
     Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp),
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -76,11 +77,12 @@ fun SortFilterBar(
                     modifier = Modifier.size(18.dp),
                 )
             },
-            colors = FilterChipDefaults.filterChipColors(
-                selectedContainerColor = MaterialTheme.colorScheme.secondaryContainer,
-                selectedLabelColor = MaterialTheme.colorScheme.onSecondaryContainer,
-                selectedLeadingIconColor = MaterialTheme.colorScheme.onSecondaryContainer,
-            ),
+            colors =
+                FilterChipDefaults.filterChipColors(
+                    selectedContainerColor = MaterialTheme.colorScheme.secondaryContainer,
+                    selectedLabelColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                    selectedLeadingIconColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                ),
         )
 
         // Filter chip with badge
@@ -114,11 +116,12 @@ fun SortFilterBar(
                         modifier = Modifier.size(18.dp),
                     )
                 },
-                colors = FilterChipDefaults.filterChipColors(
-                    selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
-                    selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                    selectedLeadingIconColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                ),
+                colors =
+                    FilterChipDefaults.filterChipColors(
+                        selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                        selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                        selectedLeadingIconColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                    ),
             )
         }
     }

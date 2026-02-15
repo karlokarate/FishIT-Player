@@ -304,7 +304,10 @@ interface NxWorkRepository {
      * @param enrichment Enrichment data (only enrichable fields, all optional)
      * @return Updated work, or null if workKey doesn't exist
      */
-    suspend fun enrichIfAbsent(workKey: String, enrichment: Enrichment): Work?
+    suspend fun enrichIfAbsent(
+        workKey: String,
+        enrichment: Enrichment,
+    ): Work?
 
     /**
      * Enrich an existing work with metadata from a detail info API call
@@ -328,7 +331,10 @@ interface NxWorkRepository {
      * @param enrichment Enrichment data from detail info API
      * @return Updated work, or null if workKey doesn't exist
      */
-    suspend fun enrichFromDetail(workKey: String, enrichment: Enrichment): Work?
+    suspend fun enrichFromDetail(
+        workKey: String,
+        enrichment: Enrichment,
+    ): Work?
 
     /**
      * Batch version of [enrichIfAbsent] — enriches multiple works in a single DB operation.
@@ -341,7 +347,10 @@ interface NxWorkRepository {
      * @param enrichment Enrichment data (applied identically to all works)
      * @return Number of works actually enriched
      */
-    suspend fun enrichIfAbsentBatch(workKeys: List<String>, enrichment: Enrichment): Int
+    suspend fun enrichIfAbsentBatch(
+        workKeys: List<String>,
+        enrichment: Enrichment,
+    ): Int
 
     suspend fun upsertBatch(works: List<Work>): List<Work>
 
@@ -358,22 +367,23 @@ interface NxWorkRepository {
  * Work (e.g., from [WorkEntityBuilder.build]) to pass into [NxWorkRepository.enrichIfAbsent]
  * or [NxWorkRepository.enrichFromDetail].
  */
-fun NxWorkRepository.Work.toEnrichment(): NxWorkRepository.Enrichment = NxWorkRepository.Enrichment(
-    season = season,
-    episode = episode,
-    runtimeMs = runtimeMs,
-    poster = poster,
-    backdrop = backdrop,
-    thumbnail = thumbnail,
-    rating = rating,
-    genres = genres,
-    plot = plot,
-    director = director,
-    cast = cast,
-    trailer = trailer,
-    releaseDate = releaseDate,
-    tmdbId = tmdbId,
-    imdbId = imdbId,
-    tvdbId = tvdbId,
-    recognitionState = recognitionState,
-)
+fun NxWorkRepository.Work.toEnrichment(): NxWorkRepository.Enrichment =
+    NxWorkRepository.Enrichment(
+        season = season,
+        episode = episode,
+        runtimeMs = runtimeMs,
+        poster = poster,
+        backdrop = backdrop,
+        thumbnail = thumbnail,
+        rating = rating,
+        genres = genres,
+        plot = plot,
+        director = director,
+        cast = cast,
+        trailer = trailer,
+        releaseDate = releaseDate,
+        tmdbId = tmdbId,
+        imdbId = imdbId,
+        tvdbId = tvdbId,
+        recognitionState = recognitionState,
+    )

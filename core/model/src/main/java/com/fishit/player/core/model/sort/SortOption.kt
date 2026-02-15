@@ -42,25 +42,27 @@ enum class SortField {
      * TITLE/GENRE default to ascending, others to descending.
      */
     val defaultDirection: SortDirection
-        get() = when (this) {
-            TITLE, GENRE -> SortDirection.ASCENDING
-            YEAR, RATING, RECENTLY_ADDED, RECENTLY_UPDATED, DURATION -> SortDirection.DESCENDING
-        }
+        get() =
+            when (this) {
+                TITLE, GENRE -> SortDirection.ASCENDING
+                YEAR, RATING, RECENTLY_ADDED, RECENTLY_UPDATED, DURATION -> SortDirection.DESCENDING
+            }
 
     /**
      * Display name resource key for UI.
      * Implementation should map this to localized strings.
      */
     val displayKey: String
-        get() = when (this) {
-            TITLE -> "sort_title"
-            YEAR -> "sort_year"
-            RATING -> "sort_rating"
-            RECENTLY_ADDED -> "sort_recently_added"
-            RECENTLY_UPDATED -> "sort_recently_updated"
-            DURATION -> "sort_duration"
-            GENRE -> "sort_genre"
-        }
+        get() =
+            when (this) {
+                TITLE -> "sort_title"
+                YEAR -> "sort_year"
+                RATING -> "sort_rating"
+                RECENTLY_ADDED -> "sort_recently_added"
+                RECENTLY_UPDATED -> "sort_recently_updated"
+                DURATION -> "sort_duration"
+                GENRE -> "sort_genre"
+            }
 }
 
 /**
@@ -89,31 +91,36 @@ data class SortOption(
         val RECENTLY_ADDED = SortOption(SortField.RECENTLY_ADDED, SortDirection.DESCENDING)
 
         /** Get available sort fields for a content type */
-        fun availableFieldsFor(contentType: ContentType): List<SortField> = when (contentType) {
-            ContentType.MOVIE -> listOf(
-                SortField.TITLE,
-                SortField.YEAR,
-                SortField.RATING,
-                SortField.RECENTLY_ADDED,
-                SortField.DURATION,
-                SortField.GENRE,
-            )
-            ContentType.SERIES -> listOf(
-                SortField.TITLE,
-                SortField.YEAR,
-                SortField.RATING,
-                SortField.RECENTLY_UPDATED,
-                SortField.GENRE,
-            )
-            ContentType.EPISODE -> listOf(
-                SortField.TITLE,
-                SortField.RECENTLY_ADDED,
-            )
-            ContentType.LIVE_CHANNEL -> listOf(
-                SortField.TITLE,
-                SortField.RECENTLY_UPDATED,
-            )
-            ContentType.ALL -> SortField.entries
-        }
+        fun availableFieldsFor(contentType: ContentType): List<SortField> =
+            when (contentType) {
+                ContentType.MOVIE ->
+                    listOf(
+                        SortField.TITLE,
+                        SortField.YEAR,
+                        SortField.RATING,
+                        SortField.RECENTLY_ADDED,
+                        SortField.DURATION,
+                        SortField.GENRE,
+                    )
+                ContentType.SERIES ->
+                    listOf(
+                        SortField.TITLE,
+                        SortField.YEAR,
+                        SortField.RATING,
+                        SortField.RECENTLY_UPDATED,
+                        SortField.GENRE,
+                    )
+                ContentType.EPISODE ->
+                    listOf(
+                        SortField.TITLE,
+                        SortField.RECENTLY_ADDED,
+                    )
+                ContentType.LIVE_CHANNEL ->
+                    listOf(
+                        SortField.TITLE,
+                        SortField.RECENTLY_UPDATED,
+                    )
+                ContentType.ALL -> SortField.entries
+            }
     }
 }

@@ -11,25 +11,26 @@ import com.fishit.player.infra.data.nx.mapper.base.PlaybackHintsDecoder
 /**
  * Converts NX_WorkVariant entity to Variant domain model.
  */
-fun NX_WorkVariant.toDomain(): Variant = Variant(
-    variantKey = variantKey,
-    workKey = workKey.ifEmpty { work.target?.workKey ?: "" },
-    sourceKey = sourceKey,
-    label = buildLabel(),
-    isDefault = qualityTag == "source",
-    qualityHeight = height,
-    qualityWidth = width,
-    bitrateKbps = bitrateBps?.let { (it / 1000).toInt() },
-    container = containerFormat,
-    videoCodec = videoCodec,
-    audioCodec = audioCodec,
-    audioLang = languageTag.takeIf { it != "original" },
-    durationMs = null, // Entity doesn't store duration
-    playbackHints = PlaybackHintsDecoder.decodeFromVariant(this),
-    createdAtMs = createdAt,
-    updatedAtMs = createdAt, // Entity only has createdAt
-    lastVerifiedAtMs = null,
-)
+fun NX_WorkVariant.toDomain(): Variant =
+    Variant(
+        variantKey = variantKey,
+        workKey = workKey.ifEmpty { work.target?.workKey ?: "" },
+        sourceKey = sourceKey,
+        label = buildLabel(),
+        isDefault = qualityTag == "source",
+        qualityHeight = height,
+        qualityWidth = width,
+        bitrateKbps = bitrateBps?.let { (it / 1000).toInt() },
+        container = containerFormat,
+        videoCodec = videoCodec,
+        audioCodec = audioCodec,
+        audioLang = languageTag.takeIf { it != "original" },
+        durationMs = null, // Entity doesn't store duration
+        playbackHints = PlaybackHintsDecoder.decodeFromVariant(this),
+        createdAtMs = createdAt,
+        updatedAtMs = createdAt, // Entity only has createdAt
+        lastVerifiedAtMs = null,
+    )
 
 /**
  * Converts Variant domain model to NX_WorkVariant entity.

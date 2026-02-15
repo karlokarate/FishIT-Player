@@ -14,7 +14,6 @@ import kotlin.test.assertEquals
  * - Live: xtream:live:{id}
  */
 class XtreamIdCodecIntegrationTest {
-
     @Test
     fun `CODEC - VOD format`() {
         assertEquals("xtream:vod:123", XtreamIdCodec.vod(123))
@@ -51,15 +50,15 @@ class XtreamIdCodecIntegrationTest {
     fun `CODEC - Episode composite format`() {
         assertEquals(
             "xtream:episode:series:100:s2:e5",
-            XtreamIdCodec.episodeComposite(seriesId = 100, season = 2, episodeNum = 5)
+            XtreamIdCodec.episodeComposite(seriesId = 100, season = 2, episodeNum = 5),
         )
         assertEquals(
             "xtream:episode:series:1:s1:e1",
-            XtreamIdCodec.episodeComposite(seriesId = 1, season = 1, episodeNum = 1)
+            XtreamIdCodec.episodeComposite(seriesId = 1, season = 1, episodeNum = 1),
         )
         assertEquals(
             "xtream:episode:series:999:s10:e25",
-            XtreamIdCodec.episodeComposite(seriesId = 999, season = 10, episodeNum = 25)
+            XtreamIdCodec.episodeComposite(seriesId = 999, season = 10, episodeNum = 25),
         )
         println("  ✅ XtreamIdCodec.episodeComposite() format verified")
     }

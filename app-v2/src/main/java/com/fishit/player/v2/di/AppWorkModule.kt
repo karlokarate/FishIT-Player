@@ -62,5 +62,4 @@ object AppWorkModule {
         @ApplicationContext context: Context,
         tmdbConfigProvider: com.fishit.player.core.metadata.tmdb.TmdbConfigProvider,
     ): TmdbEnrichmentScheduler = TmdbEnrichmentSchedulerImpl(context, tmdbConfigProvider)
-
 }

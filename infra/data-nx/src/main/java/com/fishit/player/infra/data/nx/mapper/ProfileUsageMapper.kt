@@ -39,7 +39,7 @@ private fun epochDayToDate(epochDay: Int): String {
         "%04d-%02d-%02d",
         cal.get(java.util.Calendar.YEAR),
         cal.get(java.util.Calendar.MONTH) + 1,
-        cal.get(java.util.Calendar.DAY_OF_MONTH)
+        cal.get(java.util.Calendar.DAY_OF_MONTH),
     )
 }
 

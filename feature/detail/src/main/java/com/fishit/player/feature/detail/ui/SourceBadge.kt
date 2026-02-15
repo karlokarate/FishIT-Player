@@ -607,7 +607,8 @@ fun ResumeApproximationNotice(
 }
 
 private fun formatFileSize(bytes: Long): String =
-    com.fishit.player.core.model.util.FileSizeFormatter.format(bytes)
+    com.fishit.player.core.model.util.FileSizeFormatter
+        .format(bytes)
 
 private fun formatDuration(ms: Long): String {
     val totalSeconds = ms / 1000

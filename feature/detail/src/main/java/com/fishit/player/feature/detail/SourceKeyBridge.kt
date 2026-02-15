@@ -24,7 +24,6 @@ import com.fishit.player.core.model.SourceType
  * @see PlayMediaUseCase.buildPlaybackContext
  */
 internal object SourceKeyBridge {
-
     /**
      * Extract [SourceType] from a sourceKey/sourceId string.
      *
@@ -36,13 +35,14 @@ internal object SourceKeyBridge {
         if (parts.isEmpty()) return null
 
         // Determine format and extract sourceType candidate
-        val sourceTypeCandidate = when {
-            // NX format: src:xtream:account:... → index 1
-            parts.size >= 2 && parts[0] == "src" -> parts[1]
-            // Legacy format: xtream:vod:... → index 0
-            parts.isNotEmpty() -> parts[0]
-            else -> return null
-        }
+        val sourceTypeCandidate =
+            when {
+                // NX format: src:xtream:account:... → index 1
+                parts.size >= 2 && parts[0] == "src" -> parts[1]
+                // Legacy format: xtream:vod:... → index 0
+                parts.isNotEmpty() -> parts[0]
+                else -> return null
+            }
 
         // Map to SourceType enum
         return when (sourceTypeCandidate.lowercase()) {

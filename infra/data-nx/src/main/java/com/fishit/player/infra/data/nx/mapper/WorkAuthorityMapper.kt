@@ -19,20 +19,22 @@ internal fun parseAuthorityKey(authorityKey: String): AuthorityKeyParts? {
     val parts = authorityKey.split(":")
     if (parts.size < 3) return null
 
-    val authorityType = when (parts[0].lowercase()) {
-        "tmdb" -> NxWorkAuthorityRepository.AuthorityType.TMDB
-        "imdb" -> NxWorkAuthorityRepository.AuthorityType.IMDB
-        "tvdb" -> NxWorkAuthorityRepository.AuthorityType.TVDB
-        "musicbrainz" -> NxWorkAuthorityRepository.AuthorityType.MUSICBRAINZ
-        else -> NxWorkAuthorityRepository.AuthorityType.UNKNOWN
-    }
+    val authorityType =
+        when (parts[0].lowercase()) {
+            "tmdb" -> NxWorkAuthorityRepository.AuthorityType.TMDB
+            "imdb" -> NxWorkAuthorityRepository.AuthorityType.IMDB
+            "tvdb" -> NxWorkAuthorityRepository.AuthorityType.TVDB
+            "musicbrainz" -> NxWorkAuthorityRepository.AuthorityType.MUSICBRAINZ
+            else -> NxWorkAuthorityRepository.AuthorityType.UNKNOWN
+        }
 
-    val namespace = when (parts[1].lowercase()) {
-        "movie" -> NxWorkAuthorityRepository.Namespace.MOVIE
-        "tv" -> NxWorkAuthorityRepository.Namespace.TV
-        "episode" -> NxWorkAuthorityRepository.Namespace.EPISODE
-        else -> NxWorkAuthorityRepository.Namespace.UNKNOWN
-    }
+    val namespace =
+        when (parts[1].lowercase()) {
+            "movie" -> NxWorkAuthorityRepository.Namespace.MOVIE
+            "tv" -> NxWorkAuthorityRepository.Namespace.TV
+            "episode" -> NxWorkAuthorityRepository.Namespace.EPISODE
+            else -> NxWorkAuthorityRepository.Namespace.UNKNOWN
+        }
 
     val authorityId = parts.drop(2).joinToString(":")
 

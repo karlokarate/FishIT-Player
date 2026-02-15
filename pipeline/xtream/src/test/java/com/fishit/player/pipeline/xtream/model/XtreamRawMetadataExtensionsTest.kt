@@ -196,14 +196,15 @@ class XtreamRawMetadataExtensionsTest {
     @Test
     fun `BUG FIX - Episode sets lastModifiedTimestamp from added`() {
         val addedTimestamp = 1704067200000L
-        val episode = XtreamEpisode(
-            id = 1,
-            seriesId = 2,
-            seasonNumber = 1,
-            episodeNumber = 1,
-            title = "Test",
-            added = addedTimestamp,
-        )
+        val episode =
+            XtreamEpisode(
+                id = 1,
+                seriesId = 2,
+                seasonNumber = 1,
+                episodeNumber = 1,
+                title = "Test",
+                added = addedTimestamp,
+            )
 
         val raw = episode.toRawMediaMetadata()
 
@@ -233,14 +234,15 @@ class XtreamRawMetadataExtensionsTest {
 
     @Test
     fun `BUG FIX - Episode with seriesTmdbId sets ExternalIds tmdb`() {
-        val episode = XtreamEpisode(
-            id = 789,
-            seriesId = 456,
-            seasonNumber = 1,
-            episodeNumber = 5,
-            title = "Gray Matter",
-            seriesTmdbId = 1396, // Breaking Bad TMDB ID
-        )
+        val episode =
+            XtreamEpisode(
+                id = 789,
+                seriesId = 456,
+                seasonNumber = 1,
+                episodeNumber = 5,
+                title = "Gray Matter",
+                seriesTmdbId = 1396, // Breaking Bad TMDB ID
+            )
 
         val raw = episode.toRawMediaMetadata()
 
@@ -254,14 +256,15 @@ class XtreamRawMetadataExtensionsTest {
 
     @Test
     fun `BUG FIX - Episode with seriesImdbId sets ExternalIds imdbId`() {
-        val episode = XtreamEpisode(
-            id = 789,
-            seriesId = 456,
-            seasonNumber = 1,
-            episodeNumber = 5,
-            title = "Gray Matter",
-            seriesImdbId = "tt0903747", // Breaking Bad IMDB ID
-        )
+        val episode =
+            XtreamEpisode(
+                id = 789,
+                seriesId = 456,
+                seasonNumber = 1,
+                episodeNumber = 5,
+                title = "Gray Matter",
+                seriesImdbId = "tt0903747", // Breaking Bad IMDB ID
+            )
 
         val raw = episode.toRawMediaMetadata()
 
@@ -270,15 +273,16 @@ class XtreamRawMetadataExtensionsTest {
 
     @Test
     fun `BUG FIX - Episode with both seriesTmdbId and seriesImdbId sets both`() {
-        val episode = XtreamEpisode(
-            id = 789,
-            seriesId = 456,
-            seasonNumber = 1,
-            episodeNumber = 5,
-            title = "Gray Matter",
-            seriesTmdbId = 1396,
-            seriesImdbId = "tt0903747",
-        )
+        val episode =
+            XtreamEpisode(
+                id = 789,
+                seriesId = 456,
+                seasonNumber = 1,
+                episodeNumber = 5,
+                title = "Gray Matter",
+                seriesTmdbId = 1396,
+                seriesImdbId = "tt0903747",
+            )
 
         val raw = episode.toRawMediaMetadata()
 

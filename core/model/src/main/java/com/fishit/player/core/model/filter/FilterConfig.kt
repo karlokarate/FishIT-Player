@@ -127,31 +127,35 @@ data class FilterConfig(
 
     /** Check if adult content should be hidden */
     val hideAdult: Boolean
-        get() = criteria
-            .filterIsInstance<FilterCriterion.HideAdult>()
-            .any { it.isActive }
+        get() =
+            criteria
+                .filterIsInstance<FilterCriterion.HideAdult>()
+                .any { it.isActive }
 
     /** Get excluded genres */
     val excludedGenres: Set<String>
-        get() = criteria
-            .filterIsInstance<FilterCriterion.GenreExclude>()
-            .filter { it.isActive }
-            .flatMap { it.genres }
-            .toSet()
+        get() =
+            criteria
+                .filterIsInstance<FilterCriterion.GenreExclude>()
+                .filter { it.isActive }
+                .flatMap { it.genres }
+                .toSet()
 
     companion object {
         /** No filters applied */
         val NONE = FilterConfig()
 
         /** Default filter config (hide adult) */
-        val DEFAULT = FilterConfig(
-            criteria = listOf(FilterCriterion.HideAdult(isActive = true)),
-        )
+        val DEFAULT =
+            FilterConfig(
+                criteria = listOf(FilterCriterion.HideAdult(isActive = true)),
+            )
 
         /** Create a filter that hides adult content */
-        fun hideAdultOnly() = FilterConfig(
-            criteria = listOf(FilterCriterion.HideAdult(isActive = true)),
-        )
+        fun hideAdultOnly() =
+            FilterConfig(
+                criteria = listOf(FilterCriterion.HideAdult(isActive = true)),
+            )
     }
 
     /**
@@ -165,7 +169,5 @@ data class FilterConfig(
     /**
      * Remove a filter by type.
      */
-    fun withoutType(type: FilterType): FilterConfig {
-        return copy(criteria = criteria.filterNot { it.type == type })
-    }
+    fun withoutType(type: FilterType): FilterConfig = copy(criteria = criteria.filterNot { it.type == type })
 }

@@ -40,7 +40,6 @@ import kotlin.time.Duration.Companion.ZERO
  * @since v2 Unified Sync Architecture
  */
 sealed interface SyncStatus {
-
     /**
      * Source identifier for multi-source tracking.
      * E.g., "xtream", "telegram", "local"
@@ -75,24 +74,25 @@ sealed interface SyncStatus {
         val elapsedDuration: Duration = ZERO,
         val estimatedRemaining: Duration? = null,
     ) : SyncStatus {
-
         /**
          * Progress percentage (0.0 to 1.0), or null if total unknown.
          */
         val progressPercent: Float?
-            get() = totalItems?.let { total ->
-                if (total > 0) processedItems.toFloat() / total else 0f
-            }
+            get() =
+                totalItems?.let { total ->
+                    if (total > 0) processedItems.toFloat() / total else 0f
+                }
 
         /**
          * Human-readable progress string.
          */
         val progressText: String
-            get() = if (totalItems != null) {
-                "$processedItems / $totalItems"
-            } else {
-                "$processedItems items"
-            }
+            get() =
+                if (totalItems != null) {
+                    "$processedItems / $totalItems"
+                } else {
+                    "$processedItems items"
+                }
     }
 
     /**
@@ -121,7 +121,6 @@ sealed interface SyncStatus {
         val wasIncremental: Boolean,
         val checkpointsSaved: Int = 0,
     ) : SyncStatus {
-
         /**
          * Item counts by category.
          */
@@ -160,7 +159,6 @@ sealed interface SyncStatus {
         val canResume: Boolean,
         val lastCheckpointId: String? = null,
     ) : SyncStatus {
-
         enum class CancelReason {
             USER_REQUESTED,
             TIMEOUT,
@@ -186,7 +184,6 @@ sealed interface SyncStatus {
         val canRetry: Boolean = true,
         val retryAfter: Duration? = null,
     ) : SyncStatus {
-
         enum class ErrorType {
             NETWORK_ERROR,
             AUTH_FAILED,
@@ -208,9 +205,10 @@ sealed interface SyncStatus {
  * Returns true if this status represents a terminal state.
  */
 val SyncStatus.isTerminal: Boolean
-    get() = this is SyncStatus.Completed ||
-        this is SyncStatus.Cancelled ||
-        this is SyncStatus.Error
+    get() =
+        this is SyncStatus.Completed ||
+            this is SyncStatus.Cancelled ||
+            this is SyncStatus.Error
 
 /**
  * Returns true if sync is still in progress (not terminal).
@@ -222,24 +220,26 @@ val SyncStatus.isActive: Boolean
  * Returns the current phase, or null if not applicable.
  */
 val SyncStatus.currentPhase: SyncPhase?
-    get() = when (this) {
-        is SyncStatus.Started -> SyncPhase.INITIALIZING
-        is SyncStatus.InProgress -> phase
-        is SyncStatus.CheckpointReached -> phase
-        is SyncStatus.Completed -> SyncPhase.FINALIZING
-        is SyncStatus.Cancelled -> phase
-        is SyncStatus.Error -> phase
-    }
+    get() =
+        when (this) {
+            is SyncStatus.Started -> SyncPhase.INITIALIZING
+            is SyncStatus.InProgress -> phase
+            is SyncStatus.CheckpointReached -> phase
+            is SyncStatus.Completed -> SyncPhase.FINALIZING
+            is SyncStatus.Cancelled -> phase
+            is SyncStatus.Error -> phase
+        }
 
 /**
  * Returns processed item count, or 0 if not applicable.
  */
 val SyncStatus.processedCount: Int
-    get() = when (this) {
-        is SyncStatus.Started -> 0
-        is SyncStatus.InProgress -> processedItems
-        is SyncStatus.CheckpointReached -> processedItems
-        is SyncStatus.Completed -> itemCounts.total
-        is SyncStatus.Cancelled -> processedItems
-        is SyncStatus.Error -> processedItems
-    }
+    get() =
+        when (this) {
+            is SyncStatus.Started -> 0
+            is SyncStatus.InProgress -> processedItems
+            is SyncStatus.CheckpointReached -> processedItems
+            is SyncStatus.Completed -> itemCounts.total
+            is SyncStatus.Cancelled -> processedItems
+            is SyncStatus.Error -> processedItems
+        }

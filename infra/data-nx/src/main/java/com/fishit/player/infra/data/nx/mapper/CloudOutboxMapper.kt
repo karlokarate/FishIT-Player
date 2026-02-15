@@ -10,13 +10,14 @@ import com.fishit.player.core.persistence.obx.NX_CloudOutboxEvent
 internal fun NX_CloudOutboxEvent.toDomain(): NxCloudOutboxRepository.OutboxEvent =
     NxCloudOutboxRepository.OutboxEvent(
         eventId = id.toString(), // Use entity ID as event ID
-        eventType = when (eventType) {
-            "UPSERT_USER_STATE" -> NxCloudOutboxRepository.EventType.UPSERT_USER_STATE
-            "UPSERT_PROFILE" -> NxCloudOutboxRepository.EventType.UPSERT_PROFILE
-            "UPSERT_PROFILE_RULE" -> NxCloudOutboxRepository.EventType.UPSERT_PROFILE_RULE
-            "UPSERT_PROFILE_USAGE" -> NxCloudOutboxRepository.EventType.UPSERT_PROFILE_USAGE
-            else -> NxCloudOutboxRepository.EventType.UNKNOWN
-        },
+        eventType =
+            when (eventType) {
+                "UPSERT_USER_STATE" -> NxCloudOutboxRepository.EventType.UPSERT_USER_STATE
+                "UPSERT_PROFILE" -> NxCloudOutboxRepository.EventType.UPSERT_PROFILE
+                "UPSERT_PROFILE_RULE" -> NxCloudOutboxRepository.EventType.UPSERT_PROFILE_RULE
+                "UPSERT_PROFILE_USAGE" -> NxCloudOutboxRepository.EventType.UPSERT_PROFILE_USAGE
+                else -> NxCloudOutboxRepository.EventType.UNKNOWN
+            },
         entityKey = entityKey,
         payloadJson = payload,
         createdAtMs = createdAt,

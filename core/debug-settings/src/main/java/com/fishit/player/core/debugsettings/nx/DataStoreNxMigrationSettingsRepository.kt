@@ -37,7 +37,6 @@ class DataStoreNxMigrationSettingsRepository
     constructor(
         @ApplicationContext private val context: Context,
     ) : NxMigrationSettingsRepository {
-
         private val Context.dataStore: DataStore<Preferences> by
             preferencesDataStore(name = "nx_migration_settings")
 
@@ -59,8 +58,7 @@ class DataStoreNxMigrationSettingsRepository
             UnifiedLog.i(TAG) { "Catalog read mode set to: $mode" }
         }
 
-        override suspend fun getCatalogReadMode(): CatalogReadMode =
-            catalogReadModeFlow.first()
+        override suspend fun getCatalogReadMode(): CatalogReadMode = catalogReadModeFlow.first()
 
         // ═══════════════════════════════════════════════════════════════════════
         // Write Mode
@@ -80,8 +78,7 @@ class DataStoreNxMigrationSettingsRepository
             UnifiedLog.i(TAG) { "Catalog write mode set to: $mode" }
         }
 
-        override suspend fun getCatalogWriteMode(): CatalogWriteMode =
-            catalogWriteModeFlow.first()
+        override suspend fun getCatalogWriteMode(): CatalogWriteMode = catalogWriteModeFlow.first()
 
         // ═══════════════════════════════════════════════════════════════════════
         // Migration Mode
@@ -101,8 +98,7 @@ class DataStoreNxMigrationSettingsRepository
             UnifiedLog.i(TAG) { "Migration mode set to: $mode" }
         }
 
-        override suspend fun getMigrationMode(): MigrationMode =
-            migrationModeFlow.first()
+        override suspend fun getMigrationMode(): MigrationMode = migrationModeFlow.first()
 
         // ═══════════════════════════════════════════════════════════════════════
         // UI Visibility
@@ -122,8 +118,7 @@ class DataStoreNxMigrationSettingsRepository
             UnifiedLog.i(TAG) { "NX UI visibility set to: $visibility" }
         }
 
-        override suspend fun getNxUiVisibility(): NxUiVisibility =
-            nxUiVisibilityFlow.first()
+        override suspend fun getNxUiVisibility(): NxUiVisibility = nxUiVisibilityFlow.first()
 
         // ═══════════════════════════════════════════════════════════════════════
         // Helpers

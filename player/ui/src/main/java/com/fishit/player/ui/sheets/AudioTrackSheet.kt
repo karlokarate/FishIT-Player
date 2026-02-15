@@ -67,15 +67,17 @@ fun AudioTrackSheet(
         sheetState = sheetState,
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 32.dp),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 32.dp),
         ) {
             // Header
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 24.dp, vertical = 16.dp),
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 24.dp, vertical = 16.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Icon(
@@ -122,30 +124,30 @@ private fun AudioTrackItem(
 ) {
     // TV Focus state for D-Pad navigation
     var isFocused by remember { mutableStateOf(false) }
-    
+
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .onFocusChanged { isFocused = it.isFocused }
-            .focusable()
-            .then(
-                if (isFocused) {
-                    Modifier.border(
-                        width = 2.dp,
-                        color = MaterialTheme.colorScheme.primary,
-                        shape = RoundedCornerShape(8.dp)
-                    )
-                } else {
-                    Modifier
-                }
-            )
-            .clickable(onClick = onClick)
-            .padding(horizontal = 24.dp, vertical = 12.dp)
-            // Accessibility: announce selection state
-            .semantics {
-                role = Role.RadioButton
-                selected = isSelected
-            },
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .onFocusChanged { isFocused = it.isFocused }
+                .focusable()
+                .then(
+                    if (isFocused) {
+                        Modifier.border(
+                            width = 2.dp,
+                            color = MaterialTheme.colorScheme.primary,
+                            shape = RoundedCornerShape(8.dp),
+                        )
+                    } else {
+                        Modifier
+                    },
+                ).clickable(onClick = onClick)
+                .padding(horizontal = 24.dp, vertical = 12.dp)
+                // Accessibility: announce selection state
+                .semantics {
+                    role = Role.RadioButton
+                    selected = isSelected
+                },
         verticalAlignment = Alignment.CenterVertically,
     ) {
         // Selection indicator (width reserved for alignment)
@@ -169,14 +171,15 @@ private fun AudioTrackItem(
                 color = if (isFocused) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
             )
             // Show channel layout as secondary info if not UNKNOWN
-            val channelLayoutText = when (track.channelLayout) {
-                AudioChannelLayout.MONO -> "Mono"
-                AudioChannelLayout.STEREO -> "Stereo"
-                AudioChannelLayout.SURROUND_5_1 -> "5.1 Surround"
-                AudioChannelLayout.SURROUND_7_1 -> "7.1 Surround"
-                AudioChannelLayout.ATMOS -> "Dolby Atmos"
-                AudioChannelLayout.UNKNOWN -> null
-            }
+            val channelLayoutText =
+                when (track.channelLayout) {
+                    AudioChannelLayout.MONO -> "Mono"
+                    AudioChannelLayout.STEREO -> "Stereo"
+                    AudioChannelLayout.SURROUND_5_1 -> "5.1 Surround"
+                    AudioChannelLayout.SURROUND_7_1 -> "7.1 Surround"
+                    AudioChannelLayout.ATMOS -> "Dolby Atmos"
+                    AudioChannelLayout.UNKNOWN -> null
+                }
             if (channelLayoutText != null) {
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(

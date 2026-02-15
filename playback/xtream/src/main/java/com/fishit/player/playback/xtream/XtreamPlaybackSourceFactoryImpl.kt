@@ -165,12 +165,13 @@ class XtreamPlaybackSourceFactoryImpl
             val streamUrl =
                 when (contentType) {
                     CONTENT_TYPE_LIVE -> {
-                        val streamId = context.extras[PlaybackHintKeys.Xtream.STREAM_ID]?.toIntOrNull()
-                            ?: context.extras[EXTRA_STREAM_ID]?.toIntOrNull()
-                            ?: throw PlaybackSourceException(
-                                message = "Missing streamId for live content",
-                                sourceType = SourceType.XTREAM,
-                            )
+                        val streamId =
+                            context.extras[PlaybackHintKeys.Xtream.STREAM_ID]?.toIntOrNull()
+                                ?: context.extras[EXTRA_STREAM_ID]?.toIntOrNull()
+                                ?: throw PlaybackSourceException(
+                                    message = "Missing streamId for live content",
+                                    sourceType = SourceType.XTREAM,
+                                )
 
                         // Use liveKind from PlaybackHints for correct URL building
                         val liveKind = context.extras[PlaybackHintKeys.Xtream.LIVE_KIND]
@@ -180,14 +181,15 @@ class XtreamPlaybackSourceFactoryImpl
                         xtreamApiClient.buildLiveUrl(streamId, resolvedExtension, liveKind)
                     }
                     CONTENT_TYPE_VOD -> {
-                        val vodId = context.extras[PlaybackHintKeys.Xtream.VOD_ID]?.toIntOrNull()
-                            ?: context.extras[EXTRA_VOD_ID]?.toIntOrNull()
-                            ?: context.extras[PlaybackHintKeys.Xtream.STREAM_ID]?.toIntOrNull()
-                            ?: context.extras[EXTRA_STREAM_ID]?.toIntOrNull()
-                            ?: throw PlaybackSourceException(
-                                message = "Missing vodId for VOD content",
-                                sourceType = SourceType.XTREAM,
-                            )
+                        val vodId =
+                            context.extras[PlaybackHintKeys.Xtream.VOD_ID]?.toIntOrNull()
+                                ?: context.extras[EXTRA_VOD_ID]?.toIntOrNull()
+                                ?: context.extras[PlaybackHintKeys.Xtream.STREAM_ID]?.toIntOrNull()
+                                ?: context.extras[EXTRA_STREAM_ID]?.toIntOrNull()
+                                ?: throw PlaybackSourceException(
+                                    message = "Missing vodId for VOD content",
+                                    sourceType = SourceType.XTREAM,
+                                )
 
                         // Use vodKind from PlaybackHints for correct URL building
                         val vodKind = context.extras[PlaybackHintKeys.Xtream.VOD_KIND]

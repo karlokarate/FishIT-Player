@@ -19,8 +19,8 @@ object VodStreamMapper {
     /**
      * Streaming mapper for Jackson parser (O(1) memory).
      */
-    fun fromStreaming(reader: JsonObjectReader): XtreamVodStream {
-        return XtreamVodStream(
+    fun fromStreaming(reader: JsonObjectReader): XtreamVodStream =
+        XtreamVodStream(
             num = reader.getIntOrNull("num"),
             name = reader.getStringOrNull("name"),
             vodId = reader.getIntOrNull("vod_id"),
@@ -43,13 +43,12 @@ object VodStreamMapper {
             plot = reader.getStringOrNull("plot"),
             duration = reader.getStringOrNull("duration"),
         )
-    }
 
     /**
      * Fallback mapper for kotlinx.serialization (DOM parsing).
      */
-    fun fromJsonObject(obj: JsonObject): XtreamVodStream {
-        return XtreamVodStream(
+    fun fromJsonObject(obj: JsonObject): XtreamVodStream =
+        XtreamVodStream(
             num = obj["num"]?.jsonPrimitive?.intOrNull,
             name = obj["name"]?.jsonPrimitive?.content,
             vodId = obj["vod_id"]?.jsonPrimitive?.intOrNull,
@@ -72,5 +71,4 @@ object VodStreamMapper {
             plot = obj["plot"]?.jsonPrimitive?.content,
             duration = obj["duration"]?.jsonPrimitive?.content,
         )
-    }
 }

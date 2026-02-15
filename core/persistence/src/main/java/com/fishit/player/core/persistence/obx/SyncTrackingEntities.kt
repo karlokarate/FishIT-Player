@@ -61,70 +61,52 @@ import io.objectbox.annotation.Unique
 @Entity
 data class NX_SyncCheckpoint(
     @Id var id: Long = 0,
-
     // === Key ===
     /** Unique checkpoint key: `<sourceType>:<accountId>:<contentType>` */
     @Unique
     @Index
     val checkpointKey: String = "",
-
     // === Source Identification ===
     /** Source type: "xtream" or "telegram" */
     @Index
     val sourceType: String = "",
-
     /** Account identifier (e.g., Xtream account key) */
     @Index
     val accountId: String = "",
-
     /** Content type: "vod", "series", "live", "clips" */
     @Index
     val contentType: String = "",
-
     // === Sync Timing ===
     /** When the last sync started (epoch ms) */
     var lastSyncStartMs: Long = 0,
-
     /** When the last sync completed successfully (epoch ms) */
     var lastSyncCompleteMs: Long = 0,
-
     /** Duration of last sync in milliseconds */
     var lastSyncDurationMs: Long = 0,
-
     // === HTTP Caching (Tier 1) ===
     /** ETag header from last response (null if not supported) */
     var etag: String? = null,
-
     /** Last-Modified header from last response */
     var lastModified: String? = null,
-
     // === Item Tracking (Tier 2 & 3) ===
     /** Total item count from last sync */
     var itemCount: Int = 0,
-
     /** New items discovered in last sync */
     var newItemCount: Int = 0,
-
     /** Items with changed fingerprint in last sync */
     var updatedItemCount: Int = 0,
-
     /** Items not seen in last sync (potential deletions) */
     var deletedItemCount: Int = 0,
-
     // === Sync Mode ===
     /** True if last sync was incremental (not full) */
     var wasIncrementalSync: Boolean = false,
-
     /** True if last sync was explicitly forced full */
     var forcedFullSync: Boolean = false,
-
     /** Sync generation counter for deletion detection */
     var syncGeneration: Long = 0,
-
     // === Error Tracking ===
     /** Last error message (null if last sync succeeded) */
     var lastError: String? = null,
-
     /** Number of consecutive sync failures */
     var consecutiveFailures: Int = 0,
 ) {
@@ -186,33 +168,26 @@ data class NX_SyncCheckpoint(
 @Entity
 data class NX_ItemFingerprint(
     @Id var id: Long = 0,
-
     // === Key ===
     /** Unique item key: `<sourceType>:<accountId>:<contentType>:<itemId>` */
     @Unique
     @Index
     val sourceKey: String = "",
-
     // === Fingerprint ===
     /** Hash of key fields for change detection */
     var fingerprint: Int = 0,
-
     // === Tracking ===
     /** When this item was last seen in a sync (epoch ms) */
     var lastSeenMs: Long = 0,
-
     /** Sync generation when this item was last seen */
     var syncGeneration: Long = 0,
-
     // === Query Fields (denormalized for performance) ===
     /** Source type for bulk queries */
     @Index
     val sourceType: String = "",
-
     /** Account ID for bulk queries */
     @Index
     val accountId: String = "",
-
     /** Content type for bulk queries */
     @Index
     val contentType: String = "",

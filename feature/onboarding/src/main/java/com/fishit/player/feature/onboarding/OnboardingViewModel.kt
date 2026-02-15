@@ -34,7 +34,10 @@ import com.fishit.player.core.onboarding.domain.XtreamConnectionState as DomainX
 /**
  * Category tab selection for the overlay
  */
-enum class CategoryTab(val displayName: String, val categoryType: XtreamCategoryType) {
+enum class CategoryTab(
+    val displayName: String,
+    val categoryType: XtreamCategoryType,
+) {
     VOD("Filme", XtreamCategoryType.VOD),
     SERIES("Serien", XtreamCategoryType.SERIES),
     LIVE("Live TV", XtreamCategoryType.LIVE),
@@ -261,7 +264,10 @@ class OnboardingViewModel
                 UnifiedLog.e(TAG) { "connectXtream: Failed to parse URL (host: $safeUrlPreview)" }
                 _state.update {
                     it.copy(
-                        xtreamError = "Invalid Xtream URL. Expected format: http://host:port/get.php?username=X&password=Y or http://user:pass@host:port",
+                        xtreamError =
+                            "Invalid Xtream URL. Expected format: " +
+                                "http://host:port/get.php?username=X&password=Y " +
+                                "or http://user:pass@host:port",
                     )
                 }
                 return
@@ -303,8 +309,7 @@ class OnboardingViewModel
                         .onFailure { error ->
                             UnifiedLog.e(TAG, error) { "connectXtream: Failed to save credentials" }
                             _state.update { it.copy(xtreamError = error.message) }
-                        }
-                        .onSuccess {
+                        }.onSuccess {
                             // Preload categories and show overlay for user selection
                             UnifiedLog.d(TAG) { "connectXtream: Credentials saved, preloading categories" }
                             startCategoryPreload()
@@ -496,23 +501,24 @@ class OnboardingViewModel
             // Cancel previous observers (prevents accumulation on reconnect)
             cancelCategoryObservation()
 
-            categoryObservationJobs = listOf(
-                viewModelScope.launch {
-                    categoryRepository.observeByType(accountKey, XtreamCategoryType.VOD).collect { categories ->
-                        _state.update { it.copy(vodCategories = categories) }
-                    }
-                },
-                viewModelScope.launch {
-                    categoryRepository.observeByType(accountKey, XtreamCategoryType.SERIES).collect { categories ->
-                        _state.update { it.copy(seriesCategories = categories) }
-                    }
-                },
-                viewModelScope.launch {
-                    categoryRepository.observeByType(accountKey, XtreamCategoryType.LIVE).collect { categories ->
-                        _state.update { it.copy(liveCategories = categories) }
-                    }
-                },
-            )
+            categoryObservationJobs =
+                listOf(
+                    viewModelScope.launch {
+                        categoryRepository.observeByType(accountKey, XtreamCategoryType.VOD).collect { categories ->
+                            _state.update { it.copy(vodCategories = categories) }
+                        }
+                    },
+                    viewModelScope.launch {
+                        categoryRepository.observeByType(accountKey, XtreamCategoryType.SERIES).collect { categories ->
+                            _state.update { it.copy(seriesCategories = categories) }
+                        }
+                    },
+                    viewModelScope.launch {
+                        categoryRepository.observeByType(accountKey, XtreamCategoryType.LIVE).collect { categories ->
+                            _state.update { it.copy(liveCategories = categories) }
+                        }
+                    },
+                )
         }
 
         /** Cancel all running category observation coroutines */
@@ -525,7 +531,11 @@ class OnboardingViewModel
             _state.update { it.copy(selectedCategoryTab = tab) }
         }
 
-        fun toggleCategory(categoryId: String, categoryType: XtreamCategoryType, isSelected: Boolean) {
+        fun toggleCategory(
+            categoryId: String,
+            categoryType: XtreamCategoryType,
+            isSelected: Boolean,
+        ) {
             val accountKey = cachedAccountKey ?: return
             viewModelScope.launch {
                 categoryRepository.setSelected(

@@ -31,7 +31,6 @@ import kotlinx.coroutines.flow.Flow
  * - [MediaType.LIVE] → no enrichment needed (stream URL in source already)
  */
 interface UnifiedDetailLoader {
-
     /**
      * Load complete detail data with HIGH priority.
      *
@@ -185,8 +184,7 @@ sealed class DetailBundle {
             get() = System.currentTimeMillis() - fetchedAtMs > SERIES_TTL_MS
 
         /** Get episodes for a specific season */
-        fun getEpisodesForSeason(seasonNumber: Int): List<EpisodeIndexItem> =
-            episodesBySeason[seasonNumber] ?: emptyList()
+        fun getEpisodesForSeason(seasonNumber: Int): List<EpisodeIndexItem> = episodesBySeason[seasonNumber] ?: emptyList()
 
         /** Get season numbers sorted */
         fun getSeasonNumbers(): List<Int> = seasons.map { it.seasonNumber }.sorted()

@@ -166,7 +166,6 @@ android {
         jvmTarget = "17"
     }
 
-
     buildFeatures {
         compose = true
         buildConfig = true
@@ -322,9 +321,10 @@ tasks.register("checkNoWorkManagerInitializer") {
             return@doLast
         }
 
-        val manifestFiles = fileTree(mergedManifestsDir) {
-            include("**/AndroidManifest.xml")
-        }.files
+        val manifestFiles =
+            fileTree(mergedManifestsDir) {
+                include("**/AndroidManifest.xml")
+            }.files
 
         if (manifestFiles.isEmpty()) {
             logger.warn("⚠️  WARNING: No merged manifests found. Run ':app-v2:assembleDebug' first.")
@@ -354,7 +354,7 @@ tasks.register("checkNoWorkManagerInitializer") {
                 |The auto-initialization must be removed via tools:node="remove" in AndroidManifest.xml.
                 |
                 |Check app-v2/src/main/AndroidManifest.xml for the correct removal declaration.
-                """.trimMargin()
+                """.trimMargin(),
             )
         }
 

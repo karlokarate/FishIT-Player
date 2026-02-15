@@ -109,14 +109,15 @@ class PlayMediaUseCase
 
             // CRITICAL FIX: Extract sourceType from sourceKey as fallback when UNKNOWN
             // This fixes the bug where legacy repositories don't convert String→Enum correctly
-            val sourceType = mapToPlayerSourceType(source.sourceType).let { mappedType ->
-                if (mappedType == com.fishit.player.core.playermodel.SourceType.UNKNOWN) {
-                    // Fallback: Extract from sourceKey format (src:xtream:... or xtream:vod:...)
-                    extractSourceTypeFromKey(source.sourceId.value) ?: mappedType
-                } else {
-                    mappedType
+            val sourceType =
+                mapToPlayerSourceType(source.sourceType).let { mappedType ->
+                    if (mappedType == com.fishit.player.core.playermodel.SourceType.UNKNOWN) {
+                        // Fallback: Extract from sourceKey format (src:xtream:... or xtream:vod:...)
+                        extractSourceTypeFromKey(source.sourceId.value) ?: mappedType
+                    } else {
+                        mappedType
+                    }
                 }
-            }
 
             return PlaybackContext(
                 canonicalId = canonicalId.key.value,
@@ -167,7 +168,9 @@ class PlayMediaUseCase
                         putAll(hints)
 
                         // Parse sourceId via XtreamIdCodec SSOT for backwards compatibility
-                        val parsed = com.fishit.player.core.model.ids.XtreamIdCodec.parse(sourceIdValue)
+                        val parsed =
+                            com.fishit.player.core.model.ids.XtreamIdCodec
+                                .parse(sourceIdValue)
                         when (parsed) {
                             is com.fishit.player.core.model.ids.XtreamParsedSourceId.Vod -> {
                                 putIfAbsent(PlaybackHintKeys.Xtream.CONTENT_TYPE, PlaybackHintKeys.Xtream.CONTENT_VOD)

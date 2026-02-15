@@ -28,7 +28,5 @@ interface XtreamDataSourceFactoryProvider {
      * @param headers HTTP headers to apply (User-Agent, Referer, Accept, Accept-Encoding)
      * @return Configured DataSource.Factory for Xtream streaming
      */
-    fun create(
-        headers: Map<String, String>,
-    ): DataSource.Factory
+    fun create(headers: Map<String, String>): DataSource.Factory
 }

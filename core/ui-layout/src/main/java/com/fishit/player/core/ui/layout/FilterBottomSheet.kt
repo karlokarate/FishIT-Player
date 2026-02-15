@@ -52,20 +52,22 @@ data class UiFilterConfig(
     val yearRange: IntRange? = null,
 ) {
     val hasActiveFilters: Boolean
-        get() = hideAdult ||
-            selectedGenres.isNotEmpty() ||
-            excludedGenres.isNotEmpty() ||
-            minRating != null ||
-            yearRange != null
+        get() =
+            hideAdult ||
+                selectedGenres.isNotEmpty() ||
+                excludedGenres.isNotEmpty() ||
+                minRating != null ||
+                yearRange != null
 
     val activeFilterCount: Int
-        get() = listOf(
-            hideAdult,
-            selectedGenres.isNotEmpty(),
-            excludedGenres.isNotEmpty(),
-            minRating != null,
-            yearRange != null,
-        ).count { it }
+        get() =
+            listOf(
+                hideAdult,
+                selectedGenres.isNotEmpty(),
+                excludedGenres.isNotEmpty(),
+                minRating != null,
+                yearRange != null,
+            ).count { it }
 
     companion object {
         val DEFAULT = UiFilterConfig(hideAdult = true)
@@ -118,20 +120,22 @@ fun FilterBottomSheet(
             contentColor = MaterialTheme.colorScheme.onSurface,
             dragHandle = {
                 Box(
-                    modifier = Modifier
-                        .padding(vertical = 12.dp)
-                        .width(32.dp)
-                        .height(4.dp)
-                        .clip(RoundedCornerShape(2.dp))
-                        .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)),
+                    modifier =
+                        Modifier
+                            .padding(vertical = 12.dp)
+                            .width(32.dp)
+                            .height(4.dp)
+                            .clip(RoundedCornerShape(2.dp))
+                            .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)),
                 )
             },
         ) {
             Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp)
-                    .verticalScroll(rememberScrollState()),
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp)
+                        .verticalScroll(rememberScrollState()),
             ) {
                 // Header with reset button
                 Row(
@@ -199,27 +203,28 @@ fun FilterBottomSheet(
                                 FilterChip(
                                     selected = isSelected || isExcluded,
                                     onClick = {
-                                        localFilter = when {
-                                            isSelected -> {
-                                                // Selected -> Excluded
-                                                localFilter.copy(
-                                                    selectedGenres = localFilter.selectedGenres - genre,
-                                                    excludedGenres = localFilter.excludedGenres + genre,
-                                                )
+                                        localFilter =
+                                            when {
+                                                isSelected -> {
+                                                    // Selected -> Excluded
+                                                    localFilter.copy(
+                                                        selectedGenres = localFilter.selectedGenres - genre,
+                                                        excludedGenres = localFilter.excludedGenres + genre,
+                                                    )
+                                                }
+                                                isExcluded -> {
+                                                    // Excluded -> Unselected
+                                                    localFilter.copy(
+                                                        excludedGenres = localFilter.excludedGenres - genre,
+                                                    )
+                                                }
+                                                else -> {
+                                                    // Unselected -> Selected
+                                                    localFilter.copy(
+                                                        selectedGenres = localFilter.selectedGenres + genre,
+                                                    )
+                                                }
                                             }
-                                            isExcluded -> {
-                                                // Excluded -> Unselected
-                                                localFilter.copy(
-                                                    excludedGenres = localFilter.excludedGenres - genre,
-                                                )
-                                            }
-                                            else -> {
-                                                // Unselected -> Selected
-                                                localFilter.copy(
-                                                    selectedGenres = localFilter.selectedGenres + genre,
-                                                )
-                                            }
-                                        }
                                     },
                                     label = {
                                         Text(
@@ -227,35 +232,39 @@ fun FilterBottomSheet(
                                             style = MaterialTheme.typography.labelMedium,
                                         )
                                     },
-                                    leadingIcon = if (isSelected) {
-                                        {
-                                            Icon(
-                                                imageVector = Icons.Default.Check,
-                                                contentDescription = "Ausgewählt",
-                                            )
-                                        }
-                                    } else if (isExcluded) {
-                                        {
-                                            Icon(
-                                                imageVector = Icons.Default.Clear,
-                                                contentDescription = "Ausgeschlossen",
-                                            )
-                                        }
-                                    } else {
-                                        null
-                                    },
-                                    colors = FilterChipDefaults.filterChipColors(
-                                        selectedContainerColor = if (isExcluded) {
-                                            MaterialTheme.colorScheme.errorContainer
+                                    leadingIcon =
+                                        if (isSelected) {
+                                            {
+                                                Icon(
+                                                    imageVector = Icons.Default.Check,
+                                                    contentDescription = "Ausgewählt",
+                                                )
+                                            }
+                                        } else if (isExcluded) {
+                                            {
+                                                Icon(
+                                                    imageVector = Icons.Default.Clear,
+                                                    contentDescription = "Ausgeschlossen",
+                                                )
+                                            }
                                         } else {
-                                            MaterialTheme.colorScheme.primaryContainer
+                                            null
                                         },
-                                        selectedLabelColor = if (isExcluded) {
-                                            MaterialTheme.colorScheme.onErrorContainer
-                                        } else {
-                                            MaterialTheme.colorScheme.onPrimaryContainer
-                                        },
-                                    ),
+                                    colors =
+                                        FilterChipDefaults.filterChipColors(
+                                            selectedContainerColor =
+                                                if (isExcluded) {
+                                                    MaterialTheme.colorScheme.errorContainer
+                                                } else {
+                                                    MaterialTheme.colorScheme.primaryContainer
+                                                },
+                                            selectedLabelColor =
+                                                if (isExcluded) {
+                                                    MaterialTheme.colorScheme.onErrorContainer
+                                                } else {
+                                                    MaterialTheme.colorScheme.onPrimaryContainer
+                                                },
+                                        ),
                                 )
                             }
                         }
@@ -275,20 +284,22 @@ fun FilterBottomSheet(
                     val ratingValue = localFilter.minRating ?: 0f
                     Column {
                         Text(
-                            text = if (ratingValue > 0f) {
-                                "★ ${String.format("%.1f", ratingValue)} und höher"
-                            } else {
-                                "Alle Bewertungen"
-                            },
+                            text =
+                                if (ratingValue > 0f) {
+                                    "★ ${String.format("%.1f", ratingValue)} und höher"
+                                } else {
+                                    "Alle Bewertungen"
+                                },
                             style = MaterialTheme.typography.bodyMedium,
                             modifier = Modifier.padding(bottom = 8.dp),
                         )
                         Slider(
                             value = ratingValue,
                             onValueChange = { newValue ->
-                                localFilter = localFilter.copy(
-                                    minRating = if (newValue > 0f) newValue else null,
-                                )
+                                localFilter =
+                                    localFilter.copy(
+                                        minRating = if (newValue > 0f) newValue else null,
+                                    )
                             },
                             valueRange = 0f..10f,
                             steps = 19, // 0.5 increments
@@ -304,11 +315,12 @@ fun FilterBottomSheet(
 
                     Column {
                         Text(
-                            text = if (localFilter.yearRange != null) {
-                                "${rangeStart.toInt()} - ${rangeEnd.toInt()}"
-                            } else {
-                                "Alle Jahre"
-                            },
+                            text =
+                                if (localFilter.yearRange != null) {
+                                    "${rangeStart.toInt()} - ${rangeEnd.toInt()}"
+                                } else {
+                                    "Alle Jahre"
+                                },
                             style = MaterialTheme.typography.bodyMedium,
                             modifier = Modifier.padding(bottom = 8.dp),
                         )
@@ -316,9 +328,10 @@ fun FilterBottomSheet(
                             value = rangeStart..rangeEnd,
                             onValueChange = { range ->
                                 val newRange = range.start.toInt()..range.endInclusive.toInt()
-                                localFilter = localFilter.copy(
-                                    yearRange = if (newRange == yearRange) null else newRange,
-                                )
+                                localFilter =
+                                    localFilter.copy(
+                                        yearRange = if (newRange == yearRange) null else newRange,
+                                    )
                             },
                             valueRange = yearRange.first.toFloat()..yearRange.last.toFloat(),
                         )

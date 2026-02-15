@@ -20,7 +20,6 @@ package com.fishit.player.infra.data.nx.mapper.base
  * - [monotonicUp]: Monotonic upgrade (never downgrades enum ordinal)
  */
 object MappingUtils {
-
     /**
      * Safe enum-from-string conversion with explicit default.
      *
@@ -49,7 +48,10 @@ object MappingUtils {
      * @param new Incoming enrichment value
      * @return Existing if non-null, otherwise new
      */
-    fun <T> enrichOnly(existing: T?, new: T?): T? = existing ?: new
+    fun <T> enrichOnly(
+        existing: T?,
+        new: T?,
+    ): T? = existing ?: new
 
     /**
      * Always-update: new value takes precedence if non-null, preserves existing otherwise.
@@ -61,7 +63,10 @@ object MappingUtils {
      * @param new Incoming value
      * @return New if non-null, otherwise existing
      */
-    fun <T> alwaysUpdate(existing: T?, new: T?): T? = new ?: existing
+    fun <T> alwaysUpdate(
+        existing: T?,
+        new: T?,
+    ): T? = new ?: existing
 
     /**
      * Monotonic upgrade for enum ordinals — value can only move to a LOWER ordinal.
@@ -75,7 +80,10 @@ object MappingUtils {
      * @param new Incoming enum value
      * @return The value with the lower ordinal (higher confidence)
      */
-    fun <T : Enum<T>> monotonicUp(existing: T?, new: T?): T? =
+    fun <T : Enum<T>> monotonicUp(
+        existing: T?,
+        new: T?,
+    ): T? =
         when {
             existing == null -> new
             new == null -> existing

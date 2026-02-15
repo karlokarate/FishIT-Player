@@ -18,21 +18,21 @@ package com.fishit.player.core.model.util
  * - AUDIOBOOK: Specialized niche format
  */
 object SourcePriority {
-
     /**
      * Base priority by source type string (entity storage format).
      *
      * Used at both sync time (base only) and read time (as component of total).
      */
-    fun basePriority(sourceType: String): Int = when (sourceType.lowercase()) {
-        "local" -> 100
-        "xtream" -> 80
-        "plex" -> 70
-        "io" -> 50
-        "telegram" -> 40
-        "audiobook" -> 30
-        else -> 10
-    }
+    fun basePriority(sourceType: String): Int =
+        when (sourceType.lowercase()) {
+            "local" -> 100
+            "xtream" -> 80
+            "plex" -> 70
+            "io" -> 50
+            "telegram" -> 40
+            "audiobook" -> 30
+            else -> 10
+        }
 
     /**
      * Quality bonus from quality tag string.
@@ -40,14 +40,15 @@ object SourcePriority {
      * @param qualityTag e.g., "4k", "1080p", "720p", "480p", "source"
      * @return Bonus points (0–50)
      */
-    fun qualityBonus(qualityTag: String?): Int = when (qualityTag?.lowercase()) {
-        "4k", "2160p", "uhd" -> 50
-        "1080p", "fhd" -> 40
-        "720p", "hd" -> 30
-        "480p", "sd" -> 20
-        "source" -> 25 // Slightly lower than explicit qualities
-        else -> if (qualityTag != null) 10 else 0
-    }
+    fun qualityBonus(qualityTag: String?): Int =
+        when (qualityTag?.lowercase()) {
+            "4k", "2160p", "uhd" -> 50
+            "1080p", "fhd" -> 40
+            "720p", "hd" -> 30
+            "480p", "sd" -> 20
+            "source" -> 25 // Slightly lower than explicit qualities
+            else -> if (qualityTag != null) 10 else 0
+        }
 
     /**
      * Quality bonus from pixel height.
@@ -55,14 +56,15 @@ object SourcePriority {
      * @param height Video height in pixels (e.g., 1080, 2160)
      * @return Bonus points (0–50)
      */
-    fun qualityBonusFromHeight(height: Int?): Int = when {
-        height == null || height <= 0 -> 0
-        height >= 2160 -> 50
-        height >= 1080 -> 40
-        height >= 720 -> 30
-        height >= 480 -> 20
-        else -> 10
-    }
+    fun qualityBonusFromHeight(height: Int?): Int =
+        when {
+            height == null || height <= 0 -> 0
+            height >= 2160 -> 50
+            height >= 1080 -> 40
+            height >= 720 -> 30
+            height >= 480 -> 20
+            else -> 10
+        }
 
     /**
      * Full priority calculation for source/variant auto-selection.

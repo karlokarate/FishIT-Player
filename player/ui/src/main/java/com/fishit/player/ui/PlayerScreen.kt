@@ -28,21 +28,20 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.Player
 import androidx.media3.ui.PlayerView
-import com.fishit.player.core.playermodel.PlaybackContext
 import com.fishit.player.core.playermodel.AudioSelectionState
+import com.fishit.player.core.playermodel.PlaybackContext
 import com.fishit.player.core.playermodel.SubtitleSelectionState
 import com.fishit.player.internal.state.InternalPlayerState
 import com.fishit.player.internal.ui.InternalPlayerControls
 import com.fishit.player.ui.sheets.AudioTrackSheet
-import com.fishit.player.ui.sheets.SubtitleTrackSheet
 import com.fishit.player.ui.sheets.SpeedSelectionSheet
+import com.fishit.player.ui.sheets.SubtitleTrackSheet
 
 /**
  * Public entry point for the player UI.
@@ -171,23 +170,26 @@ private fun PlayingView(
 
     // Observe internal player state for custom controls
     val sessionStateFlow = viewModel.getSessionState()
-    val sessionState: InternalPlayerState = sessionStateFlow
-        ?.collectAsStateWithLifecycle(initialValue = InternalPlayerState.INITIAL)
-        ?.value
-        ?: InternalPlayerState.INITIAL
+    val sessionState: InternalPlayerState =
+        sessionStateFlow
+            ?.collectAsStateWithLifecycle(initialValue = InternalPlayerState.INITIAL)
+            ?.value
+            ?: InternalPlayerState.INITIAL
 
     // Observe audio/subtitle state for track selection
     val audioStateFlow = viewModel.getAudioState()
-    val audioState: AudioSelectionState = audioStateFlow
-        ?.collectAsStateWithLifecycle(initialValue = AudioSelectionState())
-        ?.value
-        ?: AudioSelectionState()
+    val audioState: AudioSelectionState =
+        audioStateFlow
+            ?.collectAsStateWithLifecycle(initialValue = AudioSelectionState())
+            ?.value
+            ?: AudioSelectionState()
 
     val subtitleStateFlow = viewModel.getSubtitleState()
-    val subtitleState: SubtitleSelectionState = subtitleStateFlow
-        ?.collectAsStateWithLifecycle(initialValue = SubtitleSelectionState())
-        ?.value
-        ?: SubtitleSelectionState()
+    val subtitleState: SubtitleSelectionState =
+        subtitleStateFlow
+            ?.collectAsStateWithLifecycle(initialValue = SubtitleSelectionState())
+            ?.value
+            ?: SubtitleSelectionState()
 
     // Sheet visibility state
     var showAudioSheet by remember { mutableStateOf(false) }

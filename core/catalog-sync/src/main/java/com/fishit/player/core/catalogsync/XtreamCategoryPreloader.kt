@@ -44,194 +44,209 @@ import javax.inject.Singleton
  * Contract: Part of Issue #669 - Sync by Category implementation.
  */
 @Singleton
-class XtreamCategoryPreloader @Inject constructor(
-    private val xtreamCatalogPipeline: XtreamCatalogPipeline,
-    private val categoryRepository: NxCategorySelectionRepository,
-    private val sourceAccountRepository: NxSourceAccountRepository,
-) {
-    private val _state = MutableStateFlow<XtreamCategoryPreloadState>(XtreamCategoryPreloadState.Idle)
+class XtreamCategoryPreloader
+    @Inject
+    constructor(
+        private val xtreamCatalogPipeline: XtreamCatalogPipeline,
+        private val categoryRepository: NxCategorySelectionRepository,
+        private val sourceAccountRepository: NxSourceAccountRepository,
+    ) {
+        private val _state = MutableStateFlow<XtreamCategoryPreloadState>(XtreamCategoryPreloadState.Idle)
 
-    /**
-     * Current preload state as a reactive [StateFlow].
-     *
-     * Observe this in UI to show loading/error states.
-     * For actual category data, observe [NxCategorySelectionRepository] instead.
-     */
-    val state: StateFlow<XtreamCategoryPreloadState> = _state.asStateFlow()
+        /**
+         * Current preload state as a reactive [StateFlow].
+         *
+         * Observe this in UI to show loading/error states.
+         * For actual category data, observe [NxCategorySelectionRepository] instead.
+         */
+        val state: StateFlow<XtreamCategoryPreloadState> = _state.asStateFlow()
 
-    /**
-     * Get current state synchronously.
-     */
-    fun getCurrentState(): XtreamCategoryPreloadState = _state.value
+        /**
+         * Get current state synchronously.
+         */
+        fun getCurrentState(): XtreamCategoryPreloadState = _state.value
 
-    /**
-     * Get cached categories if available.
-     *
-     * @return Cached categories or null if not loaded/error
-     */
-    fun getCachedCategories(): XtreamCachedCategories? {
-        val current = _state.value
-        return if (current is XtreamCategoryPreloadState.Success) {
-            current.categories
-        } else {
-            null
-        }
-    }
-
-    /**
-     * Preload categories from Xtream server and persist to repository.
-     *
-     * Updates [state] flow with Loading → Success/Error transitions.
-     * On success, categories are persisted to [NxCategorySelectionRepository].
-     *
-     * **Precondition:** XtreamApiClient must be initialized with valid credentials
-     * before calling this method. Call this AFTER [XtreamSessionBootstrap.start()]
-     * completes successfully.
-     *
-     * @param forceRefresh If true, fetches even if categories are already cached
-     */
-    suspend fun preloadCategories(forceRefresh: Boolean = false) {
-        val currentState = _state.value
-
-        // Skip if already loaded and not forcing refresh
-        if (!forceRefresh && currentState is XtreamCategoryPreloadState.Success) {
-            UnifiedLog.d(TAG) { "Categories already cached, skipping preload" }
-            return
+        /**
+         * Get cached categories if available.
+         *
+         * @return Cached categories or null if not loaded/error
+         */
+        fun getCachedCategories(): XtreamCachedCategories? {
+            val current = _state.value
+            return if (current is XtreamCategoryPreloadState.Success) {
+                current.categories
+            } else {
+                null
+            }
         }
 
-        // Skip if already loading
-        if (currentState is XtreamCategoryPreloadState.Loading) {
-            UnifiedLog.d(TAG) { "Category preload already in progress" }
-            return
-        }
+        /**
+         * Preload categories from Xtream server and persist to repository.
+         *
+         * Updates [state] flow with Loading → Success/Error transitions.
+         * On success, categories are persisted to [NxCategorySelectionRepository].
+         *
+         * **Precondition:** XtreamApiClient must be initialized with valid credentials
+         * before calling this method. Call this AFTER [XtreamSessionBootstrap.start()]
+         * completes successfully.
+         *
+         * @param forceRefresh If true, fetches even if categories are already cached
+         */
+        suspend fun preloadCategories(forceRefresh: Boolean = false) {
+            val currentState = _state.value
 
-        // Get Xtream account key for repository storage
-        val accountKey = getXtreamAccountKey()
-        if (accountKey == null) {
-            val errorMsg = "No Xtream account found - cannot preload categories"
-            UnifiedLog.w(TAG) { errorMsg }
-            _state.value = XtreamCategoryPreloadState.Error(message = errorMsg)
-            return
-        }
+            // Skip if already loaded and not forcing refresh
+            if (!forceRefresh && currentState is XtreamCategoryPreloadState.Success) {
+                UnifiedLog.d(TAG) { "Categories already cached, skipping preload" }
+                return
+            }
 
-        UnifiedLog.i(TAG) { "Starting category preload (forceRefresh=$forceRefresh, accountKey=${accountKey.take(8)}...)" }
-        _state.value = XtreamCategoryPreloadState.Loading
+            // Skip if already loading
+            if (currentState is XtreamCategoryPreloadState.Loading) {
+                UnifiedLog.d(TAG) { "Category preload already in progress" }
+                return
+            }
 
-        // Minimal config - categories don't need scan params
-        val config = XtreamCatalogConfig.DEFAULT
+            // Get Xtream account key for repository storage
+            val accountKey = getXtreamAccountKey()
+            if (accountKey == null) {
+                val errorMsg = "No Xtream account found - cannot preload categories"
+                UnifiedLog.w(TAG) { errorMsg }
+                _state.value = XtreamCategoryPreloadState.Error(message = errorMsg)
+                return
+            }
 
-        when (val result = xtreamCatalogPipeline.fetchCategories(config)) {
-            is XtreamCategoryResult.Success -> {
-                val cached = XtreamCachedCategories(
-                    vodCategories = result.vodCategories,
-                    seriesCategories = result.seriesCategories,
-                    liveCategories = result.liveCategories,
-                    timestampMs = System.currentTimeMillis(),
-                )
-                _state.value = XtreamCategoryPreloadState.Success(cached)
+            UnifiedLog.i(TAG) { "Starting category preload (forceRefresh=$forceRefresh, accountKey=${accountKey.take(8)}...)" }
+            _state.value = XtreamCategoryPreloadState.Loading
 
-                // Persist to repository for UI consumption
-                persistCategoriesToRepository(accountKey, result)
+            // Minimal config - categories don't need scan params
+            val config = XtreamCatalogConfig.DEFAULT
 
-                UnifiedLog.i(TAG) {
-                    "Categories preloaded & persisted: vod=${result.vodCategories.size}, " +
-                        "series=${result.seriesCategories.size}, live=${result.liveCategories.size}"
+            when (val result = xtreamCatalogPipeline.fetchCategories(config)) {
+                is XtreamCategoryResult.Success -> {
+                    val cached =
+                        XtreamCachedCategories(
+                            vodCategories = result.vodCategories,
+                            seriesCategories = result.seriesCategories,
+                            liveCategories = result.liveCategories,
+                            timestampMs = System.currentTimeMillis(),
+                        )
+                    _state.value = XtreamCategoryPreloadState.Success(cached)
+
+                    // Persist to repository for UI consumption
+                    persistCategoriesToRepository(accountKey, result)
+
+                    UnifiedLog.i(TAG) {
+                        "Categories preloaded & persisted: vod=${result.vodCategories.size}, " +
+                            "series=${result.seriesCategories.size}, live=${result.liveCategories.size}"
+                    }
+                }
+                is XtreamCategoryResult.Error -> {
+                    _state.value =
+                        XtreamCategoryPreloadState.Error(
+                            message = result.message,
+                            cause = result.cause,
+                        )
+                    UnifiedLog.e(TAG) { "Category preload failed: ${result.message}" }
                 }
             }
-            is XtreamCategoryResult.Error -> {
-                _state.value = XtreamCategoryPreloadState.Error(
-                    message = result.message,
-                    cause = result.cause,
+        }
+
+        /**
+         * Clear cached categories.
+         *
+         * Call this when:
+         * - User logs out of Xtream
+         * - Credentials are invalidated
+         */
+        fun clearCache() {
+            _state.value = XtreamCategoryPreloadState.Idle
+            UnifiedLog.d(TAG) { "Category cache cleared" }
+        }
+
+        // =========================================================================
+        // Private Helpers
+        // =========================================================================
+
+        private suspend fun getXtreamAccountKey(): String? {
+            val accounts = sourceAccountRepository.observeAll().first()
+            return accounts.firstOrNull { it.sourceType == SourceType.XTREAM }?.accountKey
+        }
+
+        /**
+         * Persist fetched categories to the repository.
+         *
+         * New categories are added with `isSelected = true` by default.
+         * Existing categories preserve their selection state.
+         */
+        private suspend fun persistCategoriesToRepository(
+            accountKey: String,
+            result: XtreamCategoryResult.Success,
+        ) {
+            // Get existing selections to preserve user choices
+            val existingSelections =
+                categoryRepository
+                    .observeForAccount(accountKey)
+                    .first()
+                    .associateBy { it.selectionKey }
+
+            val allCategories =
+                buildList {
+                    addAll(
+                        result.vodCategories.mapIndexed { index, cat ->
+                            cat.toCategorySelection(accountKey, XtreamCategoryType.VOD, index, existingSelections)
+                        },
+                    )
+                    addAll(
+                        result.seriesCategories.mapIndexed { index, cat ->
+                            cat.toCategorySelection(accountKey, XtreamCategoryType.SERIES, index, existingSelections)
+                        },
+                    )
+                    addAll(
+                        result.liveCategories.mapIndexed { index, cat ->
+                            cat.toCategorySelection(accountKey, XtreamCategoryType.LIVE, index, existingSelections)
+                        },
+                    )
+                }
+
+            categoryRepository.upsertAll(allCategories)
+            UnifiedLog.d(TAG) { "Persisted ${allCategories.size} categories to repository" }
+        }
+
+        /**
+         * Convert pipeline category to domain category selection.
+         *
+         * Preserves existing selection state if category was previously stored.
+         */
+        private fun XtreamCategoryInfo.toCategorySelection(
+            accountKey: String,
+            categoryType: XtreamCategoryType,
+            sortIndex: Int,
+            existingSelections: Map<String, CategorySelection>,
+        ): CategorySelection {
+            val key =
+                NxCategorySelectionRepository.buildSelectionKey(
+                    accountKey = accountKey,
+                    categoryType = categoryType,
+                    sourceCategoryId = categoryId,
                 )
-                UnifiedLog.e(TAG) { "Category preload failed: ${result.message}" }
-            }
-        }
-    }
+            val existing = existingSelections[key]
 
-    /**
-     * Clear cached categories.
-     *
-     * Call this when:
-     * - User logs out of Xtream
-     * - Credentials are invalidated
-     */
-    fun clearCache() {
-        _state.value = XtreamCategoryPreloadState.Idle
-        UnifiedLog.d(TAG) { "Category cache cleared" }
-    }
-
-    // =========================================================================
-    // Private Helpers
-    // =========================================================================
-
-    private suspend fun getXtreamAccountKey(): String? {
-        val accounts = sourceAccountRepository.observeAll().first()
-        return accounts.firstOrNull { it.sourceType == SourceType.XTREAM }?.accountKey
-    }
-
-    /**
-     * Persist fetched categories to the repository.
-     *
-     * New categories are added with `isSelected = true` by default.
-     * Existing categories preserve their selection state.
-     */
-    private suspend fun persistCategoriesToRepository(
-        accountKey: String,
-        result: XtreamCategoryResult.Success,
-    ) {
-        // Get existing selections to preserve user choices
-        val existingSelections = categoryRepository.observeForAccount(accountKey).first()
-            .associateBy { it.selectionKey }
-
-        val allCategories = buildList {
-            addAll(result.vodCategories.mapIndexed { index, cat ->
-                cat.toCategorySelection(accountKey, XtreamCategoryType.VOD, index, existingSelections)
-            })
-            addAll(result.seriesCategories.mapIndexed { index, cat ->
-                cat.toCategorySelection(accountKey, XtreamCategoryType.SERIES, index, existingSelections)
-            })
-            addAll(result.liveCategories.mapIndexed { index, cat ->
-                cat.toCategorySelection(accountKey, XtreamCategoryType.LIVE, index, existingSelections)
-            })
+            return CategorySelection(
+                accountKey = accountKey,
+                categoryType = categoryType,
+                sourceCategoryId = categoryId,
+                categoryName = categoryName,
+                isSelected = existing?.isSelected ?: true, // Preserve or default to selected
+                parentId = parentId,
+                sortOrder = sortIndex,
+            )
         }
 
-        categoryRepository.upsertAll(allCategories)
-        UnifiedLog.d(TAG) { "Persisted ${allCategories.size} categories to repository" }
+        companion object {
+            private const val TAG = "XtreamCategoryPreloader"
+        }
     }
-
-    /**
-     * Convert pipeline category to domain category selection.
-     *
-     * Preserves existing selection state if category was previously stored.
-     */
-    private fun XtreamCategoryInfo.toCategorySelection(
-        accountKey: String,
-        categoryType: XtreamCategoryType,
-        sortIndex: Int,
-        existingSelections: Map<String, CategorySelection>,
-    ): CategorySelection {
-        val key = NxCategorySelectionRepository.buildSelectionKey(
-            accountKey = accountKey,
-            categoryType = categoryType,
-            sourceCategoryId = categoryId,
-        )
-        val existing = existingSelections[key]
-
-        return CategorySelection(
-            accountKey = accountKey,
-            categoryType = categoryType,
-            sourceCategoryId = categoryId,
-            categoryName = categoryName,
-            isSelected = existing?.isSelected ?: true, // Preserve or default to selected
-            parentId = parentId,
-            sortOrder = sortIndex,
-        )
-    }
-
-    companion object {
-        private const val TAG = "XtreamCategoryPreloader"
-    }
-}
 
 /**
  * State of category preloading.
@@ -244,7 +259,9 @@ sealed interface XtreamCategoryPreloadState {
     data object Loading : XtreamCategoryPreloadState
 
     /** Categories loaded successfully. */
-    data class Success(val categories: XtreamCachedCategories) : XtreamCategoryPreloadState
+    data class Success(
+        val categories: XtreamCachedCategories,
+    ) : XtreamCategoryPreloadState
 
     /** Category loading failed. */
     data class Error(

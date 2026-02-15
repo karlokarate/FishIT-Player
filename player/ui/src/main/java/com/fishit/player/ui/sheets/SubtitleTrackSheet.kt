@@ -69,15 +69,17 @@ fun SubtitleTrackSheet(
         sheetState = sheetState,
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 32.dp),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 32.dp),
         ) {
             // Header
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 24.dp, vertical = 16.dp),
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 24.dp, vertical = 16.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Icon(
@@ -133,30 +135,30 @@ private fun SubtitleOffItem(
 ) {
     // TV Focus state for D-Pad navigation
     var isFocused by remember { mutableStateOf(false) }
-    
+
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .onFocusChanged { isFocused = it.isFocused }
-            .focusable()
-            .then(
-                if (isFocused) {
-                    Modifier.border(
-                        width = 2.dp,
-                        color = MaterialTheme.colorScheme.primary,
-                        shape = RoundedCornerShape(8.dp)
-                    )
-                } else {
-                    Modifier
-                }
-            )
-            .clickable(onClick = onClick)
-            .padding(horizontal = 24.dp, vertical = 12.dp)
-            // Accessibility: announce selection state
-            .semantics {
-                role = Role.RadioButton
-                selected = isSelected
-            },
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .onFocusChanged { isFocused = it.isFocused }
+                .focusable()
+                .then(
+                    if (isFocused) {
+                        Modifier.border(
+                            width = 2.dp,
+                            color = MaterialTheme.colorScheme.primary,
+                            shape = RoundedCornerShape(8.dp),
+                        )
+                    } else {
+                        Modifier
+                    },
+                ).clickable(onClick = onClick)
+                .padding(horizontal = 24.dp, vertical = 12.dp)
+                // Accessibility: announce selection state
+                .semantics {
+                    role = Role.RadioButton
+                    selected = isSelected
+                },
         verticalAlignment = Alignment.CenterVertically,
     ) {
         // Selection indicator
@@ -197,30 +199,30 @@ private fun SubtitleTrackItem(
 ) {
     // TV Focus state for D-Pad navigation
     var isFocused by remember { mutableStateOf(false) }
-    
+
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .onFocusChanged { isFocused = it.isFocused }
-            .focusable()
-            .then(
-                if (isFocused) {
-                    Modifier.border(
-                        width = 2.dp,
-                        color = MaterialTheme.colorScheme.primary,
-                        shape = RoundedCornerShape(8.dp)
-                    )
-                } else {
-                    Modifier
-                }
-            )
-            .clickable(onClick = onClick)
-            .padding(horizontal = 24.dp, vertical = 12.dp)
-            // Accessibility: announce selection state
-            .semantics {
-                role = Role.RadioButton
-                selected = isSelected
-            },
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .onFocusChanged { isFocused = it.isFocused }
+                .focusable()
+                .then(
+                    if (isFocused) {
+                        Modifier.border(
+                            width = 2.dp,
+                            color = MaterialTheme.colorScheme.primary,
+                            shape = RoundedCornerShape(8.dp),
+                        )
+                    } else {
+                        Modifier
+                    },
+                ).clickable(onClick = onClick)
+                .padding(horizontal = 24.dp, vertical = 12.dp)
+                // Accessibility: announce selection state
+                .semantics {
+                    role = Role.RadioButton
+                    selected = isSelected
+                },
         verticalAlignment = Alignment.CenterVertically,
     ) {
         // Selection indicator

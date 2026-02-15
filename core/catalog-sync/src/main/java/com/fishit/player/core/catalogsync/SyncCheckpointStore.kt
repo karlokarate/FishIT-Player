@@ -76,62 +76,66 @@ interface SyncCheckpointStore {
      * Clear all checkpoints (for force rescan).
      */
     suspend fun clearAll()
-    
+
     // =========================================================================
     // Last Sync Timestamp (for Incremental Sync)
     // =========================================================================
-    
+
     /**
      * Get the timestamp of the last successful Xtream sync (epoch millis).
-     * 
+     *
      * Used by incremental sync to only fetch items where `added > lastSyncTimestamp`.
-     * 
+     *
      * @return Epoch millis of last sync, or null if never synced
      */
     suspend fun getXtreamLastSyncTimestamp(): Long?
-    
+
     /**
      * Save the timestamp of the last successful Xtream sync.
-     * 
+     *
      * Should be called after a successful full sync or incremental sync.
-     * 
+     *
      * @param timestamp Epoch millis when sync completed
      */
     suspend fun saveXtreamLastSyncTimestamp(timestamp: Long)
-    
+
     /**
      * Get the timestamp of the last successful Telegram sync (epoch millis).
-     * 
+     *
      * @return Epoch millis of last sync, or null if never synced
      */
     suspend fun getTelegramLastSyncTimestamp(): Long?
-    
+
     /**
      * Save the timestamp of the last successful Telegram sync.
-     * 
+     *
      * @param timestamp Epoch millis when sync completed
      */
     suspend fun saveTelegramLastSyncTimestamp(timestamp: Long)
-    
+
     /**
      * Get the last known item counts for Xtream.
-     * 
+     *
      * Used by incremental sync for quick count comparison:
      * - If counts match → skip sync entirely
      * - If counts differ → fetch only new items
-     * 
+     *
      * @return Triple of (vodCount, seriesCount, liveCount), or null if never synced
      */
     suspend fun getXtreamLastCounts(): Triple<Int, Int, Int>?
-    
+
     /**
      * Save the item counts after successful Xtream sync.
-     * 
+     *
      * @param vodCount Number of VOD items
      * @param seriesCount Number of series
      * @param liveCount Number of live channels
      */
-    suspend fun saveXtreamLastCounts(vodCount: Int, seriesCount: Int, liveCount: Int)
+    suspend fun saveXtreamLastCounts(
+        vodCount: Int,
+        seriesCount: Int,
+        liveCount: Int,
+    )
 }
 
 /**
@@ -146,7 +150,7 @@ class DataStoreSyncCheckpointStore
         companion object {
             private val KEY_XTREAM_CHECKPOINT = stringPreferencesKey("xtream_checkpoint")
             private val KEY_TELEGRAM_CHECKPOINT = stringPreferencesKey("telegram_checkpoint")
-            
+
             // Incremental sync keys
             private val KEY_XTREAM_LAST_SYNC_TS = longPreferencesKey("xtream_last_sync_timestamp")
             private val KEY_TELEGRAM_LAST_SYNC_TS = longPreferencesKey("telegram_last_sync_timestamp")
@@ -197,39 +201,39 @@ class DataStoreSyncCheckpointStore
                 prefs.remove(KEY_TELEGRAM_CHECKPOINT)
             }
         }
-        
+
         // =========================================================================
         // Last Sync Timestamp (for Incremental Sync)
         // =========================================================================
-        
+
         override suspend fun getXtreamLastSyncTimestamp(): Long? =
             context.syncCheckpointDataStore.data
                 .map { prefs -> prefs[KEY_XTREAM_LAST_SYNC_TS] }
                 .first()
-        
+
         override suspend fun saveXtreamLastSyncTimestamp(timestamp: Long) {
             context.syncCheckpointDataStore.edit { prefs ->
                 prefs[KEY_XTREAM_LAST_SYNC_TS] = timestamp
             }
         }
-        
+
         override suspend fun getTelegramLastSyncTimestamp(): Long? =
             context.syncCheckpointDataStore.data
                 .map { prefs -> prefs[KEY_TELEGRAM_LAST_SYNC_TS] }
                 .first()
-        
+
         override suspend fun saveTelegramLastSyncTimestamp(timestamp: Long) {
             context.syncCheckpointDataStore.edit { prefs ->
                 prefs[KEY_TELEGRAM_LAST_SYNC_TS] = timestamp
             }
         }
-        
+
         override suspend fun getXtreamLastCounts(): Triple<Int, Int, Int>? {
             val prefs = context.syncCheckpointDataStore.data.first()
             val vodCount = prefs[KEY_XTREAM_VOD_COUNT]?.toInt()
             val seriesCount = prefs[KEY_XTREAM_SERIES_COUNT]?.toInt()
             val liveCount = prefs[KEY_XTREAM_LIVE_COUNT]?.toInt()
-            
+
             // Return null if any count is missing (never synced)
             return if (vodCount != null && seriesCount != null && liveCount != null) {
                 Triple(vodCount, seriesCount, liveCount)
@@ -237,8 +241,12 @@ class DataStoreSyncCheckpointStore
                 null
             }
         }
-        
-        override suspend fun saveXtreamLastCounts(vodCount: Int, seriesCount: Int, liveCount: Int) {
+
+        override suspend fun saveXtreamLastCounts(
+            vodCount: Int,
+            seriesCount: Int,
+            liveCount: Int,
+        ) {
             context.syncCheckpointDataStore.edit { prefs ->
                 prefs[KEY_XTREAM_VOD_COUNT] = vodCount.toLong()
                 prefs[KEY_XTREAM_SERIES_COUNT] = seriesCount.toLong()

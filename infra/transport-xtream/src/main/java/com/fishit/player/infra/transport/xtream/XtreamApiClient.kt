@@ -295,7 +295,10 @@ interface XtreamApiClient {
      * @param vodKind Optional kind/alias (movie, vod, movies) for API call - from PlaybackHints
      * @return Detailed VOD info or null if not found
      */
-    suspend fun getVodInfo(vodId: Int, vodKind: String? = null): XtreamVodInfo?
+    suspend fun getVodInfo(
+        vodId: Int,
+        vodKind: String? = null,
+    ): XtreamVodInfo?
 
     /**
      * Fetch detailed series information including episodes. Action: get_series_info

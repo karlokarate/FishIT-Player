@@ -97,7 +97,10 @@ object ObjectBoxFlow {
      * @param offset Starting offset for pagination (default: 0)
      * @return Flow that emits List<T> with at most [limit] items on each data change
      */
-    fun <T> Query<T>.asFlowWithLimit(limit: Int = 200, offset: Long = 0): Flow<List<T>> =
+    fun <T> Query<T>.asFlowWithLimit(
+        limit: Int = 200,
+        offset: Long = 0,
+    ): Flow<List<T>> =
         callbackFlow {
             val query = this@asFlowWithLimit
 

@@ -9,13 +9,10 @@ import com.fishit.player.core.model.sort.ContentType
 data class SearchQuery(
     /** Text query (searches title, plot, cast, director) */
     val text: String = "",
-
     /** Optional content type filter */
     val contentType: ContentType? = null,
-
     /** Additional filters to apply */
     val filters: FilterConfig = FilterConfig.NONE,
-
     /** Maximum results to return */
     val limit: Int = 50,
 ) {
@@ -35,7 +32,10 @@ data class SearchQuery(
         fun textOnly(query: String) = SearchQuery(text = query)
 
         /** Create a search for a specific content type */
-        fun forType(type: ContentType, query: String = "") = SearchQuery(
+        fun forType(
+            type: ContentType,
+            query: String = "",
+        ) = SearchQuery(
             text = query,
             contentType = type,
         )

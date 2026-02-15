@@ -120,7 +120,11 @@ object XtreamIdCodec {
      * @param episodeNum Episode number within season (0-based or 1-based)
      * @return Canonical source ID: `xtream:episode:series:{seriesId}:s{season}:e{episode}`
      */
-    fun episodeComposite(seriesId: Long, season: Int, episodeNum: Int): String {
+    fun episodeComposite(
+        seriesId: Long,
+        season: Int,
+        episodeNum: Int,
+    ): String {
         require(seriesId != 0L) { "Series ID must not be zero, got: $seriesId" }
         require(season >= 0) { "Season must be non-negative, got: $season" }
         require(episodeNum >= 0) { "Episode must be non-negative, got: $episodeNum" }
@@ -130,8 +134,11 @@ object XtreamIdCodec {
     /**
      * Format Episode source ID with composite identity from Int seriesId.
      */
-    fun episodeComposite(seriesId: Int, season: Int, episodeNum: Int): String =
-        episodeComposite(seriesId.toLong(), season, episodeNum)
+    fun episodeComposite(
+        seriesId: Int,
+        season: Int,
+        episodeNum: Int,
+    ): String = episodeComposite(seriesId.toLong(), season, episodeNum)
 
     /**
      * Format Live channel source ID.
@@ -208,7 +215,11 @@ object XtreamIdCodec {
      * @param episodeNum Episode number (defaults to 0 if null)
      * @return Canonical source ID, or fallback with "unknown" seriesId if invalid
      */
-    fun episodeCompositeOrUnknown(seriesIdStr: String?, season: Int?, episodeNum: Int?): String {
+    fun episodeCompositeOrUnknown(
+        seriesIdStr: String?,
+        season: Int?,
+        episodeNum: Int?,
+    ): String {
         val seriesId = seriesIdStr?.toLongOrNull()
         val s = season ?: 0
         val e = episodeNum ?: 0
@@ -243,17 +254,19 @@ object XtreamIdCodec {
      * @param parsed The parsed source ID
      * @return Canonical source ID string
      */
-    fun format(parsed: XtreamParsedSourceId): String = when (parsed) {
-        is XtreamParsedSourceId.Vod -> vod(parsed.vodId)
-        is XtreamParsedSourceId.Series -> series(parsed.seriesId)
-        is XtreamParsedSourceId.Episode -> episode(parsed.episodeId)
-        is XtreamParsedSourceId.EpisodeComposite -> episodeComposite(
-            parsed.seriesId,
-            parsed.season,
-            parsed.episode,
-        )
-        is XtreamParsedSourceId.Live -> live(parsed.channelId)
-    }
+    fun format(parsed: XtreamParsedSourceId): String =
+        when (parsed) {
+            is XtreamParsedSourceId.Vod -> vod(parsed.vodId)
+            is XtreamParsedSourceId.Series -> series(parsed.seriesId)
+            is XtreamParsedSourceId.Episode -> episode(parsed.episodeId)
+            is XtreamParsedSourceId.EpisodeComposite ->
+                episodeComposite(
+                    parsed.seriesId,
+                    parsed.season,
+                    parsed.episode,
+                )
+            is XtreamParsedSourceId.Live -> live(parsed.channelId)
+        }
 
     // =========================================================================
     // Parse Function (String → Typed)
@@ -302,15 +315,21 @@ object XtreamIdCodec {
         if (parts.size < 3) return null
 
         return when (parts[1]) {
-            "vod" -> parts.getOrNull(2)?.toLongOrNull()
-                ?.takeIf { it != 0L }
-                ?.let { XtreamParsedSourceId.Vod(it) }
+            "vod" ->
+                parts
+                    .getOrNull(2)
+                    ?.toLongOrNull()
+                    ?.takeIf { it != 0L }
+                    ?.let { XtreamParsedSourceId.Vod(it) }
 
             "series" -> parseSeries(parts)
 
-            "live" -> parts.getOrNull(2)?.toLongOrNull()
-                ?.takeIf { it != 0L }
-                ?.let { XtreamParsedSourceId.Live(it) }
+            "live" ->
+                parts
+                    .getOrNull(2)
+                    ?.toLongOrNull()
+                    ?.takeIf { it != 0L }
+                    ?.let { XtreamParsedSourceId.Live(it) }
 
             "episode" -> parseEpisode(parts)
 
@@ -340,7 +359,8 @@ object XtreamIdCodec {
                     return XtreamParsedSourceId.EpisodeComposite(seriesId, season, episode)
                 }
             }
-            return parts[2].toLongOrNull()
+            return parts[2]
+                .toLongOrNull()
                 ?.takeIf { it != 0L }
                 ?.let { XtreamParsedSourceId.Episode(it) }
         }
@@ -431,16 +451,14 @@ object XtreamIdCodec {
      *
      * @return VOD ID or null if not a valid VOD source ID
      */
-    fun extractVodId(sourceId: String): Long? =
-        (parse(sourceId) as? XtreamParsedSourceId.Vod)?.vodId
+    fun extractVodId(sourceId: String): Long? = (parse(sourceId) as? XtreamParsedSourceId.Vod)?.vodId
 
     /**
      * Extract Series ID from source ID string.
      *
      * @return Series ID or null if not a valid Series source ID
      */
-    fun extractSeriesId(sourceId: String): Long? =
-        (parse(sourceId) as? XtreamParsedSourceId.Series)?.seriesId
+    fun extractSeriesId(sourceId: String): Long? = (parse(sourceId) as? XtreamParsedSourceId.Series)?.seriesId
 
     /**
      * Extract Episode stream ID from source ID string.
@@ -450,8 +468,7 @@ object XtreamIdCodec {
      *
      * @return Episode stream ID or null
      */
-    fun extractEpisodeId(sourceId: String): Long? =
-        (parse(sourceId) as? XtreamParsedSourceId.Episode)?.episodeId
+    fun extractEpisodeId(sourceId: String): Long? = (parse(sourceId) as? XtreamParsedSourceId.Episode)?.episodeId
 
     /**
      * Extract composite episode info from source ID string.
@@ -468,8 +485,7 @@ object XtreamIdCodec {
      *
      * @return Channel ID or null if not a valid Live source ID
      */
-    fun extractChannelId(sourceId: String): Long? =
-        (parse(sourceId) as? XtreamParsedSourceId.Live)?.channelId
+    fun extractChannelId(sourceId: String): Long? = (parse(sourceId) as? XtreamParsedSourceId.Live)?.channelId
 
     // =========================================================================
     // Content Type Detection (SSOT — used by SourceSelection, PlayerNavViewModel)
@@ -482,7 +498,11 @@ object XtreamIdCodec {
      * Use [detectContentType] to resolve from a sourceKey.
      */
     enum class ContentType {
-        VOD, LIVE, SERIES, EPISODE, UNKNOWN
+        VOD,
+        LIVE,
+        SERIES,
+        EPISODE,
+        UNKNOWN,
     }
 
     /**
@@ -498,13 +518,14 @@ object XtreamIdCodec {
      * @param sourceKey The full source ID or sourceKey string
      * @return Detected content type, or [ContentType.UNKNOWN] if not recognized
      */
-    fun detectContentType(sourceKey: String): ContentType = when {
-        sourceKey.contains(":vod:") -> ContentType.VOD
-        sourceKey.contains(":live:") -> ContentType.LIVE
-        sourceKey.contains(":episode:") -> ContentType.EPISODE
-        sourceKey.contains(":series:") -> ContentType.SERIES
-        else -> ContentType.UNKNOWN
-    }
+    fun detectContentType(sourceKey: String): ContentType =
+        when {
+            sourceKey.contains(":vod:") -> ContentType.VOD
+            sourceKey.contains(":live:") -> ContentType.LIVE
+            sourceKey.contains(":episode:") -> ContentType.EPISODE
+            sourceKey.contains(":series:") -> ContentType.SERIES
+            else -> ContentType.UNKNOWN
+        }
 
     /**
      * Extract the simple numeric ID segment after the content type marker.
@@ -523,14 +544,18 @@ object XtreamIdCodec {
      * @param contentType The content type to extract ID for
      * @return The extracted first ID segment, or null if marker not found
      */
-    fun extractSimpleId(sourceKey: String, contentType: ContentType): String? {
-        val marker = when (contentType) {
-            ContentType.VOD -> ":vod:"
-            ContentType.LIVE -> ":live:"
-            ContentType.SERIES -> ":series:"
-            ContentType.EPISODE -> ":episode:"
-            ContentType.UNKNOWN -> return null
-        }
+    fun extractSimpleId(
+        sourceKey: String,
+        contentType: ContentType,
+    ): String? {
+        val marker =
+            when (contentType) {
+                ContentType.VOD -> ":vod:"
+                ContentType.LIVE -> ":live:"
+                ContentType.SERIES -> ":series:"
+                ContentType.EPISODE -> ":episode:"
+                ContentType.UNKNOWN -> return null
+            }
         val idx = sourceKey.indexOf(marker)
         if (idx < 0) return null
         return sourceKey.substring(idx + marker.length).takeWhile { it != ':' }.ifEmpty { null }

@@ -29,11 +29,12 @@ internal fun NX_WorkRuntimeState.toDomain(): NxWorkRuntimeStateRepository.Runtim
 internal fun NxWorkRuntimeStateRepository.RuntimeState.toEntity(): NX_WorkRuntimeState =
     NX_WorkRuntimeState(
         workKey = workKey,
-        stateType = when {
-            lastErrorCode != null -> "ERROR"
-            !isAvailable -> "UNAVAILABLE"
-            else -> "AVAILABLE"
-        },
+        stateType =
+            when {
+                lastErrorCode != null -> "ERROR"
+                !isAvailable -> "UNAVAILABLE"
+                else -> "AVAILABLE"
+            },
         errorCode = lastErrorCode,
         errorMessage = lastErrorCode?.let { "Error: $it" },
         updatedAt = lastProbeAtMs ?: System.currentTimeMillis(),

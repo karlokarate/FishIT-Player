@@ -10,7 +10,6 @@ import org.junit.Test
  * Validates 5→10 normalization and resolve() priority logic.
  */
 class RatingNormalizerTest {
-
     // ========== normalize5to10 ==========
 
     @Test

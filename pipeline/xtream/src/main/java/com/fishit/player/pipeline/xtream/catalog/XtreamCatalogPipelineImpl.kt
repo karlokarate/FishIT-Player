@@ -203,9 +203,7 @@ internal class XtreamCatalogPipelineImpl
 /**
  * Map transport-layer XtreamCategory to pipeline-layer XtreamCategoryInfo.
  */
-private fun com.fishit.player.infra.transport.xtream.XtreamCategory.toCategoryInfo(
-    type: XtreamCategoryType,
-): XtreamCategoryInfo =
+private fun com.fishit.player.infra.transport.xtream.XtreamCategory.toCategoryInfo(type: XtreamCategoryType): XtreamCategoryInfo =
     XtreamCategoryInfo(
         categoryId = id, // Uses safe accessor (categoryId.orEmpty())
         categoryName = name, // Uses safe accessor (categoryName.orEmpty())

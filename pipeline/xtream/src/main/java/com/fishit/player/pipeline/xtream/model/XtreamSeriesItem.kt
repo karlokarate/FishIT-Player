@@ -80,12 +80,13 @@ data class XtreamSeriesItem(
      *
      * **Design:** docs/v2/INCREMENTAL_SYNC_DESIGN.md Section 7
      */
-    fun fingerprint(): Int = Objects.hash(
-        id,
-        name,
-        lastModified,
-        categoryId,
-        cover,
-        rating,
-    )
+    fun fingerprint(): Int =
+        Objects.hash(
+            id,
+            name,
+            lastModified,
+            categoryId,
+            cover,
+            rating,
+        )
 }

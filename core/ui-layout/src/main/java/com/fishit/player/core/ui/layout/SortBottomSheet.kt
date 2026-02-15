@@ -35,7 +35,9 @@ import androidx.compose.ui.unit.dp
 /**
  * Sort field for content lists.
  */
-enum class UiSortField(val displayName: String) {
+enum class UiSortField(
+    val displayName: String,
+) {
     TITLE("Name"),
     YEAR("Jahr"),
     RATING("Bewertung"),
@@ -57,10 +59,11 @@ enum class UiSortDirection {
  */
 data class UiSortOption(
     val field: UiSortField,
-    val direction: UiSortDirection = when (field) {
-        UiSortField.TITLE -> UiSortDirection.ASCENDING
-        else -> UiSortDirection.DESCENDING
-    },
+    val direction: UiSortDirection =
+        when (field) {
+            UiSortField.TITLE -> UiSortDirection.ASCENDING
+            else -> UiSortDirection.DESCENDING
+        },
 ) {
     companion object {
         val DEFAULT = UiSortOption(UiSortField.TITLE)
@@ -103,19 +106,21 @@ fun SortBottomSheet(
             contentColor = MaterialTheme.colorScheme.onSurface,
             dragHandle = {
                 Box(
-                    modifier = Modifier
-                        .padding(vertical = 12.dp)
-                        .width(32.dp)
-                        .height(4.dp)
-                        .clip(RoundedCornerShape(2.dp))
-                        .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)),
+                    modifier =
+                        Modifier
+                            .padding(vertical = 12.dp)
+                            .width(32.dp)
+                            .height(4.dp)
+                            .clip(RoundedCornerShape(2.dp))
+                            .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)),
                 )
             },
         ) {
             Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
             ) {
                 // Header
                 Text(
@@ -133,20 +138,21 @@ fun SortBottomSheet(
                         direction = if (isSelected) currentSort.direction else null,
                         isSelected = isSelected,
                         onClick = {
-                            val newDirection = if (isSelected) {
-                                // Toggle direction
-                                if (currentSort.direction == UiSortDirection.ASCENDING) {
-                                    UiSortDirection.DESCENDING
+                            val newDirection =
+                                if (isSelected) {
+                                    // Toggle direction
+                                    if (currentSort.direction == UiSortDirection.ASCENDING) {
+                                        UiSortDirection.DESCENDING
+                                    } else {
+                                        UiSortDirection.ASCENDING
+                                    }
                                 } else {
-                                    UiSortDirection.ASCENDING
+                                    // Use default direction for field
+                                    when (field) {
+                                        UiSortField.TITLE -> UiSortDirection.ASCENDING
+                                        else -> UiSortDirection.DESCENDING
+                                    }
                                 }
-                            } else {
-                                // Use default direction for field
-                                when (field) {
-                                    UiSortField.TITLE -> UiSortDirection.ASCENDING
-                                    else -> UiSortDirection.DESCENDING
-                                }
-                            }
                             onSortSelected(UiSortOption(field, newDirection))
                         },
                     )
@@ -166,24 +172,27 @@ private fun SortOptionItem(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val backgroundColor = if (isSelected) {
-        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
-    } else {
-        Color.Transparent
-    }
+    val backgroundColor =
+        if (isSelected) {
+            MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+        } else {
+            Color.Transparent
+        }
 
     Surface(
-        modifier = modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
-            .clickable(onClick = onClick),
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(12.dp))
+                .clickable(onClick = onClick),
         color = backgroundColor,
         shape = RoundedCornerShape(12.dp),
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 14.dp),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 14.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -205,27 +214,30 @@ private fun SortOptionItem(
                     text = field.displayName,
                     style = MaterialTheme.typography.bodyLarge,
                     fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
-                    color = if (isSelected) {
-                        MaterialTheme.colorScheme.primary
-                    } else {
-                        MaterialTheme.colorScheme.onSurface
-                    },
+                    color =
+                        if (isSelected) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            MaterialTheme.colorScheme.onSurface
+                        },
                 )
             }
 
             // Direction indicator
             if (direction != null) {
                 Icon(
-                    imageVector = if (direction == UiSortDirection.ASCENDING) {
-                        Icons.Default.ArrowUpward
-                    } else {
-                        Icons.Default.ArrowDownward
-                    },
-                    contentDescription = if (direction == UiSortDirection.ASCENDING) {
-                        "Aufsteigend"
-                    } else {
-                        "Absteigend"
-                    },
+                    imageVector =
+                        if (direction == UiSortDirection.ASCENDING) {
+                            Icons.Default.ArrowUpward
+                        } else {
+                            Icons.Default.ArrowDownward
+                        },
+                    contentDescription =
+                        if (direction == UiSortDirection.ASCENDING) {
+                            "Aufsteigend"
+                        } else {
+                            "Absteigend"
+                        },
                     tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(20.dp),
                 )

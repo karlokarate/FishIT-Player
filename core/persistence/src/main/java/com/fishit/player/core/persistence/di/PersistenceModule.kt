@@ -17,7 +17,6 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 abstract class PersistenceModule {
-
     /** Debug / power-user database introspection tooling. */
     @Binds
     @Singleton

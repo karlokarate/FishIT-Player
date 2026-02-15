@@ -51,7 +51,13 @@ object FlexibleStringSerializer : KSerializer<String?> {
         return try {
             when (element) {
                 is JsonPrimitive -> if (element.isString) element.content.takeIf { it.isNotBlank() } else null
-                is JsonArray -> element.firstOrNull()?.jsonPrimitive?.takeIf { it.isString }?.content?.takeIf { it.isNotBlank() }
+                is JsonArray ->
+                    element
+                        .firstOrNull()
+                        ?.jsonPrimitive
+                        ?.takeIf { it.isString }
+                        ?.content
+                        ?.takeIf { it.isNotBlank() }
                 else -> null
             }
         } catch (_: Exception) {
@@ -74,7 +80,10 @@ object FlexibleStringSerializer : KSerializer<String?> {
         return raw?.takeIf { it.isNotBlank() }
     }
 
-    override fun serialize(encoder: Encoder, value: String?) {
+    override fun serialize(
+        encoder: Encoder,
+        value: String?,
+    ) {
         encoder.encodeNullableSerializableValue(String.serializer(), value)
     }
 }

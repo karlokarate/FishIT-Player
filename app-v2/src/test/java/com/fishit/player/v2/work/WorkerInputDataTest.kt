@@ -2,9 +2,9 @@ package com.fishit.player.v2.work
 
 import androidx.work.Data
 import com.fishit.player.core.persistence.config.ObxWriteConfig
-import org.junit.Test
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
+import org.junit.Test
 
 /**
  * Unit tests for [WorkerInputData] runtime budget handling.

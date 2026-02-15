@@ -18,7 +18,6 @@ import java.util.Locale
  * @see docs/v2/NX_CONSOLIDATION_PLAN.md Section 13.3
  */
 object SlugGenerator {
-
     /**
      * Pattern matching leading articles in multiple languages.
      *
@@ -29,10 +28,11 @@ object SlugGenerator {
      * Supported: EN (the/a/an), DE (der/die/das/ein/eine), FR (le/la/les/l'),
      * ES (el/los/las), IT (il/lo/la/i/gli/le)
      */
-    private val LEADING_ARTICLE = Regex(
-        """^(the|a|an|der|die|das|ein|eine|le|la|les|l'|el|los|las|il|lo|i|gli)\s+""",
-        RegexOption.IGNORE_CASE,
-    )
+    private val LEADING_ARTICLE =
+        Regex(
+            """^(the|a|an|der|die|das|ein|eine|le|la|les|l'|el|los|las|il|lo|i|gli)\s+""",
+            RegexOption.IGNORE_CASE,
+        )
 
     // Pre-compiled regexes for hot-path performance (called per media item during sync)
     private val COMBINING_MARKS = Regex("[\\p{InCombiningDiacriticalMarks}]")

@@ -70,24 +70,26 @@ object NxKeyGenerator {
 
         // Heuristic key: slug + year (+ season/episode for episodes)
         val slug = toSlug(title)
-        val yearPart = when {
-            workType == NxWorkRepository.WorkType.LIVE_CHANNEL -> null // no year for live
-            year != null -> year.toString()
-            else -> "unknown"
-        }
+        val yearPart =
+            when {
+                workType == NxWorkRepository.WorkType.LIVE_CHANNEL -> null // no year for live
+                year != null -> year.toString()
+                else -> "unknown"
+            }
 
-        val id = buildString {
-            append(slug)
-            if (yearPart != null) {
-                append("-")
-                append(yearPart)
+        val id =
+            buildString {
+                append(slug)
+                if (yearPart != null) {
+                    append("-")
+                    append(yearPart)
+                }
+                if (workType == NxWorkRepository.WorkType.EPISODE && season != null && episode != null) {
+                    val s = season.toString().padStart(2, '0')
+                    val e = episode.toString().padStart(2, '0')
+                    append("-s${s}e$e")
+                }
             }
-            if (workType == NxWorkRepository.WorkType.EPISODE && season != null && episode != null) {
-                val s = season.toString().padStart(2, '0')
-                val e = episode.toString().padStart(2, '0')
-                append("-s${s}e$e")
-            }
-        }
 
         return "$type:$authority:$id"
     }
@@ -138,11 +140,12 @@ object NxKeyGenerator {
      * WorkType "SERIES" → TMDB namespace "tv" (not "series").
      * WorkType "EPISODE" → "episode", "MOVIE" → "movie".
      */
-    fun workTypeToTmdbNamespace(workType: String): String = when (workType.uppercase()) {
-        "SERIES" -> "tv"
-        "EPISODE" -> "episode"
-        else -> workType.lowercase() // "MOVIE" → "movie"
-    }
+    fun workTypeToTmdbNamespace(workType: String): String =
+        when (workType.uppercase()) {
+            "SERIES" -> "tv"
+            "EPISODE" -> "episode"
+            else -> workType.lowercase() // "MOVIE" → "movie"
+        }
 
     /**
      * Generate TMDB authority key.
@@ -255,9 +258,10 @@ object NxKeyGenerator {
      */
     fun telegramAccountKey(phoneNumber: String): String {
         // Normalize: keep only digits and leading +
-        val normalized = phoneNumber
-            .trim()
-            .let { if (it.startsWith("+")) "+" + it.filter { c -> c.isDigit() } else it.filter { c -> c.isDigit() } }
+        val normalized =
+            phoneNumber
+                .trim()
+                .let { if (it.startsWith("+")) "+" + it.filter { c -> c.isDigit() } else it.filter { c -> c.isDigit() } }
         require(normalized.isNotBlank()) { "Phone number required for Telegram account key" }
         return accountKey(SourceType.TELEGRAM, normalized)
     }
@@ -318,17 +322,16 @@ object NxKeyGenerator {
      * @param url Full URL or host string
      * @return Normalized host (lowercase, no protocol/port/path)
      */
-    fun extractHost(url: String): String {
-        return url
+    fun extractHost(url: String): String =
+        url
             .trim()
             .lowercase(Locale.ROOT)
             .removePrefix("https://")
             .removePrefix("http://")
             .removePrefix("www.")
-            .substringBefore(":")  // Remove port
-            .substringBefore("/")  // Remove path
+            .substringBefore(":") // Remove port
+            .substringBefore("/") // Remove path
             .trim()
-    }
 
     // =========================================================================
     // Profile Keys
@@ -386,9 +389,10 @@ object NxKeyGenerator {
         val parts = workKey.split(":", limit = 3)
         if (parts.size < 3) return null
 
-        val workType = NxWorkRepository.WorkType.entries
-            .find { it.name.equals(parts[0], ignoreCase = true) }
-            ?: NxWorkRepository.WorkType.UNKNOWN
+        val workType =
+            NxWorkRepository.WorkType.entries
+                .find { it.name.equals(parts[0], ignoreCase = true) }
+                ?: NxWorkRepository.WorkType.UNKNOWN
         val authority = parts[1]
         val id = parts[2]
 

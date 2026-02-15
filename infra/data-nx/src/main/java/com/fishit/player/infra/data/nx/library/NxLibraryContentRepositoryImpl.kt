@@ -32,8 +32,6 @@ import com.fishit.player.core.library.domain.LibraryMediaItem
 import com.fishit.player.core.library.domain.LibraryPagingConfig
 import com.fishit.player.core.library.domain.LibraryQueryOptions
 import com.fishit.player.core.model.ContentDisplayLimits
-import com.fishit.player.core.model.ImageRef
-import com.fishit.player.core.model.MediaType
 import com.fishit.player.core.model.SourceType
 import com.fishit.player.core.model.filter.FilterConfig
 import com.fishit.player.core.model.filter.FilterCriterion
@@ -43,7 +41,6 @@ import com.fishit.player.core.model.repository.NxWorkRepository.WorkType
 import com.fishit.player.core.model.repository.NxWorkSourceRefRepository
 import com.fishit.player.core.model.sort.SortDirection
 import com.fishit.player.core.model.sort.SortField
-import com.fishit.player.core.model.sort.SortOption
 import com.fishit.player.infra.data.nx.mapper.MediaTypeMapper
 import com.fishit.player.infra.logging.UnifiedLog
 import kotlinx.coroutines.flow.Flow
@@ -53,380 +50,380 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class NxLibraryContentRepositoryImpl @Inject constructor(
-    private val workRepository: NxWorkRepository,
-    private val sourceRefRepository: NxWorkSourceRefRepository,
-) : LibraryContentRepository {
+class NxLibraryContentRepositoryImpl
+    @Inject
+    constructor(
+        private val workRepository: NxWorkRepository,
+        private val sourceRefRepository: NxWorkSourceRefRepository,
+    ) : LibraryContentRepository {
+        companion object {
+            private const val TAG = "NxLibraryContentRepo"
 
-    companion object {
-        private const val TAG = "NxLibraryContentRepo"
-        // ==================== Shared Limits from core/model ====================
-        // Large catalog limits are REMOVED - use Paging for 40K+ catalogs.
-        // This small limit is only for deprecated Flow-based methods.
-        private const val DEPRECATED_FALLBACK_LIMIT = 50
-    }
+            // ==================== Shared Limits from core/model ====================
+            // Large catalog limits are REMOVED - use Paging for 40K+ catalogs.
+            // This small limit is only for deprecated Flow-based methods.
+            private const val DEPRECATED_FALLBACK_LIMIT = 50
+        }
 
-    // ==================== VOD Content ====================
-    // NOTE: Flow-based methods are DEPRECATED for large catalogs.
-    // Use getVodPagingData() instead for infinite scroll support.
+        // ==================== VOD Content ====================
+        // NOTE: Flow-based methods are DEPRECATED for large catalogs.
+        // Use getVodPagingData() instead for infinite scroll support.
 
-    @Deprecated("Use getVodPagingData() for large catalogs with Paging support")
-    override fun observeVod(categoryId: String?): Flow<List<LibraryMediaItem>> {
-        UnifiedLog.w(TAG, "observeVod() is deprecated - use getVodPagingData() for large catalogs")
-        return workRepository.observeByType(WorkType.MOVIE, limit = DEPRECATED_FALLBACK_LIMIT)
-            .map { works ->
-                works.mapNotNull { work ->
-                    val sourceType = determineSourceType(work.workKey)
-                    work.toLibraryMediaItem(sourceType = sourceType)
+        @Deprecated("Use getVodPagingData() for large catalogs with Paging support")
+        override fun observeVod(categoryId: String?): Flow<List<LibraryMediaItem>> {
+            UnifiedLog.w(TAG, "observeVod() is deprecated - use getVodPagingData() for large catalogs")
+            return workRepository
+                .observeByType(WorkType.MOVIE, limit = DEPRECATED_FALLBACK_LIMIT)
+                .map { works ->
+                    works.mapNotNull { work ->
+                        val sourceType = determineSourceType(work.workKey)
+                        work.toLibraryMediaItem(sourceType = sourceType)
+                    }
+                }.catch { e ->
+                    UnifiedLog.e(TAG, e) { "Failed to observe VOD" }
+                    emit(emptyList())
                 }
-            }
-            .catch { e ->
-                UnifiedLog.e(TAG, e) { "Failed to observe VOD" }
-                emit(emptyList())
-            }
-    }
+        }
 
-    @Deprecated("Use getVodPagingData() for large catalogs with Paging support")
-    override fun observeVodCategories(): Flow<List<LibraryCategory>> {
-        // For MVP: return a single "All Movies" category
-        // TODO: Implement category grouping when NX_Category entity is added
-        UnifiedLog.w(TAG, "observeVodCategories() is deprecated - use getVodPagingData() for large catalogs")
-        return workRepository.observeByType(WorkType.MOVIE, limit = DEPRECATED_FALLBACK_LIMIT)
-            .map { works ->
-                listOf(
-                    LibraryCategory(
-                        id = "all_movies",
-                        name = "All Movies",
-                        itemCount = works.size,
-                    ),
-                )
-            }
-            .catch { e ->
-                UnifiedLog.e(TAG, e) { "Failed to observe VOD categories" }
-                emit(emptyList())
-            }
-    }
-
-    // ==================== Series Content ====================
-    // NOTE: Flow-based methods are DEPRECATED for large catalogs.
-    // Use getSeriesPagingData() instead for infinite scroll support.
-
-    @Deprecated("Use getSeriesPagingData() for large catalogs with Paging support")
-    override fun observeSeries(categoryId: String?): Flow<List<LibraryMediaItem>> {
-        UnifiedLog.w(TAG, "observeSeries() is deprecated - use getSeriesPagingData() for large catalogs")
-        return workRepository.observeByType(WorkType.SERIES, limit = DEPRECATED_FALLBACK_LIMIT)
-            .map { works ->
-                works.mapNotNull { work ->
-                    val sourceType = determineSourceType(work.workKey)
-                    work.toLibraryMediaItem(sourceType = sourceType)
+        @Deprecated("Use getVodPagingData() for large catalogs with Paging support")
+        override fun observeVodCategories(): Flow<List<LibraryCategory>> {
+            // For MVP: return a single "All Movies" category
+            // TODO: Implement category grouping when NX_Category entity is added
+            UnifiedLog.w(TAG, "observeVodCategories() is deprecated - use getVodPagingData() for large catalogs")
+            return workRepository
+                .observeByType(WorkType.MOVIE, limit = DEPRECATED_FALLBACK_LIMIT)
+                .map { works ->
+                    listOf(
+                        LibraryCategory(
+                            id = "all_movies",
+                            name = "All Movies",
+                            itemCount = works.size,
+                        ),
+                    )
+                }.catch { e ->
+                    UnifiedLog.e(TAG, e) { "Failed to observe VOD categories" }
+                    emit(emptyList())
                 }
-            }
-            .catch { e ->
-                UnifiedLog.e(TAG, e) { "Failed to observe series" }
-                emit(emptyList())
-            }
-    }
+        }
 
-    @Deprecated("Use getSeriesPagingData() for large catalogs with Paging support")
-    override fun observeSeriesCategories(): Flow<List<LibraryCategory>> {
-        // For MVP: return a single "All Series" category
-        // TODO: Implement category grouping when NX_Category entity is added
-        UnifiedLog.w(TAG, "observeSeriesCategories() is deprecated - use getSeriesPagingData() for large catalogs")
-        return workRepository.observeByType(WorkType.SERIES, limit = DEPRECATED_FALLBACK_LIMIT)
-            .map { works ->
-                listOf(
-                    LibraryCategory(
-                        id = "all_series",
-                        name = "All Series",
-                        itemCount = works.size,
-                    ),
-                )
-            }
-            .catch { e ->
-                UnifiedLog.e(TAG, e) { "Failed to observe series categories" }
-                emit(emptyList())
-            }
-    }
+        // ==================== Series Content ====================
+        // NOTE: Flow-based methods are DEPRECATED for large catalogs.
+        // Use getSeriesPagingData() instead for infinite scroll support.
 
-    // ==================== Search ====================
-
-    override suspend fun search(query: String, limit: Int): List<LibraryMediaItem> {
-        return try {
-            val normalizedQuery = query.trim().lowercase()
-            if (normalizedQuery.isBlank()) return emptyList()
-
-            workRepository.searchByTitle(normalizedQuery, limit.coerceAtMost(ContentDisplayLimits.SEARCH))
-                .filter { it.type == WorkType.MOVIE || it.type == WorkType.SERIES }
-                .mapNotNull { work ->
-                    val sourceType = determineSourceType(work.workKey)
-                    work.toLibraryMediaItem(sourceType = sourceType)
+        @Deprecated("Use getSeriesPagingData() for large catalogs with Paging support")
+        override fun observeSeries(categoryId: String?): Flow<List<LibraryMediaItem>> {
+            UnifiedLog.w(TAG, "observeSeries() is deprecated - use getSeriesPagingData() for large catalogs")
+            return workRepository
+                .observeByType(WorkType.SERIES, limit = DEPRECATED_FALLBACK_LIMIT)
+                .map { works ->
+                    works.mapNotNull { work ->
+                        val sourceType = determineSourceType(work.workKey)
+                        work.toLibraryMediaItem(sourceType = sourceType)
+                    }
+                }.catch { e ->
+                    UnifiedLog.e(TAG, e) { "Failed to observe series" }
+                    emit(emptyList())
                 }
-        } catch (e: Exception) {
-            UnifiedLog.e(TAG, e) { "Search failed for query: $query" }
-            emptyList()
         }
-    }
 
-    // ==================== Mapping Helpers ====================
-
-    private fun Work.toLibraryMediaItem(sourceType: SourceType): LibraryMediaItem {
-        return LibraryMediaItem(
-            id = workKey,
-            title = displayTitle,
-            poster = poster,
-            backdrop = backdrop,
-            mediaType = MediaTypeMapper.toMediaType(type),
-            sourceType = sourceType,
-            year = year,
-            rating = rating?.toFloat(),
-            categoryId = null, // TODO: Add category support
-            categoryName = null,
-            genres = genres?.split(",")?.map { it.trim() } ?: emptyList(),
-            description = plot,
-            navigationId = workKey,
-            navigationSource = sourceType,
-        )
-    }
-
-    private suspend fun determineSourceType(workKey: String): SourceType {
-        val sourceRefs = sourceRefRepository.findByWorkKey(workKey)
-        if (sourceRefs.isEmpty()) return SourceType.UNKNOWN
-
-        return when {
-            sourceRefs.any { it.sourceType == NxWorkSourceRefRepository.SourceType.XTREAM } ->
-                SourceType.XTREAM
-            sourceRefs.any { it.sourceType == NxWorkSourceRefRepository.SourceType.TELEGRAM } ->
-                SourceType.TELEGRAM
-            sourceRefs.any { it.sourceType == NxWorkSourceRefRepository.SourceType.IO } ->
-                SourceType.IO
-            else -> SourceType.UNKNOWN
-        }
-    }
-
-    // Note: mapWorkTypeToMediaType removed - use MediaTypeMapper.toMediaType() instead
-
-    // ==================== Advanced Query (Sort/Filter) ====================
-
-    override fun observeVodWithOptions(
-        categoryId: String?,
-        options: LibraryQueryOptions,
-    ): Flow<List<LibraryMediaItem>> {
-        val queryOptions = options.toNxQueryOptions(WorkType.MOVIE)
-        return workRepository.observeWithOptions(queryOptions)
-            .map { works ->
-                works.mapNotNull { work ->
-                    val sourceType = determineSourceType(work.workKey)
-                    work.toLibraryMediaItem(sourceType = sourceType)
+        @Deprecated("Use getSeriesPagingData() for large catalogs with Paging support")
+        override fun observeSeriesCategories(): Flow<List<LibraryCategory>> {
+            // For MVP: return a single "All Series" category
+            // TODO: Implement category grouping when NX_Category entity is added
+            UnifiedLog.w(TAG, "observeSeriesCategories() is deprecated - use getSeriesPagingData() for large catalogs")
+            return workRepository
+                .observeByType(WorkType.SERIES, limit = DEPRECATED_FALLBACK_LIMIT)
+                .map { works ->
+                    listOf(
+                        LibraryCategory(
+                            id = "all_series",
+                            name = "All Series",
+                            itemCount = works.size,
+                        ),
+                    )
+                }.catch { e ->
+                    UnifiedLog.e(TAG, e) { "Failed to observe series categories" }
+                    emit(emptyList())
                 }
-            }
-            .catch { e ->
-                UnifiedLog.e(TAG, e) { "Failed to observe VOD with options" }
-                emit(emptyList())
-            }
-    }
-
-    override fun observeSeriesWithOptions(
-        categoryId: String?,
-        options: LibraryQueryOptions,
-    ): Flow<List<LibraryMediaItem>> {
-        val queryOptions = options.toNxQueryOptions(WorkType.SERIES)
-        return workRepository.observeWithOptions(queryOptions)
-            .map { works ->
-                works.mapNotNull { work ->
-                    val sourceType = determineSourceType(work.workKey)
-                    work.toLibraryMediaItem(sourceType = sourceType)
-                }
-            }
-            .catch { e ->
-                UnifiedLog.e(TAG, e) { "Failed to observe series with options" }
-                emit(emptyList())
-            }
-    }
-
-    override suspend fun getAllGenres(): Set<String> {
-        return try {
-            workRepository.getAllGenres()
-        } catch (e: Exception) {
-            UnifiedLog.e(TAG, e) { "Failed to get all genres" }
-            emptySet()
         }
-    }
 
-    override suspend fun getYearRange(): Pair<Int, Int>? {
-        return try {
-            workRepository.getYearRange()
-        } catch (e: Exception) {
-            UnifiedLog.e(TAG, e) { "Failed to get year range" }
-            null
-        }
-    }
+        // ==================== Search ====================
 
-    // ==================== Paging (Infinite Scroll) ====================
+        override suspend fun search(
+            query: String,
+            limit: Int,
+        ): List<LibraryMediaItem> {
+            return try {
+                val normalizedQuery = query.trim().lowercase()
+                if (normalizedQuery.isBlank()) return emptyList()
 
-    override fun getVodPagingData(
-        options: LibraryQueryOptions,
-        config: LibraryPagingConfig,
-    ): Flow<PagingData<LibraryMediaItem>> {
-        val queryOptions = options.toNxQueryOptions(WorkType.MOVIE)
-        val pagingConfig = PagingConfig(
-            pageSize = config.pageSize,
-            prefetchDistance = config.prefetchDistance,
-            initialLoadSize = config.initialLoadSize,
-            enablePlaceholders = false,
-        )
-        return Pager(
-            config = pagingConfig,
-            pagingSourceFactory = workRepository.pagingSourceFactory(queryOptions),
-        ).flow.map { pagingData ->
-            pagingData.map { work ->
-                work.toLibraryMediaItemSync()
+                workRepository
+                    .searchByTitle(normalizedQuery, limit.coerceAtMost(ContentDisplayLimits.SEARCH))
+                    .filter { it.type == WorkType.MOVIE || it.type == WorkType.SERIES }
+                    .mapNotNull { work ->
+                        val sourceType = determineSourceType(work.workKey)
+                        work.toLibraryMediaItem(sourceType = sourceType)
+                    }
+            } catch (e: Exception) {
+                UnifiedLog.e(TAG, e) { "Search failed for query: $query" }
+                emptyList()
             }
         }
-    }
 
-    override fun getSeriesPagingData(
-        options: LibraryQueryOptions,
-        config: LibraryPagingConfig,
-    ): Flow<PagingData<LibraryMediaItem>> {
-        val queryOptions = options.toNxQueryOptions(WorkType.SERIES)
-        val pagingConfig = PagingConfig(
-            pageSize = config.pageSize,
-            prefetchDistance = config.prefetchDistance,
-            initialLoadSize = config.initialLoadSize,
-            enablePlaceholders = false,
-        )
-        return Pager(
-            config = pagingConfig,
-            pagingSourceFactory = workRepository.pagingSourceFactory(queryOptions),
-        ).flow.map { pagingData ->
-            pagingData.map { work ->
-                work.toLibraryMediaItemSync()
+        // ==================== Mapping Helpers ====================
+
+        private fun Work.toLibraryMediaItem(sourceType: SourceType): LibraryMediaItem =
+            LibraryMediaItem(
+                id = workKey,
+                title = displayTitle,
+                poster = poster,
+                backdrop = backdrop,
+                mediaType = MediaTypeMapper.toMediaType(type),
+                sourceType = sourceType,
+                year = year,
+                rating = rating?.toFloat(),
+                categoryId = null, // TODO: Add category support
+                categoryName = null,
+                genres = genres?.split(",")?.map { it.trim() } ?: emptyList(),
+                description = plot,
+                navigationId = workKey,
+                navigationSource = sourceType,
+            )
+
+        private suspend fun determineSourceType(workKey: String): SourceType {
+            val sourceRefs = sourceRefRepository.findByWorkKey(workKey)
+            if (sourceRefs.isEmpty()) return SourceType.UNKNOWN
+
+            return when {
+                sourceRefs.any { it.sourceType == NxWorkSourceRefRepository.SourceType.XTREAM } ->
+                    SourceType.XTREAM
+                sourceRefs.any { it.sourceType == NxWorkSourceRefRepository.SourceType.TELEGRAM } ->
+                    SourceType.TELEGRAM
+                sourceRefs.any { it.sourceType == NxWorkSourceRefRepository.SourceType.IO } ->
+                    SourceType.IO
+                else -> SourceType.UNKNOWN
             }
         }
-    }
 
-    override suspend fun getVodCount(options: LibraryQueryOptions): Int {
-        return try {
+        // Note: mapWorkTypeToMediaType removed - use MediaTypeMapper.toMediaType() instead
+
+        // ==================== Advanced Query (Sort/Filter) ====================
+
+        override fun observeVodWithOptions(
+            categoryId: String?,
+            options: LibraryQueryOptions,
+        ): Flow<List<LibraryMediaItem>> {
             val queryOptions = options.toNxQueryOptions(WorkType.MOVIE)
-            workRepository.count(queryOptions)
-        } catch (e: Exception) {
-            UnifiedLog.e(TAG, e) { "Failed to get VOD count" }
-            0
+            return workRepository
+                .observeWithOptions(queryOptions)
+                .map { works ->
+                    works.mapNotNull { work ->
+                        val sourceType = determineSourceType(work.workKey)
+                        work.toLibraryMediaItem(sourceType = sourceType)
+                    }
+                }.catch { e ->
+                    UnifiedLog.e(TAG, e) { "Failed to observe VOD with options" }
+                    emit(emptyList())
+                }
         }
-    }
 
-    override suspend fun getSeriesCount(options: LibraryQueryOptions): Int {
-        return try {
+        override fun observeSeriesWithOptions(
+            categoryId: String?,
+            options: LibraryQueryOptions,
+        ): Flow<List<LibraryMediaItem>> {
             val queryOptions = options.toNxQueryOptions(WorkType.SERIES)
-            workRepository.count(queryOptions)
-        } catch (e: Exception) {
-            UnifiedLog.e(TAG, e) { "Failed to get series count" }
-            0
+            return workRepository
+                .observeWithOptions(queryOptions)
+                .map { works ->
+                    works.mapNotNull { work ->
+                        val sourceType = determineSourceType(work.workKey)
+                        work.toLibraryMediaItem(sourceType = sourceType)
+                    }
+                }.catch { e ->
+                    UnifiedLog.e(TAG, e) { "Failed to observe series with options" }
+                    emit(emptyList())
+                }
+        }
+
+        override suspend fun getAllGenres(): Set<String> =
+            try {
+                workRepository.getAllGenres()
+            } catch (e: Exception) {
+                UnifiedLog.e(TAG, e) { "Failed to get all genres" }
+                emptySet()
+            }
+
+        override suspend fun getYearRange(): Pair<Int, Int>? =
+            try {
+                workRepository.getYearRange()
+            } catch (e: Exception) {
+                UnifiedLog.e(TAG, e) { "Failed to get year range" }
+                null
+            }
+
+        // ==================== Paging (Infinite Scroll) ====================
+
+        override fun getVodPagingData(
+            options: LibraryQueryOptions,
+            config: LibraryPagingConfig,
+        ): Flow<PagingData<LibraryMediaItem>> {
+            val queryOptions = options.toNxQueryOptions(WorkType.MOVIE)
+            val pagingConfig =
+                PagingConfig(
+                    pageSize = config.pageSize,
+                    prefetchDistance = config.prefetchDistance,
+                    initialLoadSize = config.initialLoadSize,
+                    enablePlaceholders = false,
+                )
+            return Pager(
+                config = pagingConfig,
+                pagingSourceFactory = workRepository.pagingSourceFactory(queryOptions),
+            ).flow.map { pagingData ->
+                pagingData.map { work ->
+                    work.toLibraryMediaItemSync()
+                }
+            }
+        }
+
+        override fun getSeriesPagingData(
+            options: LibraryQueryOptions,
+            config: LibraryPagingConfig,
+        ): Flow<PagingData<LibraryMediaItem>> {
+            val queryOptions = options.toNxQueryOptions(WorkType.SERIES)
+            val pagingConfig =
+                PagingConfig(
+                    pageSize = config.pageSize,
+                    prefetchDistance = config.prefetchDistance,
+                    initialLoadSize = config.initialLoadSize,
+                    enablePlaceholders = false,
+                )
+            return Pager(
+                config = pagingConfig,
+                pagingSourceFactory = workRepository.pagingSourceFactory(queryOptions),
+            ).flow.map { pagingData ->
+                pagingData.map { work ->
+                    work.toLibraryMediaItemSync()
+                }
+            }
+        }
+
+        override suspend fun getVodCount(options: LibraryQueryOptions): Int =
+            try {
+                val queryOptions = options.toNxQueryOptions(WorkType.MOVIE)
+                workRepository.count(queryOptions)
+            } catch (e: Exception) {
+                UnifiedLog.e(TAG, e) { "Failed to get VOD count" }
+                0
+            }
+
+        override suspend fun getSeriesCount(options: LibraryQueryOptions): Int =
+            try {
+                val queryOptions = options.toNxQueryOptions(WorkType.SERIES)
+                workRepository.count(queryOptions)
+            } catch (e: Exception) {
+                UnifiedLog.e(TAG, e) { "Failed to get series count" }
+                0
+            }
+
+        /**
+         * Synchronous mapping for Paging (cannot use suspend in PagingData.map).
+         * Uses cached SourceType determination or defaults to XTREAM.
+         */
+        private fun Work.toLibraryMediaItemSync(): LibraryMediaItem {
+            // For paging performance, we determine source type from workKey prefix
+            // instead of doing a DB lookup for each item
+            val sourceType = workKey.sourceTypeFromPrefix()
+            return toLibraryMediaItem(sourceType = sourceType)
+        }
+
+        /**
+         * Fast source type determination from workKey prefix.
+         * WorkKey format: "{source}_{accountId}_{itemId}" e.g. "xtream_1_12345"
+         */
+        private fun String.sourceTypeFromPrefix(): SourceType =
+            when {
+                startsWith("xtream_") || startsWith("x_") -> SourceType.XTREAM
+                startsWith("telegram_") || startsWith("tg_") -> SourceType.TELEGRAM
+                startsWith("io_") || startsWith("local_") -> SourceType.IO
+                else -> SourceType.UNKNOWN
+            }
+
+        // ==================== Mapping Helpers (Unified core/model types) ====================
+
+        /**
+         * Map LibraryQueryOptions (using unified core/model types) to NxWorkRepository.QueryOptions.
+         *
+         * This bridges the unified SortOption/FilterConfig to the NX repository's internal query model.
+         */
+        private fun LibraryQueryOptions.toNxQueryOptions(workType: WorkType): NxWorkRepository.QueryOptions =
+            NxWorkRepository.QueryOptions(
+                type = workType,
+                sortField = sort.field.toNxSortField(),
+                sortDirection = sort.direction.toNxSortDirection(),
+                hideAdult = filter.hideAdult,
+                minRating = filter.extractMinRating(),
+                genres = filter.extractIncludedGenres(),
+                excludeGenres = filter.excludedGenres,
+                yearRange = filter.extractYearRange(),
+                limit = limit,
+            )
+
+        /**
+         * Map unified SortField (core/model) to NxWorkRepository.SortField.
+         */
+        private fun SortField.toNxSortField(): NxWorkRepository.SortField =
+            when (this) {
+                SortField.TITLE -> NxWorkRepository.SortField.TITLE
+                SortField.YEAR -> NxWorkRepository.SortField.YEAR
+                SortField.RATING -> NxWorkRepository.SortField.RATING
+                SortField.RECENTLY_ADDED -> NxWorkRepository.SortField.RECENTLY_ADDED
+                SortField.RECENTLY_UPDATED -> NxWorkRepository.SortField.RECENTLY_UPDATED
+                SortField.DURATION -> NxWorkRepository.SortField.DURATION
+                SortField.GENRE -> NxWorkRepository.SortField.TITLE // Fallback - NX doesn't support genre sort
+            }
+
+        /**
+         * Map unified SortDirection (core/model) to NxWorkRepository.SortDirection.
+         */
+        private fun SortDirection.toNxSortDirection(): NxWorkRepository.SortDirection =
+            when (this) {
+                SortDirection.ASCENDING -> NxWorkRepository.SortDirection.ASCENDING
+                SortDirection.DESCENDING -> NxWorkRepository.SortDirection.DESCENDING
+            }
+
+        /**
+         * Extract minimum rating from FilterConfig criteria.
+         */
+        private fun FilterConfig.extractMinRating(): Double? =
+            criteria
+                .filterIsInstance<FilterCriterion.RatingMinimum>()
+                .firstOrNull { it.isActive }
+                ?.minRating
+
+        /**
+         * Extract included genres from FilterConfig criteria.
+         */
+        private fun FilterConfig.extractIncludedGenres(): Set<String>? {
+            val included =
+                criteria
+                    .filterIsInstance<FilterCriterion.GenreInclude>()
+                    .firstOrNull { it.isActive }
+                    ?.genres
+            return if (included.isNullOrEmpty()) null else included
+        }
+
+        /**
+         * Extract year range from FilterConfig criteria.
+         */
+        private fun FilterConfig.extractYearRange(): IntRange? {
+            val yearCriterion =
+                criteria
+                    .filterIsInstance<FilterCriterion.YearRange>()
+                    .firstOrNull { it.isActive }
+                    ?: return null
+
+            val min = yearCriterion.minYear ?: return null
+            val max = yearCriterion.maxYear ?: return null
+            return min..max
         }
     }
-
-    /**
-     * Synchronous mapping for Paging (cannot use suspend in PagingData.map).
-     * Uses cached SourceType determination or defaults to XTREAM.
-     */
-    private fun Work.toLibraryMediaItemSync(): LibraryMediaItem {
-        // For paging performance, we determine source type from workKey prefix
-        // instead of doing a DB lookup for each item
-        val sourceType = workKey.sourceTypeFromPrefix()
-        return toLibraryMediaItem(sourceType = sourceType)
-    }
-
-    /**
-     * Fast source type determination from workKey prefix.
-     * WorkKey format: "{source}_{accountId}_{itemId}" e.g. "xtream_1_12345"
-     */
-    private fun String.sourceTypeFromPrefix(): SourceType {
-        return when {
-            startsWith("xtream_") || startsWith("x_") -> SourceType.XTREAM
-            startsWith("telegram_") || startsWith("tg_") -> SourceType.TELEGRAM
-            startsWith("io_") || startsWith("local_") -> SourceType.IO
-            else -> SourceType.UNKNOWN
-        }
-    }
-
-    // ==================== Mapping Helpers (Unified core/model types) ====================
-
-    /**
-     * Map LibraryQueryOptions (using unified core/model types) to NxWorkRepository.QueryOptions.
-     *
-     * This bridges the unified SortOption/FilterConfig to the NX repository's internal query model.
-     */
-    private fun LibraryQueryOptions.toNxQueryOptions(workType: WorkType): NxWorkRepository.QueryOptions {
-        return NxWorkRepository.QueryOptions(
-            type = workType,
-            sortField = sort.field.toNxSortField(),
-            sortDirection = sort.direction.toNxSortDirection(),
-            hideAdult = filter.hideAdult,
-            minRating = filter.extractMinRating(),
-            genres = filter.extractIncludedGenres(),
-            excludeGenres = filter.excludedGenres,
-            yearRange = filter.extractYearRange(),
-            limit = limit,
-        )
-    }
-
-    /**
-     * Map unified SortField (core/model) to NxWorkRepository.SortField.
-     */
-    private fun SortField.toNxSortField(): NxWorkRepository.SortField {
-        return when (this) {
-            SortField.TITLE -> NxWorkRepository.SortField.TITLE
-            SortField.YEAR -> NxWorkRepository.SortField.YEAR
-            SortField.RATING -> NxWorkRepository.SortField.RATING
-            SortField.RECENTLY_ADDED -> NxWorkRepository.SortField.RECENTLY_ADDED
-            SortField.RECENTLY_UPDATED -> NxWorkRepository.SortField.RECENTLY_UPDATED
-            SortField.DURATION -> NxWorkRepository.SortField.DURATION
-            SortField.GENRE -> NxWorkRepository.SortField.TITLE // Fallback - NX doesn't support genre sort
-        }
-    }
-
-    /**
-     * Map unified SortDirection (core/model) to NxWorkRepository.SortDirection.
-     */
-    private fun SortDirection.toNxSortDirection(): NxWorkRepository.SortDirection {
-        return when (this) {
-            SortDirection.ASCENDING -> NxWorkRepository.SortDirection.ASCENDING
-            SortDirection.DESCENDING -> NxWorkRepository.SortDirection.DESCENDING
-        }
-    }
-
-    /**
-     * Extract minimum rating from FilterConfig criteria.
-     */
-    private fun FilterConfig.extractMinRating(): Double? {
-        return criteria
-            .filterIsInstance<FilterCriterion.RatingMinimum>()
-            .firstOrNull { it.isActive }
-            ?.minRating
-    }
-
-    /**
-     * Extract included genres from FilterConfig criteria.
-     */
-    private fun FilterConfig.extractIncludedGenres(): Set<String>? {
-        val included = criteria
-            .filterIsInstance<FilterCriterion.GenreInclude>()
-            .firstOrNull { it.isActive }
-            ?.genres
-        return if (included.isNullOrEmpty()) null else included
-    }
-
-    /**
-     * Extract year range from FilterConfig criteria.
-     */
-    private fun FilterConfig.extractYearRange(): IntRange? {
-        val yearCriterion = criteria
-            .filterIsInstance<FilterCriterion.YearRange>()
-            .firstOrNull { it.isActive }
-            ?: return null
-
-        val min = yearCriterion.minYear ?: return null
-        val max = yearCriterion.maxYear ?: return null
-        return min..max
-    }
-}

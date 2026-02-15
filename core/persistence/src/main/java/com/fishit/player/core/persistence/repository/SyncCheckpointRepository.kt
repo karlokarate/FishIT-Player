@@ -48,12 +48,14 @@ class SyncCheckpointRepository
             sourceType: String,
             accountId: String,
             contentType: String,
-        ): NX_SyncCheckpoint? = withContext(Dispatchers.IO) {
-            val key = NX_SyncCheckpoint.buildKey(sourceType, accountId, contentType)
-            box.query(NX_SyncCheckpoint_.checkpointKey.equal(key))
-                .build()
-                .use { it.findFirst() }
-        }
+        ): NX_SyncCheckpoint? =
+            withContext(Dispatchers.IO) {
+                val key = NX_SyncCheckpoint.buildKey(sourceType, accountId, contentType)
+                box
+                    .query(NX_SyncCheckpoint_.checkpointKey.equal(key))
+                    .build()
+                    .use { it.findFirst() }
+            }
 
         /**
          * Get all checkpoints for an account.
@@ -65,12 +67,16 @@ class SyncCheckpointRepository
         suspend fun getCheckpointsForAccount(
             sourceType: String,
             accountId: String,
-        ): List<NX_SyncCheckpoint> = withContext(Dispatchers.IO) {
-            box.query(
-                NX_SyncCheckpoint_.sourceType.equal(sourceType)
-                    .and(NX_SyncCheckpoint_.accountId.equal(accountId)),
-            ).build().use { it.find() }
-        }
+        ): List<NX_SyncCheckpoint> =
+            withContext(Dispatchers.IO) {
+                box
+                    .query(
+                        NX_SyncCheckpoint_.sourceType
+                            .equal(sourceType)
+                            .and(NX_SyncCheckpoint_.accountId.equal(accountId)),
+                    ).build()
+                    .use { it.find() }
+            }
 
         /**
          * Get last sync timestamp for a content type.
@@ -81,9 +87,10 @@ class SyncCheckpointRepository
             sourceType: String,
             accountId: String,
             contentType: String,
-        ): Long = withContext(Dispatchers.IO) {
-            getCheckpoint(sourceType, accountId, contentType)?.lastSyncCompleteMs ?: 0L
-        }
+        ): Long =
+            withContext(Dispatchers.IO) {
+                getCheckpoint(sourceType, accountId, contentType)?.lastSyncCompleteMs ?: 0L
+            }
 
         /**
          * Get stored ETag for a content type.
@@ -94,9 +101,10 @@ class SyncCheckpointRepository
             sourceType: String,
             accountId: String,
             contentType: String,
-        ): String? = withContext(Dispatchers.IO) {
-            getCheckpoint(sourceType, accountId, contentType)?.etag
-        }
+        ): String? =
+            withContext(Dispatchers.IO) {
+                getCheckpoint(sourceType, accountId, contentType)?.etag
+            }
 
         /**
          * Get current sync generation for deletion detection.
@@ -107,9 +115,10 @@ class SyncCheckpointRepository
             sourceType: String,
             accountId: String,
             contentType: String,
-        ): Long = withContext(Dispatchers.IO) {
-            getCheckpoint(sourceType, accountId, contentType)?.syncGeneration ?: 0L
-        }
+        ): Long =
+            withContext(Dispatchers.IO) {
+                getCheckpoint(sourceType, accountId, contentType)?.syncGeneration ?: 0L
+            }
 
         // =========================================================================
         // Write Operations
@@ -124,26 +133,30 @@ class SyncCheckpointRepository
             sourceType: String,
             accountId: String,
             contentType: String,
-        ): NX_SyncCheckpoint = withContext(Dispatchers.IO) {
-            val key = NX_SyncCheckpoint.buildKey(sourceType, accountId, contentType)
-            val existing = box.query(NX_SyncCheckpoint_.checkpointKey.equal(key))
-                .build()
-                .use { it.findFirst() }
+        ): NX_SyncCheckpoint =
+            withContext(Dispatchers.IO) {
+                val key = NX_SyncCheckpoint.buildKey(sourceType, accountId, contentType)
+                val existing =
+                    box
+                        .query(NX_SyncCheckpoint_.checkpointKey.equal(key))
+                        .build()
+                        .use { it.findFirst() }
 
-            val checkpoint = existing?.copy(
-                lastSyncStartMs = System.currentTimeMillis(),
-            ) ?: NX_SyncCheckpoint(
-                checkpointKey = key,
-                sourceType = sourceType,
-                accountId = accountId,
-                contentType = contentType,
-                lastSyncStartMs = System.currentTimeMillis(),
-            )
+                val checkpoint =
+                    existing?.copy(
+                        lastSyncStartMs = System.currentTimeMillis(),
+                    ) ?: NX_SyncCheckpoint(
+                        checkpointKey = key,
+                        sourceType = sourceType,
+                        accountId = accountId,
+                        contentType = contentType,
+                        lastSyncStartMs = System.currentTimeMillis(),
+                    )
 
-            box.put(checkpoint)
-            UnifiedLog.d(TAG, "Sync started: $key")
-            checkpoint
-        }
+                box.put(checkpoint)
+                UnifiedLog.d(TAG, "Sync started: $key")
+                checkpoint
+            }
 
         /**
          * Record successful sync completion.
@@ -161,45 +174,51 @@ class SyncCheckpointRepository
             etag: String? = null,
             lastModified: String? = null,
             wasIncremental: Boolean = false,
-        ): NX_SyncCheckpoint = withContext(Dispatchers.IO) {
-            val key = NX_SyncCheckpoint.buildKey(sourceType, accountId, contentType)
-            val existing = box.query(NX_SyncCheckpoint_.checkpointKey.equal(key))
-                .build()
-                .use { it.findFirst() }
+        ): NX_SyncCheckpoint =
+            withContext(Dispatchers.IO) {
+                val key = NX_SyncCheckpoint.buildKey(sourceType, accountId, contentType)
+                val existing =
+                    box
+                        .query(NX_SyncCheckpoint_.checkpointKey.equal(key))
+                        .build()
+                        .use { it.findFirst() }
 
-            val now = System.currentTimeMillis()
-            val startMs = existing?.lastSyncStartMs ?: now
+                val now = System.currentTimeMillis()
+                val startMs = existing?.lastSyncStartMs ?: now
 
-            val checkpoint = (existing ?: NX_SyncCheckpoint(
-                checkpointKey = key,
-                sourceType = sourceType,
-                accountId = accountId,
-                contentType = contentType,
-            )).copy(
-                lastSyncCompleteMs = now,
-                lastSyncDurationMs = now - startMs,
-                itemCount = itemCount,
-                newItemCount = newItemCount,
-                updatedItemCount = updatedItemCount,
-                deletedItemCount = deletedItemCount,
-                etag = etag,
-                lastModified = lastModified,
-                wasIncrementalSync = wasIncremental,
-                syncGeneration = (existing?.syncGeneration ?: 0L) + 1,
-                lastError = null,
-                consecutiveFailures = 0,
-            )
+                val checkpoint =
+                    (
+                        existing ?: NX_SyncCheckpoint(
+                            checkpointKey = key,
+                            sourceType = sourceType,
+                            accountId = accountId,
+                            contentType = contentType,
+                        )
+                    ).copy(
+                        lastSyncCompleteMs = now,
+                        lastSyncDurationMs = now - startMs,
+                        itemCount = itemCount,
+                        newItemCount = newItemCount,
+                        updatedItemCount = updatedItemCount,
+                        deletedItemCount = deletedItemCount,
+                        etag = etag,
+                        lastModified = lastModified,
+                        wasIncrementalSync = wasIncremental,
+                        syncGeneration = (existing?.syncGeneration ?: 0L) + 1,
+                        lastError = null,
+                        consecutiveFailures = 0,
+                    )
 
-            box.put(checkpoint)
-            UnifiedLog.i(
-                TAG,
-                "Sync complete: $key | items=$itemCount, new=$newItemCount, " +
-                    "updated=$updatedItemCount, deleted=$deletedItemCount, " +
-                    "duration=${checkpoint.lastSyncDurationMs}ms, " +
-                    "incremental=$wasIncremental",
-            )
-            checkpoint
-        }
+                box.put(checkpoint)
+                UnifiedLog.i(
+                    TAG,
+                    "Sync complete: $key | items=$itemCount, new=$newItemCount, " +
+                        "updated=$updatedItemCount, deleted=$deletedItemCount, " +
+                        "duration=${checkpoint.lastSyncDurationMs}ms, " +
+                        "incremental=$wasIncremental",
+                )
+                checkpoint
+            }
 
         /**
          * Record sync failure.
@@ -211,29 +230,35 @@ class SyncCheckpointRepository
             accountId: String,
             contentType: String,
             error: String,
-        ): NX_SyncCheckpoint = withContext(Dispatchers.IO) {
-            val key = NX_SyncCheckpoint.buildKey(sourceType, accountId, contentType)
-            val existing = box.query(NX_SyncCheckpoint_.checkpointKey.equal(key))
-                .build()
-                .use { it.findFirst() }
+        ): NX_SyncCheckpoint =
+            withContext(Dispatchers.IO) {
+                val key = NX_SyncCheckpoint.buildKey(sourceType, accountId, contentType)
+                val existing =
+                    box
+                        .query(NX_SyncCheckpoint_.checkpointKey.equal(key))
+                        .build()
+                        .use { it.findFirst() }
 
-            val checkpoint = (existing ?: NX_SyncCheckpoint(
-                checkpointKey = key,
-                sourceType = sourceType,
-                accountId = accountId,
-                contentType = contentType,
-            )).copy(
-                lastError = error.take(500), // Truncate long errors
-                consecutiveFailures = (existing?.consecutiveFailures ?: 0) + 1,
-            )
+                val checkpoint =
+                    (
+                        existing ?: NX_SyncCheckpoint(
+                            checkpointKey = key,
+                            sourceType = sourceType,
+                            accountId = accountId,
+                            contentType = contentType,
+                        )
+                    ).copy(
+                        lastError = error.take(500), // Truncate long errors
+                        consecutiveFailures = (existing?.consecutiveFailures ?: 0) + 1,
+                    )
 
-            box.put(checkpoint)
-            UnifiedLog.w(
-                TAG,
-                "Sync failed: $key | error=$error, failures=${checkpoint.consecutiveFailures}",
-            )
-            checkpoint
-        }
+                box.put(checkpoint)
+                UnifiedLog.w(
+                    TAG,
+                    "Sync failed: $key | error=$error, failures=${checkpoint.consecutiveFailures}",
+                )
+                checkpoint
+            }
 
         /**
          * Force full sync on next run by clearing ETag and timestamp.
@@ -244,9 +269,11 @@ class SyncCheckpointRepository
             contentType: String,
         ) = withContext(Dispatchers.IO) {
             val key = NX_SyncCheckpoint.buildKey(sourceType, accountId, contentType)
-            val existing = box.query(NX_SyncCheckpoint_.checkpointKey.equal(key))
-                .build()
-                .use { it.findFirst() }
+            val existing =
+                box
+                    .query(NX_SyncCheckpoint_.checkpointKey.equal(key))
+                    .build()
+                    .use { it.findFirst() }
 
             existing?.let {
                 box.put(
@@ -270,14 +297,18 @@ class SyncCheckpointRepository
             sourceType: String,
             accountId: String,
         ) = withContext(Dispatchers.IO) {
-            val deleted = box.query(
-                NX_SyncCheckpoint_.sourceType.equal(sourceType)
-                    .and(NX_SyncCheckpoint_.accountId.equal(accountId)),
-            ).build().use {
-                val count = it.count()
-                it.remove()
-                count
-            }
+            val deleted =
+                box
+                    .query(
+                        NX_SyncCheckpoint_.sourceType
+                            .equal(sourceType)
+                            .and(NX_SyncCheckpoint_.accountId.equal(accountId)),
+                    ).build()
+                    .use {
+                        val count = it.count()
+                        it.remove()
+                        count
+                    }
             UnifiedLog.i(TAG, "Deleted $deleted checkpoints for $sourceType:$accountId")
         }
     }

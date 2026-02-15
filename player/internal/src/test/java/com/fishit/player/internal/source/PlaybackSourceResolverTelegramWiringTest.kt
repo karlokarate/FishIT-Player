@@ -4,10 +4,12 @@ import com.fishit.player.core.playermodel.PlaybackContext
 import com.fishit.player.core.playermodel.SourceType
 import com.fishit.player.playback.domain.DataSourceType
 import com.fishit.player.playback.domain.PlaybackSource
+import com.fishit.player.playback.domain.PlaybackSourceException
 import com.fishit.player.playback.domain.PlaybackSourceFactory
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
+import org.junit.Assert.fail
 import org.junit.Test
 
 /**
@@ -69,16 +71,17 @@ class PlaybackSourceResolverTelegramWiringTest {
                     extras = emptyMap(),
                 )
 
-            // When/Then: Should use fallback (Big Buck Bunny test stream)
-            val source = resolver.resolve(context)
-
-            // Fallback behavior: returns test stream or throws
-            // Current implementation returns test stream
-            assertTrue(
-                "Should use fallback stream",
-                source.uri == PlaybackSourceResolver.TEST_STREAM_URL ||
-                    source.uri.startsWith("http"),
-            )
+            // When/Then: Should throw PlaybackSourceException since no factory
+            // and no URI is available for resolution
+            try {
+                resolver.resolve(context)
+                fail("Expected PlaybackSourceException to be thrown")
+            } catch (e: PlaybackSourceException) {
+                assertTrue(
+                    "Exception should mention source type",
+                    e.message?.contains("TELEGRAM") == true,
+                )
+            }
         }
 
     @Test

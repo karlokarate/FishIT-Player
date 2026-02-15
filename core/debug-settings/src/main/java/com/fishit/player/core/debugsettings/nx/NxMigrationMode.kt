@@ -38,7 +38,7 @@ enum class CatalogReadMode {
      *
      * UI receives NX_* data, but mismatches are logged for debugging.
      */
-    SHADOW
+    SHADOW,
 }
 
 /**
@@ -68,7 +68,7 @@ enum class CatalogWriteMode {
      *
      * If NX_* write fails, operation is logged but does not fail overall.
      */
-    DUAL
+    DUAL,
 }
 
 /**
@@ -96,7 +96,7 @@ enum class MigrationMode {
      * Full rebuild: Background worker migrates all legacy data.
      * Used for complete migration in Phase 5.
      */
-    FULL_REBUILD
+    FULL_REBUILD,
 }
 
 /**
@@ -124,5 +124,5 @@ enum class NxUiVisibility {
      * NX_* entities visible throughout the app.
      * Target state after Phase 5.
      */
-    FULL
+    FULL,
 }

@@ -251,10 +251,11 @@ class ChannelSyncBuffer<T>(
         fun <T> forDevice(
             deviceProfile: DeviceProfile,
             name: String = "SyncBuffer",
-        ): ChannelSyncBuffer<T> = ChannelSyncBuffer(
-            capacity = deviceProfile.bufferCapacity,
-            name = name,
-        )
+        ): ChannelSyncBuffer<T> =
+            ChannelSyncBuffer(
+                capacity = deviceProfile.bufferCapacity,
+                name = name,
+            )
     }
 }
 
@@ -275,14 +276,15 @@ data class BufferMetrics(
     /** Throughput (items received per second) */
     val throughputPerSec: Double,
 ) {
-    override fun toString(): String = buildString {
-        append("BufferMetrics(")
-        append("sent=$itemsSent, ")
-        append("received=$itemsReceived, ")
-        append("inBuffer=$itemsInBuffer, ")
-        append("backpressure=$backpressureEvents, ")
-        append("elapsed=${elapsedMs}ms, ")
-        append("throughput=${String.format(java.util.Locale.US, "%.1f", throughputPerSec)}/s")
-        append(")")
-    }
+    override fun toString(): String =
+        buildString {
+            append("BufferMetrics(")
+            append("sent=$itemsSent, ")
+            append("received=$itemsReceived, ")
+            append("inBuffer=$itemsInBuffer, ")
+            append("backpressure=$backpressureEvents, ")
+            append("elapsed=${elapsedMs}ms, ")
+            append("throughput=${String.format(java.util.Locale.US, "%.1f", throughputPerSec)}/s")
+            append(")")
+        }
 }

@@ -39,7 +39,6 @@ import kotlinx.coroutines.flow.Flow
  * ```
  */
 interface NxMigrationSettingsRepository {
-
     // ═══════════════════════════════════════════════════════════════════════
     // Read Mode
     // ═══════════════════════════════════════════════════════════════════════

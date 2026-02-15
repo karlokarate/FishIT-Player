@@ -50,7 +50,7 @@ dependencies {
     // Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2")
-    
+
     // Paging 3 - for PagingData generation
     implementation("androidx.paging:paging-runtime-ktx:3.3.6")
 

@@ -247,8 +247,7 @@ object SourceIdParser {
      *
      * Delegates to [XtreamIdCodec] SSOT.
      */
-    fun parseXtreamVodId(sourceId: String): Int? =
-        XtreamIdCodec.extractVodId(sourceId)?.toInt()
+    fun parseXtreamVodId(sourceId: String): Int? = XtreamIdCodec.extractVodId(sourceId)?.toInt()
 
     /**
      * Extract Xtream episode identity.

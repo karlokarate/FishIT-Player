@@ -41,13 +41,10 @@ enum class ApiPriority {
 data class PriorityState(
     /** Number of active HIGH_USER_ACTION calls */
     val activeHighPriorityCalls: Int = 0,
-
     /** Number of active CRITICAL_PLAYBACK calls */
     val activeCriticalCalls: Int = 0,
-
     /** True if background operations should suspend/yield */
     val backgroundSuspended: Boolean = false,
-
     /** Tag of the current high-priority operation (for logging/debugging) */
     val currentOperation: String? = null,
 ) {

@@ -124,10 +124,10 @@ class LeakDiagnosticsImpl
                 val objectWatcherField = appWatcherClass.getField("objectWatcher")
                 val objectWatcher = objectWatcherField.get(null)
                 val objectWatcherClass = Class.forName("leakcanary.ObjectWatcher")
-                
+
                 val retainedCountMethod = objectWatcherClass.getMethod("getRetainedObjectCount")
                 val hasRetainedMethod = objectWatcherClass.getMethod("getHasRetainedObjects")
-                
+
                 val retainedCount = retainedCountMethod.invoke(objectWatcher) as Int
                 val hasRetained = hasRetainedMethod.invoke(objectWatcher) as Boolean
 
@@ -154,16 +154,17 @@ class LeakDiagnosticsImpl
         }
 
         override fun getDetailedStatus(): LeakDetailedStatus {
-            val defaultConfig = LeakCanaryConfig(
-                retainedVisibleThreshold = 5,
-                computeRetainedHeapSize = false,
-                maxStoredHeapDumps = 7,
-                watchDurationMillis = 5000L,
-                watchActivities = true,
-                watchFragments = true,
-                watchViewModels = true,
-            )
-            
+            val defaultConfig =
+                LeakCanaryConfig(
+                    retainedVisibleThreshold = 5,
+                    computeRetainedHeapSize = false,
+                    maxStoredHeapDumps = 7,
+                    watchDurationMillis = 5000L,
+                    watchActivities = true,
+                    watchFragments = true,
+                    watchViewModels = true,
+                )
+
             if (!isAvailable) {
                 return LeakDetailedStatus(
                     retainedObjectCount = 0,
@@ -181,27 +182,27 @@ class LeakDiagnosticsImpl
                 val objectWatcherField = appWatcherClass.getField("objectWatcher")
                 val objectWatcher = objectWatcherField.get(null)
                 val objectWatcherClass = Class.forName("leakcanary.ObjectWatcher")
-                
+
                 val retainedCountMethod = objectWatcherClass.getMethod("getRetainedObjectCount")
                 val hasRetainedMethod = objectWatcherClass.getMethod("getHasRetainedObjects")
-                
+
                 val retainedCount = retainedCountMethod.invoke(objectWatcher) as Int
                 val hasRetained = hasRetainedMethod.invoke(objectWatcher) as Boolean
-                
+
                 // Get LeakCanary config via reflection
                 val configField = leakCanaryClass.getField("config")
                 val config = configField.get(null)
                 val configClass = config.javaClass
-                
+
                 val threshold = configClass.getField("retainedVisibleThreshold").get(config) as Int
                 val computeSize = configClass.getField("computeRetainedHeapSize").get(config) as Boolean
                 val maxDumps = configClass.getField("maxStoredHeapDumps").get(config) as Int
-                
+
                 // Get AppWatcher config
                 val watcherConfigField = appWatcherClass.getField("config")
                 val watcherConfig = watcherConfigField.get(null)
                 val watcherConfigClass = watcherConfig.javaClass
-                
+
                 val watchDuration = watcherConfigClass.getField("watchDurationMillis").get(watcherConfig) as Long
                 val watchActivities = watcherConfigClass.getField("watchActivities").get(watcherConfig) as Boolean
                 val watchFragments = watcherConfigClass.getField("watchFragments").get(watcherConfig) as Boolean
@@ -220,15 +221,16 @@ class LeakDiagnosticsImpl
                     hasRetainedObjects = hasRetained,
                     severity = severity,
                     statusMessage = buildStatusMessage(retainedCount, hasRetained, severity),
-                    config = LeakCanaryConfig(
-                        retainedVisibleThreshold = threshold,
-                        computeRetainedHeapSize = computeSize,
-                        maxStoredHeapDumps = maxDumps,
-                        watchDurationMillis = watchDuration,
-                        watchActivities = watchActivities,
-                        watchFragments = watchFragments,
-                        watchViewModels = watchViewModels,
-                    ),
+                    config =
+                        LeakCanaryConfig(
+                            retainedVisibleThreshold = threshold,
+                            computeRetainedHeapSize = computeSize,
+                            maxStoredHeapDumps = maxDumps,
+                            watchDurationMillis = watchDuration,
+                            watchActivities = watchActivities,
+                            watchFragments = watchFragments,
+                            watchViewModels = watchViewModels,
+                        ),
                     memoryStats = getMemoryStats(),
                     capturedAtMs = System.currentTimeMillis(),
                 )
@@ -245,7 +247,7 @@ class LeakDiagnosticsImpl
                 )
             }
         }
-        
+
         override fun getLatestHeapDumpPath(): String? {
             // LeakCanary 2.x stores heap dumps internally and manages them
             // Users should use "Share heap dump" in LeakCanary UI for export
@@ -273,7 +275,7 @@ class LeakDiagnosticsImpl
                 UnifiedLog.w(TAG) { "Failed to trigger heap dump: ${e.message}" }
             }
         }
-        
+
         private fun getMemoryStats(): MemoryStats {
             val runtime = Runtime.getRuntime()
             val usedMB = (runtime.totalMemory() - runtime.freeMemory()) / 1024 / 1024
@@ -342,7 +344,7 @@ class LeakDiagnosticsImpl
                 appendLine("- Threshold: ${detailed.config.retainedVisibleThreshold}")
                 appendLine("- Message: ${detailed.statusMessage}")
                 appendLine()
-                
+
                 // Memory stats
                 appendLine("## Memory")
                 appendLine("- Used: ${detailed.memoryStats.usedMemoryMb}MB")
@@ -350,7 +352,7 @@ class LeakDiagnosticsImpl
                 appendLine("- Max: ${detailed.memoryStats.maxMemoryMb}MB")
                 appendLine("- Usage: ${detailed.memoryStats.usagePercentage}%")
                 appendLine()
-                
+
                 // Config info
                 appendLine("## LeakCanary Config")
                 appendLine("- Watch Activities: ${detailed.config.watchActivities}")

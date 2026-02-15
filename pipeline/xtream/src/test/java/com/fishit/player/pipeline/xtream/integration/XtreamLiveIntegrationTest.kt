@@ -21,22 +21,22 @@ import kotlin.test.assertTrue
  * Test data: `/test-data/xtream-responses/`
  */
 class XtreamLiveIntegrationTest {
-
     private val testDataDir = File("test-data/xtream-responses")
     private val accountLabel = "test-account"
 
-    private val json = Json {
-        ignoreUnknownKeys = true
-        isLenient = true
-        coerceInputValues = true
-    }
+    private val json =
+        Json {
+            ignoreUnknownKeys = true
+            isLenient = true
+            coerceInputValues = true
+        }
 
     // Helper to mirror the mapper's cleanLiveChannelName() function
     // (private in mapper, so we duplicate the logic for test verification)
     private val unicodeDecorators = Regex("[\\u2580-\\u259F\\u2500-\\u257F▌▐▀▄█▀▄▃▅▆]+")
     private val whitespaceCollapse = Regex("\\s+")
-    private fun cleanLiveChannelName(name: String): String =
-        name.replace(unicodeDecorators, " ").replace(whitespaceCollapse, " ").trim()
+
+    private fun cleanLiveChannelName(name: String): String = name.replace(unicodeDecorators, " ").replace(whitespaceCollapse, " ").trim()
 
     // =========================================================================
     // API DTOs for parsing real Live JSON
@@ -79,16 +79,17 @@ class XtreamLiveIntegrationTest {
         for (idx in 0 until count) {
             val api: ApiLiveStream = apiItems[idx]
 
-            val dto = XtreamChannel(
-                id = api.stream_id,
-                name = api.name,
-                streamIcon = api.stream_icon,
-                epgChannelId = api.epg_channel_id,
-                tvArchive = api.tv_archive,
-                tvArchiveDuration = api.tv_archive_duration,
-                categoryId = api.category_id,
-                added = api.added?.toLongOrNull(),
-            )
+            val dto =
+                XtreamChannel(
+                    id = api.stream_id,
+                    name = api.name,
+                    streamIcon = api.stream_icon,
+                    epgChannelId = api.epg_channel_id,
+                    tvArchive = api.tv_archive,
+                    tvArchiveDuration = api.tv_archive_duration,
+                    categoryId = api.category_id,
+                    added = api.added?.toLongOrNull(),
+                )
 
             val raw = dto.toRawMediaMetadata(accountLabel = accountLabel)
 
@@ -129,13 +130,14 @@ class XtreamLiveIntegrationTest {
             if (api.epg_channel_id.isNullOrBlank()) continue
             if (testedCount >= 3) break
 
-            val dto = XtreamChannel(
-                id = api.stream_id,
-                name = api.name,
-                epgChannelId = api.epg_channel_id,
-                tvArchive = api.tv_archive,
-                tvArchiveDuration = api.tv_archive_duration,
-            )
+            val dto =
+                XtreamChannel(
+                    id = api.stream_id,
+                    name = api.name,
+                    epgChannelId = api.epg_channel_id,
+                    tvArchive = api.tv_archive,
+                    tvArchiveDuration = api.tv_archive_duration,
+                )
             val raw = dto.toRawMediaMetadata()
 
             // Direct field assertions

@@ -20,14 +20,13 @@ import kotlinx.coroutines.flow.Flow
  * Domain interface - implementation in infra/data-nx.
  */
 interface NxCategorySelectionRepository {
-
     /**
      * Category type for Xtream sources.
      */
     enum class XtreamCategoryType {
         VOD,
         SERIES,
-        LIVE
+        LIVE,
     }
 
     /**
@@ -90,7 +89,10 @@ interface NxCategorySelectionRepository {
      * @param categoryType VOD, SERIES, or LIVE
      * @return Flow emitting list of selections
      */
-    fun observeByType(accountKey: String, categoryType: XtreamCategoryType): Flow<List<CategorySelection>>
+    fun observeByType(
+        accountKey: String,
+        categoryType: XtreamCategoryType,
+    ): Flow<List<CategorySelection>>
 
     /**
      * Observe only selected (enabled) categories for an account.
@@ -112,7 +114,10 @@ interface NxCategorySelectionRepository {
      * @param categoryType VOD, SERIES, or LIVE
      * @return List of source category IDs that are selected
      */
-    suspend fun getSelectedCategoryIds(accountKey: String, categoryType: XtreamCategoryType): List<String>
+    suspend fun getSelectedCategoryIds(
+        accountKey: String,
+        categoryType: XtreamCategoryType,
+    ): List<String>
 
     /**
      * Check if a category is selected.
@@ -122,7 +127,11 @@ interface NxCategorySelectionRepository {
      * @param sourceCategoryId Category ID from server
      * @return true if selected for sync
      */
-    suspend fun isSelected(accountKey: String, categoryType: XtreamCategoryType, sourceCategoryId: String): Boolean
+    suspend fun isSelected(
+        accountKey: String,
+        categoryType: XtreamCategoryType,
+        sourceCategoryId: String,
+    ): Boolean
 
     // ──────────────────────────────────────────────────────────────────────────
     // Writes
@@ -157,7 +166,7 @@ interface NxCategorySelectionRepository {
         accountKey: String,
         categoryType: XtreamCategoryType,
         sourceCategoryId: String,
-        isSelected: Boolean
+        isSelected: Boolean,
     )
 
     /**
@@ -166,7 +175,10 @@ interface NxCategorySelectionRepository {
      * @param accountKey Xtream account key
      * @param categoryType VOD, SERIES, or LIVE
      */
-    suspend fun selectAll(accountKey: String, categoryType: XtreamCategoryType)
+    suspend fun selectAll(
+        accountKey: String,
+        categoryType: XtreamCategoryType,
+    )
 
     /**
      * Deselect all categories for a type.
@@ -174,7 +186,10 @@ interface NxCategorySelectionRepository {
      * @param accountKey Xtream account key
      * @param categoryType VOD, SERIES, or LIVE
      */
-    suspend fun deselectAll(accountKey: String, categoryType: XtreamCategoryType)
+    suspend fun deselectAll(
+        accountKey: String,
+        categoryType: XtreamCategoryType,
+    )
 
     // ──────────────────────────────────────────────────────────────────────────
     // Cleanup
@@ -215,5 +230,8 @@ interface NxCategorySelectionRepository {
      * @param accountKey Xtream account key
      * @param complete true to mark as complete, false to reset
      */
-    suspend fun setCategorySelectionComplete(accountKey: String, complete: Boolean)
+    suspend fun setCategorySelectionComplete(
+        accountKey: String,
+        complete: Boolean,
+    )
 }

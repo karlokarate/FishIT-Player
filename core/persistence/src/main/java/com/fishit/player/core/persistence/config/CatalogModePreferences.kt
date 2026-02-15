@@ -2,7 +2,7 @@ package com.fishit.player.core.persistence.config
 
 import android.content.Context
 import android.content.SharedPreferences
-import android.util.Log
+import com.fishit.player.infra.logging.UnifiedLog
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -105,7 +105,7 @@ class CatalogModePreferences
                     try {
                         CatalogReadMode.valueOf(stored)
                     } catch (e: IllegalArgumentException) {
-                        Log.w(TAG, "Invalid read mode '$stored', using default")
+                        UnifiedLog.w(TAG, "Invalid read mode '$stored', using default")
                         CatalogReadMode.LEGACY
                     }
                 } else {
@@ -142,7 +142,7 @@ class CatalogModePreferences
                     try {
                         CatalogWriteMode.valueOf(stored)
                     } catch (e: IllegalArgumentException) {
-                        Log.w(TAG, "Invalid write mode '$stored', using default")
+                        UnifiedLog.w(TAG, "Invalid write mode '$stored', using default")
                         CatalogWriteMode.LEGACY
                     }
                 } else {
@@ -181,7 +181,7 @@ class CatalogModePreferences
                     try {
                         MigrationState.valueOf(stored)
                     } catch (e: IllegalArgumentException) {
-                        Log.w(TAG, "Invalid migration state '$stored', using default")
+                        UnifiedLog.w(TAG, "Invalid migration state '$stored', using default")
                         MigrationState.NOT_STARTED
                     }
                 } else {
@@ -195,7 +195,7 @@ class CatalogModePreferences
                     .putString(KEY_MIGRATION_STATE, value.name)
                     .apply()
                 _migrationStateFlow.value = value
-                Log.i(TAG, "Migration state: $previous -> $value")
+                UnifiedLog.i(TAG, "Migration state: $previous -> $value")
             }
 
         // =========================================================================
@@ -215,7 +215,7 @@ class CatalogModePreferences
                     .edit()
                     .putBoolean(KEY_NX_UI_VISIBILITY, value)
                     .apply()
-                Log.i(TAG, "NX UI visibility: $value")
+                UnifiedLog.i(TAG, "NX UI visibility: $value")
             }
 
         // =========================================================================
@@ -271,7 +271,7 @@ class CatalogModePreferences
          * @see docs/v2/OBX_KILL_SWITCH_GUIDE.md
          */
         fun rollbackToLegacy() {
-            Log.w(TAG, "🚨 ROLLBACK TO LEGACY TRIGGERED")
+            UnifiedLog.w(TAG, "\uD83D\uDEA8 ROLLBACK TO LEGACY TRIGGERED")
 
             val previousRead = readMode
             val previousWrite = writeMode
@@ -288,7 +288,7 @@ class CatalogModePreferences
             _writeModeFlow.value = CatalogWriteMode.LEGACY
             _migrationStateFlow.value = MigrationState.ROLLED_BACK
 
-            Log.w(TAG, "Rollback complete: READ $previousRead->LEGACY, WRITE $previousWrite->LEGACY")
+            UnifiedLog.w(TAG, "Rollback complete: READ $previousRead->LEGACY, WRITE $previousWrite->LEGACY")
         }
 
         /**
@@ -298,7 +298,7 @@ class CatalogModePreferences
          * Only call after migration is complete and validated.
          */
         fun activateNxOnlyMode() {
-            Log.i(TAG, "Activating NX_ONLY mode")
+            UnifiedLog.i(TAG, "Activating NX_ONLY mode")
             readMode = CatalogReadMode.NX_ONLY
             writeMode = CatalogWriteMode.NX_ONLY
         }
@@ -310,7 +310,7 @@ class CatalogModePreferences
          * Use during Phase 4 for validation before full NX switch.
          */
         fun activateDualMode() {
-            Log.i(TAG, "Activating DUAL mode for validation")
+            UnifiedLog.i(TAG, "Activating DUAL mode for validation")
             readMode = CatalogReadMode.DUAL_READ
             writeMode = CatalogWriteMode.DUAL_WRITE
         }
@@ -321,7 +321,7 @@ class CatalogModePreferences
          * Use for testing or complete reset. Clears all stored preferences.
          */
         fun resetToDefaults() {
-            Log.w(TAG, "Resetting all catalog mode preferences")
+            UnifiedLog.w(TAG, "Resetting all catalog mode preferences")
             prefs.edit().clear().apply()
             _readModeFlow.value = CatalogReadMode.LEGACY
             _writeModeFlow.value = CatalogWriteMode.LEGACY
@@ -338,7 +338,7 @@ class CatalogModePreferences
             current: Any,
         ) {
             if (previous != current) {
-                Log.i(TAG, "Mode change: $type $previous -> $current")
+                UnifiedLog.i(TAG, "Mode change: $type $previous -> $current")
             }
         }
 
@@ -346,7 +346,7 @@ class CatalogModePreferences
          * Log current configuration for debugging.
          */
         fun logCurrentConfig() {
-            Log.i(
+            UnifiedLog.i(
                 TAG,
                 buildString {
                     appendLine("=== Catalog Mode Configuration ===")

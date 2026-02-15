@@ -94,7 +94,7 @@ class LogBufferTree(
     private val lock = ReentrantReadWriteLock()
     private val buffer = ArrayDeque<BufferedLogEntry>(maxEntries)
     private val _entriesFlow = MutableStateFlow<List<BufferedLogEntry>>(emptyList())
-    
+
     /**
      * Counter for pending updates - used to batch flow emissions.
      * When > 0, we have logs waiting to be emitted.
@@ -102,21 +102,21 @@ class LogBufferTree(
      */
     @Volatile
     private var pendingUpdates = 0
-    
+
     /**
      * Last time we emitted to the flow.
      * Used to throttle emissions to max once per 500ms during heavy logging.
      */
     @Volatile
     private var lastEmitTimeMs = 0L
-    
+
     companion object {
         /**
          * Default buffer size - 500 entries is a good balance between
          * memory usage and useful log history.
          */
         const val DEFAULT_BUFFER_SIZE = 500
-        
+
         /**
          * Minimum interval between flow emissions (milliseconds).
          * Prevents UI lag during heavy logging bursts.
@@ -152,7 +152,7 @@ class LogBufferTree(
     /**
      * Flow of buffered log entries.
      * Emits a new list whenever a log entry is added.
-     * 
+     *
      * **Performance Note:** Emissions are throttled to max once per 500ms
      * to prevent UI lag during heavy logging.
      */
@@ -214,7 +214,7 @@ class LogBufferTree(
                 buffer.removeFirst()
             }
             buffer.addLast(entry)
-            
+
             // Throttle flow emissions to prevent UI lag during heavy logging.
             // Only emit if MIN_EMIT_INTERVAL_MS has passed since last emission.
             val now = System.currentTimeMillis()
@@ -282,7 +282,7 @@ class DefaultLogBufferProvider
     constructor() : LogBufferProvider {
         private val tree: LogBufferTree
             get() = LogBufferTree.getInstance()
-            
+
         companion object {
             /** Debounce interval for UI updates (ms) */
             private const val UI_DEBOUNCE_MS = 300L

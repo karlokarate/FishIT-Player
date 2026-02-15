@@ -8,9 +8,9 @@ import com.fishit.player.core.model.util.ContainerGuess
 import com.fishit.player.core.model.util.SourcePriority
 import com.fishit.player.core.persistence.obx.NX_Work
 import com.fishit.player.core.persistence.obx.NX_WorkSourceRef
+import com.fishit.player.core.persistence.obx.NX_WorkSourceRef_
 import com.fishit.player.core.persistence.obx.NX_WorkUserState
 import com.fishit.player.core.persistence.obx.NX_WorkUserState_
-import com.fishit.player.core.persistence.obx.NX_WorkSourceRef_
 import com.fishit.player.core.persistence.obx.NX_WorkVariant
 import com.fishit.player.core.persistence.obx.NX_WorkVariant_
 import com.fishit.player.core.persistence.obx.NX_Work_
@@ -41,364 +41,426 @@ import javax.inject.Singleton
  * - Maps DomainDetailMedia → DetailMediaInfo (UI model) locally
  */
 @Singleton
-class NxDetailMediaRepositoryImpl @Inject constructor(
-    boxStore: BoxStore,
-) : NxDetailMediaRepository {
+class NxDetailMediaRepositoryImpl
+    @Inject
+    constructor(
+        boxStore: BoxStore,
+    ) : NxDetailMediaRepository {
+        private val workBox: Box<NX_Work> = boxStore.boxFor(NX_Work::class.java)
+        private val sourceRefBox: Box<NX_WorkSourceRef> = boxStore.boxFor(NX_WorkSourceRef::class.java)
+        private val variantBox: Box<NX_WorkVariant> = boxStore.boxFor(NX_WorkVariant::class.java)
+        private val userStateBox: Box<NX_WorkUserState> = boxStore.boxFor(NX_WorkUserState::class.java)
 
-    private val workBox: Box<NX_Work> = boxStore.boxFor(NX_Work::class.java)
-    private val sourceRefBox: Box<NX_WorkSourceRef> = boxStore.boxFor(NX_WorkSourceRef::class.java)
-    private val variantBox: Box<NX_WorkVariant> = boxStore.boxFor(NX_WorkVariant::class.java)
-    private val userStateBox: Box<NX_WorkUserState> = boxStore.boxFor(NX_WorkUserState::class.java)
+        // =========================================================================
+        // Load Operations
+        // =========================================================================
 
-    // =========================================================================
-    // Load Operations
-    // =========================================================================
+        override suspend fun loadByWorkKey(workKey: String): DomainDetailMedia? =
+            withContext(Dispatchers.IO) {
+                val work =
+                    workBox
+                        .query(NX_Work_.workKey.equal(workKey, StringOrder.CASE_SENSITIVE))
+                        .build()
+                        .findFirst() ?: return@withContext null
 
-    override suspend fun loadByWorkKey(workKey: String): DomainDetailMedia? =
-        withContext(Dispatchers.IO) {
-            val work = workBox.query(NX_Work_.workKey.equal(workKey, StringOrder.CASE_SENSITIVE))
-                .build().findFirst() ?: return@withContext null
+                // INV-PERF: Indexed query via denormalized @Index workKey (replaces box.all full scan)
+                val sourceRefs =
+                    sourceRefBox
+                        .query(
+                            NX_WorkSourceRef_.workKey.equal(workKey, StringOrder.CASE_SENSITIVE),
+                        ).build()
+                        .find()
+                // INV-PERF: Indexed query via @Index sourceKey (replaces box.all full scan)
+                val sourceKeys = sourceRefs.map { it.sourceKey }.toTypedArray()
+                val variants =
+                    if (sourceKeys.isNotEmpty()) {
+                        variantBox
+                            .query(
+                                NX_WorkVariant_.sourceKey.oneOf(sourceKeys, StringOrder.CASE_SENSITIVE),
+                            ).build()
+                            .find()
+                    } else {
+                        emptyList()
+                    }
 
-            // INV-PERF: Indexed query via denormalized @Index workKey (replaces box.all full scan)
-            val sourceRefs = sourceRefBox.query(
-                NX_WorkSourceRef_.workKey.equal(workKey, StringOrder.CASE_SENSITIVE),
-            ).build().find()
-            // INV-PERF: Indexed query via @Index sourceKey (replaces box.all full scan)
-            val sourceKeys = sourceRefs.map { it.sourceKey }.toTypedArray()
-            val variants = if (sourceKeys.isNotEmpty()) {
-                variantBox.query(
-                    NX_WorkVariant_.sourceKey.oneOf(sourceKeys, StringOrder.CASE_SENSITIVE),
-                ).build().find()
-            } else emptyList()
-
-            mapToDomainDetailMedia(work, sourceRefs, variants)
-        }
-
-    override fun observeByWorkKey(workKey: String): Flow<DomainDetailMedia?> {
-        val query = workBox.query(NX_Work_.workKey.equal(workKey, StringOrder.CASE_SENSITIVE)).build()
-
-        return query.subscribe().toFlow().map { works ->
-            val work = works.firstOrNull() ?: return@map null
-
-            // INV-PERF: Indexed queries (replaces box.all full scans)
-            val sourceRefs = sourceRefBox.query(
-                NX_WorkSourceRef_.workKey.equal(workKey, StringOrder.CASE_SENSITIVE),
-            ).build().find()
-            val sourceKeys = sourceRefs.map { it.sourceKey }.toTypedArray()
-            val variants = if (sourceKeys.isNotEmpty()) {
-                variantBox.query(
-                    NX_WorkVariant_.sourceKey.oneOf(sourceKeys, StringOrder.CASE_SENSITIVE),
-                ).build().find()
-            } else emptyList()
-
-            mapToDomainDetailMedia(work, sourceRefs, variants)
-        }
-    }
-
-    override suspend fun loadResumeState(
-        workKey: String,
-        profileId: Long,
-    ): DomainResumeState? = withContext(Dispatchers.IO) {
-        userStateBox.query(
-            NX_WorkUserState_.workKey.equal(workKey, StringOrder.CASE_SENSITIVE)
-                .and(NX_WorkUserState_.profileId.equal(profileId))
-        ).build().findFirst()?.let { mapToDomainResumeState(it) }
-    }
-
-    override fun observeResumeState(
-        workKey: String,
-        profileId: Long,
-    ): Flow<DomainResumeState?> {
-        val query = userStateBox.query(
-            NX_WorkUserState_.workKey.equal(workKey, StringOrder.CASE_SENSITIVE)
-                .and(NX_WorkUserState_.profileId.equal(profileId))
-        ).build()
-
-        return query.subscribe().toFlow().map { states ->
-            states.firstOrNull()?.let { mapToDomainResumeState(it) }
-        }
-    }
-
-    // =========================================================================
-    // Update Operations
-    // =========================================================================
-
-    override suspend fun updateResumeState(
-        workKey: String,
-        profileId: Long,
-        positionMs: Long,
-        durationMs: Long,
-        sourceKey: String,
-        sourceType: String,
-    ): Unit = withContext(Dispatchers.IO) {
-        val existing = userStateBox.query(
-            NX_WorkUserState_.workKey.equal(workKey, StringOrder.CASE_SENSITIVE)
-                .and(NX_WorkUserState_.profileId.equal(profileId))
-        ).build().findFirst()
-
-        val progressPercent = if (durationMs > 0) {
-            (positionMs.toFloat() / durationMs.toFloat()).coerceIn(0f, 1f)
-        } else 0f
-
-        val isCompleted = progressPercent >= 0.9f
-        val now = System.currentTimeMillis()
-
-        val entity = existing?.apply {
-            this.resumePositionMs = positionMs
-            this.totalDurationMs = durationMs
-            this.lastWatchedAt = now
-            this.updatedAt = now
-            if (isCompleted && !this.isWatched) {
-                this.isWatched = true
-                this.watchCount += 1
+                mapToDomainDetailMedia(work, sourceRefs, variants)
             }
-        } ?: NX_WorkUserState(
-            id = 0,
-            workKey = workKey,
-            profileId = profileId,
-            resumePositionMs = positionMs,
-            totalDurationMs = durationMs,
-            isWatched = isCompleted,
-            watchCount = if (isCompleted) 1 else 0,
-            isFavorite = false,
-            createdAt = now,
-            updatedAt = now,
-            lastWatchedAt = now,
-        )
 
-        userStateBox.put(entity)
-    }
+        override fun observeByWorkKey(workKey: String): Flow<DomainDetailMedia?> {
+            val query = workBox.query(NX_Work_.workKey.equal(workKey, StringOrder.CASE_SENSITIVE)).build()
 
-    override suspend fun markCompleted(
-        workKey: String,
-        profileId: Long,
-    ): Unit = withContext(Dispatchers.IO) {
-        val existing = userStateBox.query(
-            NX_WorkUserState_.workKey.equal(workKey, StringOrder.CASE_SENSITIVE)
-                .and(NX_WorkUserState_.profileId.equal(profileId))
-        ).build().findFirst()
+            return query.subscribe().toFlow().map { works ->
+                val work = works.firstOrNull() ?: return@map null
 
-        val now = System.currentTimeMillis()
+                // INV-PERF: Indexed queries (replaces box.all full scans)
+                val sourceRefs =
+                    sourceRefBox
+                        .query(
+                            NX_WorkSourceRef_.workKey.equal(workKey, StringOrder.CASE_SENSITIVE),
+                        ).build()
+                        .find()
+                val sourceKeys = sourceRefs.map { it.sourceKey }.toTypedArray()
+                val variants =
+                    if (sourceKeys.isNotEmpty()) {
+                        variantBox
+                            .query(
+                                NX_WorkVariant_.sourceKey.oneOf(sourceKeys, StringOrder.CASE_SENSITIVE),
+                            ).build()
+                            .find()
+                    } else {
+                        emptyList()
+                    }
 
-        val entity = existing?.apply {
-            this.isWatched = true
-            this.watchCount += 1
-            this.resumePositionMs = this.totalDurationMs
-            this.updatedAt = now
-            this.lastWatchedAt = now
-        } ?: NX_WorkUserState(
-            id = 0,
-            workKey = workKey,
-            profileId = profileId,
-            resumePositionMs = 0,
-            totalDurationMs = 0,
-            isWatched = true,
-            watchCount = 1,
-            isFavorite = false,
-            createdAt = now,
-            updatedAt = now,
-            lastWatchedAt = now,
-        )
-
-        userStateBox.put(entity)
-    }
-
-    override suspend fun toggleFavorite(
-        workKey: String,
-        profileId: Long,
-    ): Boolean = withContext(Dispatchers.IO) {
-        val existing = userStateBox.query(
-            NX_WorkUserState_.workKey.equal(workKey, StringOrder.CASE_SENSITIVE)
-                .and(NX_WorkUserState_.profileId.equal(profileId))
-        ).build().findFirst()
-
-        val now = System.currentTimeMillis()
-
-        if (existing != null) {
-            existing.isFavorite = !existing.isFavorite
-            existing.updatedAt = now
-            userStateBox.put(existing)
-            existing.isFavorite
-        } else {
-            val newEntity = NX_WorkUserState(
-                id = 0,
-                workKey = workKey,
-                profileId = profileId,
-                resumePositionMs = 0,
-                totalDurationMs = 0,
-                isWatched = false,
-                watchCount = 0,
-                isFavorite = true,
-                createdAt = now,
-                updatedAt = now,
-                lastWatchedAt = null,
-            )
-            userStateBox.put(newEntity)
-            true
+                mapToDomainDetailMedia(work, sourceRefs, variants)
+            }
         }
-    }
 
-    override suspend fun toggleWatchlist(
-        workKey: String,
-        profileId: Long,
-    ): Boolean = withContext(Dispatchers.IO) {
-        val existing = userStateBox.query(
-            NX_WorkUserState_.workKey.equal(workKey, StringOrder.CASE_SENSITIVE)
-                .and(NX_WorkUserState_.profileId.equal(profileId))
-        ).build().findFirst()
+        override suspend fun loadResumeState(
+            workKey: String,
+            profileId: Long,
+        ): DomainResumeState? =
+            withContext(Dispatchers.IO) {
+                userStateBox
+                    .query(
+                        NX_WorkUserState_.workKey
+                            .equal(workKey, StringOrder.CASE_SENSITIVE)
+                            .and(NX_WorkUserState_.profileId.equal(profileId)),
+                    ).build()
+                    .findFirst()
+                    ?.let { mapToDomainResumeState(it) }
+            }
 
-        val now = System.currentTimeMillis()
+        override fun observeResumeState(
+            workKey: String,
+            profileId: Long,
+        ): Flow<DomainResumeState?> {
+            val query =
+                userStateBox
+                    .query(
+                        NX_WorkUserState_.workKey
+                            .equal(workKey, StringOrder.CASE_SENSITIVE)
+                            .and(NX_WorkUserState_.profileId.equal(profileId)),
+                    ).build()
 
-        if (existing != null) {
-            existing.inWatchlist = !existing.inWatchlist
-            existing.updatedAt = now
-            userStateBox.put(existing)
-            existing.inWatchlist
-        } else {
-            val newEntity = NX_WorkUserState(
-                id = 0,
-                workKey = workKey,
-                profileId = profileId,
-                resumePositionMs = 0,
-                totalDurationMs = 0,
-                isWatched = false,
-                watchCount = 0,
-                isFavorite = false,
-                inWatchlist = true,
-                createdAt = now,
-                updatedAt = now,
-                lastWatchedAt = null,
-            )
-            userStateBox.put(newEntity)
-            true
+            return query.subscribe().toFlow().map { states ->
+                states.firstOrNull()?.let { mapToDomainResumeState(it) }
+            }
         }
-    }
 
-    // =========================================================================
-    // Internal Mapping (NX_* → Domain Models)
-    // =========================================================================
+        // =========================================================================
+        // Update Operations
+        // =========================================================================
 
-    /**
-     * Maps NX_* entities to DomainDetailMedia.
-     *
-     * This is internal to the Data layer - Domain/Feature never see NX_* entities.
-     */
-    private fun mapToDomainDetailMedia(
-        work: NX_Work,
-        sourceRefs: List<NX_WorkSourceRef>,
-        variants: List<NX_WorkVariant>,
-    ): DomainDetailMedia {
-        // Group variants by sourceKey for efficient lookup
-        val variantsBySource = variants.groupBy { it.sourceKey }
+        override suspend fun updateResumeState(
+            workKey: String,
+            profileId: Long,
+            positionMs: Long,
+            durationMs: Long,
+            sourceKey: String,
+            sourceType: String,
+        ): Unit =
+            withContext(Dispatchers.IO) {
+                val existing =
+                    userStateBox
+                        .query(
+                            NX_WorkUserState_.workKey
+                                .equal(workKey, StringOrder.CASE_SENSITIVE)
+                                .and(NX_WorkUserState_.profileId.equal(profileId)),
+                        ).build()
+                        .findFirst()
 
-        // Build domain source list
-        val sources = sourceRefs.flatMap { sourceRef ->
-            val sourceVariants = variantsBySource[sourceRef.sourceKey] ?: emptyList()
+                val progressPercent =
+                    if (durationMs > 0) {
+                        (positionMs.toFloat() / durationMs.toFloat()).coerceIn(0f, 1f)
+                    } else {
+                        0f
+                    }
 
-            if (sourceVariants.isEmpty()) {
-                // Source without variants - create default
-                listOf(mapSourceWithDefault(sourceRef))
-            } else {
-                // Map each variant
-                sourceVariants.map { variant ->
-                    mapSourceWithVariant(sourceRef, variant)
+                val isCompleted = progressPercent >= 0.9f
+                val now = System.currentTimeMillis()
+
+                val entity =
+                    existing?.apply {
+                        this.resumePositionMs = positionMs
+                        this.totalDurationMs = durationMs
+                        this.lastWatchedAt = now
+                        this.updatedAt = now
+                        if (isCompleted && !this.isWatched) {
+                            this.isWatched = true
+                            this.watchCount += 1
+                        }
+                    } ?: NX_WorkUserState(
+                        id = 0,
+                        workKey = workKey,
+                        profileId = profileId,
+                        resumePositionMs = positionMs,
+                        totalDurationMs = durationMs,
+                        isWatched = isCompleted,
+                        watchCount = if (isCompleted) 1 else 0,
+                        isFavorite = false,
+                        createdAt = now,
+                        updatedAt = now,
+                        lastWatchedAt = now,
+                    )
+
+                userStateBox.put(entity)
+            }
+
+        override suspend fun markCompleted(
+            workKey: String,
+            profileId: Long,
+        ): Unit =
+            withContext(Dispatchers.IO) {
+                val existing =
+                    userStateBox
+                        .query(
+                            NX_WorkUserState_.workKey
+                                .equal(workKey, StringOrder.CASE_SENSITIVE)
+                                .and(NX_WorkUserState_.profileId.equal(profileId)),
+                        ).build()
+                        .findFirst()
+
+                val now = System.currentTimeMillis()
+
+                val entity =
+                    existing?.apply {
+                        this.isWatched = true
+                        this.watchCount += 1
+                        this.resumePositionMs = this.totalDurationMs
+                        this.updatedAt = now
+                        this.lastWatchedAt = now
+                    } ?: NX_WorkUserState(
+                        id = 0,
+                        workKey = workKey,
+                        profileId = profileId,
+                        resumePositionMs = 0,
+                        totalDurationMs = 0,
+                        isWatched = true,
+                        watchCount = 1,
+                        isFavorite = false,
+                        createdAt = now,
+                        updatedAt = now,
+                        lastWatchedAt = now,
+                    )
+
+                userStateBox.put(entity)
+            }
+
+        override suspend fun toggleFavorite(
+            workKey: String,
+            profileId: Long,
+        ): Boolean =
+            withContext(Dispatchers.IO) {
+                val existing =
+                    userStateBox
+                        .query(
+                            NX_WorkUserState_.workKey
+                                .equal(workKey, StringOrder.CASE_SENSITIVE)
+                                .and(NX_WorkUserState_.profileId.equal(profileId)),
+                        ).build()
+                        .findFirst()
+
+                val now = System.currentTimeMillis()
+
+                if (existing != null) {
+                    existing.isFavorite = !existing.isFavorite
+                    existing.updatedAt = now
+                    userStateBox.put(existing)
+                    existing.isFavorite
+                } else {
+                    val newEntity =
+                        NX_WorkUserState(
+                            id = 0,
+                            workKey = workKey,
+                            profileId = profileId,
+                            resumePositionMs = 0,
+                            totalDurationMs = 0,
+                            isWatched = false,
+                            watchCount = 0,
+                            isFavorite = true,
+                            createdAt = now,
+                            updatedAt = now,
+                            lastWatchedAt = null,
+                        )
+                    userStateBox.put(newEntity)
+                    true
                 }
             }
-        }.sortedByDescending { it.priority }
 
-        return DomainDetailMedia(
-            workKey = work.workKey,
-            title = work.canonicalTitle,
-            mediaType = work.workType,
-            year = work.year,
-            season = work.season,
-            episode = work.episode,
-            tmdbId = work.tmdbId,
-            imdbId = work.imdbId,
-            poster = work.poster,
-            backdrop = work.backdrop,
-            plot = work.plot,
-            rating = work.rating,
-            durationMs = work.durationMs,
-            genres = work.genres,
-            director = work.director,
-            cast = work.cast,
-            trailer = work.trailer,
-            isAdult = work.isAdult,
-            sources = sources,
-        )
+        override suspend fun toggleWatchlist(
+            workKey: String,
+            profileId: Long,
+        ): Boolean =
+            withContext(Dispatchers.IO) {
+                val existing =
+                    userStateBox
+                        .query(
+                            NX_WorkUserState_.workKey
+                                .equal(workKey, StringOrder.CASE_SENSITIVE)
+                                .and(NX_WorkUserState_.profileId.equal(profileId)),
+                        ).build()
+                        .findFirst()
+
+                val now = System.currentTimeMillis()
+
+                if (existing != null) {
+                    existing.inWatchlist = !existing.inWatchlist
+                    existing.updatedAt = now
+                    userStateBox.put(existing)
+                    existing.inWatchlist
+                } else {
+                    val newEntity =
+                        NX_WorkUserState(
+                            id = 0,
+                            workKey = workKey,
+                            profileId = profileId,
+                            resumePositionMs = 0,
+                            totalDurationMs = 0,
+                            isWatched = false,
+                            watchCount = 0,
+                            isFavorite = false,
+                            inWatchlist = true,
+                            createdAt = now,
+                            updatedAt = now,
+                            lastWatchedAt = null,
+                        )
+                    userStateBox.put(newEntity)
+                    true
+                }
+            }
+
+        // =========================================================================
+        // Internal Mapping (NX_* → Domain Models)
+        // =========================================================================
+
+        /**
+         * Maps NX_* entities to DomainDetailMedia.
+         *
+         * This is internal to the Data layer - Domain/Feature never see NX_* entities.
+         */
+        private fun mapToDomainDetailMedia(
+            work: NX_Work,
+            sourceRefs: List<NX_WorkSourceRef>,
+            variants: List<NX_WorkVariant>,
+        ): DomainDetailMedia {
+            // Group variants by sourceKey for efficient lookup
+            val variantsBySource = variants.groupBy { it.sourceKey }
+
+            // Build domain source list
+            val sources =
+                sourceRefs
+                    .flatMap { sourceRef ->
+                        val sourceVariants = variantsBySource[sourceRef.sourceKey] ?: emptyList()
+
+                        if (sourceVariants.isEmpty()) {
+                            // Source without variants - create default
+                            listOf(mapSourceWithDefault(sourceRef))
+                        } else {
+                            // Map each variant
+                            sourceVariants.map { variant ->
+                                mapSourceWithVariant(sourceRef, variant)
+                            }
+                        }
+                    }.sortedByDescending { it.priority }
+
+            return DomainDetailMedia(
+                workKey = work.workKey,
+                title = work.canonicalTitle,
+                mediaType = work.workType,
+                year = work.year,
+                season = work.season,
+                episode = work.episode,
+                tmdbId = work.tmdbId,
+                imdbId = work.imdbId,
+                poster = work.poster,
+                backdrop = work.backdrop,
+                plot = work.plot,
+                rating = work.rating,
+                durationMs = work.durationMs,
+                genres = work.genres,
+                director = work.director,
+                cast = work.cast,
+                trailer = work.trailer,
+                isAdult = work.isAdult,
+                sources = sources,
+            )
+        }
+
+        private fun mapSourceWithVariant(
+            sourceRef: NX_WorkSourceRef,
+            variant: NX_WorkVariant,
+        ): DomainSourceInfo =
+            DomainSourceInfo(
+                sourceKey = sourceRef.sourceKey,
+                sourceType = sourceRef.sourceType,
+                sourceLabel = buildSourceLabel(sourceRef),
+                accountKey = sourceRef.accountKey,
+                qualityTag = variant.qualityTag,
+                width = variant.width,
+                height = variant.height,
+                videoCodec = variant.videoCodec,
+                containerFormat = variant.containerFormat,
+                fileSizeBytes = sourceRef.fileSizeBytes,
+                language = variant.languageTag,
+                priority =
+                    SourcePriority.totalPriority(
+                        sourceType = sourceRef.sourceType,
+                        qualityTag = variant.qualityTag,
+                        hasDirectUrl = !variant.playbackUrl.isNullOrBlank(),
+                        isExplicitVariant = true,
+                    ),
+                isAvailable = true,
+                playbackHints = PlaybackHintsDecoder.decodeFromVariantAndSource(variant),
+            )
+
+        private fun mapSourceWithDefault(sourceRef: NX_WorkSourceRef): DomainSourceInfo =
+            DomainSourceInfo(
+                sourceKey = sourceRef.sourceKey,
+                sourceType = sourceRef.sourceType,
+                sourceLabel = buildSourceLabel(sourceRef),
+                accountKey = sourceRef.accountKey,
+                qualityTag = "source",
+                width = null,
+                height = null,
+                videoCodec = null,
+                containerFormat = sourceRef.mimeType?.let { ContainerGuess.fromMimeType(it) },
+                fileSizeBytes = sourceRef.fileSizeBytes,
+                language = null,
+                priority =
+                    SourcePriority.totalPriority(
+                        sourceType = sourceRef.sourceType,
+                        hasDirectUrl = false,
+                        isExplicitVariant = false,
+                    ),
+                isAvailable = true,
+                playbackHints = PlaybackHintsDecoder.decodeFromVariantAndSource(null),
+            )
+
+        private fun buildSourceLabel(sourceRef: NX_WorkSourceRef): String =
+            SourceLabelBuilder.buildLabel(sourceRef.sourceType, sourceRef.accountKey)
+
+        private fun mapToDomainResumeState(userState: NX_WorkUserState): DomainResumeState {
+            val progressPercent =
+                if (userState.totalDurationMs > 0) {
+                    (userState.resumePositionMs.toFloat() / userState.totalDurationMs.toFloat())
+                        .coerceIn(0f, 1f)
+                } else {
+                    0f
+                }
+
+            return DomainResumeState(
+                workKey = userState.workKey,
+                profileId = userState.profileId,
+                positionMs = userState.resumePositionMs,
+                durationMs = userState.totalDurationMs,
+                progressPercent = progressPercent,
+                isCompleted = userState.isWatched,
+                watchCount = userState.watchCount,
+                lastSourceKey = null, // TODO: Add to NX_WorkUserState
+                lastSourceType = null,
+                lastWatchedAt = userState.lastWatchedAt,
+                isFavorite = userState.isFavorite,
+                inWatchlist = userState.inWatchlist,
+            )
+        }
     }
-
-    private fun mapSourceWithVariant(
-        sourceRef: NX_WorkSourceRef,
-        variant: NX_WorkVariant,
-    ): DomainSourceInfo = DomainSourceInfo(
-        sourceKey = sourceRef.sourceKey,
-        sourceType = sourceRef.sourceType,
-        sourceLabel = buildSourceLabel(sourceRef),
-        accountKey = sourceRef.accountKey,
-        qualityTag = variant.qualityTag,
-        width = variant.width,
-        height = variant.height,
-        videoCodec = variant.videoCodec,
-        containerFormat = variant.containerFormat,
-        fileSizeBytes = sourceRef.fileSizeBytes,
-        language = variant.languageTag,
-        priority = SourcePriority.totalPriority(
-            sourceType = sourceRef.sourceType,
-            qualityTag = variant.qualityTag,
-            hasDirectUrl = !variant.playbackUrl.isNullOrBlank(),
-            isExplicitVariant = true,
-        ),
-        isAvailable = true,
-        playbackHints = PlaybackHintsDecoder.decodeFromVariantAndSource(variant),
-    )
-
-    private fun mapSourceWithDefault(
-        sourceRef: NX_WorkSourceRef,
-    ): DomainSourceInfo = DomainSourceInfo(
-        sourceKey = sourceRef.sourceKey,
-        sourceType = sourceRef.sourceType,
-        sourceLabel = buildSourceLabel(sourceRef),
-        accountKey = sourceRef.accountKey,
-        qualityTag = "source",
-        width = null,
-        height = null,
-        videoCodec = null,
-        containerFormat = sourceRef.mimeType?.let { ContainerGuess.fromMimeType(it) },
-        fileSizeBytes = sourceRef.fileSizeBytes,
-        language = null,
-        priority = SourcePriority.totalPriority(
-            sourceType = sourceRef.sourceType,
-            hasDirectUrl = false,
-            isExplicitVariant = false,
-        ),
-        isAvailable = true,
-        playbackHints = PlaybackHintsDecoder.decodeFromVariantAndSource(null),
-    )
-
-    private fun buildSourceLabel(sourceRef: NX_WorkSourceRef): String =
-        SourceLabelBuilder.buildLabel(sourceRef.sourceType, sourceRef.accountKey)
-
-    private fun mapToDomainResumeState(userState: NX_WorkUserState): DomainResumeState {
-        val progressPercent = if (userState.totalDurationMs > 0) {
-            (userState.resumePositionMs.toFloat() / userState.totalDurationMs.toFloat())
-                .coerceIn(0f, 1f)
-        } else 0f
-
-        return DomainResumeState(
-            workKey = userState.workKey,
-            profileId = userState.profileId,
-            positionMs = userState.resumePositionMs,
-            durationMs = userState.totalDurationMs,
-            progressPercent = progressPercent,
-            isCompleted = userState.isWatched,
-            watchCount = userState.watchCount,
-            lastSourceKey = null, // TODO: Add to NX_WorkUserState
-            lastSourceType = null,
-            lastWatchedAt = userState.lastWatchedAt,
-            isFavorite = userState.isFavorite,
-            inWatchlist = userState.inWatchlist,
-        )
-    }
-}

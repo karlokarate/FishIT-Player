@@ -18,77 +18,84 @@ import org.junit.Test
 class AndroidDeviceClassProviderTest {
     @Test
     fun `FireTV Stick 4K (1-5GB RAM) returns TV_LOW_RAM`() {
-        val profile = DeviceProfile(
-            isTV = true,
-            totalRamMB = 1536, // 1.5GB
-            isLowRamDevice = false,
-        )
+        val profile =
+            DeviceProfile(
+                isTV = true,
+                totalRamMB = 1536, // 1.5GB
+                isLowRamDevice = false,
+            )
         val result = AndroidDeviceClassProvider.mapDeviceProfileToClass(profile)
         assertEquals(DeviceClass.TV_LOW_RAM, result)
     }
 
     @Test
     fun `FireTV Stick (1GB RAM, low-RAM flag) returns TV_LOW_RAM`() {
-        val profile = DeviceProfile(
-            isTV = true,
-            totalRamMB = 1024, // 1GB
-            isLowRamDevice = true,
-        )
+        val profile =
+            DeviceProfile(
+                isTV = true,
+                totalRamMB = 1024, // 1GB
+                isLowRamDevice = true,
+            )
         val result = AndroidDeviceClassProvider.mapDeviceProfileToClass(profile)
         assertEquals(DeviceClass.TV_LOW_RAM, result)
     }
 
     @Test
     fun `Nvidia Shield (3GB RAM) returns TV`() {
-        val profile = DeviceProfile(
-            isTV = true,
-            totalRamMB = 3072, // 3GB
-            isLowRamDevice = false,
-        )
+        val profile =
+            DeviceProfile(
+                isTV = true,
+                totalRamMB = 3072, // 3GB
+                isLowRamDevice = false,
+            )
         val result = AndroidDeviceClassProvider.mapDeviceProfileToClass(profile)
         assertEquals(DeviceClass.TV, result)
     }
 
     @Test
     fun `Chromecast with Google TV (2GB RAM) returns TV`() {
-        val profile = DeviceProfile(
-            isTV = true,
-            totalRamMB = 2048, // Exactly at threshold
-            isLowRamDevice = false,
-        )
+        val profile =
+            DeviceProfile(
+                isTV = true,
+                totalRamMB = 2048, // Exactly at threshold
+                isLowRamDevice = false,
+            )
         val result = AndroidDeviceClassProvider.mapDeviceProfileToClass(profile)
         assertEquals(DeviceClass.TV, result)
     }
 
     @Test
     fun `Chromecast with Google TV (low-RAM flag despite RAM) returns TV_LOW_RAM`() {
-        val profile = DeviceProfile(
-            isTV = true,
-            totalRamMB = 2048, // At threshold, but flagged as low-RAM
-            isLowRamDevice = true,
-        )
+        val profile =
+            DeviceProfile(
+                isTV = true,
+                totalRamMB = 2048, // At threshold, but flagged as low-RAM
+                isLowRamDevice = true,
+            )
         val result = AndroidDeviceClassProvider.mapDeviceProfileToClass(profile)
         assertEquals(DeviceClass.TV_LOW_RAM, result)
     }
 
     @Test
     fun `Pixel 5 (8GB RAM) returns PHONE_TABLET`() {
-        val profile = DeviceProfile(
-            isTV = false,
-            totalRamMB = 8192, // 8GB
-            isLowRamDevice = false,
-        )
+        val profile =
+            DeviceProfile(
+                isTV = false,
+                totalRamMB = 8192, // 8GB
+                isLowRamDevice = false,
+            )
         val result = AndroidDeviceClassProvider.mapDeviceProfileToClass(profile)
         assertEquals(DeviceClass.PHONE_TABLET, result)
     }
 
     @Test
     fun `Samsung Galaxy Tab S8 (12GB RAM) returns PHONE_TABLET`() {
-        val profile = DeviceProfile(
-            isTV = false,
-            totalRamMB = 12288, // 12GB
-            isLowRamDevice = false,
-        )
+        val profile =
+            DeviceProfile(
+                isTV = false,
+                totalRamMB = 12288, // 12GB
+                isLowRamDevice = false,
+            )
         val result = AndroidDeviceClassProvider.mapDeviceProfileToClass(profile)
         assertEquals(DeviceClass.PHONE_TABLET, result)
     }
@@ -97,22 +104,24 @@ class AndroidDeviceClassProviderTest {
     fun `Old Android Go phone (1GB RAM, low-RAM flag) returns PHONE_TABLET`() {
         // Note: Even low-RAM phones get PHONE_TABLET class
         // because they're not TVs. App may struggle but it's the correct classification.
-        val profile = DeviceProfile(
-            isTV = false,
-            totalRamMB = 1024, // 1GB
-            isLowRamDevice = true,
-        )
+        val profile =
+            DeviceProfile(
+                isTV = false,
+                totalRamMB = 1024, // 1GB
+                isLowRamDevice = true,
+            )
         val result = AndroidDeviceClassProvider.mapDeviceProfileToClass(profile)
         assertEquals(DeviceClass.PHONE_TABLET, result)
     }
 
     @Test
     fun `Budget tablet (1-5GB RAM) returns PHONE_TABLET`() {
-        val profile = DeviceProfile(
-            isTV = false,
-            totalRamMB = 1536, // 1.5GB
-            isLowRamDevice = false,
-        )
+        val profile =
+            DeviceProfile(
+                isTV = false,
+                totalRamMB = 1536, // 1.5GB
+                isLowRamDevice = false,
+            )
         val result = AndroidDeviceClassProvider.mapDeviceProfileToClass(profile)
         assertEquals(DeviceClass.PHONE_TABLET, result)
     }

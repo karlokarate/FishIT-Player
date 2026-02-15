@@ -24,15 +24,15 @@ import kotlin.test.assertTrue
  * Test data: `/test-data/xtream-responses/`
  */
 class XtreamSeriesIntegrationTest {
-
     private val testDataDir = File("test-data/xtream-responses")
     private val accountLabel = "test-account"
 
-    private val json = Json {
-        ignoreUnknownKeys = true
-        isLenient = true
-        coerceInputValues = true
-    }
+    private val json =
+        Json {
+            ignoreUnknownKeys = true
+            isLenient = true
+            coerceInputValues = true
+        }
 
     // =========================================================================
     // API DTOs for parsing real Series JSON
@@ -125,20 +125,21 @@ class XtreamSeriesIntegrationTest {
             if (api.series_id <= 0) continue // Skip invalid IDs
             if (testedCount >= 5) break
 
-            val dto = XtreamSeriesItem(
-                id = api.series_id,
-                name = api.name,
-                cover = api.cover,
-                categoryId = api.category_id,
-                lastModified = api.last_modified?.toLongOrNull(),
-                rating = api.rating?.toDoubleOrNull(),
-                plot = api.plot,
-                cast = api.cast,
-                director = api.director,
-                genre = api.genre,
-                releaseDate = api.releaseDate,
-                backdrop = api.backdrop_path?.firstOrNull(),
-            )
+            val dto =
+                XtreamSeriesItem(
+                    id = api.series_id,
+                    name = api.name,
+                    cover = api.cover,
+                    categoryId = api.category_id,
+                    lastModified = api.last_modified?.toLongOrNull(),
+                    rating = api.rating?.toDoubleOrNull(),
+                    plot = api.plot,
+                    cast = api.cast,
+                    director = api.director,
+                    genre = api.genre,
+                    releaseDate = api.releaseDate,
+                    backdrop = api.backdrop_path?.firstOrNull(),
+                )
 
             val raw = dto.toRawMetadata(accountLabel = accountLabel)
 
@@ -180,14 +181,15 @@ class XtreamSeriesIntegrationTest {
             if (api.plot.isNullOrBlank()) continue
             if (testedCount >= 3) break
 
-            val dto = XtreamSeriesItem(
-                id = api.series_id,
-                name = api.name,
-                plot = api.plot,
-                cast = api.cast,
-                director = api.director,
-                genre = api.genre,
-            )
+            val dto =
+                XtreamSeriesItem(
+                    id = api.series_id,
+                    name = api.name,
+                    plot = api.plot,
+                    cast = api.cast,
+                    director = api.director,
+                    genre = api.genre,
+                )
             val raw = dto.toRawMetadata()
 
             assertEquals(api.plot, raw.plot, "plot")
@@ -239,32 +241,34 @@ class XtreamSeriesIntegrationTest {
                 if (episodeId <= 0) continue // Skip invalid episode IDs
                 episodeCount++
 
-                val dto = XtreamEpisode(
-                    id = episodeId,
-                    seriesId = seriesId,
-                    seriesName = seriesName,
-                    seasonNumber = seasonNum,
-                    episodeNumber = ep.episode_num,
-                    title = ep.title ?: "",
-                    containerExtension = ep.container_extension,
-                    added = ep.added?.toLongOrNull(),
-                    plot = ep.info?.plot,
-                    thumbnail = ep.info?.movie_image,
-                    rating = ep.info?.rating,
-                    episodeTmdbId = ep.info?.tmdb_id,
-                )
+                val dto =
+                    XtreamEpisode(
+                        id = episodeId,
+                        seriesId = seriesId,
+                        seriesName = seriesName,
+                        seasonNumber = seasonNum,
+                        episodeNumber = ep.episode_num,
+                        title = ep.title ?: "",
+                        containerExtension = ep.container_extension,
+                        added = ep.added?.toLongOrNull(),
+                        plot = ep.info?.plot,
+                        thumbnail = ep.info?.movie_image,
+                        rating = ep.info?.rating,
+                        episodeTmdbId = ep.info?.tmdb_id,
+                    )
 
                 val raw = dto.toRawMediaMetadata(seriesNameOverride = seriesName)
 
                 // XtreamIdCodec composite format for episodes
-                val expectedSourceId = XtreamIdCodec.episodeComposite(
-                    seriesId = seriesId,
-                    season = seasonNum,
-                    episodeNum = ep.episode_num,
-                )
+                val expectedSourceId =
+                    XtreamIdCodec.episodeComposite(
+                        seriesId = seriesId,
+                        season = seasonNum,
+                        episodeNum = ep.episode_num,
+                    )
                 assertEquals(expectedSourceId, raw.sourceId, "sourceId")
                 assertTrue(raw.sourceId.startsWith("xtream:episode:series:"), "sourceId prefix")
-                assertTrue(raw.sourceId.contains(":s${seasonNum}:e${ep.episode_num}"), "sourceId season/episode")
+                assertTrue(raw.sourceId.contains(":s$seasonNum:e${ep.episode_num}"), "sourceId season/episode")
 
                 // Core fields
                 assertEquals(MediaType.SERIES_EPISODE, raw.mediaType, "mediaType")

@@ -12,7 +12,6 @@ package com.fishit.player.core.model.util
  * the pipeline adapter and raw metadata mapper.
  */
 object RatingNormalizer {
-
     /**
      * Normalize a 5-point rating to 10-point scale.
      *
@@ -22,8 +21,7 @@ object RatingNormalizer {
      * @param rating5Based Rating on 0–5 scale
      * @return Rating on 0–10 scale, or null if input is null/zero/negative
      */
-    fun normalize5to10(rating5Based: Double?): Double? =
-        rating5Based?.takeIf { it > 0.0 }?.let { it * 2.0 }
+    fun normalize5to10(rating5Based: Double?): Double? = rating5Based?.takeIf { it > 0.0 }?.let { it * 2.0 }
 
     /**
      * Resolve rating from Xtream API fields.
@@ -39,6 +37,8 @@ object RatingNormalizer {
      * @param rating5Based Rating from API (0–5 scale)
      * @return Resolved rating on 0–10 scale, or null if neither is available
      */
-    fun resolve(ratingRaw: String?, rating5Based: Double?): Double? =
-        ratingRaw?.toDoubleOrNull()?.takeIf { it > 0.0 } ?: normalize5to10(rating5Based)
+    fun resolve(
+        ratingRaw: String?,
+        rating5Based: Double?,
+    ): Double? = ratingRaw?.toDoubleOrNull()?.takeIf { it > 0.0 } ?: normalize5to10(rating5Based)
 }

@@ -35,9 +35,6 @@ import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
-import androidx.paging.LoadState
-import androidx.paging.compose.LazyPagingItems
-import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -50,6 +47,9 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.paging.LoadState
+import androidx.paging.compose.LazyPagingItems
+import androidx.paging.compose.collectAsLazyPagingItems
 import coil3.compose.AsyncImage
 import com.fishit.player.core.library.domain.LibraryCategory
 import com.fishit.player.core.library.domain.LibraryMediaItem
@@ -90,7 +90,7 @@ fun LibraryScreen(
     usePaging: Boolean = true,
 ) {
     val state by viewModel.state.collectAsState()
-    
+
     // Always collect paging items (Compose hooks must be called unconditionally)
     // They won't load data until used in composition
     val vodPagingItems = viewModel.vodPagingFlow.collectAsLazyPagingItems()
@@ -181,11 +181,12 @@ fun LibraryScreen(
             // Content - Use Paging or legacy list based on usePaging parameter
             if (usePaging && !state.isSearchActive) {
                 // Paging 3 infinite scroll
-                val currentPagingItems = when (state.currentTab) {
-                    LibraryTab.VOD -> vodPagingItems
-                    LibraryTab.SERIES -> seriesPagingItems
-                }
-                
+                val currentPagingItems =
+                    when (state.currentTab) {
+                        LibraryTab.VOD -> vodPagingItems
+                        LibraryTab.SERIES -> seriesPagingItems
+                    }
+
                 currentPagingItems.let { pagingItems ->
                     PagingMediaGrid(
                         pagingItems = pagingItems,
@@ -236,7 +237,7 @@ private fun PagingMediaGrid(
     modifier: Modifier = Modifier,
 ) {
     val loadState = pagingItems.loadState
-    
+
     when {
         // Initial loading
         loadState.refresh is LoadState.Loading -> {
@@ -247,7 +248,7 @@ private fun PagingMediaGrid(
                 CircularProgressIndicator()
             }
         }
-        
+
         // Initial error
         loadState.refresh is LoadState.Error -> {
             val error = (loadState.refresh as LoadState.Error).error
@@ -268,7 +269,7 @@ private fun PagingMediaGrid(
                 }
             }
         }
-        
+
         // Empty state
         loadState.refresh is LoadState.NotLoading && pagingItems.itemCount == 0 -> {
             Box(
@@ -281,7 +282,7 @@ private fun PagingMediaGrid(
                 )
             }
         }
-        
+
         // Content loaded
         else -> {
             LazyVerticalGrid(
@@ -304,14 +305,15 @@ private fun PagingMediaGrid(
                         )
                     }
                 }
-                
+
                 // Append loading indicator
                 if (loadState.append is LoadState.Loading) {
                     item {
                         Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp),
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp),
                             contentAlignment = Alignment.Center,
                         ) {
                             CircularProgressIndicator(
@@ -594,25 +596,28 @@ private fun UiSortOption.toSortOption(): SortOption =
 private fun FilterConfig.toUiFilterConfig(): UiFilterConfig =
     UiFilterConfig(
         hideAdult = hideAdult,
-        selectedGenres = criteria
-            .filterIsInstance<FilterCriterion.GenreInclude>()
-            .filter { it.isActive }
-            .flatMap { it.genres }
-            .toSet(),
+        selectedGenres =
+            criteria
+                .filterIsInstance<FilterCriterion.GenreInclude>()
+                .filter { it.isActive }
+                .flatMap { it.genres }
+                .toSet(),
         excludedGenres = excludedGenres,
-        minRating = criteria
-            .filterIsInstance<FilterCriterion.RatingMinimum>()
-            .firstOrNull { it.isActive }
-            ?.minRating
-            ?.toFloat(),
-        yearRange = criteria
-            .filterIsInstance<FilterCriterion.YearRange>()
-            .firstOrNull { it.isActive }
-            ?.let { yearCriterion ->
-                val min = yearCriterion.minYear ?: return@let null
-                val max = yearCriterion.maxYear ?: return@let null
-                min..max
-            },
+        minRating =
+            criteria
+                .filterIsInstance<FilterCriterion.RatingMinimum>()
+                .firstOrNull { it.isActive }
+                ?.minRating
+                ?.toFloat(),
+        yearRange =
+            criteria
+                .filterIsInstance<FilterCriterion.YearRange>()
+                .firstOrNull { it.isActive }
+                ?.let { yearCriterion ->
+                    val min = yearCriterion.minYear ?: return@let null
+                    val max = yearCriterion.maxYear ?: return@let null
+                    min..max
+                },
     )
 
 /** Convert UI UiFilterConfig to unified FilterConfig (core/model) */

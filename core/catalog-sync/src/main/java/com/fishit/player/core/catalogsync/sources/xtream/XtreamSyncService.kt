@@ -43,7 +43,6 @@ import kotlinx.coroutines.flow.Flow
  * @see SyncStatus Progress/result status
  */
 interface XtreamSyncService {
-
     /**
      * Execute Xtream catalog synchronization.
      *
@@ -140,9 +139,10 @@ data class XtreamCategories(
     val liveCategories: List<XtreamCategory> = emptyList(),
 ) {
     val isEmpty: Boolean
-        get() = vodCategories.isEmpty() &&
-            seriesCategories.isEmpty() &&
-            liveCategories.isEmpty()
+        get() =
+            vodCategories.isEmpty() &&
+                seriesCategories.isEmpty() &&
+                liveCategories.isEmpty()
 
     val totalCount: Int
         get() = vodCategories.size + seriesCategories.size + liveCategories.size

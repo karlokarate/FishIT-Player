@@ -43,6 +43,7 @@ class LiveViewModel
         companion object {
             /** Debounce delay for search input (ms) - wait for user to stop typing */
             private const val SEARCH_DEBOUNCE_MS = 500L
+
             /** Minimum characters required before search is triggered */
             private const val MIN_SEARCH_LENGTH = 2
         }
@@ -171,8 +172,7 @@ class LiveViewModel
                             _searchResults.value = emptyList()
                         }
                     }
-                }
-                .launchIn(viewModelScope)
+                }.launchIn(viewModelScope)
         }
 
         /**

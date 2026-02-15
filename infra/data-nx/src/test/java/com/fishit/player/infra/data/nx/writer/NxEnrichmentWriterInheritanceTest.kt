@@ -12,6 +12,7 @@ import io.mockk.slot
 import kotlinx.coroutines.runBlocking
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 /**
  * Tests for [NxEnrichmentWriter.inheritParentFields].
@@ -21,160 +22,168 @@ import kotlin.test.assertEquals
  * using enrichIfAbsent semantics (no overwrites).
  */
 class NxEnrichmentWriterInheritanceTest {
-
     private val workRepository = mockk<NxWorkRepository>(relaxed = true)
     private val variantRepository = mockk<NxWorkVariantRepository>(relaxed = true)
     private val relationRepository = mockk<NxWorkRelationRepository>(relaxed = true)
     private val workEntityBuilder = WorkEntityBuilder()
 
-    private val enrichmentWriter = NxEnrichmentWriter(
-        workRepository = workRepository,
-        variantRepository = variantRepository,
-        relationRepository = relationRepository,
-        workEntityBuilder = workEntityBuilder,
-    )
+    private val enrichmentWriter =
+        NxEnrichmentWriter(
+            workRepository = workRepository,
+            variantRepository = variantRepository,
+            relationRepository = relationRepository,
+            workEntityBuilder = workEntityBuilder,
+        )
 
     // =========================================================================
     // inheritParentFields — basic propagation
     // =========================================================================
 
     @Test
-    fun `inheritParentFields propagates parent fields to children`() = runBlocking {
-        // GIVEN: enriched parent series work
-        val parentWorkKey = "series:tmdb:12345"
-        val parentWork = NxWorkRepository.Work(
-            workKey = parentWorkKey,
-            type = NxWorkRepository.WorkType.SERIES,
-            displayTitle = "Breaking Bad",
-            poster = ImageRef.Http("https://example.com/poster.jpg"),
-            backdrop = ImageRef.Http("https://example.com/backdrop.jpg"),
-            genres = "Drama,Crime",
-            rating = 9.5,
-            director = "Vince Gilligan",
-            cast = "Bryan Cranston,Aaron Paul",
-            trailer = "https://youtube.com/trailer",
-            tmdbId = "1396",
-            imdbId = "tt0903747",
-        )
+    fun `inheritParentFields propagates parent fields to children`() =
+        runBlocking {
+            // GIVEN: enriched parent series work
+            val parentWorkKey = "series:tmdb:12345"
+            val parentWork =
+                NxWorkRepository.Work(
+                    workKey = parentWorkKey,
+                    type = NxWorkRepository.WorkType.SERIES,
+                    displayTitle = "Breaking Bad",
+                    poster = ImageRef.Http("https://example.com/poster.jpg"),
+                    backdrop = ImageRef.Http("https://example.com/backdrop.jpg"),
+                    genres = "Drama,Crime",
+                    rating = 9.5,
+                    director = "Vince Gilligan",
+                    cast = "Bryan Cranston,Aaron Paul",
+                    trailer = "https://youtube.com/trailer",
+                    tmdbId = "1396",
+                    imdbId = "tt0903747",
+                )
 
-        coEvery { workRepository.get(parentWorkKey) } returns parentWork
+            coEvery { workRepository.get(parentWorkKey) } returns parentWork
 
-        // AND: two child episode relations
-        val childRelations = listOf(
-            NxWorkRelationRepository.Relation(
-                parentWorkKey = parentWorkKey,
-                childWorkKey = "episode:tmdb:12345:s01e01",
-                relationType = NxWorkRelationRepository.RelationType.SERIES_EPISODE,
-                seasonNumber = 1,
-                episodeNumber = 1,
-            ),
-            NxWorkRelationRepository.Relation(
-                parentWorkKey = parentWorkKey,
-                childWorkKey = "episode:tmdb:12345:s01e02",
-                relationType = NxWorkRelationRepository.RelationType.SERIES_EPISODE,
-                seasonNumber = 1,
-                episodeNumber = 2,
-            ),
-        )
-        coEvery { relationRepository.findChildren(parentWorkKey) } returns childRelations
+            // AND: two child episode relations
+            val childRelations =
+                listOf(
+                    NxWorkRelationRepository.Relation(
+                        parentWorkKey = parentWorkKey,
+                        childWorkKey = "episode:tmdb:12345:s01e01",
+                        relationType = NxWorkRelationRepository.RelationType.SERIES_EPISODE,
+                        seasonNumber = 1,
+                        episodeNumber = 1,
+                    ),
+                    NxWorkRelationRepository.Relation(
+                        parentWorkKey = parentWorkKey,
+                        childWorkKey = "episode:tmdb:12345:s01e02",
+                        relationType = NxWorkRelationRepository.RelationType.SERIES_EPISODE,
+                        seasonNumber = 1,
+                        episodeNumber = 2,
+                    ),
+                )
+            coEvery { relationRepository.findChildren(parentWorkKey) } returns childRelations
 
-        // AND: enrichIfAbsent succeeds for both children
-        val enrichmentSlots = mutableListOf<NxWorkRepository.Enrichment>()
-        coEvery {
-            workRepository.enrichIfAbsent(any(), capture(enrichmentSlots))
-        } returns mockk(relaxed = true)
+            // AND: enrichIfAbsentBatch succeeds for both children
+            val enrichmentSlot = slot<NxWorkRepository.Enrichment>()
+            val workKeysSlot = slot<List<String>>()
+            coEvery {
+                workRepository.enrichIfAbsentBatch(capture(workKeysSlot), capture(enrichmentSlot))
+            } returns 2
 
-        // WHEN: inherit parent fields
-        val enrichedCount = enrichmentWriter.inheritParentFields(parentWorkKey)
+            // WHEN: inherit parent fields
+            val enrichedCount = enrichmentWriter.inheritParentFields(parentWorkKey)
 
-        // THEN: both children were enriched
-        assertEquals(2, enrichedCount)
+            // THEN: both children were enriched
+            assertEquals(2, enrichedCount)
 
-        // AND: enrichment was called with parent's inheritable fields
-        coVerify(exactly = 2) { workRepository.enrichIfAbsent(any(), any()) }
-        coVerify { workRepository.enrichIfAbsent("episode:tmdb:12345:s01e01", any()) }
-        coVerify { workRepository.enrichIfAbsent("episode:tmdb:12345:s01e02", any()) }
+            // AND: enrichIfAbsentBatch was called once with both child keys
+            coVerify(exactly = 1) { workRepository.enrichIfAbsentBatch(any(), any()) }
+            val capturedKeys = workKeysSlot.captured
+            assertTrue(capturedKeys.contains("episode:tmdb:12345:s01e01"))
+            assertTrue(capturedKeys.contains("episode:tmdb:12345:s01e02"))
 
-        // AND: enrichment payload contains correct parent fields
-        val enrichment = enrichmentSlots.first()
-        assertEquals(ImageRef.Http("https://example.com/poster.jpg"), enrichment.poster)
-        assertEquals(ImageRef.Http("https://example.com/backdrop.jpg"), enrichment.backdrop)
-        assertEquals("Drama,Crime", enrichment.genres)
-        assertEquals(9.5, enrichment.rating)
-        assertEquals("Vince Gilligan", enrichment.director)
-        assertEquals("Bryan Cranston,Aaron Paul", enrichment.cast)
-        assertEquals("https://youtube.com/trailer", enrichment.trailer)
+            // AND: enrichment payload contains correct parent fields
+            val enrichment = enrichmentSlot.captured
+            assertEquals(ImageRef.Http("https://example.com/poster.jpg"), enrichment.poster)
+            assertEquals(ImageRef.Http("https://example.com/backdrop.jpg"), enrichment.backdrop)
+            assertEquals("Drama,Crime", enrichment.genres)
+            assertEquals(9.5, enrichment.rating)
+            assertEquals("Vince Gilligan", enrichment.director)
+            assertEquals("Bryan Cranston,Aaron Paul", enrichment.cast)
+            assertEquals("https://youtube.com/trailer", enrichment.trailer)
 
-        // AND: authority IDs are NOT inherited (ALWAYS_UPDATE would corrupt episode IDs)
-        assertEquals(null, enrichment.tmdbId)
-        assertEquals(null, enrichment.imdbId)
-        assertEquals(null, enrichment.tvdbId)
-    }
+            // AND: authority IDs are NOT inherited (ALWAYS_UPDATE would corrupt episode IDs)
+            assertEquals(null, enrichment.tmdbId)
+            assertEquals(null, enrichment.imdbId)
+            assertEquals(null, enrichment.tvdbId)
+        }
 
     // =========================================================================
     // inheritParentFields — edge cases
     // =========================================================================
 
     @Test
-    fun `inheritParentFields returns 0 when parent not found`() = runBlocking {
-        coEvery { workRepository.get("nonexistent") } returns null
+    fun `inheritParentFields returns 0 when parent not found`() =
+        runBlocking {
+            coEvery { workRepository.get("nonexistent") } returns null
 
-        val result = enrichmentWriter.inheritParentFields("nonexistent")
+            val result = enrichmentWriter.inheritParentFields("nonexistent")
 
-        assertEquals(0, result)
-        coVerify(exactly = 0) { relationRepository.findChildren(any()) }
-    }
-
-    @Test
-    fun `inheritParentFields returns 0 when no children exist`() = runBlocking {
-        val parentWorkKey = "series:tmdb:99999"
-        coEvery { workRepository.get(parentWorkKey) } returns NxWorkRepository.Work(
-            workKey = parentWorkKey,
-            type = NxWorkRepository.WorkType.SERIES,
-            displayTitle = "No Episodes Series",
-        )
-        coEvery { relationRepository.findChildren(parentWorkKey) } returns emptyList()
-
-        val result = enrichmentWriter.inheritParentFields(parentWorkKey)
-
-        assertEquals(0, result)
-        coVerify(exactly = 0) { workRepository.enrichIfAbsent(any(), any()) }
-    }
+            assertEquals(0, result)
+            coVerify(exactly = 0) { relationRepository.findChildren(any()) }
+        }
 
     @Test
-    fun `inheritParentFields counts only successfully enriched children`() = runBlocking {
-        val parentWorkKey = "series:tmdb:55555"
-        coEvery { workRepository.get(parentWorkKey) } returns NxWorkRepository.Work(
-            workKey = parentWorkKey,
-            type = NxWorkRepository.WorkType.SERIES,
-            displayTitle = "Partial Enrichment",
-            poster = ImageRef.Http("https://example.com/poster.jpg"),
-        )
+    fun `inheritParentFields returns 0 when no children exist`() =
+        runBlocking {
+            val parentWorkKey = "series:tmdb:99999"
+            coEvery { workRepository.get(parentWorkKey) } returns
+                NxWorkRepository.Work(
+                    workKey = parentWorkKey,
+                    type = NxWorkRepository.WorkType.SERIES,
+                    displayTitle = "No Episodes Series",
+                )
+            coEvery { relationRepository.findChildren(parentWorkKey) } returns emptyList()
 
-        val childRelations = listOf(
-            NxWorkRelationRepository.Relation(
-                parentWorkKey = parentWorkKey,
-                childWorkKey = "episode:ok",
-                relationType = NxWorkRelationRepository.RelationType.SERIES_EPISODE,
-            ),
-            NxWorkRelationRepository.Relation(
-                parentWorkKey = parentWorkKey,
-                childWorkKey = "episode:missing",
-                relationType = NxWorkRelationRepository.RelationType.SERIES_EPISODE,
-            ),
-        )
-        coEvery { relationRepository.findChildren(parentWorkKey) } returns childRelations
+            val result = enrichmentWriter.inheritParentFields(parentWorkKey)
 
-        // First child enrichment succeeds, second returns null (work not found)
-        coEvery {
-            workRepository.enrichIfAbsent("episode:ok", any())
-        } returns mockk(relaxed = true)
-        coEvery {
-            workRepository.enrichIfAbsent("episode:missing", any())
-        } returns null
+            assertEquals(0, result)
+            coVerify(exactly = 0) { workRepository.enrichIfAbsent(any(), any()) }
+        }
 
-        val result = enrichmentWriter.inheritParentFields(parentWorkKey)
+    @Test
+    fun `inheritParentFields counts only successfully enriched children`() =
+        runBlocking {
+            val parentWorkKey = "series:tmdb:55555"
+            coEvery { workRepository.get(parentWorkKey) } returns
+                NxWorkRepository.Work(
+                    workKey = parentWorkKey,
+                    type = NxWorkRepository.WorkType.SERIES,
+                    displayTitle = "Partial Enrichment",
+                    poster = ImageRef.Http("https://example.com/poster.jpg"),
+                )
 
-        assertEquals(1, result)
-    }
+            val childRelations =
+                listOf(
+                    NxWorkRelationRepository.Relation(
+                        parentWorkKey = parentWorkKey,
+                        childWorkKey = "episode:ok",
+                        relationType = NxWorkRelationRepository.RelationType.SERIES_EPISODE,
+                    ),
+                    NxWorkRelationRepository.Relation(
+                        parentWorkKey = parentWorkKey,
+                        childWorkKey = "episode:missing",
+                        relationType = NxWorkRelationRepository.RelationType.SERIES_EPISODE,
+                    ),
+                )
+            coEvery { relationRepository.findChildren(parentWorkKey) } returns childRelations
+
+            // enrichIfAbsentBatch returns 1 (only one child was actually enriched)
+            coEvery {
+                workRepository.enrichIfAbsentBatch(any(), any())
+            } returns 1
+
+            val result = enrichmentWriter.inheritParentFields(parentWorkKey)
+
+            assertEquals(1, result)
+        }
 }

@@ -1,7 +1,6 @@
 package com.fishit.player.infra.data.nx.mapper
 
 import com.fishit.player.core.model.repository.NxSourceAccountRepository
-import com.fishit.player.core.model.repository.NxWorkSourceRefRepository
 import com.fishit.player.core.persistence.obx.NX_SourceAccount
 
 /**
@@ -13,11 +12,12 @@ internal fun NX_SourceAccount.toDomain(): NxSourceAccountRepository.SourceAccoun
         accountKey = accountKey,
         sourceType = SourceTypeMapper.toSourceType(sourceType),
         label = displayName,
-        status = when (syncStatus) {
-            "OK", "PENDING" -> NxSourceAccountRepository.AccountStatus.ACTIVE
-            "ERROR" -> NxSourceAccountRepository.AccountStatus.ERROR
-            else -> NxSourceAccountRepository.AccountStatus.DISABLED
-        },
+        status =
+            when (syncStatus) {
+                "OK", "PENDING" -> NxSourceAccountRepository.AccountStatus.ACTIVE
+                "ERROR" -> NxSourceAccountRepository.AccountStatus.ERROR
+                else -> NxSourceAccountRepository.AccountStatus.DISABLED
+            },
         lastErrorCode = syncError?.take(50), // Truncate for code field
         lastErrorMessage = syncError,
         createdAtMs = createdAt,
@@ -30,11 +30,12 @@ internal fun NxSourceAccountRepository.SourceAccount.toEntity(): NX_SourceAccoun
         sourceType = SourceTypeMapper.toEntityString(sourceType),
         displayName = label,
         isActive = status == NxSourceAccountRepository.AccountStatus.ACTIVE,
-        syncStatus = when (status) {
-            NxSourceAccountRepository.AccountStatus.ACTIVE -> "OK"
-            NxSourceAccountRepository.AccountStatus.ERROR -> "ERROR"
-            NxSourceAccountRepository.AccountStatus.DISABLED -> "DISABLED"
-        },
+        syncStatus =
+            when (status) {
+                NxSourceAccountRepository.AccountStatus.ACTIVE -> "OK"
+                NxSourceAccountRepository.AccountStatus.ERROR -> "ERROR"
+                NxSourceAccountRepository.AccountStatus.DISABLED -> "DISABLED"
+            },
         syncError = lastErrorMessage,
         createdAt = if (createdAtMs > 0) createdAtMs else System.currentTimeMillis(),
         updatedAt = if (updatedAtMs > 0) updatedAtMs else System.currentTimeMillis(),

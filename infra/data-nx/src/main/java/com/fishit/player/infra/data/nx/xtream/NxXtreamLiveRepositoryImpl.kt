@@ -32,7 +32,6 @@
  */
 package com.fishit.player.infra.data.nx.xtream
 
-import com.fishit.player.core.model.ImageRef
 import com.fishit.player.core.model.MediaType
 import com.fishit.player.core.model.RawMediaMetadata
 import com.fishit.player.core.model.SourceType
@@ -71,6 +70,7 @@ class NxXtreamLiveRepositoryImpl
     ) : XtreamLiveRepository {
         companion object {
             private const val TAG = "NxXtreamLiveRepo"
+
             // FIX: Match DB storage format - toEntityString() writes lowercase
             // See WorkSourceRefMapper.toEntityString() and NxWorkSourceRefRepositoryImpl.toEntityString()
             private const val SOURCE_TYPE = "xtream"
@@ -85,28 +85,37 @@ class NxXtreamLiveRepositoryImpl
 
         override fun observeChannels(categoryId: String?): Flow<List<RawMediaMetadata>> {
             // Query NX_Work for LIVE_CHANNEL type
-            val workQuery = workBox.query(
-                NX_Work_.workType.equal(WorkTypeMapper.toEntityString(WorkType.LIVE_CHANNEL)),
-            ).order(NX_Work_.canonicalTitleLower).build()
+            val workQuery =
+                workBox
+                    .query(
+                        NX_Work_.workType.equal(WorkTypeMapper.toEntityString(WorkType.LIVE_CHANNEL)),
+                    ).order(NX_Work_.canonicalTitleLower)
+                    .build()
 
-            val sourceRefQuery = sourceRefBox.query(
-                NX_WorkSourceRef_.sourceType.equal(SOURCE_TYPE)
-                    .and(NX_WorkSourceRef_.sourceKey.contains(":live:")),
-            ).build()
+            val sourceRefQuery =
+                sourceRefBox
+                    .query(
+                        NX_WorkSourceRef_.sourceType
+                            .equal(SOURCE_TYPE)
+                            .and(NX_WorkSourceRef_.sourceKey.contains(":live:")),
+                    ).build()
 
             return combine(
                 workQuery.asFlow(),
                 sourceRefQuery.asFlow(),
             ) { works, sourceRefs ->
-                val sourceKeysByWorkKey = sourceRefs
-                    .groupBy { it.workKey }
-                    .mapValues { (_, refs) -> refs.firstOrNull() }
+                val sourceKeysByWorkKey =
+                    sourceRefs
+                        .groupBy { it.workKey }
+                        .mapValues { (_, refs) -> refs.firstOrNull() }
 
                 works.mapNotNull { work ->
                     val sourceRef = sourceKeysByWorkKey[work.workKey]
                     if (sourceRef != null) {
                         work.toRawMediaMetadataLive(sourceRef)
-                    } else null
+                    } else {
+                        null
+                    }
                 }
             }
         }
@@ -115,22 +124,33 @@ class NxXtreamLiveRepositoryImpl
         // Query Methods
         // =========================================================================
 
-        override suspend fun getAll(limit: Int, offset: Int): List<RawMediaMetadata> =
+        override suspend fun getAll(
+            limit: Int,
+            offset: Int,
+        ): List<RawMediaMetadata> =
             withContext(Dispatchers.IO) {
-                val works = workBox.query(
-                    NX_Work_.workType.equal(WorkTypeMapper.toEntityString(WorkType.LIVE_CHANNEL)),
-                ).order(NX_Work_.canonicalTitleLower)
-                    .build()
-                    .find(offset.toLong(), limit.toLong())
+                val works =
+                    workBox
+                        .query(
+                            NX_Work_.workType.equal(WorkTypeMapper.toEntityString(WorkType.LIVE_CHANNEL)),
+                        ).order(NX_Work_.canonicalTitleLower)
+                        .build()
+                        .find(offset.toLong(), limit.toLong())
 
                 val workKeys = works.map { it.workKey }
-                val sourceRefs = if (workKeys.isNotEmpty()) {
-                    sourceRefBox.query(
-                        NX_WorkSourceRef_.sourceType.equal(SOURCE_TYPE)
-                            .and(NX_WorkSourceRef_.sourceKey.contains(":live:"))
-                            .and(NX_WorkSourceRef_.workKey.oneOf(workKeys.toTypedArray(), StringOrder.CASE_SENSITIVE)),
-                    ).build().find()
-                } else emptyList()
+                val sourceRefs =
+                    if (workKeys.isNotEmpty()) {
+                        sourceRefBox
+                            .query(
+                                NX_WorkSourceRef_.sourceType
+                                    .equal(SOURCE_TYPE)
+                                    .and(NX_WorkSourceRef_.sourceKey.contains(":live:"))
+                                    .and(NX_WorkSourceRef_.workKey.oneOf(workKeys.toTypedArray(), StringOrder.CASE_SENSITIVE)),
+                            ).build()
+                            .find()
+                    } else {
+                        emptyList()
+                    }
 
                 val sourceRefMap = sourceRefs.associateBy { it.workKey }
 
@@ -146,38 +166,56 @@ class NxXtreamLiveRepositoryImpl
                 // Legacy: "xtream:live:456"
                 // NX: "src:xtream:account:live:456"
                 val parsed = XtreamIdCodec.parse(sourceId)
-                val channelId = when (parsed) {
-                    is com.fishit.player.core.model.ids.XtreamParsedSourceId.Live -> parsed.channelId
-                    else -> null
-                } ?: return@withContext null
+                val channelId =
+                    when (parsed) {
+                        is com.fishit.player.core.model.ids.XtreamParsedSourceId.Live -> parsed.channelId
+                        else -> null
+                    } ?: return@withContext null
 
                 // Find sourceRef by pattern matching
                 val searchPattern = ":live:$channelId"
-                val sourceRef = sourceRefBox.query(
-                    NX_WorkSourceRef_.sourceType.equal(SOURCE_TYPE)
-                        .and(NX_WorkSourceRef_.sourceKey.contains(searchPattern)),
-                ).build().findFirst() ?: return@withContext null
+                val sourceRef =
+                    sourceRefBox
+                        .query(
+                            NX_WorkSourceRef_.sourceType
+                                .equal(SOURCE_TYPE)
+                                .and(NX_WorkSourceRef_.sourceKey.contains(searchPattern)),
+                        ).build()
+                        .findFirst() ?: return@withContext null
 
                 val work = sourceRef.work.target ?: return@withContext null
                 work.toRawMediaMetadataLive(sourceRef)
             }
 
-        override suspend fun search(query: String, limit: Int): List<RawMediaMetadata> =
+        override suspend fun search(
+            query: String,
+            limit: Int,
+        ): List<RawMediaMetadata> =
             withContext(Dispatchers.IO) {
                 val lowerQuery = query.lowercase()
-                val works = workBox.query(
-                    NX_Work_.canonicalTitleLower.contains(lowerQuery)
-                        .and(NX_Work_.workType.equal(WorkTypeMapper.toEntityString(WorkType.LIVE_CHANNEL))),
-                ).build().find(0, limit.toLong())
+                val works =
+                    workBox
+                        .query(
+                            NX_Work_.canonicalTitleLower
+                                .contains(lowerQuery)
+                                .and(NX_Work_.workType.equal(WorkTypeMapper.toEntityString(WorkType.LIVE_CHANNEL))),
+                        ).build()
+                        .find(0, limit.toLong())
 
                 val workKeys = works.map { it.workKey }
-                val sourceRefs = if (workKeys.isNotEmpty()) {
-                    sourceRefBox.query(
-                        NX_WorkSourceRef_.sourceType.equal(SOURCE_TYPE)
-                            .and(NX_WorkSourceRef_.sourceKey.contains(":live:"))
-                            .and(NX_WorkSourceRef_.workKey.oneOf(workKeys.toTypedArray(), StringOrder.CASE_SENSITIVE)),
-                    ).build().find()
-                } else emptyList()
+                val sourceRefs =
+                    if (workKeys.isNotEmpty()) {
+                        sourceRefBox
+                            .query(
+                                NX_WorkSourceRef_.sourceType
+                                    .equal(SOURCE_TYPE)
+                                    .and(NX_WorkSourceRef_.sourceKey.contains(":live:"))
+                                    .and(NX_WorkSourceRef_.workKey.oneOf(workKeys.toTypedArray(), StringOrder.CASE_SENSITIVE)),
+                            ).build()
+                            .find()
+                    } else {
+                        emptyList()
+                    }
 
                 val sourceRefMap = sourceRefs.associateBy { it.workKey }
 
@@ -199,15 +237,19 @@ class NxXtreamLiveRepositoryImpl
             UnifiedLog.w(TAG) { "upsert() called - writes should go through NxCatalogWriter" }
         }
 
-        override suspend fun count(): Long = withContext(Dispatchers.IO) {
-            workBox.query(
-                NX_Work_.workType.equal(WorkTypeMapper.toEntityString(WorkType.LIVE_CHANNEL)),
-            ).build().count()
-        }
+        override suspend fun count(): Long =
+            withContext(Dispatchers.IO) {
+                workBox
+                    .query(
+                        NX_Work_.workType.equal(WorkTypeMapper.toEntityString(WorkType.LIVE_CHANNEL)),
+                    ).build()
+                    .count()
+            }
 
-        override suspend fun deleteAll() = withContext(Dispatchers.IO) {
-            UnifiedLog.w(TAG) { "deleteAll() called - use NxCatalogWriter.clearSourceType() instead" }
-        }
+        override suspend fun deleteAll() =
+            withContext(Dispatchers.IO) {
+                UnifiedLog.w(TAG) { "deleteAll() called - use NxCatalogWriter.clearSourceType() instead" }
+            }
 
         // =========================================================================
         // Mapping: NX_Work → RawMediaMetadata (Live Channel)

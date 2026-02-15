@@ -22,14 +22,13 @@ android {
     kotlinOptions {
         jvmTarget = "17"
     }
-
 }
 
 dependencies {
     // Core dependencies
     implementation(project(":core:model"))
     implementation(project(":core:device-api"))
-    implementation(project(":infra:device-android"))  // For backward compat in deprecated method
+    implementation(project(":infra:device-android")) // For backward compat in deprecated method
     implementation(project(":infra:logging"))
 
     // Platform HTTP client (parent - provides connection pool, Chucker, User-Agent)

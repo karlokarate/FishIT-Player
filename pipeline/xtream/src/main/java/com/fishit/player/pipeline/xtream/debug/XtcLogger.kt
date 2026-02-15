@@ -42,42 +42,44 @@ object XtcLogger {
         type: String,
         sourceId: String,
         originalTitle: String?,
-        raw: RawMediaMetadata
+        raw: RawMediaMetadata,
     ) {
-        val count = when (type) {
-            "VOD" -> vodCounter.incrementAndGet()
-            "SERIES" -> seriesCounter.incrementAndGet()
-            "EPISODE" -> episodeCounter.incrementAndGet()
-            "LIVE" -> liveCounter.incrementAndGet()
-            else -> return
-        }
+        val count =
+            when (type) {
+                "VOD" -> vodCounter.incrementAndGet()
+                "SERIES" -> seriesCounter.incrementAndGet()
+                "EPISODE" -> episodeCounter.incrementAndGet()
+                "LIVE" -> liveCounter.incrementAndGet()
+                else -> return
+            }
 
         // Sample: first item + every 50th
         if (count == 1 || count % SAMPLE_INTERVAL == 0) {
-            val fields = buildString {
-                append("[$type] DTO→Raw #$count | ")
-                append("id=$sourceId | ")
-                append("title=\"${originalTitle?.take(40)}\" | ")
-                append("sourceType=${raw.sourceType} | ")  // ADD: Track sourceType for playback debugging
-                append("Fields: ")
+            val fields =
+                buildString {
+                    append("[$type] DTO→Raw #$count | ")
+                    append("id=$sourceId | ")
+                    append("title=\"${originalTitle?.take(40)}\" | ")
+                    append("sourceType=${raw.sourceType} | ") // ADD: Track sourceType for playback debugging
+                    append("Fields: ")
 
-                val populated = mutableListOf<String>()
-                val missing = mutableListOf<String>()
+                    val populated = mutableListOf<String>()
+                    val missing = mutableListOf<String>()
 
-                if (raw.year != null) populated.add("year=${raw.year}") else missing.add("year")
-                if (raw.plot?.isNotBlank() == true) populated.add("plot(${raw.plot!!.length}c)") else missing.add("plot")
-                if (raw.cast?.isNotBlank() == true) populated.add("cast") else missing.add("cast")
-                if (raw.director?.isNotBlank() == true) populated.add("director") else missing.add("director")
-                if (raw.poster != null) populated.add("poster") else missing.add("poster")
-                if (raw.backdrop != null) populated.add("backdrop") else missing.add("backdrop")
-                if (raw.durationMs != null) populated.add("duration=${raw.durationMs}ms") else missing.add("duration")
-                if (raw.externalIds.tmdb != null) populated.add("tmdb=${raw.externalIds.tmdb!!.id}") else missing.add("tmdb")
+                    if (raw.year != null) populated.add("year=${raw.year}") else missing.add("year")
+                    if (raw.plot?.isNotBlank() == true) populated.add("plot(${raw.plot!!.length}c)") else missing.add("plot")
+                    if (raw.cast?.isNotBlank() == true) populated.add("cast") else missing.add("cast")
+                    if (raw.director?.isNotBlank() == true) populated.add("director") else missing.add("director")
+                    if (raw.poster != null) populated.add("poster") else missing.add("poster")
+                    if (raw.backdrop != null) populated.add("backdrop") else missing.add("backdrop")
+                    if (raw.durationMs != null) populated.add("duration=${raw.durationMs}ms") else missing.add("duration")
+                    if (raw.externalIds.tmdb != null) populated.add("tmdb=${raw.externalIds.tmdb!!.id}") else missing.add("tmdb")
 
-                append("✓[${populated.joinToString(", ")}] ")
-                if (missing.isNotEmpty()) {
-                    append("✗[${missing.joinToString(", ")}]")
+                    append("✓[${populated.joinToString(", ")}] ")
+                    if (missing.isNotEmpty()) {
+                        append("✗[${missing.joinToString(", ")}]")
+                    }
                 }
-            }
 
             UnifiedLog.d(TAG, fields)
         }
@@ -94,21 +96,25 @@ object XtcLogger {
         normalizedTitle: String?,
         year: Int?,
         adult: Boolean,
-        mediaType: String
+        mediaType: String,
     ) {
-        val count = when (type) {
-            "VOD" -> vodCounter.get()
-            "SERIES" -> seriesCounter.get()
-            "EPISODE" -> episodeCounter.get()
-            "LIVE" -> liveCounter.get()
-            else -> return
-        }
+        val count =
+            when (type) {
+                "VOD" -> vodCounter.get()
+                "SERIES" -> seriesCounter.get()
+                "EPISODE" -> episodeCounter.get()
+                "LIVE" -> liveCounter.get()
+                else -> return
+            }
 
         // Sample: first item + every 50th
         if (count == 1 || count % SAMPLE_INTERVAL == 0) {
-            val titleChange = if (rawTitle != normalizedTitle) {
-                " (cleaned: \"${rawTitle?.take(30)}\" → \"${normalizedTitle?.take(30)}\")"
-            } else ""
+            val titleChange =
+                if (rawTitle != normalizedTitle) {
+                    " (cleaned: \"${rawTitle?.take(30)}\" → \"${normalizedTitle?.take(30)}\")"
+                } else {
+                    ""
+                }
 
             UnifiedLog.d(TAG) {
                 "[$type] Normalized #$count | type=$mediaType | year=$year | adult=$adult$titleChange"
@@ -127,21 +133,22 @@ object XtcLogger {
         sourceKey: String,
         hasVariant: Boolean,
         fieldsPopulated: Int,
-        totalFields: Int
+        totalFields: Int,
     ) {
-        val count = when (type) {
-            "VOD" -> vodCounter.get()
-            "SERIES" -> seriesCounter.get()
-            "EPISODE" -> episodeCounter.get()
-            "LIVE" -> liveCounter.get()
-            else -> return
-        }
+        val count =
+            when (type) {
+                "VOD" -> vodCounter.get()
+                "SERIES" -> seriesCounter.get()
+                "EPISODE" -> episodeCounter.get()
+                "LIVE" -> liveCounter.get()
+                else -> return
+            }
 
         // Sample: first item + every 50th
         if (count == 1 || count % SAMPLE_INTERVAL == 0) {
             UnifiedLog.d(TAG) {
                 "[$type] NX Write #$count | workKey=$workKey | sourceKey=$sourceKey | " +
-                "variant=$hasVariant | fields=$fieldsPopulated/$totalFields"
+                    "variant=$hasVariant | fields=$fieldsPopulated/$totalFields"
             }
         }
     }
@@ -155,7 +162,7 @@ object XtcLogger {
         type: String,
         sourceId: String,
         url: String,
-        hints: Map<String, String>
+        hints: Map<String, String>,
     ) {
         // Only log first few playback URLs to avoid flooding
         if (vodCounter.get() + seriesCounter.get() + episodeCounter.get() + liveCounter.get() < 5) {
@@ -169,10 +176,14 @@ object XtcLogger {
     /**
      * Log pipeline phase completion.
      */
-    fun logPhaseComplete(phase: String, count: Int, durationMs: Long) {
+    fun logPhaseComplete(
+        phase: String,
+        count: Int,
+        durationMs: Long,
+    ) {
         UnifiedLog.i(TAG) {
             "Phase complete: $phase | items=$count | duration=${durationMs}ms | " +
-            "rate=${if (durationMs > 0) count * 1000 / durationMs else 0} items/sec"
+                "rate=${if (durationMs > 0) count * 1000 / durationMs else 0} items/sec"
         }
     }
 

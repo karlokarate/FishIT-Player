@@ -2,6 +2,8 @@ package com.fishit.player.infra.logging
 
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -12,6 +14,10 @@ import timber.log.Timber
  * Unit tests for [UnifiedLogInitializer].
  *
  * Tests initialization behavior and tree planting.
+ *
+ * Current implementation behavior:
+ * - Debug mode: plants DebugTree + LogBufferTree = 2 trees
+ * - Release mode: plants NO trees (performance optimization, logging disabled)
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [28]) // Use API 28 for compatibility
@@ -19,25 +25,36 @@ class UnifiedLogInitializerTest {
     @After
     fun teardown() {
         Timber.uprootAll()
+        // Reset logging state to avoid cross-test contamination
+        UnifiedLog.setEnabled(true)
+        UnifiedLog.setMinLevel(UnifiedLog.Level.VERBOSE)
     }
 
     @Test
-    fun `init plants DebugTree in debug mode`() {
+    fun `init plants DebugTree and LogBufferTree in debug mode`() {
         UnifiedLogInitializer.init(isDebug = true)
 
-        // Verify a tree was planted (we can't easily check the type without reflection)
-        // but we can verify that Timber is configured by checking forest size
+        // Debug mode plants DebugTree + LogBufferTree
         val treeCount = Timber.forest().size
-        assertEquals("Expected exactly one tree to be planted", 1, treeCount)
+        assertEquals("Expected DebugTree + LogBufferTree", 2, treeCount)
     }
 
     @Test
-    fun `init plants ProductionReportingTree in release mode`() {
+    fun `init plants only DebugTree when log buffer disabled`() {
+        UnifiedLogInitializer.init(isDebug = true, enableLogBuffer = false)
+
+        // Only DebugTree planted when log buffer is explicitly disabled
+        val treeCount = Timber.forest().size
+        assertEquals("Expected only DebugTree", 1, treeCount)
+    }
+
+    @Test
+    fun `init plants no trees in release mode for performance`() {
         UnifiedLogInitializer.init(isDebug = false)
 
-        // Verify a tree was planted
+        // Release mode: NO trees planted (performance optimization)
         val treeCount = Timber.forest().size
-        assertEquals("Expected exactly one tree to be planted", 1, treeCount)
+        assertEquals("Expected no trees in release mode", 0, treeCount)
     }
 
     @Test
@@ -46,11 +63,11 @@ class UnifiedLogInitializerTest {
         Timber.plant(Timber.DebugTree())
         assertEquals(1, Timber.forest().size)
 
-        // Initialize again
+        // Initialize in debug mode
         UnifiedLogInitializer.init(isDebug = true)
 
-        // Should still have exactly 1 tree (old one cleared)
-        assertEquals(1, Timber.forest().size)
+        // Old tree cleared, new DebugTree + LogBufferTree planted
+        assertEquals("Expected DebugTree + LogBufferTree after clearing", 2, Timber.forest().size)
     }
 
     @Test
@@ -59,8 +76,8 @@ class UnifiedLogInitializerTest {
         UnifiedLogInitializer.init(isDebug = false)
         UnifiedLogInitializer.init(isDebug = true)
 
-        // Should have exactly 1 tree after multiple initializations
-        assertEquals(1, Timber.forest().size)
+        // Last call was debug=true, so DebugTree + LogBufferTree
+        assertEquals("Expected DebugTree + LogBufferTree after last init", 2, Timber.forest().size)
     }
 
     @Test
@@ -69,29 +86,28 @@ class UnifiedLogInitializerTest {
 
         // In debug mode, all logs should work
         // This is a smoke test to ensure no exceptions are thrown
-        UnifiedLog.setMinLevel(UnifiedLog.Level.VERBOSE)
         UnifiedLog.v("Test", "verbose")
         UnifiedLog.d("Test", "debug")
         UnifiedLog.i("Test", "info")
         UnifiedLog.w("Test", "warn")
         UnifiedLog.e("Test", "error")
 
-        // If we get here without exceptions, the test passes
-        // Verify tree count to ensure initialization worked
-        assertEquals(1, Timber.forest().size)
+        // Verify debug mode configuration
+        assertEquals("Expected DebugTree + LogBufferTree", 2, Timber.forest().size)
+        assertTrue("Logging should be enabled in debug", UnifiedLog.isEnabled())
     }
 
     @Test
-    fun `init with debug false configures production logging`() {
+    fun `init with debug false disables logging for performance`() {
         UnifiedLogInitializer.init(isDebug = false)
 
-        // In production mode, logs should work but only WARN/ERROR are output
-        // This is a smoke test to ensure no exceptions are thrown
+        // In production mode, logging is completely disabled
+        // This is a smoke test to ensure no exceptions are thrown even when disabled
         UnifiedLog.w("Test", "warn")
         UnifiedLog.e("Test", "error")
 
-        // If we get here without exceptions, the test passes
-        // Verify tree count to ensure initialization worked
-        assertEquals(1, Timber.forest().size)
+        // Verify release mode configuration: no trees, logging disabled
+        assertEquals("Expected no trees in release mode", 0, Timber.forest().size)
+        assertFalse("Logging should be disabled in release", UnifiedLog.isEnabled())
     }
 }

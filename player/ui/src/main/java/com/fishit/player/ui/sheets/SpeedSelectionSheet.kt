@@ -29,7 +29,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
@@ -44,15 +43,16 @@ import com.fishit.player.internal.R
  * Industry standard: 0.5x - 2x (Netflix, YouTube, Plex)
  * 0.25x removed as it's rarely used and clutters UI.
  */
-private val SPEED_OPTIONS = listOf(
-    0.5f to "0.5x",
-    0.75f to "0.75x",
-    1.0f to "Normal",
-    1.25f to "1.25x",
-    1.5f to "1.5x",
-    1.75f to "1.75x",
-    2.0f to "2x",
-)
+private val SPEED_OPTIONS =
+    listOf(
+        0.5f to "0.5x",
+        0.75f to "0.75x",
+        1.0f to "Normal",
+        1.25f to "1.25x",
+        1.5f to "1.5x",
+        1.75f to "1.75x",
+        2.0f to "2x",
+    )
 
 /**
  * Bottom sheet for playback speed selection.
@@ -76,15 +76,17 @@ fun SpeedSelectionSheet(
         sheetState = sheetState,
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 32.dp),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 32.dp),
         ) {
             // Header
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 24.dp, vertical = 16.dp),
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 24.dp, vertical = 16.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Icon(
@@ -123,30 +125,30 @@ private fun SpeedOptionItem(
 ) {
     // TV Focus state for D-Pad navigation
     var isFocused by remember { mutableStateOf(false) }
-    
+
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .onFocusChanged { isFocused = it.isFocused }
-            .focusable()
-            .then(
-                if (isFocused) {
-                    Modifier.border(
-                        width = 2.dp,
-                        color = MaterialTheme.colorScheme.primary,
-                        shape = RoundedCornerShape(8.dp)
-                    )
-                } else {
-                    Modifier
-                }
-            )
-            .clickable(onClick = onClick)
-            .padding(horizontal = 24.dp, vertical = 12.dp)
-            // Accessibility: announce selection state
-            .semantics {
-                role = Role.RadioButton
-                selected = isSelected
-            },
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .onFocusChanged { isFocused = it.isFocused }
+                .focusable()
+                .then(
+                    if (isFocused) {
+                        Modifier.border(
+                            width = 2.dp,
+                            color = MaterialTheme.colorScheme.primary,
+                            shape = RoundedCornerShape(8.dp),
+                        )
+                    } else {
+                        Modifier
+                    },
+                ).clickable(onClick = onClick)
+                .padding(horizontal = 24.dp, vertical = 12.dp)
+                // Accessibility: announce selection state
+                .semantics {
+                    role = Role.RadioButton
+                    selected = isSelected
+                },
         verticalAlignment = Alignment.CenterVertically,
     ) {
         // Selection indicator
@@ -166,11 +168,12 @@ private fun SpeedOptionItem(
             text = label,
             style = MaterialTheme.typography.bodyLarge,
             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-            color = if (isSelected || isFocused) {
-                MaterialTheme.colorScheme.primary
-            } else {
-                MaterialTheme.colorScheme.onSurface
-            },
+            color =
+                if (isSelected || isFocused) {
+                    MaterialTheme.colorScheme.primary
+                } else {
+                    MaterialTheme.colorScheme.onSurface
+                },
         )
     }
 }

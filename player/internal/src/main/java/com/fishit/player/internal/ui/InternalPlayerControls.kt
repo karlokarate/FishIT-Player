@@ -28,19 +28,18 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ClosedCaption
+import androidx.compose.material.icons.filled.ClosedCaptionOff
 import androidx.compose.material.icons.filled.Forward10
+import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Replay10
+import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material.icons.filled.VolumeOff
 import androidx.compose.material.icons.filled.VolumeUp
-import androidx.compose.material.icons.filled.ClosedCaption
-import androidx.compose.material.icons.filled.ClosedCaptionOff
-import androidx.compose.material.icons.filled.MusicNote
-import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
@@ -283,11 +282,12 @@ private fun CenterControls(
         // Play/Pause button with crossfade animation and TV focus
         FocusableIconButton(
             onClick = onTogglePlayPause,
-            contentDescription = if (isPlaying) {
-                stringResource(R.string.player_pause)
-            } else {
-                stringResource(R.string.player_play)
-            },
+            contentDescription =
+                if (isPlaying) {
+                    stringResource(R.string.player_pause)
+                } else {
+                    stringResource(R.string.player_play)
+                },
             modifier = Modifier.size(72.dp),
         ) {
             AnimatedContent(
@@ -339,17 +339,17 @@ private fun FocusableIconButton(
     var isFocused by remember { mutableStateOf(false) }
 
     Box(
-        modifier = modifier
-            .onFocusChanged { isFocused = it.isFocused }
-            .focusable()
-            .then(
-                if (isFocused) {
-                    Modifier.border(2.dp, Color.White, CircleShape)
-                } else {
-                    Modifier
-                }
-            )
-            .clickable(onClick = onClick),
+        modifier =
+            modifier
+                .onFocusChanged { isFocused = it.isFocused }
+                .focusable()
+                .then(
+                    if (isFocused) {
+                        Modifier.border(2.dp, Color.White, CircleShape)
+                    } else {
+                        Modifier
+                    },
+                ).clickable(onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
         content()
@@ -435,11 +435,12 @@ private fun BottomBar(
             if (state.bufferedPositionMs > 0 && state.durationMs > 0) {
                 val bufferedFraction = (state.bufferedPositionMs.toFloat() / state.durationMs).coerceIn(0f, 1f)
                 Box(
-                    modifier = Modifier
-                        .fillMaxWidth(bufferedFraction)
-                        .height(2.dp)
-                        .padding(start = 16.dp, end = 16.dp)
-                        .background(Color.White.copy(alpha = 0.5f))
+                    modifier =
+                        Modifier
+                            .fillMaxWidth(bufferedFraction)
+                            .height(2.dp)
+                            .padding(start = 16.dp, end = 16.dp)
+                            .background(Color.White.copy(alpha = 0.5f)),
                 )
             }
         } else {
@@ -465,10 +466,11 @@ private fun BottomBar(
                     },
                 color = Color.White,
                 style = MaterialTheme.typography.bodySmall,
-                modifier = Modifier.clickable(
-                    interactionSource = remember { MutableInteractionSource() },
-                    indication = null,
-                ) { showRemainingTime = !showRemainingTime },
+                modifier =
+                    Modifier.clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                    ) { showRemainingTime = !showRemainingTime },
             )
 
             // Control buttons row (right side)
@@ -485,11 +487,12 @@ private fun BottomBar(
                     Icon(
                         imageVector = Icons.Default.Speed,
                         contentDescription = null,
-                        tint = if (state.playbackSpeed != 1.0f) {
-                            MaterialTheme.colorScheme.primary
-                        } else {
-                            Color.White
-                        },
+                        tint =
+                            if (state.playbackSpeed != 1.0f) {
+                                MaterialTheme.colorScheme.primary
+                            } else {
+                                Color.White
+                            },
                     )
                 }
 
@@ -515,28 +518,31 @@ private fun BottomBar(
                     modifier = Modifier.size(40.dp),
                 ) {
                     Icon(
-                        imageVector = if (hasSubtitles) {
-                            Icons.Default.ClosedCaption
-                        } else {
-                            Icons.Default.ClosedCaptionOff
-                        },
+                        imageVector =
+                            if (hasSubtitles) {
+                                Icons.Default.ClosedCaption
+                            } else {
+                                Icons.Default.ClosedCaptionOff
+                            },
                         contentDescription = null,
-                        tint = if (hasSubtitles) {
-                            MaterialTheme.colorScheme.primary
-                        } else {
-                            Color.White
-                        },
+                        tint =
+                            if (hasSubtitles) {
+                                MaterialTheme.colorScheme.primary
+                            } else {
+                                Color.White
+                            },
                     )
                 }
 
                 // Volume button with TV focus
                 FocusableIconButton(
                     onClick = onToggleMute,
-                    contentDescription = if (state.isMuted) {
-                        stringResource(R.string.player_unmute)
-                    } else {
-                        stringResource(R.string.player_mute)
-                    },
+                    contentDescription =
+                        if (state.isMuted) {
+                            stringResource(R.string.player_unmute)
+                        } else {
+                            stringResource(R.string.player_mute)
+                        },
                     modifier = Modifier.size(40.dp),
                 ) {
                     Icon(
@@ -559,10 +565,11 @@ private fun PulsingLiveIndicator() {
     val alpha by infiniteTransition.animateFloat(
         initialValue = 1f,
         targetValue = 0.4f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 800),
-            repeatMode = RepeatMode.Reverse,
-        ),
+        animationSpec =
+            infiniteRepeatable(
+                animation = tween(durationMillis = 800),
+                repeatMode = RepeatMode.Reverse,
+            ),
         label = "LivePulseAlpha",
     )
 

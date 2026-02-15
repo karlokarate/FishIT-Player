@@ -20,7 +20,6 @@ import kotlinx.coroutines.flow.Flow
  * The implementation maps NX entities to domain models internally.
  */
 interface NxDetailMediaRepository {
-
     /**
      * Load media details by work key.
      *

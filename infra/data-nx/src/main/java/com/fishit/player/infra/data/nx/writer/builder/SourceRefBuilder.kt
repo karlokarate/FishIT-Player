@@ -12,103 +12,101 @@
 package com.fishit.player.infra.data.nx.writer.builder
 
 import com.fishit.player.core.model.RawMediaMetadata
-import com.fishit.player.core.model.SourceType as CoreSourceType
 import com.fishit.player.core.model.ids.XtreamIdCodec
 import com.fishit.player.core.model.repository.NxWorkSourceRefRepository
-import com.fishit.player.core.model.repository.NxWorkSourceRefRepository.SourceItemKind
 import com.fishit.player.infra.data.nx.mapper.SourceItemKindMapper
-import com.fishit.player.infra.data.nx.mapper.SourceKeyParser
 import javax.inject.Inject
 import javax.inject.Singleton
+import com.fishit.player.core.model.SourceType as CoreSourceType
 
 /**
  * Builds NX_WorkSourceRef entities.
  */
 @Singleton
-class SourceRefBuilder @Inject constructor() {
+class SourceRefBuilder
+    @Inject
+    constructor() {
+        /**
+         * Build a SourceRef entity from raw metadata.
+         *
+         * @param raw The raw metadata from pipeline
+         * @param workKey The work key (foreign key to NX_Work)
+         * @param accountKey The account key (e.g., "telegram:123456" or "xtream:myserver")
+         * @param sourceKey The computed source key
+         * @param now Current timestamp
+         * @return SourceRef entity ready for upsert
+         */
+        fun build(
+            raw: RawMediaMetadata,
+            workKey: String,
+            accountKey: String,
+            sourceKey: String,
+            now: Long = System.currentTimeMillis(),
+        ): NxWorkSourceRefRepository.SourceRef {
+            val sourceItemKind = SourceItemKindMapper.fromMediaType(raw.mediaType)
 
-    /**
-     * Build a SourceRef entity from raw metadata.
-     *
-     * @param raw The raw metadata from pipeline
-     * @param workKey The work key (foreign key to NX_Work)
-     * @param accountKey The account key (e.g., "telegram:123456" or "xtream:myserver")
-     * @param sourceKey The computed source key
-     * @param now Current timestamp
-     * @return SourceRef entity ready for upsert
-     */
-    fun build(
-        raw: RawMediaMetadata,
-        workKey: String,
-        accountKey: String,
-        sourceKey: String,
-        now: Long = System.currentTimeMillis(),
-    ): NxWorkSourceRefRepository.SourceRef {
-        val sourceItemKind = SourceItemKindMapper.fromMediaType(raw.mediaType)
-        
-        // CRITICAL: Store just the numeric ID, not the full xtream:type:id format
-        val cleanSourceItemKey = extractCleanItemKey(raw.sourceId)
+            // CRITICAL: Store just the numeric ID, not the full xtream:type:id format
+            val cleanSourceItemKey = extractCleanItemKey(raw.sourceId)
 
-        return NxWorkSourceRefRepository.SourceRef(
-            sourceKey = sourceKey,
-            workKey = workKey,
-            sourceType = mapSourceType(raw.sourceType),
-            accountKey = accountKey,
-            sourceItemKind = sourceItemKind,
-            sourceItemKey = cleanSourceItemKey,
-            sourceTitle = raw.originalTitle,
-            firstSeenAtMs = now,
-            lastSeenAtMs = now,
-            sourceLastModifiedMs = raw.lastModifiedTimestamp,
-            availability = NxWorkSourceRefRepository.AvailabilityState.ACTIVE,
-            // Live channel specific (EPG/Catchup)
-            epgChannelId = raw.epgChannelId,
-            tvArchive = raw.tvArchive,
-            tvArchiveDuration = raw.tvArchiveDuration,
-        )
-    }
+            return NxWorkSourceRefRepository.SourceRef(
+                sourceKey = sourceKey,
+                workKey = workKey,
+                sourceType = mapSourceType(raw.sourceType),
+                accountKey = accountKey,
+                sourceItemKind = sourceItemKind,
+                sourceItemKey = cleanSourceItemKey,
+                sourceTitle = raw.originalTitle,
+                firstSeenAtMs = now,
+                lastSeenAtMs = now,
+                sourceLastModifiedMs = raw.lastModifiedTimestamp,
+                availability = NxWorkSourceRefRepository.AvailabilityState.ACTIVE,
+                // Live channel specific (EPG/Catchup)
+                epgChannelId = raw.epgChannelId,
+                tvArchive = raw.tvArchive,
+                tvArchiveDuration = raw.tvArchiveDuration,
+            )
+        }
 
-    /**
-     * Extract clean item key - just the numeric ID.
-     *
-     * Delegates to [XtreamIdCodec] SSOT for Xtream formats.
-     *
-     * Examples:
-     * - "xtream:vod:12345" → "12345"
-     * - "12345" → "12345"
-     * - "msg:123:456" → "msg:123:456" (Telegram format preserved)
-     */
-    private fun extractCleanItemKey(sourceId: String): String {
-        // Xtream legacy format: delegate to XtreamIdCodec SSOT
-        val parsed = XtreamIdCodec.parse(sourceId)
-        if (parsed != null) {
-            return when (parsed) {
-                is com.fishit.player.core.model.ids.XtreamParsedSourceId.Vod -> parsed.vodId.toString()
-                is com.fishit.player.core.model.ids.XtreamParsedSourceId.Series -> parsed.seriesId.toString()
-                is com.fishit.player.core.model.ids.XtreamParsedSourceId.Episode -> parsed.episodeId.toString()
-                is com.fishit.player.core.model.ids.XtreamParsedSourceId.EpisodeComposite ->
-                    "series:${parsed.seriesId}:s${parsed.season}:e${parsed.episode}"
-                is com.fishit.player.core.model.ids.XtreamParsedSourceId.Live -> parsed.channelId.toString()
+        /**
+         * Extract clean item key - just the numeric ID.
+         *
+         * Delegates to [XtreamIdCodec] SSOT for Xtream formats.
+         *
+         * Examples:
+         * - "xtream:vod:12345" → "12345"
+         * - "12345" → "12345"
+         * - "msg:123:456" → "msg:123:456" (Telegram format preserved)
+         */
+        private fun extractCleanItemKey(sourceId: String): String {
+            // Xtream legacy format: delegate to XtreamIdCodec SSOT
+            val parsed = XtreamIdCodec.parse(sourceId)
+            if (parsed != null) {
+                return when (parsed) {
+                    is com.fishit.player.core.model.ids.XtreamParsedSourceId.Vod -> parsed.vodId.toString()
+                    is com.fishit.player.core.model.ids.XtreamParsedSourceId.Series -> parsed.seriesId.toString()
+                    is com.fishit.player.core.model.ids.XtreamParsedSourceId.Episode -> parsed.episodeId.toString()
+                    is com.fishit.player.core.model.ids.XtreamParsedSourceId.EpisodeComposite ->
+                        "series:${parsed.seriesId}:s${parsed.season}:e${parsed.episode}"
+                    is com.fishit.player.core.model.ids.XtreamParsedSourceId.Live -> parsed.channelId.toString()
+                }
             }
+
+            // For Telegram and other formats: preserve full sourceId
+            return sourceId
         }
 
-        // For Telegram and other formats: preserve full sourceId
-        return sourceId
+        /**
+         * Map core SourceType to repository SourceType.
+         */
+        private fun mapSourceType(coreType: CoreSourceType): NxWorkSourceRefRepository.SourceType =
+            when (coreType) {
+                CoreSourceType.TELEGRAM -> NxWorkSourceRefRepository.SourceType.TELEGRAM
+                CoreSourceType.XTREAM -> NxWorkSourceRefRepository.SourceType.XTREAM
+                CoreSourceType.IO -> NxWorkSourceRefRepository.SourceType.IO
+                CoreSourceType.AUDIOBOOK -> NxWorkSourceRefRepository.SourceType.UNKNOWN // No AUDIOBOOK in NX
+                CoreSourceType.LOCAL -> NxWorkSourceRefRepository.SourceType.LOCAL
+                CoreSourceType.PLEX -> NxWorkSourceRefRepository.SourceType.PLEX
+                CoreSourceType.OTHER -> NxWorkSourceRefRepository.SourceType.UNKNOWN
+                CoreSourceType.UNKNOWN -> NxWorkSourceRefRepository.SourceType.UNKNOWN
+            }
     }
-
-    /**
-     * Map core SourceType to repository SourceType.
-     */
-    private fun mapSourceType(coreType: CoreSourceType): NxWorkSourceRefRepository.SourceType {
-        return when (coreType) {
-            CoreSourceType.TELEGRAM -> NxWorkSourceRefRepository.SourceType.TELEGRAM
-            CoreSourceType.XTREAM -> NxWorkSourceRefRepository.SourceType.XTREAM
-            CoreSourceType.IO -> NxWorkSourceRefRepository.SourceType.IO
-            CoreSourceType.AUDIOBOOK -> NxWorkSourceRefRepository.SourceType.UNKNOWN  // No AUDIOBOOK in NX
-            CoreSourceType.LOCAL -> NxWorkSourceRefRepository.SourceType.LOCAL
-            CoreSourceType.PLEX -> NxWorkSourceRefRepository.SourceType.PLEX
-            CoreSourceType.OTHER -> NxWorkSourceRefRepository.SourceType.UNKNOWN
-            CoreSourceType.UNKNOWN -> NxWorkSourceRefRepository.SourceType.UNKNOWN
-        }
-    }
-}

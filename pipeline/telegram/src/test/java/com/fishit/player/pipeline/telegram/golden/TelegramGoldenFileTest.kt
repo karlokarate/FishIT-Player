@@ -47,7 +47,6 @@ import kotlin.test.assertTrue
  * @see RawMetadataJsonSerializer
  */
 class TelegramGoldenFileTest {
-
     private val shouldUpdate: Boolean
         get() = System.getProperty("golden.update")?.toBoolean() == true
 
@@ -62,121 +61,131 @@ class TelegramGoldenFileTest {
      * No structured bundle data, no thumbnails.
      * VIDEO → UNKNOWN (normalizer classifies).
      */
-    private fun createSimpleVideoItem() = TelegramMediaItem(
-        chatId = -1001234567890L,
-        messageId = 42L,
-        mediaType = TelegramMediaType.VIDEO,
-        title = "Inception",
-        remoteId = "BQACAgIAAxkDAAI_inception_remote",
-        mimeType = "video/mp4",
-        sizeBytes = 2_147_483_648L,
-        durationSecs = 8880,
-        width = 1920,
-        height = 1080,
-        supportsStreaming = true,
-        fileName = "Inception.2010.1080p.BluRay.x264-GROUP.mkv",
-        year = 2010,
-        date = 1700000000L, // 2023-11-14T22:13:20Z
-    )
+    private fun createSimpleVideoItem() =
+        TelegramMediaItem(
+            chatId = -1001234567890L,
+            messageId = 42L,
+            mediaType = TelegramMediaType.VIDEO,
+            title = "Inception",
+            remoteId = "BQACAgIAAxkDAAI_inception_remote",
+            mimeType = "video/mp4",
+            sizeBytes = 2_147_483_648L,
+            durationSecs = 8880,
+            width = 1920,
+            height = 1080,
+            supportsStreaming = true,
+            fileName = "Inception.2010.1080p.BluRay.x264-GROUP.mkv",
+            year = 2010,
+            date = 1700000000L, // 2023-11-14T22:13:20Z
+        )
 
     /**
      * Series episode with isSeries flag, season/episode numbers, series name.
      * Should produce mediaType=SERIES_EPISODE, sourceLabel="Telegram: Breaking Bad".
      */
-    private fun createSeriesEpisodeItem() = TelegramMediaItem(
-        chatId = -1009876543210L,
-        messageId = 100L,
-        mediaType = TelegramMediaType.VIDEO,
-        title = "Breaking Bad S01E05 - Gray Matter",
-        isSeries = true,
-        seriesName = "Breaking Bad",
-        seasonNumber = 1,
-        episodeNumber = 5,
-        episodeTitle = "Gray Matter",
-        remoteId = "BQACAgIAAxkBBBI_bb_s01e05_remote",
-        mimeType = "video/x-matroska",
-        durationSecs = 2820,
-        fileName = "Breaking.Bad.S01E05.720p.BluRay.mkv",
-        date = 1695000000L, // 2023-09-18T06:40:00Z
-    )
+    private fun createSeriesEpisodeItem() =
+        TelegramMediaItem(
+            chatId = -1009876543210L,
+            messageId = 100L,
+            mediaType = TelegramMediaType.VIDEO,
+            title = "Breaking Bad S01E05 - Gray Matter",
+            isSeries = true,
+            seriesName = "Breaking Bad",
+            seasonNumber = 1,
+            episodeNumber = 5,
+            episodeTitle = "Gray Matter",
+            remoteId = "BQACAgIAAxkBBBI_bb_s01e05_remote",
+            mimeType = "video/x-matroska",
+            durationSecs = 2820,
+            fileName = "Breaking.Bad.S01E05.720p.BluRay.mkv",
+            date = 1695000000L, // 2023-09-18T06:40:00Z
+        )
 
     /**
      * Structured Bundle item (FULL_3ER) with TMDB movie data.
      * Tests: externalIds with typed TmdbRef, structuredYear overrides year,
      * structuredLengthMinutes overrides durationSecs, rating, ageRating, genres, director.
      */
-    private fun createStructuredBundleItem() = TelegramMediaItem(
-        chatId = -1001111222333L,
-        messageId = 200L,
-        mediaType = TelegramMediaType.VIDEO,
-        title = "Oppenheimer",
-        year = 2022, // intentionally wrong — structuredYear overrides
-        structuredTmdbId = 872585,
-        structuredTmdbType = TelegramTmdbType.MOVIE,
-        structuredRating = 8.1,
-        structuredYear = 2023,
-        structuredFsk = 12,
-        structuredGenres = listOf("Drama", "History"),
-        structuredDirector = "Christopher Nolan",
-        structuredOriginalTitle = "Oppenheimer",
-        structuredLengthMinutes = 181,
-        bundleType = TelegramBundleType.FULL_3ER,
-        textMessageId = 199L,
-        photoMessageId = 198L,
-        description = "The story of J. Robert Oppenheimer and the Manhattan Project.",
-        remoteId = "BQACAgIAAxkCCCI_oppenheimer_remote",
-        mimeType = "video/mp4",
-        sizeBytes = 5_368_709_120L,
-        durationSecs = 10800, // 3h in seconds — should be OVERRIDDEN by structuredLengthMinutes
-        date = 1710000000L, // 2024-03-09T16:00:00Z
-    )
+    private fun createStructuredBundleItem() =
+        TelegramMediaItem(
+            chatId = -1001111222333L,
+            messageId = 200L,
+            mediaType = TelegramMediaType.VIDEO,
+            title = "Oppenheimer",
+            year = 2022, // intentionally wrong — structuredYear overrides
+            structuredTmdbId = 872585,
+            structuredTmdbType = TelegramTmdbType.MOVIE,
+            structuredRating = 8.1,
+            structuredYear = 2023,
+            structuredFsk = 12,
+            structuredGenres = listOf("Drama", "History"),
+            structuredDirector = "Christopher Nolan",
+            structuredOriginalTitle = "Oppenheimer",
+            structuredLengthMinutes = 181,
+            bundleType = TelegramBundleType.FULL_3ER,
+            textMessageId = 199L,
+            photoMessageId = 198L,
+            description = "The story of J. Robert Oppenheimer and the Manhattan Project.",
+            remoteId = "BQACAgIAAxkCCCI_oppenheimer_remote",
+            mimeType = "video/mp4",
+            sizeBytes = 5_368_709_120L,
+            durationSecs = 10800, // 3h in seconds — should be OVERRIDDEN by structuredLengthMinutes
+            date = 1710000000L, // 2024-03-09T16:00:00Z
+        )
 
     /**
      * Audio item — mediaType should map to MUSIC.
      */
-    private fun createAudioItem() = TelegramMediaItem(
-        chatId = -1005555666777L,
-        messageId = 300L,
-        mediaType = TelegramMediaType.AUDIO,
-        title = "Bohemian Rhapsody",
-        fileName = "Queen - Bohemian Rhapsody.mp3",
-        mimeType = "audio/mpeg",
-        sizeBytes = 8_500_000L,
-        durationSecs = 355,
-        date = 1680000000L, // 2023-03-28T16:00:00Z
-    )
+    private fun createAudioItem() =
+        TelegramMediaItem(
+            chatId = -1005555666777L,
+            messageId = 300L,
+            mediaType = TelegramMediaType.AUDIO,
+            title = "Bohemian Rhapsody",
+            fileName = "Queen - Bohemian Rhapsody.mp3",
+            mimeType = "audio/mpeg",
+            sizeBytes = 8_500_000L,
+            durationSecs = 355,
+            date = 1680000000L, // 2023-03-28T16:00:00Z
+        )
 
     /**
      * Minimal item with all defaults — tests fallback title "Untitled Media 777"
      * and null/default values for all optional fields.
      */
-    private fun createMinimalItem() = TelegramMediaItem(
-        chatId = 999L,
-        messageId = 777L,
-        mediaType = TelegramMediaType.VIDEO,
-    )
+    private fun createMinimalItem() =
+        TelegramMediaItem(
+            chatId = 999L,
+            messageId = 777L,
+            mediaType = TelegramMediaType.VIDEO,
+        )
 
     /**
      * Item with video thumbnail (thumbRemoteId) and minithumbnail (inline bytes).
      * Tests ImageRef.TelegramThumb and ImageRef.InlineBytes serialization.
      */
-    private fun createItemWithThumbnails() = TelegramMediaItem(
-        chatId = -1001234567890L,
-        messageId = 500L,
-        mediaType = TelegramMediaType.VIDEO,
-        title = "Avatar",
-        thumbRemoteId = "AAMCAgADGQEAAj_avatar_thumb_remote",
-        thumbnailWidth = 320,
-        thumbnailHeight = 180,
-        minithumbnailBytes = byteArrayOf(
-            0xFF.toByte(), 0xD8.toByte(), 0xFF.toByte(), 0xE0.toByte(),
-        ),
-        minithumbnailWidth = 40,
-        minithumbnailHeight = 22,
-        durationSecs = 9720,
-        year = 2009,
-        date = 1690000000L, // 2023-07-22T10:06:40Z
-    )
+    private fun createItemWithThumbnails() =
+        TelegramMediaItem(
+            chatId = -1001234567890L,
+            messageId = 500L,
+            mediaType = TelegramMediaType.VIDEO,
+            title = "Avatar",
+            thumbRemoteId = "AAMCAgADGQEAAj_avatar_thumb_remote",
+            thumbnailWidth = 320,
+            thumbnailHeight = 180,
+            minithumbnailBytes =
+                byteArrayOf(
+                    0xFF.toByte(),
+                    0xD8.toByte(),
+                    0xFF.toByte(),
+                    0xE0.toByte(),
+                ),
+            minithumbnailWidth = 40,
+            minithumbnailHeight = 22,
+            durationSecs = 9720,
+            year = 2009,
+            date = 1690000000L, // 2023-07-22T10:06:40Z
+        )
 
     // =========================================================================
     // Golden File Tests

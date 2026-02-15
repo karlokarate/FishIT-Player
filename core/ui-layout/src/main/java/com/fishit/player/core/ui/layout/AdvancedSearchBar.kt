@@ -5,10 +5,8 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -113,19 +111,21 @@ fun AdvancedSearchBar(
         OutlinedTextField(
             value = query,
             onValueChange = onQueryChange,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp)
-                .focusRequester(focusRequester)
-                .onFocusChanged { isFocused = it.isFocused },
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
+                    .focusRequester(focusRequester)
+                    .onFocusChanged { isFocused = it.isFocused },
             placeholder = {
                 Text(
-                    text = when (selectedType) {
-                        SearchContentType.ALL -> "Suche nach Filmen, Serien, Live TV..."
-                        SearchContentType.MOVIES -> "Suche nach Filmen..."
-                        SearchContentType.SERIES -> "Suche nach Serien..."
-                        SearchContentType.LIVE -> "Suche nach Live TV..."
-                    },
+                    text =
+                        when (selectedType) {
+                            SearchContentType.ALL -> "Suche nach Filmen, Serien, Live TV..."
+                            SearchContentType.MOVIES -> "Suche nach Filmen..."
+                            SearchContentType.SERIES -> "Suche nach Serien..."
+                            SearchContentType.LIVE -> "Suche nach Live TV..."
+                        },
                 )
             },
             leadingIcon = {
@@ -148,22 +148,25 @@ fun AdvancedSearchBar(
                 }
             },
             singleLine = true,
-            keyboardOptions = KeyboardOptions(
-                imeAction = ImeAction.Search,
-            ),
-            keyboardActions = KeyboardActions(
-                onSearch = {
-                    onSearch(query)
-                    focusManager.clearFocus()
-                },
-            ),
+            keyboardOptions =
+                KeyboardOptions(
+                    imeAction = ImeAction.Search,
+                ),
+            keyboardActions =
+                KeyboardActions(
+                    onSearch = {
+                        onSearch(query)
+                        focusManager.clearFocus()
+                    },
+                ),
             shape = RoundedCornerShape(12.dp),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = MaterialTheme.colorScheme.primary,
-                unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
-                focusedContainerColor = MaterialTheme.colorScheme.surface,
-                unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-            ),
+            colors =
+                OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
+                    focusedContainerColor = MaterialTheme.colorScheme.surface,
+                    unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                ),
         )
 
         // Content type filters
@@ -173,15 +176,17 @@ fun AdvancedSearchBar(
             exit = fadeOut() + shrinkVertically(),
         ) {
             Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 8.dp),
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(top = 8.dp),
             ) {
                 // Type filter chips
                 FlowRow(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp),
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     SearchContentType.entries.forEach { type ->
@@ -201,10 +206,11 @@ fun AdvancedSearchBar(
                                     modifier = Modifier.size(18.dp),
                                 )
                             },
-                            colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
-                                selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                            ),
+                            colors =
+                                FilterChipDefaults.filterChipColors(
+                                    selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                                    selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                                ),
                         )
                     }
                 }
@@ -214,9 +220,10 @@ fun AdvancedSearchBar(
                     Spacer(modifier = Modifier.height(12.dp))
 
                     Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp),
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
@@ -258,16 +265,18 @@ private fun SearchHistoryItem(
     modifier: Modifier = Modifier,
 ) {
     Surface(
-        modifier = modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(8.dp))
-            .clickable(onClick = onClick),
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(8.dp))
+                .clickable(onClick = onClick),
         color = Color.Transparent,
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 8.dp, vertical = 10.dp),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 8.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Icon(

@@ -20,7 +20,9 @@ package com.fishit.player.core.model.ids
  * We accept any non-zero ID.
  */
 @JvmInline
-value class XtreamVodId(val id: Long) {
+value class XtreamVodId(
+    val id: Long,
+) {
     init {
         require(id != 0L) { "XtreamVodId must not be zero, got: $id" }
     }
@@ -34,7 +36,9 @@ value class XtreamVodId(val id: Long) {
  * We accept any non-zero ID.
  */
 @JvmInline
-value class XtreamSeriesId(val id: Long) {
+value class XtreamSeriesId(
+    val id: Long,
+) {
     init {
         require(id != 0L) { "XtreamSeriesId must not be zero, got: $id" }
     }
@@ -49,7 +53,9 @@ value class XtreamSeriesId(val id: Long) {
  * We accept any non-zero ID.
  */
 @JvmInline
-value class XtreamEpisodeId(val id: Long) {
+value class XtreamEpisodeId(
+    val id: Long,
+) {
     init {
         require(id != 0L) { "XtreamEpisodeId must not be zero, got: $id" }
     }
@@ -63,7 +69,9 @@ value class XtreamEpisodeId(val id: Long) {
  * We accept any non-zero ID.
  */
 @JvmInline
-value class XtreamChannelId(val id: Long) {
+value class XtreamChannelId(
+    val id: Long,
+) {
     init {
         require(id != 0L) { "XtreamChannelId must not be zero, got: $id" }
     }
@@ -74,7 +82,9 @@ value class XtreamChannelId(val id: Long) {
  * Used for grouping VOD/Series/Live content.
  */
 @JvmInline
-value class XtreamCategoryId(val id: String) {
+value class XtreamCategoryId(
+    val id: String,
+) {
     init {
         require(id.isNotBlank()) { "XtreamCategoryId must not be blank" }
     }
@@ -98,13 +108,17 @@ sealed class XtreamParsedSourceId {
      * VOD (Movie) source.
      * Format: `xtream:vod:{vodId}`
      */
-    data class Vod(val vodId: Long) : XtreamParsedSourceId()
+    data class Vod(
+        val vodId: Long,
+    ) : XtreamParsedSourceId()
 
     /**
      * Series (Show) source.
      * Format: `xtream:series:{seriesId}`
      */
-    data class Series(val seriesId: Long) : XtreamParsedSourceId()
+    data class Series(
+        val seriesId: Long,
+    ) : XtreamParsedSourceId()
 
     /**
      * Episode with stable episode ID.
@@ -112,7 +126,9 @@ sealed class XtreamParsedSourceId {
      *
      * This is the PREFERRED format when the Xtream API provides a unique episode stream ID.
      */
-    data class Episode(val episodeId: Long) : XtreamParsedSourceId()
+    data class Episode(
+        val episodeId: Long,
+    ) : XtreamParsedSourceId()
 
     /**
      * Episode with composite identity (fallback).
@@ -131,5 +147,7 @@ sealed class XtreamParsedSourceId {
      * Live channel source.
      * Format: `xtream:live:{channelId}`
      */
-    data class Live(val channelId: Long) : XtreamParsedSourceId()
+    data class Live(
+        val channelId: Long,
+    ) : XtreamParsedSourceId()
 }

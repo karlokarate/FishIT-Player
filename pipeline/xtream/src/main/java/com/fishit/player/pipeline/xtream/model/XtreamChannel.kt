@@ -54,11 +54,12 @@ data class XtreamChannel(
      *
      * **Design:** docs/v2/INCREMENTAL_SYNC_DESIGN.md Section 7
      */
-    fun fingerprint(): Int = Objects.hash(
-        id,
-        name,
-        categoryId,
-        streamIcon,
-        epgChannelId,
-    )
+    fun fingerprint(): Int =
+        Objects.hash(
+            id,
+            name,
+            categoryId,
+            streamIcon,
+            epgChannelId,
+        )
 }

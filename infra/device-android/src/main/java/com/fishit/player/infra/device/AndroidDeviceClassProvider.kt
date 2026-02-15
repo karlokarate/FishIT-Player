@@ -35,87 +35,90 @@ import javax.inject.Singleton
  * @see mapDeviceProfileToClass for mapping logic
  */
 @Singleton
-class AndroidDeviceClassProvider @Inject constructor() : DeviceClassProvider {
-    @Volatile
-    private var cachedDeviceClass: DeviceClass? = null
+class AndroidDeviceClassProvider
+    @Inject
+    constructor() : DeviceClassProvider {
+        @Volatile
+        private var cachedDeviceClass: DeviceClass? = null
 
-    override fun getDeviceClass(context: Context): DeviceClass {
-        // Return cached result if available
-        cachedDeviceClass?.let { return it }
+        override fun getDeviceClass(context: Context): DeviceClass {
+            // Return cached result if available
+            cachedDeviceClass?.let { return it }
 
-        // Detect device profile from runtime signals
-        val profile = detectDeviceProfile(context)
+            // Detect device profile from runtime signals
+            val profile = detectDeviceProfile(context)
 
-        // Map profile to device class via pure function
-        val deviceClass = mapDeviceProfileToClass(profile)
+            // Map profile to device class via pure function
+            val deviceClass = mapDeviceProfileToClass(profile)
 
-        // Cache and return
-        cachedDeviceClass = deviceClass
-        return deviceClass
-    }
+            // Cache and return
+            cachedDeviceClass = deviceClass
+            return deviceClass
+        }
 
-    /**
-     * Detect device profile from Android system services.
-     *
-     * This function reads raw runtime signals and packages them into
-     * a DeviceProfile data class. No classification logic here.
-     *
-     * @param context Android context for system service access
-     * @return DeviceProfile with runtime characteristics
-     */
-    private fun detectDeviceProfile(context: Context): DeviceProfile {
-        // Check if TV via UiModeManager
-        val uiModeManager = context.getSystemService(Context.UI_MODE_SERVICE) as? UiModeManager
-        val isTV = uiModeManager?.currentModeType == Configuration.UI_MODE_TYPE_TELEVISION
-
-        // Check RAM via ActivityManager
-        val activityManager =
-            context.getSystemService(Context.ACTIVITY_SERVICE) as? ActivityManager
-        val memoryInfo = ActivityManager.MemoryInfo()
-        activityManager?.getMemoryInfo(memoryInfo)
-        val totalRamMB = memoryInfo.totalMem / (1024 * 1024)
-        val isLowRamDevice = activityManager?.isLowRamDevice == true
-
-        return DeviceProfile(
-            isTV = isTV,
-            totalRamMB = totalRamMB,
-            isLowRamDevice = isLowRamDevice,
-        )
-    }
-
-    companion object {
         /**
-         * Map DeviceProfile to DeviceClass.
+         * Detect device profile from Android system services.
          *
-         * **Pure function** - deterministic mapping with NO side effects.
-         * This can be unit tested with example profiles.
+         * This function reads raw runtime signals and packages them into
+         * a DeviceProfile data class. No classification logic here.
          *
-         * **Classification Logic:**
-         * - TV + Low RAM → TV_LOW_RAM (conservative settings)
-         * - TV + Normal RAM → TV (balanced settings)
-         * - Non-TV → PHONE_TABLET (aggressive settings)
-         *
-         * **Low RAM Detection:**
-         * - ActivityManager.isLowRamDevice flag (highest priority)
-         * - OR total RAM < 2GB threshold
-         *
-         * @param profile Raw device profile from runtime detection
-         * @return DeviceClass for performance tuning
+         * @param context Android context for system service access
+         * @return DeviceProfile with runtime characteristics
          */
-        fun mapDeviceProfileToClass(profile: DeviceProfile): DeviceClass =
-            when {
-                // TV with low RAM → conservative settings
-                profile.isTV && (
-                    profile.isLowRamDevice ||
-                        profile.totalRamMB < DeviceProfile.LOW_RAM_THRESHOLD_MB
-                ) ->
-                    DeviceClass.TV_LOW_RAM
+        private fun detectDeviceProfile(context: Context): DeviceProfile {
+            // Check if TV via UiModeManager
+            val uiModeManager = context.getSystemService(Context.UI_MODE_SERVICE) as? UiModeManager
+            val isTV = uiModeManager?.currentModeType == Configuration.UI_MODE_TYPE_TELEVISION
 
-                // TV with adequate RAM → balanced settings
-                profile.isTV -> DeviceClass.TV
+            // Check RAM via ActivityManager
+            val activityManager =
+                context.getSystemService(Context.ACTIVITY_SERVICE) as? ActivityManager
+            val memoryInfo = ActivityManager.MemoryInfo()
+            activityManager?.getMemoryInfo(memoryInfo)
+            val totalRamMB = memoryInfo.totalMem / (1024 * 1024)
+            val isLowRamDevice = activityManager?.isLowRamDevice == true
 
-                // Phone/Tablet → aggressive settings
-                else -> DeviceClass.PHONE_TABLET
-            }
+            return DeviceProfile(
+                isTV = isTV,
+                totalRamMB = totalRamMB,
+                isLowRamDevice = isLowRamDevice,
+            )
+        }
+
+        companion object {
+            /**
+             * Map DeviceProfile to DeviceClass.
+             *
+             * **Pure function** - deterministic mapping with NO side effects.
+             * This can be unit tested with example profiles.
+             *
+             * **Classification Logic:**
+             * - TV + Low RAM → TV_LOW_RAM (conservative settings)
+             * - TV + Normal RAM → TV (balanced settings)
+             * - Non-TV → PHONE_TABLET (aggressive settings)
+             *
+             * **Low RAM Detection:**
+             * - ActivityManager.isLowRamDevice flag (highest priority)
+             * - OR total RAM < 2GB threshold
+             *
+             * @param profile Raw device profile from runtime detection
+             * @return DeviceClass for performance tuning
+             */
+            fun mapDeviceProfileToClass(profile: DeviceProfile): DeviceClass =
+                when {
+                    // TV with low RAM → conservative settings
+                    profile.isTV &&
+                        (
+                            profile.isLowRamDevice ||
+                                profile.totalRamMB < DeviceProfile.LOW_RAM_THRESHOLD_MB
+                        ) ->
+                        DeviceClass.TV_LOW_RAM
+
+                    // TV with adequate RAM → balanced settings
+                    profile.isTV -> DeviceClass.TV
+
+                    // Phone/Tablet → aggressive settings
+                    else -> DeviceClass.PHONE_TABLET
+                }
+        }
     }
-}

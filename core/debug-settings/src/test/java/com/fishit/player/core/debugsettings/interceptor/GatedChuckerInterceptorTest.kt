@@ -71,7 +71,7 @@ class GatedChuckerInterceptorTest {
     fun `proceeds when enabled but Chucker not available`() {
         // Enable Chucker flag
         flagsHolder.chuckerEnabled.set(true)
-        
+
         // In unit test environment, Chucker might not be available
         // (depends on test classpath configuration)
         // The interceptor should gracefully proceed without crashing

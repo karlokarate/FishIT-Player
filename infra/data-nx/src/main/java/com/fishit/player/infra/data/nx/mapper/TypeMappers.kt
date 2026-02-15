@@ -46,8 +46,8 @@
  */
 package com.fishit.player.infra.data.nx.mapper
 
-import com.fishit.player.core.model.MediaType
 import com.fishit.player.core.model.MediaKind
+import com.fishit.player.core.model.MediaType
 import com.fishit.player.core.model.repository.NxWorkRepository.WorkType
 import com.fishit.player.core.model.repository.NxWorkSourceRefRepository.SourceItemKind
 import com.fishit.player.core.model.repository.NxWorkSourceRefRepository.SourceType
@@ -62,16 +62,17 @@ internal object WorkTypeMapper {
      * Converts WorkType enum to entity string.
      * Used when persisting to ObjectBox.
      */
-    fun toEntityString(type: WorkType): String = when (type) {
-        WorkType.MOVIE -> "MOVIE"
-        WorkType.SERIES -> "SERIES"
-        WorkType.EPISODE -> "EPISODE"
-        WorkType.CLIP -> "CLIP"
-        WorkType.LIVE_CHANNEL -> "LIVE"
-        WorkType.AUDIOBOOK -> "AUDIOBOOK"
-        WorkType.MUSIC_TRACK -> "MUSIC"
-        WorkType.UNKNOWN -> "UNKNOWN"
-    }
+    fun toEntityString(type: WorkType): String =
+        when (type) {
+            WorkType.MOVIE -> "MOVIE"
+            WorkType.SERIES -> "SERIES"
+            WorkType.EPISODE -> "EPISODE"
+            WorkType.CLIP -> "CLIP"
+            WorkType.LIVE_CHANNEL -> "LIVE"
+            WorkType.AUDIOBOOK -> "AUDIOBOOK"
+            WorkType.MUSIC_TRACK -> "MUSIC"
+            WorkType.UNKNOWN -> "UNKNOWN"
+        }
 
     /**
      * Converts entity string to WorkType enum.
@@ -81,16 +82,17 @@ internal object WorkTypeMapper {
      * - "LIVE" or "LIVE_CHANNEL" → LIVE_CHANNEL
      * - "MUSIC" or "MUSIC_TRACK" → MUSIC_TRACK
      */
-    fun toWorkType(value: String): WorkType = when (value.uppercase()) {
-        "MOVIE" -> WorkType.MOVIE
-        "SERIES" -> WorkType.SERIES
-        "EPISODE" -> WorkType.EPISODE
-        "CLIP" -> WorkType.CLIP
-        "LIVE", "LIVE_CHANNEL" -> WorkType.LIVE_CHANNEL
-        "AUDIOBOOK" -> WorkType.AUDIOBOOK
-        "MUSIC", "MUSIC_TRACK" -> WorkType.MUSIC_TRACK
-        else -> WorkType.UNKNOWN
-    }
+    fun toWorkType(value: String): WorkType =
+        when (value.uppercase()) {
+            "MOVIE" -> WorkType.MOVIE
+            "SERIES" -> WorkType.SERIES
+            "EPISODE" -> WorkType.EPISODE
+            "CLIP" -> WorkType.CLIP
+            "LIVE", "LIVE_CHANNEL" -> WorkType.LIVE_CHANNEL
+            "AUDIOBOOK" -> WorkType.AUDIOBOOK
+            "MUSIC", "MUSIC_TRACK" -> WorkType.MUSIC_TRACK
+            else -> WorkType.UNKNOWN
+        }
 }
 
 /**
@@ -103,14 +105,15 @@ internal object SourceTypeMapper {
      * Converts SourceType enum to entity string.
      * Used when persisting to ObjectBox.
      */
-    fun toEntityString(type: SourceType): String = when (type) {
-        SourceType.TELEGRAM -> "telegram"
-        SourceType.XTREAM -> "xtream"
-        SourceType.IO -> "io"
-        SourceType.LOCAL -> "local"
-        SourceType.PLEX -> "plex"
-        SourceType.UNKNOWN -> "unknown"
-    }
+    fun toEntityString(type: SourceType): String =
+        when (type) {
+            SourceType.TELEGRAM -> "telegram"
+            SourceType.XTREAM -> "xtream"
+            SourceType.IO -> "io"
+            SourceType.LOCAL -> "local"
+            SourceType.PLEX -> "plex"
+            SourceType.UNKNOWN -> "unknown"
+        }
 
     /**
      * Converts entity string to SourceType enum.
@@ -118,14 +121,15 @@ internal object SourceTypeMapper {
      *
      * **Case-insensitive** for robustness.
      */
-    fun toSourceType(value: String): SourceType = when (value.lowercase()) {
-        "telegram" -> SourceType.TELEGRAM
-        "xtream" -> SourceType.XTREAM
-        "io" -> SourceType.IO
-        "local" -> SourceType.LOCAL
-        "plex" -> SourceType.PLEX
-        else -> SourceType.UNKNOWN
-    }
+    fun toSourceType(value: String): SourceType =
+        when (value.lowercase()) {
+            "telegram" -> SourceType.TELEGRAM
+            "xtream" -> SourceType.XTREAM
+            "io" -> SourceType.IO
+            "local" -> SourceType.LOCAL
+            "plex" -> SourceType.PLEX
+            else -> SourceType.UNKNOWN
+        }
 }
 
 /**
@@ -145,32 +149,34 @@ internal object MediaTypeMapper {
      * Converts MediaType to WorkType.
      * Used when storing RawMediaMetadata to NX_Work.
      */
-    fun toWorkType(mediaType: MediaType): WorkType = when (mediaType) {
-        MediaType.MOVIE -> WorkType.MOVIE
-        MediaType.SERIES -> WorkType.SERIES
-        MediaType.SERIES_EPISODE -> WorkType.EPISODE
-        MediaType.LIVE -> WorkType.LIVE_CHANNEL
-        MediaType.CLIP -> WorkType.CLIP
-        MediaType.AUDIOBOOK -> WorkType.AUDIOBOOK
-        MediaType.MUSIC -> WorkType.MUSIC_TRACK
-        MediaType.PODCAST -> WorkType.UNKNOWN // No direct mapping yet
-        MediaType.UNKNOWN -> WorkType.UNKNOWN
-    }
+    fun toWorkType(mediaType: MediaType): WorkType =
+        when (mediaType) {
+            MediaType.MOVIE -> WorkType.MOVIE
+            MediaType.SERIES -> WorkType.SERIES
+            MediaType.SERIES_EPISODE -> WorkType.EPISODE
+            MediaType.LIVE -> WorkType.LIVE_CHANNEL
+            MediaType.CLIP -> WorkType.CLIP
+            MediaType.AUDIOBOOK -> WorkType.AUDIOBOOK
+            MediaType.MUSIC -> WorkType.MUSIC_TRACK
+            MediaType.PODCAST -> WorkType.UNKNOWN // No direct mapping yet
+            MediaType.UNKNOWN -> WorkType.UNKNOWN
+        }
 
     /**
      * Converts WorkType to MediaType.
      * Used when converting NX_Work back to domain models.
      */
-    fun toMediaType(workType: WorkType): MediaType = when (workType) {
-        WorkType.MOVIE -> MediaType.MOVIE
-        WorkType.SERIES -> MediaType.SERIES
-        WorkType.EPISODE -> MediaType.SERIES_EPISODE
-        WorkType.LIVE_CHANNEL -> MediaType.LIVE
-        WorkType.CLIP -> MediaType.CLIP
-        WorkType.AUDIOBOOK -> MediaType.AUDIOBOOK
-        WorkType.MUSIC_TRACK -> MediaType.MUSIC
-        WorkType.UNKNOWN -> MediaType.UNKNOWN
-    }
+    fun toMediaType(workType: WorkType): MediaType =
+        when (workType) {
+            WorkType.MOVIE -> MediaType.MOVIE
+            WorkType.SERIES -> MediaType.SERIES
+            WorkType.EPISODE -> MediaType.SERIES_EPISODE
+            WorkType.LIVE_CHANNEL -> MediaType.LIVE
+            WorkType.CLIP -> MediaType.CLIP
+            WorkType.AUDIOBOOK -> MediaType.AUDIOBOOK
+            WorkType.MUSIC_TRACK -> MediaType.MUSIC
+            WorkType.UNKNOWN -> MediaType.UNKNOWN
+        }
 
     /**
      * Converts WorkType entity string to MediaType.
@@ -186,30 +192,33 @@ internal object MediaTypeMapper {
      *
      * **NX_CONSOLIDATION_PLAN Phase 2 — Replaces duplicate mediaTypeToKind() in NxCanonicalMediaRepositoryImpl**
      */
-    fun toMediaKind(mediaType: MediaType): MediaKind = when (mediaType) {
-        MediaType.SERIES_EPISODE -> MediaKind.EPISODE
-        else -> MediaKind.MOVIE
-    }
+    fun toMediaKind(mediaType: MediaType): MediaKind =
+        when (mediaType) {
+            MediaType.SERIES_EPISODE -> MediaKind.EPISODE
+            else -> MediaKind.MOVIE
+        }
 
     /**
      * Converts WorkType entity string to MediaKind.
      *
      * **NX_CONSOLIDATION_PLAN Phase 2 — Replaces duplicate workTypeToKind() in NxCanonicalMediaRepositoryImpl**
      */
-    fun workTypeStringToMediaKind(workTypeString: String): MediaKind = when (workTypeString.uppercase()) {
-        "EPISODE", "SERIES_EPISODE" -> MediaKind.EPISODE
-        else -> MediaKind.MOVIE
-    }
+    fun workTypeStringToMediaKind(workTypeString: String): MediaKind =
+        when (workTypeString.uppercase()) {
+            "EPISODE", "SERIES_EPISODE" -> MediaKind.EPISODE
+            else -> MediaKind.MOVIE
+        }
 
     /**
      * Converts MediaKind back to workType entity string.
      *
      * **NX_CONSOLIDATION_PLAN Phase 7 #2 — Replaces inline kindToWorkType() in NxCanonicalMediaRepositoryImpl**
      */
-    fun fromMediaKind(kind: MediaKind): String = when (kind) {
-        MediaKind.MOVIE -> "MOVIE"
-        MediaKind.EPISODE -> "EPISODE"
-    }
+    fun fromMediaKind(kind: MediaKind): String =
+        when (kind) {
+            MediaKind.MOVIE -> "MOVIE"
+            MediaKind.EPISODE -> "EPISODE"
+        }
 }
 
 /**
@@ -224,17 +233,18 @@ internal object SourceItemKindMapper {
      * Converts MediaType to SourceItemKind.
      * Used when creating NX_WorkSourceRef from RawMediaMetadata.
      */
-    fun fromMediaType(mediaType: MediaType): SourceItemKind = when (mediaType) {
-        MediaType.MOVIE -> SourceItemKind.VOD
-        MediaType.SERIES -> SourceItemKind.SERIES
-        MediaType.SERIES_EPISODE -> SourceItemKind.EPISODE
-        MediaType.LIVE -> SourceItemKind.LIVE
-        MediaType.CLIP -> SourceItemKind.FILE
-        MediaType.AUDIOBOOK -> SourceItemKind.FILE
-        MediaType.MUSIC -> SourceItemKind.FILE
-        MediaType.PODCAST -> SourceItemKind.FILE
-        MediaType.UNKNOWN -> SourceItemKind.UNKNOWN
-    }
+    fun fromMediaType(mediaType: MediaType): SourceItemKind =
+        when (mediaType) {
+            MediaType.MOVIE -> SourceItemKind.VOD
+            MediaType.SERIES -> SourceItemKind.SERIES
+            MediaType.SERIES_EPISODE -> SourceItemKind.EPISODE
+            MediaType.LIVE -> SourceItemKind.LIVE
+            MediaType.CLIP -> SourceItemKind.FILE
+            MediaType.AUDIOBOOK -> SourceItemKind.FILE
+            MediaType.MUSIC -> SourceItemKind.FILE
+            MediaType.PODCAST -> SourceItemKind.FILE
+            MediaType.UNKNOWN -> SourceItemKind.UNKNOWN
+        }
 }
 
 /**
@@ -254,13 +264,17 @@ internal object SourceLabelBuilder {
      * @param accountLabel The human-readable account label
      * @return Formatted label for UI display
      */
-    fun buildLabel(sourceType: String, accountLabel: String): String = when (sourceType.lowercase()) {
-        "telegram" -> "Telegram: $accountLabel"
-        "xtream" -> "IPTV: $accountLabel"
-        "local" -> "Local File"
-        "plex" -> "Plex: $accountLabel"
-        else -> "${sourceType}: $accountLabel"
-    }
+    fun buildLabel(
+        sourceType: String,
+        accountLabel: String,
+    ): String =
+        when (sourceType.lowercase()) {
+            "telegram" -> "Telegram: $accountLabel"
+            "xtream" -> "IPTV: $accountLabel"
+            "local" -> "Local File"
+            "plex" -> "Plex: $accountLabel"
+            else -> "$sourceType: $accountLabel"
+        }
 
     /**
      * Builds a label with optional quality suffix for list views.
@@ -277,13 +291,14 @@ internal object SourceLabelBuilder {
         sourceType: String,
         accountLabel: String,
         qualityHeight: Int?,
-    ): String = buildString {
-        append(buildLabel(sourceType, accountLabel))
-        com.fishit.player.core.model.util.ResolutionLabel.fromHeight(qualityHeight)?.let {
-            append(" - ")
-            append(it)
+    ): String =
+        buildString {
+            append(buildLabel(sourceType, accountLabel))
+            com.fishit.player.core.model.util.ResolutionLabel.fromHeight(qualityHeight)?.let {
+                append(" - ")
+                append(it)
+            }
         }
-    }
 }
 
 /**
@@ -293,6 +308,7 @@ internal object SourceLabelBuilder {
  *
  * Used in WorkDetailMapper for determining which source/variant to prefer.
  */
+
 /**
  * @deprecated Use [com.fishit.player.core.model.util.SourcePriority] instead.
  * Retained temporarily as a delegate — all new code should use SourcePriority directly.
@@ -304,11 +320,11 @@ internal object SourcePriorityCalculator {
         qualityTag: String? = null,
         hasDirectUrl: Boolean = false,
         isExplicitVariant: Boolean = false,
-    ): Int = com.fishit.player.core.model.util.SourcePriority.totalPriority(
-        sourceType = sourceType,
-        qualityTag = qualityTag,
-        hasDirectUrl = hasDirectUrl,
-        isExplicitVariant = isExplicitVariant,
-    )
+    ): Int =
+        com.fishit.player.core.model.util.SourcePriority.totalPriority(
+            sourceType = sourceType,
+            qualityTag = qualityTag,
+            hasDirectUrl = hasDirectUrl,
+            isExplicitVariant = isExplicitVariant,
+        )
 }
-

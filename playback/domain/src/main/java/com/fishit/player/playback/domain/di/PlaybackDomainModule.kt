@@ -91,8 +91,7 @@ abstract class PlaybackDomainModule {
          */
         @Provides
         @Singleton
-        fun provideResumeManager(userStateRepository: NxWorkUserStateRepository): ResumeManager =
-            NxResumeManager(userStateRepository)
+        fun provideResumeManager(userStateRepository: NxWorkUserStateRepository): ResumeManager = NxResumeManager(userStateRepository)
 
         @Provides
         @Singleton

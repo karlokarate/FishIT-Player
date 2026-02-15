@@ -101,9 +101,10 @@ fun StartScreen(
 
     // Category Selection Overlay (ModalBottomSheet)
     if (state.showCategoryOverlay) {
-        val sheetState = rememberModalBottomSheetState(
-            skipPartiallyExpanded = true,
-        )
+        val sheetState =
+            rememberModalBottomSheetState(
+                skipPartiallyExpanded = true,
+            )
 
         ModalBottomSheet(
             onDismissRequest = {
@@ -657,23 +658,26 @@ private fun CategoryOverlayContent(
 ) {
     val tabs = CategoryTab.entries
     val selectedTab = state.selectedCategoryTab
-    val (categories, categoryType) = when (selectedTab) {
-        CategoryTab.VOD -> state.vodCategories to XtreamCategoryType.VOD
-        CategoryTab.SERIES -> state.seriesCategories to XtreamCategoryType.SERIES
-        CategoryTab.LIVE -> state.liveCategories to XtreamCategoryType.LIVE
-    }
+    val (categories, categoryType) =
+        when (selectedTab) {
+            CategoryTab.VOD -> state.vodCategories to XtreamCategoryType.VOD
+            CategoryTab.SERIES -> state.seriesCategories to XtreamCategoryType.SERIES
+            CategoryTab.LIVE -> state.liveCategories to XtreamCategoryType.LIVE
+        }
     val selectedTabIndex = tabs.indexOf(selectedTab)
 
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(bottom = 24.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(bottom = 24.dp),
     ) {
         // Header
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Icon(
@@ -713,11 +717,12 @@ private fun CategoryOverlayContent(
                     text = {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(
-                                imageVector = when (tab) {
-                                    CategoryTab.VOD -> Icons.Default.Movie
-                                    CategoryTab.SERIES -> Icons.Default.Tv
-                                    CategoryTab.LIVE -> Icons.Default.LiveTv
-                                },
+                                imageVector =
+                                    when (tab) {
+                                        CategoryTab.VOD -> Icons.Default.Movie
+                                        CategoryTab.SERIES -> Icons.Default.Tv
+                                        CategoryTab.LIVE -> Icons.Default.LiveTv
+                                    },
                                 contentDescription = null,
                                 modifier = Modifier.size(16.dp),
                             )
@@ -732,17 +737,20 @@ private fun CategoryOverlayContent(
         // Bulk actions
         if (categories.isNotEmpty()) {
             Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                ),
-            ) {
-                Row(
-                    modifier = Modifier
+                modifier =
+                    Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp, vertical = 8.dp),
+                colors =
+                    CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                    ),
+            ) {
+                Row(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 8.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
@@ -773,9 +781,10 @@ private fun CategoryOverlayContent(
         when {
             state.categoryPreloading -> {
                 Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(200.dp),
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .height(200.dp),
                     contentAlignment = Alignment.Center,
                 ) {
                     CircularProgressIndicator()
@@ -783,9 +792,10 @@ private fun CategoryOverlayContent(
             }
             categories.isEmpty() -> {
                 Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(200.dp),
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .height(200.dp),
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(
@@ -797,9 +807,10 @@ private fun CategoryOverlayContent(
             }
             else -> {
                 LazyColumn(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(400.dp),
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .height(400.dp),
                     verticalArrangement = Arrangement.spacedBy(4.dp),
                 ) {
                     items(categories, key = { it.sourceCategoryId }) { category ->
@@ -819,13 +830,15 @@ private fun CategoryOverlayContent(
         // Confirm button
         Button(
             onClick = onConfirm,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp)
-                .height(56.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = FishColors.Primary,
-            ),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
+                    .height(56.dp),
+            colors =
+                ButtonDefaults.buttonColors(
+                    containerColor = FishColors.Primary,
+                ),
         ) {
             Text(
                 text = "Synchronisierung starten",
@@ -841,26 +854,30 @@ private fun OverlayCategoryItem(
     onToggle: (Boolean) -> Unit,
 ) {
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = if (category.isSelected) {
-                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
-            } else {
-                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
-            },
-        ),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp),
+        colors =
+            CardDefaults.cardColors(
+                containerColor =
+                    if (category.isSelected) {
+                        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+                    } else {
+                        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+                    },
+            ),
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp)
-                .pointerInput(Unit) {
-                    detectTapGestures(
-                        onTap = { onToggle(!category.isSelected) }
-                    )
-                },
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 12.dp)
+                    .pointerInput(Unit) {
+                        detectTapGestures(
+                            onTap = { onToggle(!category.isSelected) },
+                        )
+                    },
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {

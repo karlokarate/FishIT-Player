@@ -32,7 +32,6 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 object SyncCommonModule {
-
     /**
      * Provide DeviceProfileDetector.
      *
@@ -53,10 +52,11 @@ object SyncCommonModule {
      */
     @Provides
     @Singleton
-    fun provideSyncPerfMetrics(): SyncPerfMetrics = SyncPerfMetrics(
-        isEnabled = true,
-        syncId = "app-default",
-    )
+    fun provideSyncPerfMetrics(): SyncPerfMetrics =
+        SyncPerfMetrics(
+            isEnabled = true,
+            syncId = "app-default",
+        )
 
     /**
      * SyncCheckpointStore is provided via its @Inject constructor.

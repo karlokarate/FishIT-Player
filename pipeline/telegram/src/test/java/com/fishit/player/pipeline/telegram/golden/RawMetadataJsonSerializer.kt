@@ -5,7 +5,6 @@ import com.fishit.player.core.model.toUriString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
-import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
@@ -27,84 +26,90 @@ import kotlinx.serialization.json.put
  */
 @OptIn(kotlinx.serialization.ExperimentalSerializationApi::class)
 object RawMetadataJsonSerializer {
-
-    private val json = Json {
-        prettyPrint = true
-        prettyPrintIndent = "  "
-    }
+    private val json =
+        Json {
+            prettyPrint = true
+            prettyPrintIndent = "  "
+        }
 
     /**
      * Convert a [RawMediaMetadata] to a [JsonElement] for structural comparison.
      */
-    fun toJsonElement(raw: RawMediaMetadata): JsonElement = buildJsonObject {
-        // === Identity ===
-        put("sourceId", raw.sourceId)
-        put("globalId", raw.globalId)
-        put("sourceType", raw.sourceType.name)
-        put("mediaType", raw.mediaType.name)
-        put("pipelineIdTag", raw.pipelineIdTag.name)
+    fun toJsonElement(raw: RawMediaMetadata): JsonElement =
+        buildJsonObject {
+            // === Identity ===
+            put("sourceId", raw.sourceId)
+            put("globalId", raw.globalId)
+            put("sourceType", raw.sourceType.name)
+            put("mediaType", raw.mediaType.name)
+            put("pipelineIdTag", raw.pipelineIdTag.name)
 
-        // === Display ===
-        put("originalTitle", raw.originalTitle)
+            // === Display ===
+            put("originalTitle", raw.originalTitle)
 
-        // === Temporal ===
-        putNullableInt("year", raw.year)
-        putNullableInt("season", raw.season)
-        putNullableInt("episode", raw.episode)
-        putNullableLong("durationMs", raw.durationMs)
-        putNullableLong("addedTimestamp", raw.addedTimestamp)
-        putNullableLong("lastModifiedTimestamp", raw.lastModifiedTimestamp)
+            // === Temporal ===
+            putNullableInt("year", raw.year)
+            putNullableInt("season", raw.season)
+            putNullableInt("episode", raw.episode)
+            putNullableLong("durationMs", raw.durationMs)
+            putNullableLong("addedTimestamp", raw.addedTimestamp)
+            putNullableLong("lastModifiedTimestamp", raw.lastModifiedTimestamp)
 
-        // === Imaging ===
-        putNullableString("poster", raw.poster?.toUriString())
-        putNullableString("backdrop", raw.backdrop?.toUriString())
-        putNullableString("thumbnail", raw.thumbnail?.toUriString())
-        putNullableString("placeholderThumbnail", raw.placeholderThumbnail?.toUriString())
+            // === Imaging ===
+            putNullableString("poster", raw.poster?.toUriString())
+            putNullableString("backdrop", raw.backdrop?.toUriString())
+            putNullableString("thumbnail", raw.thumbnail?.toUriString())
+            putNullableString("placeholderThumbnail", raw.placeholderThumbnail?.toUriString())
 
-        // === Rating ===
-        putNullableDouble("rating", raw.rating)
-        putNullableInt("ageRating", raw.ageRating)
+            // === Rating ===
+            putNullableDouble("rating", raw.rating)
+            putNullableInt("ageRating", raw.ageRating)
 
-        // === Rich Metadata ===
-        putNullableString("plot", raw.plot)
-        putNullableString("genres", raw.genres)
-        putNullableString("director", raw.director)
-        putNullableString("cast", raw.cast)
-        putNullableString("trailer", raw.trailer)
-        putNullableString("releaseDate", raw.releaseDate)
+            // === Rich Metadata ===
+            putNullableString("plot", raw.plot)
+            putNullableString("genres", raw.genres)
+            putNullableString("director", raw.director)
+            putNullableString("cast", raw.cast)
+            putNullableString("trailer", raw.trailer)
+            putNullableString("releaseDate", raw.releaseDate)
 
-        // === Content Classification ===
-        put("isAdult", raw.isAdult)
-        putNullableString("categoryId", raw.categoryId)
-        put("sourceLabel", raw.sourceLabel)
+            // === Content Classification ===
+            put("isAdult", raw.isAdult)
+            putNullableString("categoryId", raw.categoryId)
+            put("sourceLabel", raw.sourceLabel)
 
-        // === Live Channel ===
-        putNullableString("epgChannelId", raw.epgChannelId)
-        put("tvArchive", raw.tvArchive)
-        put("tvArchiveDuration", raw.tvArchiveDuration)
+            // === Live Channel ===
+            putNullableString("epgChannelId", raw.epgChannelId)
+            put("tvArchive", raw.tvArchive)
+            put("tvArchiveDuration", raw.tvArchiveDuration)
 
-        // === External IDs ===
-        @Suppress("DEPRECATION")
-        put(
-            "externalIds",
-            buildJsonObject {
-                putNullableInt("effectiveTmdbId", raw.externalIds.effectiveTmdbId)
-                putNullableString("tmdbType", raw.externalIds.tmdb?.type?.name)
-                putNullableString("imdbId", raw.externalIds.imdbId)
-                putNullableString("tvdbId", raw.externalIds.tvdbId)
-            },
-        )
+            // === External IDs ===
+            @Suppress("DEPRECATION")
+            put(
+                "externalIds",
+                buildJsonObject {
+                    putNullableInt("effectiveTmdbId", raw.externalIds.effectiveTmdbId)
+                    putNullableString(
+                        "tmdbType",
+                        raw.externalIds.tmdb
+                            ?.type
+                            ?.name,
+                    )
+                    putNullableString("imdbId", raw.externalIds.imdbId)
+                    putNullableString("tvdbId", raw.externalIds.tvdbId)
+                },
+            )
 
-        // === Playback Hints (sorted for deterministic output) ===
-        put(
-            "playbackHints",
-            buildJsonObject {
-                raw.playbackHints.toSortedMap().forEach { (key, value) ->
-                    put(key, value)
-                }
-            },
-        )
-    }
+            // === Playback Hints (sorted for deterministic output) ===
+            put(
+                "playbackHints",
+                buildJsonObject {
+                    raw.playbackHints.toSortedMap().forEach { (key, value) ->
+                        put(key, value)
+                    }
+                },
+            )
+        }
 
     /**
      * Convert a [RawMediaMetadata] to a pretty-printed JSON string.
@@ -118,19 +123,31 @@ object RawMetadataJsonSerializer {
 
     // === Builder helpers for nullable primitive types ===
 
-    private fun JsonObjectBuilderScope.putNullableString(key: String, value: String?) {
+    private fun JsonObjectBuilderScope.putNullableString(
+        key: String,
+        value: String?,
+    ) {
         if (value != null) put(key, value) else put(key, JsonNull)
     }
 
-    private fun JsonObjectBuilderScope.putNullableInt(key: String, value: Int?) {
+    private fun JsonObjectBuilderScope.putNullableInt(
+        key: String,
+        value: Int?,
+    ) {
         if (value != null) put(key, value) else put(key, JsonNull)
     }
 
-    private fun JsonObjectBuilderScope.putNullableLong(key: String, value: Long?) {
+    private fun JsonObjectBuilderScope.putNullableLong(
+        key: String,
+        value: Long?,
+    ) {
         if (value != null) put(key, value) else put(key, JsonNull)
     }
 
-    private fun JsonObjectBuilderScope.putNullableDouble(key: String, value: Double?) {
+    private fun JsonObjectBuilderScope.putNullableDouble(
+        key: String,
+        value: Double?,
+    ) {
         if (value != null) put(key, JsonPrimitive(value)) else put(key, JsonNull)
     }
 }

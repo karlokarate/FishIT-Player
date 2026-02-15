@@ -8,47 +8,48 @@ package com.fishit.player.infra.data.nx.mapper
 
 import com.fishit.player.core.model.repository.NxWorkRepository.RecognitionState
 import com.fishit.player.core.model.repository.NxWorkRepository.Work
-import com.fishit.player.core.model.repository.NxWorkRepository.WorkType
 import com.fishit.player.core.persistence.obx.NX_Work
 import com.fishit.player.infra.data.nx.mapper.base.MappingUtils
 
 /**
  * Converts NX_Work entity to Work domain model.
  */
-fun NX_Work.toDomain(): Work = Work(
-    workKey = workKey,
-    type = WorkTypeMapper.toWorkType(workType),
-    displayTitle = canonicalTitle,
-    sortTitle = canonicalTitle,
-    titleNormalized = canonicalTitleLower,
-    year = year,
-    season = season,
-    episode = episode,
-    runtimeMs = durationMs,
-    // NX_CONSOLIDATION_PLAN Phase 4: ImageRef direct — no String roundtrip
-    poster = poster,
-    backdrop = backdrop,
-    thumbnail = thumbnail,
-    rating = rating,
-    genres = genres,
-    plot = plot,
-    director = director,
-    cast = cast,
-    trailer = trailer,
-    releaseDate = releaseDate,
-    // External IDs
-    tmdbId = tmdbId,
-    imdbId = imdbId,
-    tvdbId = tvdbId,
-    isAdult = isAdult,
-    recognitionState = MappingUtils.safeEnumFromString(
-        this.recognitionState,
-        RecognitionState.HEURISTIC,
-    ),
-    createdAtMs = createdAt,
-    updatedAtMs = updatedAt,
-    isDeleted = false, // ObjectBox soft delete not implemented yet
-)
+fun NX_Work.toDomain(): Work =
+    Work(
+        workKey = workKey,
+        type = WorkTypeMapper.toWorkType(workType),
+        displayTitle = canonicalTitle,
+        sortTitle = canonicalTitle,
+        titleNormalized = canonicalTitleLower,
+        year = year,
+        season = season,
+        episode = episode,
+        runtimeMs = durationMs,
+        // NX_CONSOLIDATION_PLAN Phase 4: ImageRef direct — no String roundtrip
+        poster = poster,
+        backdrop = backdrop,
+        thumbnail = thumbnail,
+        rating = rating,
+        genres = genres,
+        plot = plot,
+        director = director,
+        cast = cast,
+        trailer = trailer,
+        releaseDate = releaseDate,
+        // External IDs
+        tmdbId = tmdbId,
+        imdbId = imdbId,
+        tvdbId = tvdbId,
+        isAdult = isAdult,
+        recognitionState =
+            MappingUtils.safeEnumFromString(
+                this.recognitionState,
+                RecognitionState.HEURISTIC,
+            ),
+        createdAtMs = createdAt,
+        updatedAtMs = updatedAt,
+        isDeleted = false, // ObjectBox soft delete not implemented yet
+    )
 
 /**
  * Converts Work domain model to NX_Work entity.

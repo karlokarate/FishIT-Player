@@ -135,45 +135,46 @@ class XtreamAuthRepositoryAdapter
         }
 
 /**
-     * Saves credentials and creates/updates the NX_SourceAccount entry.
-     *
-     * **SSOT (Single Source of Truth):**
-     * This method is the ONLY place where accountKey is generated for Xtream sources.
-     * The accountKey is deterministic: `xtream:<normalizedHost>:<shortHash>`.
-     *
-     * All downstream code (pipelines, sync, repositories) should receive the accountKey
-     * via NxSourceAccountRepository or the saved config - never regenerate it.
-     */
-    override suspend fun saveCredentials(config: DomainConfig) {
-        // SSOT: Generate accountKey here and only here for Xtream
-        val serverUrl = "${config.scheme}://${config.host}:${config.port}"
-        val accountKey = NxKeyGenerator.xtreamAccountKey(serverUrl, config.username)
+         * Saves credentials and creates/updates the NX_SourceAccount entry.
+         *
+         * **SSOT (Single Source of Truth):**
+         * This method is the ONLY place where accountKey is generated for Xtream sources.
+         * The accountKey is deterministic: `xtream:<normalizedHost>:<shortHash>`.
+         *
+         * All downstream code (pipelines, sync, repositories) should receive the accountKey
+         * via NxSourceAccountRepository or the saved config - never regenerate it.
+         */
+        override suspend fun saveCredentials(config: DomainConfig) {
+            // SSOT: Generate accountKey here and only here for Xtream
+            val serverUrl = "${config.scheme}://${config.host}:${config.port}"
+            val accountKey = NxKeyGenerator.xtreamAccountKey(serverUrl, config.username)
 
-        UnifiedLog.d(TAG) { "saveCredentials: Generated accountKey=$accountKey for host=${config.host}" }
+            UnifiedLog.d(TAG) { "saveCredentials: Generated accountKey=$accountKey for host=${config.host}" }
 
-        // Persist NX_SourceAccount (SSOT for account metadata)
-        val sourceAccount = SourceAccount(
-            accountKey = accountKey,
-            sourceType = SourceType.XTREAM,
-            label = "${config.username}@${config.host}",
-            status = AccountStatus.ACTIVE,
-            createdAtMs = System.currentTimeMillis(),
-            updatedAtMs = System.currentTimeMillis(),
-        )
-        nxSourceAccountRepository.upsert(sourceAccount)
+            // Persist NX_SourceAccount (SSOT for account metadata)
+            val sourceAccount =
+                SourceAccount(
+                    accountKey = accountKey,
+                    sourceType = SourceType.XTREAM,
+                    label = "${config.username}@${config.host}",
+                    status = AccountStatus.ACTIVE,
+                    createdAtMs = System.currentTimeMillis(),
+                    updatedAtMs = System.currentTimeMillis(),
+                )
+            nxSourceAccountRepository.upsert(sourceAccount)
 
-        // Persist transport-layer credentials
-        val storedConfig =
-            XtreamStoredConfig(
-                scheme = config.scheme,
-                host = config.host,
-                port = config.port,
-                username = config.username,
-                password = config.password,
-            )
-        credentialsStore.write(storedConfig)
+            // Persist transport-layer credentials
+            val storedConfig =
+                XtreamStoredConfig(
+                    scheme = config.scheme,
+                    host = config.host,
+                    port = config.port,
+                    username = config.username,
+                    password = config.password,
+                )
+            credentialsStore.write(storedConfig)
 
-        UnifiedLog.i(TAG) { "saveCredentials: Xtream account persisted with key=$accountKey" }
+            UnifiedLog.i(TAG) { "saveCredentials: Xtream account persisted with key=$accountKey" }
         }
 
         override suspend fun clearCredentials() {

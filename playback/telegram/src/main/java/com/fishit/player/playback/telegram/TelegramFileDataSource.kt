@@ -270,9 +270,10 @@ class TelegramFileDataSource(
                 // If fast-path failed and we have chatId+messageId, retry with RemoteResolver
                 if (usedFastPath && capturedChatId != null && capturedMessageId != null) {
                     UnifiedLog.i(TAG) {
-                        "Fast-path fileId=$fileId failed (${e.message}), retrying with RemoteResolver (chatId=***${capturedChatId.toString().takeLast(
-                            3,
-                        )}, messageId=***${capturedMessageId.toString().takeLast(3)})"
+                        "Fast-path fileId=$fileId failed (${e.message}), " +
+                            "retrying with RemoteResolver " +
+                            "(chatId=***${capturedChatId.toString().takeLast(3)}, " +
+                            "messageId=***${capturedMessageId.toString().takeLast(3)})"
                     }
 
                     // Re-resolve via RemoteResolver to get fresh fileId

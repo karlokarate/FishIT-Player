@@ -50,7 +50,6 @@ package com.fishit.player.core.model.sync
  * @since v2 Unified Sync Architecture
  */
 interface BaseSyncConfig {
-
     /**
      * Unique identifier for the account/source being synced.
      *
@@ -103,6 +102,4 @@ val BaseSyncConfig.supportsIncremental: Boolean
 /**
  * Extension to generate a checkpoint key prefix for this config.
  */
-fun BaseSyncConfig.checkpointKeyPrefix(): String {
-    return accountKey.replace(":", "_").replace("@", "_")
-}
+fun BaseSyncConfig.checkpointKeyPrefix(): String = accountKey.replace(":", "_").replace("@", "_")

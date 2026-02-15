@@ -67,13 +67,11 @@ class DefaultSourceActivationStore
                 .catch { e ->
                     UnifiedLog.e(TAG, e) { "Failed to read persisted state, using defaults" }
                     // Don't emit - just log and let snapshot remain at EMPTY default
-                }
-                .onEach { preferences ->
+                }.onEach { preferences ->
                     val snapshot = preferencesToSnapshot(preferences)
                     _snapshot.value = snapshot
                     UnifiedLog.d(TAG) { "Loaded state from DataStore: $snapshot" }
-                }
-                .launchIn(initScope)
+                }.launchIn(initScope)
         }
 
         // =========================================================================

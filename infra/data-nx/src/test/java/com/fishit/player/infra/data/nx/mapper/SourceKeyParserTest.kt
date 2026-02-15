@@ -16,7 +16,6 @@ import org.junit.Test
  * - Numeric ID extraction
  */
 class SourceKeyParserTest {
-
     // =========================================================================
     // Core Parsing Tests
     // =========================================================================
@@ -24,7 +23,7 @@ class SourceKeyParserTest {
     @Test
     fun `parse - valid Xtream VOD sourceKey`() {
         val result = SourceKeyParser.parse("src:xtream:myserver:vod:12345")
-        
+
         assertEquals("xtream", result?.sourceType)
         assertEquals("myserver", result?.accountKey)
         assertEquals("vod", result?.itemKind)
@@ -34,7 +33,7 @@ class SourceKeyParserTest {
     @Test
     fun `parse - valid Xtream Live sourceKey`() {
         val result = SourceKeyParser.parse("src:xtream:server2:live:67890")
-        
+
         assertEquals("xtream", result?.sourceType)
         assertEquals("server2", result?.accountKey)
         assertEquals("live", result?.itemKind)
@@ -44,7 +43,7 @@ class SourceKeyParserTest {
     @Test
     fun `parse - valid Xtream Episode sourceKey with composite ID`() {
         val result = SourceKeyParser.parse("src:xtream:myserver:episode:100_1_5")
-        
+
         assertEquals("xtream", result?.sourceType)
         assertEquals("myserver", result?.accountKey)
         assertEquals("episode", result?.itemKind)
@@ -54,7 +53,7 @@ class SourceKeyParserTest {
     @Test
     fun `parse - valid Telegram sourceKey with multi-part ID`() {
         val result = SourceKeyParser.parse("src:telegram:myaccount:file:123456789:987654321")
-        
+
         assertEquals("telegram", result?.sourceType)
         assertEquals("myaccount", result?.accountKey)
         assertEquals("file", result?.itemKind)
@@ -282,7 +281,7 @@ class SourceKeyParserTest {
     @Test
     fun `extractTelegramIds - valid sourceKey returns pair`() {
         val result = SourceKeyParser.extractTelegramIds("src:telegram:account:file:123456789:987654321")
-        
+
         assertEquals(Pair(123456789L, 987654321L), result)
     }
 
@@ -310,14 +309,14 @@ class SourceKeyParserTest {
     @Test
     fun `integration - parse and extract from same sourceKey`() {
         val sourceKey = "src:xtream:myserver:vod:12345"
-        
+
         // Full parse
         val parsed = SourceKeyParser.parse(sourceKey)
         assertEquals("xtream", parsed?.sourceType)
         assertEquals("myserver", parsed?.accountKey)
         assertEquals("vod", parsed?.itemKind)
         assertEquals("12345", parsed?.itemKey)
-        
+
         // Individual extractions should match
         assertEquals("xtream", SourceKeyParser.extractSourceType(sourceKey))
         assertEquals("myserver", SourceKeyParser.extractAccountKey(sourceKey))
@@ -330,7 +329,7 @@ class SourceKeyParserTest {
     @Test
     fun `integration - Telegram sourceKey with all extractions`() {
         val sourceKey = "src:telegram:myaccount:file:123456789:987654321"
-        
+
         assertEquals("telegram", SourceKeyParser.extractSourceType(sourceKey))
         assertEquals("myaccount", SourceKeyParser.extractAccountKey(sourceKey))
         assertEquals("file", SourceKeyParser.extractItemKind(sourceKey))
@@ -343,7 +342,7 @@ class SourceKeyParserTest {
     @Test
     fun `integration - Xtream episode sourceKey with all extractions`() {
         val sourceKey = "src:xtream:myserver:episode:100_2_15"
-        
+
         assertEquals("xtream", SourceKeyParser.extractSourceType(sourceKey))
         assertEquals("myserver", SourceKeyParser.extractAccountKey(sourceKey))
         assertEquals("episode", SourceKeyParser.extractItemKind(sourceKey))
@@ -396,7 +395,7 @@ class SourceKeyParserTest {
     @Test
     fun `integration - negative seriesId episode sourceKey with all extractions`() {
         val sourceKey = "src:xtream:myserver:episode:series:-441:s1:e5"
-        
+
         assertEquals("xtream", SourceKeyParser.extractSourceType(sourceKey))
         assertEquals("myserver", SourceKeyParser.extractAccountKey(sourceKey))
         assertEquals("episode", SourceKeyParser.extractItemKind(sourceKey))

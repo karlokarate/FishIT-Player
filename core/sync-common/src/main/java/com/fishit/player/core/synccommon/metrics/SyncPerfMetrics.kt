@@ -4,6 +4,7 @@ import com.fishit.player.core.model.sync.SyncPhase
 import com.fishit.player.infra.logging.UnifiedLog
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import java.util.Locale
 import java.util.concurrent.ConcurrentHashMap
 
 /**
@@ -92,11 +93,12 @@ class SyncPerfMetrics(
 
         /** Memory variance (approximates GC pressure) */
         val memoryVarianceMB: Long
-            get() = if (memoryUsageMBAtEnd >= memoryUsageMBAtStart) {
-                memoryUsageMBAtEnd - memoryUsageMBAtStart
-            } else {
-                0L
-            }
+            get() =
+                if (memoryUsageMBAtEnd >= memoryUsageMBAtStart) {
+                    memoryUsageMBAtEnd - memoryUsageMBAtStart
+                } else {
+                    0L
+                }
 
         /** Error rate (errors per 1000 items) */
         val errorRatePer1000: Double
@@ -285,47 +287,63 @@ class SyncPerfMetrics(
     /**
      * Export metrics to human-readable report format.
      */
-    fun exportReport(): String = buildString {
-        appendLine("=== Sync Performance Report (ID: $syncId) ===")
-        appendLine("Total Duration: ${totalSyncDurationMs}ms")
-        appendLine("Total Discovered: $totalItemsDiscovered")
-        appendLine("Total Persisted: $totalItemsPersisted")
-        appendLine("Total Errors: $totalErrors")
-        appendLine()
-
-        phaseMetrics.entries.sortedBy { it.key.ordinal }.forEach { (phase, metrics) ->
-            appendLine("--- Phase: $phase ---")
-            appendLine("  Duration: ${metrics.totalDurationMs}ms")
-            appendLine("  Discovered: ${metrics.itemsDiscovered} (${String.format("%.1f", metrics.itemsDiscoveredPerSec)}/s)")
-            appendLine("  Persisted: ${metrics.itemsPersisted} (${String.format("%.1f", metrics.itemsPersistedPerSec)}/s)")
-            appendLine("  Fetch: ${metrics.fetchMs}ms (${metrics.fetchCount} calls, avg ${String.format("%.1f", metrics.avgFetchMs)}ms)")
-            appendLine("  Persist: ${metrics.persistMs}ms (${metrics.persistCount} batches, avg ${String.format("%.1f", metrics.avgPersistMs)}ms)")
-            appendLine("  Errors: ${metrics.errorCount}, Retries: ${metrics.retryCount}")
-            appendLine("  Memory: ${metrics.memoryVarianceMB}MB variance")
+    fun exportReport(): String =
+        buildString {
+            appendLine("=== Sync Performance Report (ID: $syncId) ===")
+            appendLine("Total Duration: ${totalSyncDurationMs}ms")
+            appendLine("Total Discovered: $totalItemsDiscovered")
+            appendLine("Total Persisted: $totalItemsPersisted")
+            appendLine("Total Errors: $totalErrors")
             appendLine()
+
+            phaseMetrics.entries.sortedBy { it.key.ordinal }.forEach { (phase, metrics) ->
+                appendLine("--- Phase: $phase ---")
+                appendLine("  Duration: ${metrics.totalDurationMs}ms")
+                appendLine(
+                    "  Discovered: ${metrics.itemsDiscovered} (${String.format(Locale.US, "%.1f", metrics.itemsDiscoveredPerSec)}/s)",
+                )
+                appendLine("  Persisted: ${metrics.itemsPersisted} (${String.format(Locale.US, "%.1f", metrics.itemsPersistedPerSec)}/s)")
+                appendLine(
+                    "  Fetch: ${metrics.fetchMs}ms (${metrics.fetchCount} calls, avg ${String.format(
+                        Locale.US,
+                        "%.1f",
+                        metrics.avgFetchMs,
+                    )}ms)",
+                )
+                appendLine(
+                    "  Persist: ${metrics.persistMs}ms (${metrics.persistCount} batches, avg ${String.format(
+                        Locale.US,
+                        "%.1f",
+                        metrics.avgPersistMs,
+                    )}ms)",
+                )
+                appendLine("  Errors: ${metrics.errorCount}, Retries: ${metrics.retryCount}")
+                appendLine("  Memory: ${metrics.memoryVarianceMB}MB variance")
+                appendLine()
+            }
         }
-    }
 
     /**
      * Export metrics to structured map for telemetry.
      */
-    fun exportMap(): Map<String, Any> = buildMap {
-        put("sync_id", syncId)
-        put("total_duration_ms", totalSyncDurationMs)
-        put("total_discovered", totalItemsDiscovered)
-        put("total_persisted", totalItemsPersisted)
-        put("total_errors", totalErrors)
+    fun exportMap(): Map<String, Any> =
+        buildMap {
+            put("sync_id", syncId)
+            put("total_duration_ms", totalSyncDurationMs)
+            put("total_discovered", totalItemsDiscovered)
+            put("total_persisted", totalItemsPersisted)
+            put("total_errors", totalErrors)
 
-        phaseMetrics.forEach { (phase, metrics) ->
-            val prefix = "phase_${phase.name.lowercase()}"
-            put("${prefix}_duration_ms", metrics.totalDurationMs)
-            put("${prefix}_discovered", metrics.itemsDiscovered)
-            put("${prefix}_persisted", metrics.itemsPersisted)
-            put("${prefix}_errors", metrics.errorCount)
-            put("${prefix}_fetch_ms", metrics.fetchMs)
-            put("${prefix}_persist_ms", metrics.persistMs)
+            phaseMetrics.forEach { (phase, metrics) ->
+                val prefix = "phase_${phase.name.lowercase()}"
+                put("${prefix}_duration_ms", metrics.totalDurationMs)
+                put("${prefix}_discovered", metrics.itemsDiscovered)
+                put("${prefix}_persisted", metrics.itemsPersisted)
+                put("${prefix}_errors", metrics.errorCount)
+                put("${prefix}_fetch_ms", metrics.fetchMs)
+                put("${prefix}_persist_ms", metrics.persistMs)
+            }
         }
-    }
 }
 
 /**

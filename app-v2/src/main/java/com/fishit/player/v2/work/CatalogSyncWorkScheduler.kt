@@ -37,15 +37,15 @@ private const val KEY_DEVICE_CLASS = "device_class"
  * - uniqueWorkName = "catalog_sync_global"
  * - All sync triggers MUST go through this scheduler
  * - No UI/ViewModel may call sync services directly
- * 
+ *
  * ## Sync Strategy (Industry Best Practice)
- * 
+ *
  * This implementation follows patterns from TiviMate, Kodi, and XCIPTV:
- * 
+ *
  * **Initial Sync (AUTO/EXPERT_NOW/FORCE_RESCAN):**
  * - Full catalog scan, runs once at first launch or on manual trigger
  * - High traffic, but only happens rarely
- * 
+ *
  * **Periodic Incremental Sync:**
  * - Runs every 2 hours in background
  * - Quick count comparison first (like XCIPTV)
@@ -90,7 +90,7 @@ class CatalogSyncWorkSchedulerImpl
                 ),
             )
         }
-        
+
         override fun enqueueIncrementalSync() {
             UnifiedLog.d(TAG) { "Enqueueing INCREMENTAL sync" }
             schedule(
@@ -100,48 +100,53 @@ class CatalogSyncWorkSchedulerImpl
                 ),
             )
         }
-        
+
         override fun schedulePeriodicSync(intervalHours: Long) {
-            val effectiveInterval = intervalHours.coerceAtLeast(
-                WorkerConstants.PERIODIC_SYNC_MIN_INTERVAL_HOURS
-            )
-            
+            val effectiveInterval =
+                intervalHours.coerceAtLeast(
+                    WorkerConstants.PERIODIC_SYNC_MIN_INTERVAL_HOURS,
+                )
+
             UnifiedLog.d(TAG) { "Scheduling periodic incremental sync every $effectiveInterval hours" }
-            
-            val constraints = Constraints.Builder()
-                .setRequiredNetworkType(NetworkType.CONNECTED)
-                .setRequiresBatteryNotLow(true)
-                .build()
-            
-            val inputData = Data.Builder()
-                .putString(KEY_SYNC_RUN_ID, "periodic_${System.currentTimeMillis()}")
-                .putString(KEY_SYNC_MODE, CatalogSyncWorkMode.INCREMENTAL.storageValue)
-                .build()
-            
-            val periodicRequest = PeriodicWorkRequestBuilder<CatalogSyncOrchestratorWorker>(
-                effectiveInterval,
-                TimeUnit.HOURS
-            )
-                .setConstraints(constraints)
-                .setInputData(inputData)
-                .addTag(CATALOG_SYNC_TAG)
-                .addTag(CatalogSyncWorkMode.INCREMENTAL.tagValue)
-                .addTag(WORKER_TAG)
-                .build()
-            
+
+            val constraints =
+                Constraints
+                    .Builder()
+                    .setRequiredNetworkType(NetworkType.CONNECTED)
+                    .setRequiresBatteryNotLow(true)
+                    .build()
+
+            val inputData =
+                Data
+                    .Builder()
+                    .putString(KEY_SYNC_RUN_ID, "periodic_${System.currentTimeMillis()}")
+                    .putString(KEY_SYNC_MODE, CatalogSyncWorkMode.INCREMENTAL.storageValue)
+                    .build()
+
+            val periodicRequest =
+                PeriodicWorkRequestBuilder<CatalogSyncOrchestratorWorker>(
+                    effectiveInterval,
+                    TimeUnit.HOURS,
+                ).setConstraints(constraints)
+                    .setInputData(inputData)
+                    .addTag(CATALOG_SYNC_TAG)
+                    .addTag(CatalogSyncWorkMode.INCREMENTAL.tagValue)
+                    .addTag(WORKER_TAG)
+                    .build()
+
             WorkManager.getInstance(context).enqueueUniquePeriodicWork(
                 WorkerConstants.WORK_NAME_PERIODIC_SYNC,
                 ExistingPeriodicWorkPolicy.UPDATE,
-                periodicRequest
+                periodicRequest,
             )
-            
+
             UnifiedLog.i(TAG) { "Periodic incremental sync scheduled: every $effectiveInterval hours" }
         }
-        
+
         override fun cancelPeriodicSync() {
             UnifiedLog.d(TAG) { "Cancelling periodic sync" }
             WorkManager.getInstance(context).cancelUniqueWork(
-                WorkerConstants.WORK_NAME_PERIODIC_SYNC
+                WorkerConstants.WORK_NAME_PERIODIC_SYNC,
             )
         }
 
@@ -200,16 +205,16 @@ data class CatalogSyncWorkRequest(
 
 /**
  * Sync modes for catalog synchronization.
- * 
+ *
  * ## Traffic Comparison (Xtream Provider with ~10k items):
- * 
+ *
  * | Mode | Traffic | Use Case |
  * |------|---------|----------|
  * | AUTO | ~2-5 MB | First launch, app update |
  * | EXPERT_NOW | ~2-5 MB | User-triggered "Refresh" |
  * | FORCE_RESCAN | ~2-5 MB | User-triggered "Full Rescan" |
  * | INCREMENTAL | ~10-50 KB | Background periodic (every 2h) |
- * 
+ *
  * The INCREMENTAL mode achieves ~95% traffic reduction by:
  * 1. Quick count comparison first (1 API call)
  * 2. Only fetching items where `added > lastSyncTimestamp`
@@ -224,16 +229,17 @@ enum class CatalogSyncWorkMode(
         tagValue = "mode_auto",
         workPolicy = ExistingWorkPolicy.KEEP,
     ),
+
     /**
      * User-triggered "Sync Now" from Settings.
-     * 
+     *
      * BUG FIX (Feb 2026): Changed from KEEP to REPLACE.
-     * 
+     *
      * KEEP was wrong because:
      * - If an AUTO sync started at app launch, user's explicit "Sync Now" was silently ignored
      * - User expected their action to trigger a new sync, not be discarded
      * - This caused "sync doesn't work" complaints when AUTO sync was still running
-     * 
+     *
      * REPLACE ensures user-triggered syncs always execute immediately.
      */
     EXPERT_NOW(
@@ -246,14 +252,15 @@ enum class CatalogSyncWorkMode(
         tagValue = "mode_force_rescan",
         workPolicy = ExistingWorkPolicy.REPLACE,
     ),
+
     /**
      * Incremental sync for periodic background updates.
-     * 
+     *
      * This mode is optimized for minimal traffic:
      * - Compares item counts to detect changes
      * - Only fetches items where `added > lastSyncTimestamp`
      * - Skips unchanged sources entirely
-     * 
+     *
      * Used by [CatalogSyncWorkSchedulerImpl.schedulePeriodicSync].
      */
     INCREMENTAL(

@@ -3,6 +3,7 @@ package com.fishit.player.feature.detail
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.fishit.player.core.detail.domain.DetailBundle
+import com.fishit.player.core.detail.domain.DetailEnrichmentService
 import com.fishit.player.core.detail.domain.EpisodeIndexItem
 import com.fishit.player.core.detail.domain.UnifiedDetailLoader
 import com.fishit.player.core.model.CanonicalMediaId
@@ -18,7 +19,6 @@ import com.fishit.player.core.model.ids.XtreamIdCodec
 import com.fishit.player.core.model.ids.XtreamParsedSourceId
 import com.fishit.player.core.model.repository.CanonicalMediaWithSources
 import com.fishit.player.core.model.repository.CanonicalResumeInfo
-import com.fishit.player.core.detail.domain.DetailEnrichmentService
 import com.fishit.player.feature.detail.series.EnsureEpisodePlaybackReadyUseCase
 import com.fishit.player.feature.detail.ui.helper.DetailEpisodeItem
 import com.fishit.player.infra.logging.UnifiedLog
@@ -189,7 +189,7 @@ class UnifiedDetailViewModel
                         // Xtream source but bundle null - API call failed or returned null
                         // This is NOT a critical error - the basic data is already in state.media
                         // Just log it and continue with what we have
-                        UnifiedLog.w(TAG) { 
+                        UnifiedLog.w(TAG) {
                             "loadDetailWithUnifiedLoader: Xtream API returned null for ${media.mediaType}" +
                                 " (canonicalId=${media.canonicalId.key.value}). Using cached data."
                         }
@@ -238,14 +238,15 @@ class UnifiedDetailViewModel
         ) {
             // Update media if enrichment data available
             if (bundle.plot != null || bundle.poster != null || bundle.backdrop != null) {
-                val enrichedMedia = media.copy(
-                    plot = bundle.plot ?: media.plot,
-                    poster = bundle.poster ?: media.poster,
-                    backdrop = bundle.backdrop ?: media.backdrop,
-                    rating = bundle.rating ?: media.rating,
-                    trailer = bundle.trailer ?: media.trailer,
-                    imdbId = bundle.imdbId ?: media.imdbId,
-                )
+                val enrichedMedia =
+                    media.copy(
+                        plot = bundle.plot ?: media.plot,
+                        poster = bundle.poster ?: media.poster,
+                        backdrop = bundle.backdrop ?: media.backdrop,
+                        rating = bundle.rating ?: media.rating,
+                        trailer = bundle.trailer ?: media.trailer,
+                        imdbId = bundle.imdbId ?: media.imdbId,
+                    )
                 _state.update { currentState ->
                     currentState.copy(
                         media = enrichedMedia,
@@ -294,14 +295,15 @@ class UnifiedDetailViewModel
         ) {
             // Update media with enrichment data
             if (bundle.plot != null || bundle.poster != null || bundle.backdrop != null) {
-                val enrichedMedia = media.copy(
-                    plot = bundle.plot ?: media.plot,
-                    poster = bundle.poster ?: media.poster,
-                    backdrop = bundle.backdrop ?: media.backdrop,
-                    rating = bundle.rating ?: media.rating,
-                    trailer = bundle.trailer ?: media.trailer,
-                    imdbId = bundle.imdbId ?: media.imdbId,
-                )
+                val enrichedMedia =
+                    media.copy(
+                        plot = bundle.plot ?: media.plot,
+                        poster = bundle.poster ?: media.poster,
+                        backdrop = bundle.backdrop ?: media.backdrop,
+                        rating = bundle.rating ?: media.rating,
+                        trailer = bundle.trailer ?: media.trailer,
+                        imdbId = bundle.imdbId ?: media.imdbId,
+                    )
                 _state.update { currentState ->
                     currentState.copy(
                         media = enrichedMedia,
@@ -564,7 +566,10 @@ class UnifiedDetailViewModel
 
         /** Open trailer in YouTube or WebView. */
         fun openTrailer() {
-            val trailer = _state.value.media?.trailer?.takeIf { it.isNotBlank() } ?: return
+            val trailer =
+                _state.value.media
+                    ?.trailer
+                    ?.takeIf { it.isNotBlank() } ?: return
             viewModelScope.launch {
                 _events.emit(UnifiedDetailEvent.OpenTrailer(trailer))
             }
@@ -616,11 +621,12 @@ class UnifiedDetailViewModel
                 val xtreamSource = media.sources.find { it.sourceId.value.startsWith("xtream:") }
                 if (xtreamSource != null) {
                     val parsed = XtreamIdCodec.parse(xtreamSource.sourceId.value)
-                    val seriesId = when (parsed) {
-                        is XtreamParsedSourceId.Series -> parsed.seriesId.toInt()
-                        is XtreamParsedSourceId.EpisodeComposite -> parsed.seriesId.toInt()
-                        else -> null
-                    }
+                    val seriesId =
+                        when (parsed) {
+                            is XtreamParsedSourceId.Series -> parsed.seriesId.toInt()
+                            is XtreamParsedSourceId.EpisodeComposite -> parsed.seriesId.toInt()
+                            else -> null
+                        }
                     if (seriesId != null) return seriesId
                 }
             }
@@ -629,11 +635,12 @@ class UnifiedDetailViewModel
             // Handles both NX format (src:xtream:{account}:series:{id}) and
             // legacy format (xtream:series:{id})
             val parsedKey = XtreamIdCodec.parse(key)
-            val keySeriesId = when (parsedKey) {
-                is XtreamParsedSourceId.Series -> parsedKey.seriesId.toInt()
-                is XtreamParsedSourceId.EpisodeComposite -> parsedKey.seriesId.toInt()
-                else -> null
-            }
+            val keySeriesId =
+                when (parsedKey) {
+                    is XtreamParsedSourceId.Series -> parsedKey.seriesId.toInt()
+                    is XtreamParsedSourceId.EpisodeComposite -> parsedKey.seriesId.toInt()
+                    else -> null
+                }
             if (keySeriesId != null) return keySeriesId
 
             // PRIORITY 3: Canonical key format "series:<slug>:<year>" - no numeric ID
@@ -705,11 +712,13 @@ class UnifiedDetailViewModel
             if (seriesId != null && cachedEpisodesBySeason.isNotEmpty()) {
                 val episodes = cachedEpisodesBySeason[season] ?: emptyList()
                 val episodeItems = mapToDetailEpisodeItems(episodes, seriesId, season)
-                _state.update { it.copy(
-                    selectedSeason = season,
-                    episodes = episodeItems,
-                    episodesLoading = false,
-                ) }
+                _state.update {
+                    it.copy(
+                        selectedSeason = season,
+                        episodes = episodeItems,
+                        episodesLoading = false,
+                    )
+                }
                 UnifiedLog.d(TAG) { "selectSeason: ${episodeItems.size} episodes for season $season (instant, cached)" }
                 return
             }
@@ -719,7 +728,7 @@ class UnifiedDetailViewModel
 
             viewModelScope.launch {
                 val bundle = unifiedDetailLoader.loadDetailImmediate(media)
-                
+
                 when (bundle) {
                     is DetailBundle.Series -> {
                         // Cache for future instant switching
@@ -728,15 +737,17 @@ class UnifiedDetailViewModel
 
                         val episodes = bundle.episodesBySeason[season] ?: emptyList()
                         val episodeItems = mapToDetailEpisodeItems(episodes, bundle.seriesId, season)
-                        
+
                         _state.update { currentState ->
                             currentState.copy(
                                 episodes = episodeItems,
                                 episodesLoading = false,
                             )
                         }
-                        
-                        UnifiedLog.d(TAG) { "selectSeason: Loaded ${episodeItems.size} episodes for season $season (from loader, now cached)" }
+
+                        UnifiedLog.d(
+                            TAG,
+                        ) { "selectSeason: Loaded ${episodeItems.size} episodes for season $season (from loader, now cached)" }
                     }
                     else -> {
                         UnifiedLog.w(TAG) { "selectSeason: Expected Series bundle but got ${bundle?.javaClass?.simpleName}" }
