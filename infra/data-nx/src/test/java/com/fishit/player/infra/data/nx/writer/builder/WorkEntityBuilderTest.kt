@@ -214,8 +214,42 @@ class WorkEntityBuilderTest {
 
         val work = builder.build(metadata, "episode:heuristic:pilot-s01e01", playbackHints = playbackHints)
 
-        // Should fall back to series TMDB ID
-        assertEquals(seriesTmdbId.toString(), work.tmdbId)
+        // Should return null to avoid collision with series work (not fall back to series ID)
+        assertEquals(null, work.tmdbId)
+    }
+
+    @Test
+    fun `build() validates episode tmdb_id is numeric`() {
+        // Episode with invalid (non-numeric) episode TMDB ID in hints
+        val seriesTmdbId = 1396
+
+        val metadata =
+            NormalizedMediaMetadata(
+                canonicalTitle = "Pilot",
+                mediaType = MediaType.SERIES_EPISODE,
+                season = 1,
+                episode = 1,
+                externalIds = ExternalIds(tmdb = TmdbRef(TmdbMediaType.TV, seriesTmdbId)),
+            )
+
+        // Test various invalid values
+        val invalidHints = listOf(
+            mapOf(PlaybackHintKeys.Xtream.EPISODE_TMDB_ID to ""),
+            mapOf(PlaybackHintKeys.Xtream.EPISODE_TMDB_ID to "   "),
+            mapOf(PlaybackHintKeys.Xtream.EPISODE_TMDB_ID to "abc123"),
+            mapOf(PlaybackHintKeys.Xtream.EPISODE_TMDB_ID to "12.34"),
+        )
+
+        invalidHints.forEach { hints ->
+            val work = builder.build(metadata, "episode:heuristic:pilot-s01e01", playbackHints = hints)
+            // Should return null for invalid episode TMDB IDs
+            assertEquals(null, work.tmdbId, "Expected null for hints: $hints")
+        }
+
+        // Valid numeric values should work
+        val validHints = mapOf(PlaybackHintKeys.Xtream.EPISODE_TMDB_ID to "  62085  ")
+        val workValid = builder.build(metadata, "episode:heuristic:pilot-s01e01", playbackHints = validHints)
+        assertEquals("62085", workValid.tmdbId)
     }
 
     @Test

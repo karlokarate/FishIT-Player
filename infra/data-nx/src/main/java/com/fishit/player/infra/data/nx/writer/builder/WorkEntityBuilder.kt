@@ -86,6 +86,10 @@ class WorkEntityBuilder
          * - Episodes need their own episode-specific TMDB ID in the work entity
          * - The episode TMDB ID is stored in playback hints by the pipeline
          *
+         * CRITICAL: Episodes MUST NOT fall back to series TMDB ID to avoid
+         * collision in external-ID lookups (NxCanonicalMediaRepositoryImpl.findByExternalId
+         * queries by tmdbId without filtering by workType).
+         *
          * For all other media types, uses the standard tmdb resolution logic.
          *
          * @param normalized The normalized metadata
@@ -96,15 +100,22 @@ class WorkEntityBuilder
             normalized: NormalizedMediaMetadata,
             playbackHints: Map<String, String>,
         ): String? {
-            // For episodes: try to extract episode-specific TMDB ID from playback hints
+            // For episodes: ONLY use episode-specific TMDB ID from playback hints
+            // Do NOT fall back to series TMDB ID to avoid data integrity issues
             if (normalized.mediaType == MediaType.SERIES_EPISODE) {
                 val episodeTmdbId = playbackHints[PlaybackHintKeys.Xtream.EPISODE_TMDB_ID]
                 if (episodeTmdbId != null) {
-                    return episodeTmdbId
+                    // Validate that the hint value is numeric before using it
+                    val cleaned = episodeTmdbId.trim()
+                    if (cleaned.isNotEmpty() && cleaned.toLongOrNull() != null) {
+                        return cleaned
+                    }
                 }
+                // Return null for episodes without valid episode-specific TMDB ID
+                return null
             }
 
-            // For all other media types (or episodes without episode TMDB ID):
+            // For all other media types:
             // Use standard resolution (prefer typed tmdb ref, fall back to externalIds)
             return (normalized.tmdb ?: normalized.externalIds.tmdb)?.id?.toString()
         }
